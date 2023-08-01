@@ -1,0 +1,10 @@
+			Third Party Licenses
+------------------------------------------------------------------------------------
+
+Below is a list of third party tools included in this product and their usage policy as defined. This is to make you (our users) aware of the usage of third party tools, their policies and adherence to the legal aspects of using them in your product. Here is the complete list of external code included in our product and how you are entitled to use them, if you wish to.
+
+1.	FFmpeg is a Codec to support variety of video formats and their usage policy can be viewed on their website which also has a compliance checklist for using FFmpeg in your project https://www.ffmpeg.org/legal.html. You can also find their reference in our website license http://www.medicalconnections.co.uk/kb/Video_support_with_FFmpeg   
+
+2.	SharpDx, a .NET wrapper for Microsoft's DirectX, is used for GPU efficient processing. Its licensing terms can be found here http://sharpdx.org/License.txt
+
+3.	Newtonsoft library has been used to parse Json data to DICOM and vice versa. Its licensing terms can be found here https://github.com/JamesNK/Newtonsoft.Json/blob/master/LICENSE.md

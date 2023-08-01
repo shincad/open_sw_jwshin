@@ -1,0 +1,10 @@
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\bin\Release\WindowsFormsApplication1.exe.config
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\bin\Release\WindowsFormsApplication1.exe
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\bin\Release\WindowsFormsApplication1.pdb
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.csproj.AssemblyReference.cache
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication.art_Form.resources
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.Properties.Resources.resources
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.csproj.GenerateResource.cache
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.csproj.CoreCompileInputs.cache
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.exe
+C:\Users\shincad\source\repos\tcp_scan\WindowsFormsApplication1\WindowsFormsApplication1\obj\Release\WindowsFormsApplication1.pdb

@@ -1,0 +1,13 @@
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.exe
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.deps.json
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.runtimeconfig.json
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.runtimeconfig.dev.json
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.dll
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\bin\Release\netcoreapp3.1\test_xml_send.pdb
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.AssemblyInfoInputs.cache
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.AssemblyInfo.cs
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.csproj.CoreCompileInputs.cache
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.dll
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.pdb
+C:\Users\shincad\source\repos\test_xml_send\test_xml_send\obj\Release\netcoreapp3.1\test_xml_send.genruntimeconfig.cache

@@ -1,0 +1,538 @@
+---------------------------------
+8.40.1205.0
+2022-03-15
+ReceiveToDisk bugfix
+
+---------------------------------
+8.40.1204.0
+2022-03-01
+Duplicate TS in Accepted / Offered TS List Bugfix
+
+---------------------------------
+8.40.1203.0
+2022-03-01
+J2K Padding fix; MPEGLibraryLocation fix for ASP.NET
+
+---------------------------------
+8.40.1202.0
+2022-02-08
+Dictionary updated to 2022a
+
+---------------------------------
+8.40.1201.0
+2022-02-04
+Support Async Operations Window in ASSOC-Req
+DicomImage.SubImage/PrinterImage/Bitmap method auto scale to match max D3D texture dimention based on feature level
+
+---------------------------------
+8.XX.205.0
+2021-12-30
+MINT support added
+
+---------------------------------
+8.XX.204.0
+2021-12-21
+Adding video TS to default offered and accepted list
+DicomImage Add() method overloads to add attributes directly to underlying Dataset object
+DicomGlobal DefaultCacheMode for DicomDataSet and DicomImage added
+DicomImage.SetPixelData and SetPixelFile support both compressed and uncompressed pixel data
+Frame number parameter for SubImage, PrinterImage and Bitmap overloads begins with 1 (1-index)
+
+---------------------------------
+8.XX.1200.0
+2021-12-23
+Last .NET CLR4.0 LTS build
+
+---------------------------------
+8.XX.204.0
+2021-12-21
+Adding video TS to default offered and accepted list
+DicomImage Add() method overloads to add attributes directly to underlying Dataset object
+DicomGlobal DefaultCacheMode for DicomDataSet and DicomImage added
+DicomImage.SetPixelData and SetPixelFile support both compressed and uncompressed pixel data
+Frame number parameter for SubImage, PrinterImage and Bitmap overloads begins with 1 (1-index)
+
+---------------------------------
+8.XX.203.0
+2021-11-22
+BasicBitmap memory leak fix
+Fixes for Read & Write behaviours
+Set Icon OriginalTS when reading
+Fix for recent bug in Association Request handler
+3D Reference lines working again
+AttemptToFixHologicCompressedFrames ReadBehaviour added
+
+---------------------------------
+8.XX.201.0
+2021-10-13
+OverwriteWithCorrectVR WriteBehaviour added
+
+---------------------------------
+8.XX.200.0
+2021-10-04
+Add DelayedSequenceLoad ReadBehaviour for on-demand sequence parsing
+Huge Optimization changes
+
+---------------------------------
+8.XX.131.0
+2021-06-09
+PolyShutter working
+
+---------------------------------
+8.XX.130.0
+2021-05-04
+DicomLabel TextLabelRendering option to control anti-aliasing
+Missing attributes in Dx SubImage fixed
+Fix for jumping frames in RealTimeCine
+
+---------------------------------
+8.XX.129.0
+2021-02-24
+Nuget package to include latest SharpDx references
+
+---------------------------------
+8.XX.128.0
+2021-02-16
+MediaStorageSOPInstanceUID to match updated SOPInstanceUID for Lossy compression
+
+---------------------------------
+8.XX.127.0
+2021-02-12
+WriteBehaviours.ChangeLossyAttributes added
+Blt method in Dx mode
+SubImage Dx mode added
+DicomImage.CaptureBackColour to control background colour of PrinterImage, Bitmap and SubImage
+Support for 32 bit texture in Dx mode
+Fix for PixelData.Value after optimization changes
+Added Request property to Qido/Stow/Wado event args to expose the HttpRequestMessage object
+Stricter checks for mandatory attributes in PS
+
+---------------------------------
+8.XX.126.0
+2020-08-27
+Descriptive error message when failing to decompress icon pixel data
+
+---------------------------------
+8.XX.125.0
+2020-07-03
+Minor fix on Concurrent license activation
+Added ForceImplicitVRForPrivateSequenceItem to tolerate bad DICOM data
+Add optional ReadBehaviour parameter to all Read methods
+ReadBehaviours.IgnoreAfterTag added
+
+---------------------------------
+8.XX.124.1
+2020-05-08
+Handle bad Frame Level Retrieve request with requested frame(s) greater than frame count
+
+---------------------------------
+8.XX.124.0
+2020-05-08
+Handle bad Frame Level Retrieve request with requested frame(s) greater than frame count
+
+---------------------------------
+8.XX.123.0
+2020-04-06
+Dev version on Nuget
+
+---------------------------------
+8.XX.122.0
+2020-04-03
+DICOM dictionary 2020b update
+Support for bad DICOM multiframe data with missing fragment
+
+---------------------------------
+8.XX.121.0
+2020-02-28
+Added support for Pen.DashPattern
+fixed flipped/rotated shutter problem
+Add list of exceptions to ignore in ReadBehaviour
+fix for UID double dot validation - changed how we handle faulty NM data after pixel
+Added tolerance for bad JPEG encoding
+Added "StopReadingWhenGEAreZero" regword to cope with Dodgy NM images with junk data after private attribute
+
+---------------------------------
+8.XX.120.0
+2019-06-20
+Added Polygon Cut to 3D Image
+Detecting DICOM Preamble vulnerability
+Adding FlipState for Image LabelType
+DICOM data dictionary updated to 2019b
+
+---------------------------------
+8.XX.111.0
+2019-03-20
+Font Style private Attributes Added, Added DicomValidationException.Errors property
+
+---------------------------------
+8.XX.110.0
+2019-02-26
+DICOM data dictionary updated to 2019a
+Private PS attribute for ArrowSize
+DicomGlobal.PreserveDoublePrecision property added for retaining double precision numbers
+
+---------------------------------
+8.XX.109.0
+2018-11-23
+Added new DataSet method to add existing DicomAttribute
+DicomViewer.Clear method added
+Fixed missing BitsAllocated in PrinterImage Dx mode
+Avoid pixel padding when DicomImage.ExternalShader is applied. Requires testing
+Added DicomLicense.RemoveRamLicense method
+Handing FrameVOILUTSequence in Enhanced Imaging objects
+Added CPixelDataCompressedOnDemand.Clone method
+Label Rotation Minor Change - pending QA
+Documentation update for SubImage behaviour change
+Fixed back colour of ExternalShader
+
+---------------------------------
+8.XX.108.0
+2018-09-07
+Helpfile updates
+
+---------------------------------
+8.XX.107.0
+2018-08-31
+Contrast Frame Averaging minor conversion bug fixed
+text label RotationMode.NoRotate fix
+
+---------------------------------
+8.XX.106.0
+2018-08-09
+Full support for Mask Module Attributes.
+Include annotations when invoking RenderToArray.
+Removed D3D_FEATURE_LEVEL_11_1 from default list. 
+Added UseD3DFeatureLevel_1 keyword.
+PrivateKeyword added
+
+---------------------------------
+8.XX.105.0
+2018-06-28
+Licencing updates
+
+---------------------------------
+8.XX.104.0
+2018-06-27
+InstalledLicenses to return All available licenses including expired
+
+---------------------------------
+8.XX.103.0
+2018-06-12
+Signature based licensing restored
+
+---------------------------------
+8.XX.102.0
+2018-05-31
+Using correct length for >8 bit data in SingleArrayData
+
+---------------------------------
+8.XX.101.0
+2018-05-31
+DICOM data dictionary updated to 2018b
+
+---------------------------------
+8.XX.100.0
+2018-04-10
+2018a - Data Dictionary update
+
+---------------------------------
+8.XX.55.0
+2018-03-14
+Several small overlay fixes - especially for 12 bit output
+Only remove non-Pixel overlays from SubImage and fix RGB16=>MONO8 rendering
+Allow in plane flips for 2D/3D fusion (for LCMR)
+DicomImageFusion Rotate overload with Viewer parameter added
+
+---------------------------------
+8.XX.54.0
+2018-02-19
+Support for FIPS and null image aspect ratio handling in DicomLabels
+
+---------------------------------
+8.XX.53.0
+2018-02-16
+Fix for wrong use of reallocated overly long arrays
+Added ability to pack compressed data back into formats with Bits Allocated not multiple of 8
+Fixed Overlay drawing error
+
+---------------------------------
+8.XX.52.0
+2017-12-07
+Fixed invalid ROI calculation
+
+---------------------------------
+8.XX.51.0
+2017-11-23
+Added new methods to obtain VM and VR values of a DICOM attribute as defined in the standard
+
+---------------------------------
+8.XX.50.0
+2017-11-02
+BoundingBox calculation for Polygons and Polylines
+
+---------------------------------
+8.XX.48.0
+2017-10-30
+2017d - Data Dictionary update
+Added support for dynamic PrivateCreator dictionary
+
+---------------------------------
+8.XX.47.0
+2017-10-25
+PrinterImage improvements for 3D rendering and avoiding using image properties for Scalemode == Cell
+
+---------------------------------
+8.XX.46.0
+2017-10-24
+Fixed bug when handling faulty J2K images with JP2 header
+
+---------------------------------
+8.XX.45.0
+2017-10-11
+Handling of MPR and fusion transparency even with colour tables
+DicomViewer.AdjustMultiRowsColumns method added
+Added DicomGlobal.DefaultSOPClasses property to get the default list of Abstract syntaxes
+Added DeactivateOnline method
+
+---------------------------------
+8.XX.44.0
+2017-09-07
+Improved handling of unknown user negotiation items
+Ending logging with LogToStream method
+
+---------------------------------
+8.XX.43.0
+2017-08-10
+Improved image area redraw by working out exact clip region (DX mode)
+Allow import of level MP@HIGH 1440 as subset of MP@HL
+
+---------------------------------
+8.XX.42.0
+2017-06-21
+Avoiding mis-classifying icon pixel data when width & height are both odd.
+Fixed lossless codec for >8 bit data and Al != 0
+
+---------------------------------
+8.XX.41.0
+2017-06-07
+Allow windowing of colour image from PS & other fixes
+
+---------------------------------
+8.XX.40.0
+2017-05-24
+Label adjustments and support for new VR's
+Removal of BouncyCastle and Security references
+
+---------------------------------
+8.XX.39.0
+2017-05-05
+Fixed null exception on Viewer labels clear
+RealTime cine rate fixed
+
+---------------------------------
+8.XX.38.0
+2017-04-26
+Synced changes to CLR 3.5
+
+---------------------------------
+8.XX.37.0
+2017-04-25
+Added AssociationCount and RotationMode : CentreToRotationPoint
+
+---------------------------------
+8.XX.36.0
+2017-03-27
+Dx background colour fixed
+
+---------------------------------
+8.XX.35.0
+2017-03-21
+Ignoring invalid empty BasicOffsetTable entries
+Improved video frame rate handling
+Allow changing of log level by using null for Path or stream
+Handling texture failure in magnifying glass feature
+
+---------------------------------
+8.XX.34.0
+2017-02-18
+DicomViewer Refresh changes
+
+---------------------------------
+8.XX.33.0
+2017-02-17
+DirectX improvements
+
+---------------------------------
+8.XX.32.0
+2017-02-17
+Internal code tidy-up
+
+---------------------------------
+8.XX.31.0
+2017-02-08
+Larger Tile sizes and better tile edge handling
+
+---------------------------------
+8.XX.30.0
+2017-02-08
+Fix for SubImage of compressed images to set correct (uncompressed) TS
+
+---------------------------------
+8.XX.29.0
+2017-02-06
+Fixes for Texture Tiling
+
+---------------------------------
+8.XX.28.0
+2017-02-02
+Clip with Line LabelType correction
+
+---------------------------------
+8.XX.27.0
+2017-01-30
+Effective rescaling and VOI LUT handling
+
+---------------------------------
+8.XX.26.0
+2017-01-30
+Multi-texture support
+
+---------------------------------
+8.XX.25.0
+2017-01-30
+CLR 3.5 support restored
+
+---------------------------------
+8.XX.24.0
+2017-01-27
+Fix for JPEG rescaling
+
+---------------------------------
+8.XX.23.0
+2017-01-24
+Restoring DicomLabel.Matrix method
+
+---------------------------------
+8.XX.22.0
+2017-01-23
+Changes in SharpDx dependency
+
+---------------------------------
+8.XX.21.0
+2017-01-19
+Fixed multi-frame issue claiming to have the original number of frames with only the first frame present and the rest missing
+Protection against bad overlays in GDI Mode
+Ability to have Limited PHI in logs
+Ability to specify attributes to de-identify in logs
+Multiple efficiency improvements
+Fixed issues for encoding into MPEG
+Modification of FrameCount in transcoded images to match count actually available from MPEG data.
+Fixes for FFMPEG sequencing
+Adjustments in 3D Label ScaleMode
+
+---------------------------------
+8.XX.20.0
+2017-01-02
+Fix for DirectX 3D Initialisation error
+
+---------------------------------
+8.XX.19.0
+2016-12-22
+DICOM dictionary 2016e update
+
+---------------------------------
+8.XX.18.0
+2016-12-15
+Video support using FFmpeg
+
+---------------------------------
+8.XX.17.0
+2016-12-05
+Fixed MoveOriginator AET error
+
+---------------------------------
+8.XX.16.0
+2016-11-21
+Option to reset ExternalShader changes and minor fixes
+
+---------------------------------
+8.XX.15.0
+2016-11-09
+MPEG-4 profile compatibility check
+
+---------------------------------
+8.XX.14.0
+2016-11-04
+Better handling of old JPEG lossless bug  http://www.medicalconnections.co.uk/kb/Lossless_bug_in_old_COM_versions_of_DicomObjects
+
+---------------------------------
+8.XX.13.0
+2016-10-14
+Handling over-sized texture errors in curved MPR
+
+---------------------------------
+8.XX.12.0
+2016-10-13
+Added support for Curved MPR
+Added functionality to support Web services
+
+---------------------------------
+8.XX.11.0
+2016-10-12
+JPEG-LS padding error
+Added 2D/3D fusion functionality
+DicomImage.Import supports multipage image
+
+---------------------------------
+8.XX.10.0
+2016-09-30
+Fixed VR errors with Implicit LE Transfer syntax
+
+---------------------------------
+8.XX.9.0
+2016-09-29
+Fixed errors on loadup
+
+---------------------------------
+8.XX.8.0
+2016-09-29
+Fixed loadup error in CLR 3.5
+
+---------------------------------
+8.XX.7.0
+2016-09-28
+Fixed data dictionary delay at startup
+
+---------------------------------
+8.XX.6.0
+2016-09-27
+Better recovery from DirectX errors including full TDR
+Improved initialisation time
+
+---------------------------------
+8.XX.5.0
+2016-09-21
+Check for duplicate positions in BOT
+Excluding potential exception when cloning DicomLabel in Dx mode
+
+---------------------------------
+8.XX.4.0
+2016-08-27
+Updating output dlls in download package
+
+---------------------------------
+8.XX.3.0
+2016-08-26
+Colour to Mono PrinterImage support
+DicomLabel ruler length
+Handling of icons based on its ReadBehaviour
+
+---------------------------------
+8.XX.2.0
+2016-08-12
+DicomLabel Pen styles and Multiframe SubImage problem fixed
+
+---------------------------------
+8.XX.1.0
+2016-08-10
+V8 Release Build

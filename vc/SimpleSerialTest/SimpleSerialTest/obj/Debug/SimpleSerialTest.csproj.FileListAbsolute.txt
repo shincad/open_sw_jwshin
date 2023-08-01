@@ -1,0 +1,10 @@
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\bin\Debug\SimpleSerialTest.exe
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\bin\Debug\SimpleSerialTest.pdb
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.Form1.resources
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.Properties.Resources.resources
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.csproj.GenerateResource.Cache
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.exe
+C:\Users\thkim\Documents\Visual Studio 2008\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.pdb
+C:\Users\jwshin\Documents\Visual Studio 2015\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.exe
+C:\Users\jwshin\Documents\Visual Studio 2015\Projects\SimpleSerialTest\SimpleSerialTest\obj\Debug\SimpleSerialTest.pdb
