@@ -1,0 +1,32 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+pattern_table                                                     0x0500      19
+delay_table                                                       0x0513      19
+FndDef                                                            0x0526      10
+adc                                                               0x0530       2
+ComVal                                                            0x0532       1
+rx_buffer0                                                        0x0533       8
+rx_wr_index0                                                      0x053B       1
+rx_rd_index0                                                      0x053C       1
+rx_counter0                                                       0x053D       1
+tx_buffer0                                                        0x053E       8
+tx_wr_index0                                                      0x0546       1
+tx_rd_index0                                                      0x0547       1
+tx_counter0                                                       0x0548       1
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+LedCnt                                                            R5           1
+Cnt                                                               R6,R7        2
+TotalFlag                                                         R4           1
+AdcVal                                                            R8,R9        2
+TimerCnt                                                          R10,R11      2
+RDPortVal                                                         R13          1
+RDPortVal2                                                        R12          1
+rx_buffer_overflow0                                               R2.0      1bit

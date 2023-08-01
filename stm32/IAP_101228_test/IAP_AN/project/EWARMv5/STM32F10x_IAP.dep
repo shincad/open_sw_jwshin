@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<project>
+  <fileVersion>2</fileVersion>
+  <fileChecksum>2519182209</fileChecksum>
+  <configuration>
+    <name>STM3210B-EVAL</name>
+    <outputs/>
+    <forcedrebuild>
+      <name>[MULTI_TOOL]</name>
+      <tool>ILINK</tool>
+    </forcedrebuild>
+  </configuration>
+  <configuration>
+    <name>STM3210E-EVAL</name>
+    <outputs>
+      <file>$TOOLKIT_DIR$\inc\DLib_Config_Full.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_gpio.o</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_flash.h</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_gpio.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_gpio.pbi</file>
+      <file>$PROJ_DIR$\..\..\include\ymodem.h</file>
+      <file>$TOOLKIT_DIR$\inc\DLib_Threads.h</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_rcc.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_it.o</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_type.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_wwdg.o</file>
+      <file>$TOOLKIT_DIR$\inc\stdio.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_usart.o</file>
+      <file>$PROJ_DIR$\..\..\include\platform_config.h</file>
+      <file>$TOOLKIT_DIR$\inc\ysizet.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_rcc.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\ymodem.pbi</file>
+      <file>$PROJ_DIR$\..\..\source\common.c</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_wwdg.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_vector.o</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_lib.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_flash.o</file>
+      <file>$TOOLKIT_DIR$\inc\ycheck.h</file>
+      <file>$TOOLKIT_DIR$\inc\yvals.h</file>
+      <file>$TOOLKIT_DIR$\lib\dl7M_tl_if.a</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_map.h</file>
+      <file>$PROJ_DIR$\..\..\include\common.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Exe\STM32F10x_IAP.bin</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\common.o</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_usart.pbi</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\cortexm3_macro.h</file>
+      <file>$TOOLKIT_DIR$\inc\DLib_Defaults.h</file>
+      <file>$TOOLKIT_DIR$\inc\xencoding_limits.h</file>
+      <file>$PROJ_DIR$\..\..\include\stm32f10x_conf.h</file>
+      <file>$TOOLKIT_DIR$\inc\string.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\download.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\common.pbi</file>
+      <file>$TOOLKIT_DIR$\inc\DLib_Product.h</file>
+      <file>$TOOLKIT_DIR$\lib\rt7M_tl.a</file>
+      <file>$TOOLKIT_DIR$\lib\shb_l.a</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\ymodem.o</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_lib.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\cortexm3_macro.o</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Exe\STM32F10x_IAP.out</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_nvic.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\STM32F10x_IAP.pbd</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_it.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_wwdg.pbi</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\inc\stm32f10x_usart.h</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_lib.o</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_usart.c</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_rcc.c</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_lib.c</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_gpio.c</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_flash.c</file>
+      <file>$PROJ_DIR$\stm32f10x_vector.c</file>
+      <file>$TOOLKIT_DIR$\inc\DLib_Product_string.h</file>
+      <file>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_wwdg.c</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_flash.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\main.o</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\main.pbi</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_rcc.o</file>
+      <file>$PROJ_DIR$\..\..\include\stm32f10x_it.h</file>
+      <file>$PROJ_DIR$\..\..\source\download.c</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\download.o</file>
+      <file>$PROJ_DIR$\stm32f10x_flash.icf</file>
+      <file>$PROJ_DIR$\STM3210E-EVAL\Obj\stm32f10x_vector.pbi</file>
+      <file>$PROJ_DIR$\cortexm3_macro.s</file>
+      <file>$PROJ_DIR$\..\..\source\ymodem.c</file>
+      <file>$PROJ_DIR$\..\..\source\stm32f10x_it.c</file>
+      <file>$PROJ_DIR$\..\..\source\main.c</file>
+    </outputs>
+    <file>
+      <name>[ROOT_NODE]</name>
+      <outputs>
+        <tool>
+          <name>ILINK</name>
+          <file> 43</file>
+        </tool>
+      </outputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\source\common.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 28</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 36</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 26 11 22 23 31 0 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 26 11 22 23 31 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\STM3210E-EVAL\Exe\STM32F10x_IAP.out</name>
+      <outputs>
+        <tool>
+          <name>OBJCOPY</name>
+          <file> 27</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ILINK</name>
+          <file> 65 28 42 64 59 21 1 8 49 61 12 19 10 40 39 38 24</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\STM3210E-EVAL\Obj\STM32F10x_IAP.pbd</name>
+      <inputs>
+        <tool>
+          <name>BILINK</name>
+          <file> 36 35 60 58 4 46 20 15 29 66 47 16</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_usart.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 12</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 29</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 48 25 33 9 30 7</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 48 25 33 9 30 7</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_rcc.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 61</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 15</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 7 25 33 9 30</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 7 25 33 9 30</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_lib.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 49</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 20</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 41 25 33 9 30 2 3 44 7 48 18</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 41 25 33 9 30 2 3 44 7 48 18</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_gpio.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 1</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 4</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 3 25 33 9 30 7</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 3 25 33 9 30 7</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_flash.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 21</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 58</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 2 25 33 9 30</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 2 25 33 9 30</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\stm32f10x_vector.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 19</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 66</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 41 25 33 9 30 2 3 44 7 48 18 62</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 41 25 33 9 30 2 3 44 7 48 18 62</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\..\FWLib\library\src\stm32f10x_wwdg.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 10</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 47</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 18 25 33 9 30 7</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 18 25 33 9 30 7</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\source\download.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 64</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 35</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 26 11 22 23 31 0 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 26 11 22 23 31 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\cortexm3_macro.s</name>
+      <outputs>
+        <tool>
+          <name>AARM</name>
+          <file> 42</file>
+        </tool>
+      </outputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\source\ymodem.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 40</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 16</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 26 11 22 23 31 0 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 26 11 22 23 31 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\source\stm32f10x_it.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 8</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 46</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 62 41 25 33 9 30 2 3 44 7 48 18</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 62 41 25 33 9 30 2 3 44 7 48 18</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\source\main.c</name>
+      <outputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 59</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 60</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICCARM</name>
+          <file> 26 11 22 23 31 0 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+        <tool>
+          <name>BICOMP</name>
+          <file> 26 11 22 23 31 37 32 6 14 34 56 41 25 33 9 30 2 3 44 7 48 18 5 13</file>
+        </tool>
+      </inputs>
+    </file>
+  </configuration>
+</project>
+
+

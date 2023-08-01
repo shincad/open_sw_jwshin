@@ -1,0 +1,22 @@
+피닉스 정보기술 강동성심병원 버전
+
+ORG SOURCE : M43STD2.LZH
+
+DEBUG FILES : AX_ESC.MAR, AX_SUB.MAR, AX_DP2.H
+
+DATE : 2001.03.16, 2001.03.19, 2001.03.20, 2001.04.06
+
+
+STORY:
+1. 20cpi ESC q 8 Module 추가 개발 버전
+2. BMT 당시 속도를 증가시키기 위해 Draft Mode를 강제지정하였으나
+   이것으로 인해 과도한 Head Moving이 발생되어 기존 Bug 삭제함..
+3. 20 Cpi ESC q 8 Mode 추가 Modify..(가로,세로 확대 지정 시 Condense Mode
+   를 해제 하였으며, Flag Check를 위해 PTMD5F --> 4Bit 사용함..
+4. Slash Zero를 Non Slash Zero로 고정
+
+5. 9Inch 용지 사용시 Image Mode(ESC n)를 사용하며, 나머지 11 inch는
+   ASCII Code를 사용하므로, 강제적으로 Data를 입력 받는 Routine에서
+   11Inch 로 고정하여 사용함. (2001.04.06)
+   Esc x Code도 함께 Check 하여 Image Flag 처리함..
+

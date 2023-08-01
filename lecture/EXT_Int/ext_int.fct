@@ -1,0 +1,2 @@
+main DSTACK_USAGE:0 DSTACK_LEVEL:0 FILE:"ext_int.c" LINE:46
+ext_int0_isr DSTACK_USAGE:1 DSTACK_LEVEL:1 FILE:"ext_int.c" LINE:30

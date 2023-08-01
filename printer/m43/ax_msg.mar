@@ -1,0 +1,930 @@
+	.PROGRAM	aplmsg
+	.HEADING	"M4324 LCD DISPLAY MESSAGE"
+	.LIST		NOCOND,NOEXP,NOCODE
+;********************************************************
+;							*
+;	M4324 LCD DISPLAY MESSAGE			*
+;							*
+;	FILE NAME	AX_MSG.MAR			*
+;	CREATED 	31/MAY/1991			*
+;							*
+;********************************************************
+;
+	.EXPORT 	MLPON, MLON,  MLONA, MLONB, MLONC, MLOND
+	.EXPORT 	MGPFS, MGMDM, MLMDM
+	.EXPORT 	MGPFC, MGPF1, MGPF2, MGPF3, MGPF4, MGPF5
+	.EXPORT 	MGPF6, MGPF7, MGPF7A,MGPF7B,MGPF7C,MGPF7D
+	.EXPORT 	MGPF7E,MGPF8, MGPF9, MGPFA
+	.EXPORT 	MLPF2, MLPF3, MLPF4, MLPF6, MLPF7, MLPF8
+	.EXPORT 	MLPFA
+	.EXPORT 	MGSPC, MGSP1, MGSP2, MGSP2A,MGSP3
+	.EXPORT 	MGSP7, MGSP7A,MGSP7B
+	.EXPORT 	MGSP7C,MGSP7D,MGSP7E,MGSP7F,MGSP8
+	.EXPORT 	MLSP2, MLSP2A,MLSP3 ;, MLSP4, MLSP5, MLSP6, MLSP6A
+	.EXPORT 	MLSP7, MLSP7A,MLSP7B,MLSP7C,MLSP7D
+	.EXPORT 	MLSP7E,MLSP7F,MLSP8
+	.EXPORT 	MGSRV, MGSR1, MGSR2, MGSR3, MGSR3A,MGSR3B
+	.EXPORT 	MGSR3C,MGSR3D,MGSR3E,MGSR3F,MGSR4, MGSR4A
+	.EXPORT 	MGSR4B,MGSR4C,MGSR5, MGSR5A,MGSR5B,MGSR5C
+	.EXPORT 	MGSR5D,MGSR5E,MGSR5F,MGSR6, MGSR6A,MGSR6B
+	.EXPORT 	MGSR6C,MGSR6D,MGSR6E,MGSR6F,MGSR7, MGSR8
+	.EXPORT 	MLERR, MGCVR, MLALM, MGCGC, MGPER
+	.EXPORT 	MGMKM, MLMKM, MGMYM, MLMYM
+	.EXPORT 	MGMZM, MLMZM
+	.EXPORT 	MSGPOS
+	.INCLUDE	"PNLIOS.H"
+	.INCLUDE	"AX_EEP.H"
+	.PAGE
+	.SECTION	APL2,CODE,ALIGN=16
+;
+;	POWER ON MESSAGE LIST
+;
+MLPON:	.DATA.B ZLPOS+0, 15					; POS, SIZE
+MSGPOS:
+        .SDATAZ "Phoenix IT"
+;-s     .DATA.B H'55,H'4E,H'49,H'4F,H'4E,H'20,H'53,H'59         ; UNION SYSTEMS
+;-s     .DATA.B H'53,H'54,H'45,H'4D,H'53,ZLCL1,0                ;
+	.DATA.B H'46,H'61,H'63,H'74,H'6f,H'72,H'79,H'20         ; Factory Mode
+	.DATA.B H'4D,H'6F,H'64,H'65,H'20,ZLCL1,0                ;
+	.DATA.B H'45,H'45,H'52,H'4F,H'4D,H'20,H'43,H'6C         ; EEROM Clear
+	.DATA.B H'65,H'61,H'72,H'20,H'20,ZLCL1,0                ;
+	.DATA.B H'53,H'65,H'72,H'76,H'69,H'63,H'65,H'20         ; Service Mode
+	.DATA.B H'4D,H'6F,H'64,H'65,H'20,ZLCL1,0                                    ;
+	.PAGE
+;
+;	ONLINE/OFFLINE MESSAGE LIST
+;
+MLON:	.DATA.B ZLPOS+0, 10					; POS, SIZE
+	.DATA.B H'4F,H'66,H'66,H'20,H'4C,H'69,H'6E,H'65,H'20,0  ; Off Line
+	.DATA.B H'4F,H'6E,H'20,H'4C,H'69,H'6E,H'65,H'20,H'20,0  ; On Line
+	.DATA.B H'43,H'6F,H'6F,H'6C,H'69,H'6E,H'67,H'20,H'20,0  ; Cooling
+	.DATA.B H'20,H'20,H'20,H'20,H'20,H'20,H'20,H'20,H'20,0  ;
+	.PAGE
+
+	.DATA.B   9						;
+MLONA:	.DATA.B ZLPOS+9,  5					; POS, SIZE
+	.DATA.B H'45,H'50,H'53,H'4E,0                           ; EPSN
+	.DATA.B H'54,H'73,H'74,H'41,0                           ; TstA
+	.DATA.B H'54,H'73,H'74,H'42,0                           ; TstB
+	.DATA.B H'54,H'73,H'74,H'43,0                           ; TstC
+	.DATA.B H'44,H'55,H'4D,H'50,0                           ; DUMP
+	.DATA.B H'44,H'55,H'4D,H'50,0                           ; DUMP
+	.DATA.B H'4B,H'53,H'43,H'20,0                           ; KSC
+	.DATA.B H'4B,H'53,H'53,H'4D,0                           ; KSSM
+	.DATA.B H'54,H'20,H'47,H'20,0                           ; T G
+	.DATA.B H'49,H'42,H'4D,H'20,0                           ; IBM
+;	.DATA.B H'48,H'50,H'20,H'20,0                           ; HP
+	.PAGE
+
+MLONB:	.DATA.B ZLPOS+13,  4					; POS, SIZE
+	.SDATAZ "   "                                           ; x1.0
+	.SDATAZ "*  "                                           ; x1.5
+	.SDATAZ "** "                                           ; x2.0
+	.SDATAZ "***"                                           ; x3.0
+								;
+	.DATA.B   5						; MAX
+MLPF3:	.DATA.B ZLPOS+19					; POS
+MLONC:	.DATA.B       11					; SIZE
+	.DATA.B H'46,H'6F,H'72,H'6D,H'73,H'20,H'20,H'20         ; Forms
+	.DATA.B H'20,H'20,0                                     ;
+	.DATA.B H'46,H'6F,H'72,H'6D,H'73,H'3A,H'46,H'69         ; Forms:Fix
+	.DATA.B H'78,H'20,0                                     ;
+	.DATA.B H'42,H'6F,H'74,H'74,H'6F,H'6D,H'20,H'20         ; Bottom
+	.DATA.B H'20,H'20,0                                     ;
+	.DATA.B H'42,H'6F,H'74,H'74,H'6F,H'6D,H'3A,H'46         ; Bottom:Fix
+	.DATA.B H'69,H'78,0                                     ;
+	.DATA.B H'43,H'75,H'74,H'20,H'53,H'68,H'65,H'65         ; Cut Sheet
+	.DATA.B H'74,H'20,0                                     ;
+	.DATA.B H'41,H'43,H'53,H'46,H'20,H'20,H'20,H'20         ; ACSF (SF-261)
+	.DATA.B H'20,H'20,0                                     ;
+	.DATA.B H'41,H'43,H'53,H'46,H'20,H'31,H'20,H'20         ; ACSF 1
+	.DATA.B H'20,H'20,0                                     ;
+	.DATA.B H'41,H'43,H'53,H'46,H'20,H'32,H'20,H'20         ; ACSF 2
+	.DATA.B H'20,H'20,0                                     ;
+	.DATA.B H'41,H'43,H'53,H'46,H'20,H'33,H'20,H'20         ; ACSF 3
+	.DATA.B H'20,H'20,0                                     ;
+	.PAGE
+;
+MLOND:	.DATA.B ZLPOS+28,  4					; POS, SIZE
+	.DATA.B H'4F,H'66,H'66,0                                ; Off
+	.DATA.B H'4F,H'6E,H'20,0                                ; On
+;
+;	PRINT FORMAT SELECT MESSAGE
+;
+MGPFS:	.DATA.B H'50,H'72,H'74,H'20,H'46,H'6F,H'72,H'6D         ; Prt Form Sel-
+	.DATA.B H'20,H'53,H'65,H'6C,H'65,H'63,H'74,H'20         ; ect
+	.DATA.B ZLCL1,0 					;
+	.PAGE
+;
+;	MODE MENU MESSAGE
+;
+MGMDM:	.DATA.B H'4D,H'6F,H'64,H'65,H'20,H'4D,H'65,H'6E         ; Mode Menu
+	.DATA.B H'75,ZLCL1,0                                    ;
+								;
+	.DATA.B   5						; MAX
+MLMDM:	.DATA.B ZLPOS+19,  11					; POS, SIZE
+	.DATA.B H'50,H'52,H'54,H'20,H'20,H'20,H'20,H'20,H'20,H'20,0 ;PRT
+	.DATA.B H'54,H'65,H'73,H'74,H'20,H'41,H'20,H'20,H'20,H'20,0 ;Test A
+	.DATA.B H'54,H'65,H'73,H'74,H'20,H'42,H'20,H'20,H'20,H'20,0 ;Test B
+	.DATA.B H'54,H'65,H'73,H'74,H'20,H'43,H'20,H'20,H'20,H'20,0 ;Test C
+	.DATA.B H'44,H'75,H'6D,H'70,H'28,H'57,H'29,H'20,H'20,H'20,0 ;Dump(W)
+	.DATA.B H'44,H'75,H'6D,H'70,H'28,H'4E,H'29,H'20,H'20,H'20,0 ;Dump(N)
+	.PAGE
+
+;***************************************************************
+;	IN 911223	LPI SET
+;
+MGMKM:	.DATA.B H'4C,H'2E,H'50,H'2E,H'49,H'20,H'53,H'45         ; L.P.I SET
+	.DATA.B H'54,ZLCL1,0                                    ;
+								;
+	.DATA.B   7						; MAX
+MLMKM:	.DATA.B ZLPOS+19,  9					; POS, SIZE
+
+	.DATA.B H'20,H'36,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 6   LPI
+	.DATA.B H'20,H'37,H'2E,H'35,H'4C,H'50,H'49,H'20,0       ; 7.5 LPI
+	.DATA.B H'20,H'38,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 8   LPI
+	.DATA.B H'20,H'32,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 2   LPI
+	.DATA.B H'20,H'33,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 3   LPI
+	.DATA.B H'20,H'34,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 4   LPI
+	.DATA.B H'20,H'35,H'20,H'20,H'4C,H'50,H'49,H'20,0       ; 5   LPI
+	.PAGE
+;****************************************************************
+;	IN 911223	HAN/ENG & UN/BI-DIR
+;
+MGMYM:	.DATA.B H'4B,H'3A,H'48,H'47,H'2F,H'44,H'69,H'72         ; HAN/ENG & UN/BI-DIR
+	.DATA.B H'20,H'53,H'45,H'54,ZLCL1,0                     ;
+								;
+	.DATA.B   6						; MAX
+MLMYM:	.DATA.B ZLPOS+19,  10					; POS, SIZE
+	.DATA.B H'20,H'4D,H'4A,H'20,H'48,H'47,H'2F,H'42,H'44,0  ; MJ HG/BD
+	.DATA.B H'20,H'4D,H'4A,H'20,H'48,H'47,H'2F,H'55,H'44,0  ; MJ HG/UD
+	.DATA.B H'20,H'47,H'44,H'20,H'48,H'47,H'2F,H'42,H'44,0  ; GD HG/BD
+	.DATA.B H'20,H'47,H'44,H'20,H'48,H'47,H'2F,H'55,H'44,0  ; GD HG/UD
+	.DATA.B H'20,H'45,H'4E,H'47,H'20,H'2F,H'20,H'42,H'44,0  ; ENG / BD
+	.DATA.B H'20,H'45,H'4E,H'47,H'20,H'2F,H'20,H'55,H'44,0  ; ENG / UD
+	.PAGE
+;****************************************************************
+;	IN 911224	COLOR DEFINE
+;
+MGMZM:	.DATA.B H'43,H'4F,H'4C,H'4F,H'52,H'20,H'53,H'45         ; COLOR SET
+	.DATA.B H'54,ZLCL1,0                                    ;
+								;
+	.DATA.B   7						; MAX
+MLMZM:	.DATA.B ZLPOS+19,  9					; POS, SIZE
+
+	.DATA.B H'20,H'42,H'6C,H'61,H'63,H'6B,H'20,H'20,0       ; Black
+	.DATA.B H'20,H'52,H'65,H'64,H'20,H'20,H'20,H'20,0       ; Red
+	.DATA.B H'20,H'42,H'6C,H'75,H'65,H'20,H'20,H'20,0       ; Blue
+	.DATA.B H'20,H'50,H'75,H'72,H'70,H'6C,H'65,H'20,0       ; Purple
+	.DATA.B H'20,H'59,H'65,H'6C,H'6C,H'6F,H'77,H'20,0       ; Yellow
+	.DATA.B H'20,H'4F,H'72,H'61,H'6E,H'67,H'65,H'20,0       ; Orange
+	.DATA.B H'20,H'47,H'72,H'65,H'65,H'6E,H'20,H'20,0       ; Green
+	.PAGE
+
+;****************************************************************
+;
+;	PRINT FORMAT CHANGE MESSAGE
+;
+MGPFC:	.DATA.B H'50,H'72,H'74,H'20,H'46,H'6F,H'72,H'6D         ; Prt Form Ch-
+	.DATA.B H'20,H'43,H'68,H'61,H'6E,H'67,H'65,H'20         ; ange
+	.DATA.B ZLCL1,0
+								;
+	.DATA.B E2PFN						; OFFSET
+MGPF1:	.DATA.B H'30,H'3A,H'50,H'72,H'74,H'20,H'46,H'6F         ; 0:Prt Form
+	.DATA.B H'72,H'6D,H'20,H'4E,H'6F,H'2E,ZLCL1,0           ;   No.
+								;
+	.DATA.B E2PFTB						; OFFSET
+MGPF2:	.DATA.B H'30,H'3A,H'50,H'72,H'74,H'20,H'46,H'6F         ; 0:Prt Form
+	.DATA.B H'72,H'6D,H'20,H'43,H'6C,H'72,ZLCL1,0           ;   Clr
+	.DATA.B   1						; MAX
+MLPF2:	.DATA.B ZLPOS+26,  4					; POS, SIZE
+	.SDATAZ "NO "                                           ;
+	.SDATAZ "YES"                                           ;
+								;
+	.DATA.B E2PFTB+E2PAMD					; OFFSET
+MGPF3:	.DATA.B H'42,H'3A,H'50,H'61,H'70,H'65,H'72,H'20         ; B:Paper
+	.DATA.B H'20,ZLCL1,0                                    ;
+								;
+	.DATA.B E2PFTB+E2CHSZ					; OFFSET
+MGPF4:	.DATA.B H'42,H'3A,H'43,H'68,H'2D,H'53,H'69,H'7A         ; B:Ch-Size
+	.DATA.B H'65,ZLCL1,0                                    ;
+	.DATA.B   7						; MAX
+MLPF4:	.DATA.B ZLPOS+24,  6					; POS, SIZE
+	.DATA.B H'30,H'31,H'54,H'6D,H'73,0                      ; 01Tms
+	.DATA.B H'30,H'34,H'54,H'6D,H'73,0                      ; 04Tms
+	.DATA.B H'30,H'39,H'54,H'6D,H'73,0                      ; 09Tms
+	.DATA.B H'31,H'36,H'54,H'6D,H'73,0                      ; 16Tms
+	.DATA.B H'32,H'35,H'54,H'6D,H'73,0                      ; 25Tms
+	.DATA.B H'33,H'36,H'54,H'6D,H'73,0                      ; 36Tms
+	.DATA.B H'34,H'39,H'54,H'6D,H'73,0                      ; 49Tms
+	.DATA.B H'36,H'34,H'54,H'6D,H'73,0                      ; 64Tms
+								;
+	.DATA.B E2PFTB+E2KJCP					; OFFSET
+MGPF5:  .DATA.B H'42,H'3A,H'43,H'68,H'2D,H'50,H'69,H'74         ; B:Ch-Pitch
+;-s     .DATA.B H'63,H'68,ZLCL1,ZLPOS+26,H'43,H'6C,H'6D,0       ; xxClm
+        .DATA.B H'63,H'68,ZLPOS+20,H'4D,H'6F,H'64,H'65,H'20     ; Mode x [+sim]
+        .DATA.B ZLCL1,0
+
+								;
+	.DATA.B E2PFTB+E2BTM					; OFFSET
+MGPF6:	.DATA.B H'43,H'3A,H'42,H'2D,H'4D,H'61,H'72,H'67         ; C:B-Marg
+	.DATA.B ZLCL1,0 					;
+MLPF6:	.DATA.B ZLPOS+16,  14					; POS, SIZE
+	.SDATAZ "0.00mm      0"                                 ;
+	.SDATAZ "4.23mm      1"                                 ;
+	.SDATAZ "8.47mm      2"                                 ;
+	.SDATAZ "12.7mm      3"                                 ;
+	.SDATAZ "16.9mm      4"                                 ;
+	.SDATAZ "21.2mm      5"                                 ;
+	.SDATAZ "25.4mm      6"                                 ;
+	.SDATAZ "29.6mm      7"                                 ;
+	.SDATAZ "33.9mm      8"                                 ;
+	.SDATAZ "38.1mm      9"                                 ;
+	.SDATAZ "42.3mm     10"                                 ;
+	.SDATAZ "46.5mm     11"                                 ;
+	.SDATAZ "50.8mm     12"                                 ;
+	.SDATAZ "55.0mm     13"                                 ;
+	.SDATAZ "59.3mm     14"                                 ;
+	.SDATAZ "63.5mm     15"                                 ;
+	.SDATAZ "67.7mm     16"                                 ;
+	.SDATAZ "72.0mm     17"                                 ;
+	.SDATAZ "76.2mm     18"                                 ;
+	.SDATAZ "80.4mm     19"                                 ;
+	.SDATAZ "84.7mm     20"                                 ;
+	.SDATAZ "88.9mm     21"                                 ;
+	.SDATAZ "93.1mm     22"                                 ;
+	.SDATAZ "97.3mm     23"                                 ;
+	.SDATAZ "102.mm     24"                                 ;
+	.SDATAZ "106.mm     25"                                 ;
+	.SDATAZ "110.mm     26"                                 ;
+	.SDATAZ "114.mm     27"                                 ;
+	.SDATAZ "119.mm     28"                                 ;
+	.SDATAZ "123.mm     29"                                 ;
+	.SDATAZ "127.mm     30"                                 ;
+	.SDATAZ "131.mm     31"                                 ;
+	.SDATAZ "135.mm     32"                                 ;
+	.SDATAZ "140.mm     33"                                 ;
+	.SDATAZ "144.mm     34"                                 ;
+	.SDATAZ "148.mm     35"                                 ;
+	.SDATAZ "152.mm     36"                                 ;
+	.SDATAZ "157.mm     37"                                 ;
+	.SDATAZ "161.mm     38"                                 ;
+	.SDATAZ "165.mm     39"                                 ;
+	.SDATAZ "169.mm     40"                                 ;
+	.SDATAZ "174.mm     41"                                 ;
+	.SDATAZ "178.mm     42"                                 ;
+	.SDATAZ "182.mm     43"                                 ;
+	.SDATAZ "186.mm     44"                                 ;
+	.SDATAZ "191.mm     45"                                 ;
+	.SDATAZ "195.mm     46"                                 ;
+	.SDATAZ "199.mm     47"                                 ;
+	.SDATAZ "203.mm     48"                                 ;
+	.SDATAZ "207.mm     49"                                 ;
+	.SDATAZ "212.mm     50"                                 ;
+	.SDATAZ "216.mm     51"                                 ;
+	.SDATAZ "220.mm     52"                                 ;
+	.SDATAZ "224.mm     53"                                 ;
+	.SDATAZ "229.mm     54"                                 ;
+	.SDATAZ "233.mm     55"                                 ;
+	.SDATAZ "237.mm     56"                                 ;
+	.SDATAZ "241.mm     57"                                 ;
+	.SDATAZ "246.mm     58"                                 ;
+	.SDATAZ "250.mm     59"                                 ;
+	.SDATAZ "254.mm     60"                                 ;
+	.SDATAZ "258.mm     61"                                 ;
+	.SDATAZ "262.mm     62"                                 ;
+	.SDATAZ "267.mm     63"                                 ;
+	.SDATAZ "271.mm     64"                                 ;
+	.SDATAZ "275.mm     65"                                 ;
+	.SDATAZ "279.mm     66"                                 ;
+	.SDATAZ "284.mm     67"                                 ;
+	.SDATAZ "288.mm     68"                                 ;
+	.SDATAZ "292.mm     69"                                 ;
+	.SDATAZ "296.mm     70"                                 ;
+	.SDATAZ "301.mm     71"                                 ;
+	.SDATAZ "305.mm     72"                                 ;
+	.SDATAZ "309.mm     73"                                 ;
+	.SDATAZ "313.mm     74"                                 ;
+	.SDATAZ "318.mm     75"                                 ;
+	.SDATAZ "322.mm     76"                                 ;
+	.SDATAZ "326.mm     77"                                 ;
+	.SDATAZ "330.mm     78"                                 ;
+	.SDATAZ "334.mm     79"                                 ;
+	.SDATAZ "339.mm     80"                                 ;
+	.SDATAZ "343.mm     81"                                 ;
+	.SDATAZ "347.mm     82"                                 ;
+	.SDATAZ "351.mm     83"                                 ;
+	.SDATAZ "356.mm     84"                                 ;
+	.SDATAZ "360.mm     85"                                 ;
+	.SDATAZ "364.mm     86"                                 ;
+	.SDATAZ "368.mm     87"                                 ;
+	.SDATAZ "373.mm     88"                                 ;
+	.SDATAZ "377.mm     89"                                 ;
+	.SDATAZ "381.mm     90"                                 ;
+	.SDATAZ "385.mm     91"                                 ;
+	.SDATAZ "389.mm     92"                                 ;
+	.SDATAZ "394.mm     93"                                 ;
+	.SDATAZ "398.mm     94"                                 ;
+	.SDATAZ "402.mm     95"                                 ;
+	.SDATAZ "406.mm     96"                                 ;
+	.SDATAZ "411.mm     97"                                 ;
+	.SDATAZ "415.mm     98"                                 ;
+	.SDATAZ "419.mm     99"                                 ;
+	.SDATAZ "423.mm    100"                                 ;
+	.SDATAZ "428.mm    101"                                 ;
+	.SDATAZ "432.mm    102"                                 ;
+	.SDATAZ "436.mm    103"                                 ;
+	.SDATAZ "440.mm    104"                                 ;
+	.SDATAZ "445.mm    105"                                 ;
+	.SDATAZ "449.mm    106"                                 ;
+	.SDATAZ "453.mm    107"                                 ;
+	.SDATAZ "457.mm    108"                                 ;
+	.SDATAZ "461.mm    109"                                 ;
+	.SDATAZ "466.mm    110"                                 ;
+	.SDATAZ "470.mm    111"                                 ;
+	.SDATAZ "474.mm    112"                                 ;
+	.SDATAZ "478.mm    113"                                 ;
+	.SDATAZ "483.mm    114"                                 ;
+	.SDATAZ "487.mm    115"                                 ;
+	.SDATAZ "491.mm    116"                                 ;
+	.SDATAZ "495.mm    117"                                 ;
+	.SDATAZ "500.mm    118"                                 ;
+	.SDATAZ "504.mm    119"                                 ;
+	.SDATAZ "508.mm    120"                                 ;
+	.SDATAZ "512.mm    121"                                 ;
+	.SDATAZ "516.mm    122"                                 ;
+	.SDATAZ "521.mm    123"                                 ;
+	.SDATAZ "525.mm    124"                                 ;
+	.SDATAZ "529.mm    125"                                 ;
+	.SDATAZ "533.mm    126"                                 ;
+	.SDATAZ "538.mm    127"                                 ;
+	.SDATAZ "542.mm    128"                                 ;
+	.SDATAZ "546.mm    129"                                 ;
+	.SDATAZ "550.mm    130"                                 ;
+	.SDATAZ "555.mm    131"                                 ;
+	.SDATAZ "559.mm    132"                                 ;
+								;
+	.DATA.B E2PFTB+E2TOPF+1 				; OFFSET
+MGPF7:	.DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'46,H'6F,H'72,H'6D,H'73,ZLCL1,0           ;   =Forms
+								;
+	.DATA.B E2PFTB+E2TOPS+1 				; OFFSET
+MGPF7A: .DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'43,H'75,H'74,ZLCL1,0                     ;   =Cut
+								;
+	.DATA.B E2PFTB+E2TOP0+1 				; OFFSET
+MGPF7B: .DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'41,H'43,H'53,H'46,H'30,ZLCL1,0           ;   =ACSF0
+								;
+	.DATA.B E2PFTB+E2TOP1+1 				; OFFSET
+MGPF7C: .DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'41,H'43,H'53,H'46,H'31,ZLCL1,0           ;   =ACSF1
+								;
+	.DATA.B E2PFTB+E2TOP2+1 				; OFFSET
+MGPF7D: .DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'41,H'43,H'53,H'46,H'32,ZLCL1,0           ;   =ACSF2
+								;
+	.DATA.B E2PFTB+E2TOP3+1 				; OFFSET
+MGPF7E: .DATA.B H'43,H'3A,H'54,H'2D,H'4D,H'61,H'72,H'67         ; C:T-Marg
+	.DATA.B H'3D,H'41,H'43,H'53,H'46,H'33,ZLCL1,0           ;   =ACSF3
+MLPF7:	.DATA.B ZLPOS+16, 14					; POS, SIZE
+	.SDATAZ "2.12mm     15"                                 ;
+	.SDATAZ "2.26mm     16"                                 ;
+	.SDATAZ "2.40mm     17"                                 ;
+	.SDATAZ "2.54mm     18"                                 ;
+	.SDATAZ "2.68mm     19"                                 ;
+	.SDATAZ "2.82mm     20"                                 ;
+	.SDATAZ "2.96mm     21"                                 ;
+	.SDATAZ "3.10mm     22"                                 ;
+	.SDATAZ "3.25mm     23"                                 ;
+	.SDATAZ "3.39mm     24"                                 ;
+	.SDATAZ "3.53mm     25"                                 ;
+	.SDATAZ "3.67mm     26"                                 ;
+	.SDATAZ "3.81mm     27"                                 ;
+	.SDATAZ "3.95mm     28"                                 ;
+	.SDATAZ "4.09mm     29"                                 ;
+	.SDATAZ "4.23mm     30"                                 ;
+	.SDATAZ "4.37mm     31"                                 ;
+	.SDATAZ "4.52mm     32"                                 ;
+	.SDATAZ "4.66mm     33"                                 ;
+	.SDATAZ "4.80mm     34"                                 ;
+	.SDATAZ "4.94mm     35"                                 ;
+	.SDATAZ "5.08mm     36"                                 ;
+	.SDATAZ "5.22mm     37"                                 ;
+	.SDATAZ "5.36mm     38"                                 ;
+	.SDATAZ "5.50mm     39"                                 ;
+	.SDATAZ "5.64mm     40"                                 ;
+	.SDATAZ "5.79mm     41"                                 ;
+	.SDATAZ "5.93mm     42"                                 ;
+	.SDATAZ "6.07mm     43"                                 ;
+	.SDATAZ "6.21mm     44"                                 ;
+	.SDATAZ "6.35mm     45"                                 ;
+	.SDATAZ "6.49mm     46"                                 ;
+	.SDATAZ "6.63mm     47"                                 ;
+	.SDATAZ "6.77mm     48"                                 ;
+	.SDATAZ "6.91mm     49"                                 ;
+	.SDATAZ "7.06mm     50"                                 ;
+	.SDATAZ "7.20mm     51"                                 ;
+	.SDATAZ "7.34mm     52"                                 ;
+	.SDATAZ "7.48mm     53"                                 ;
+	.SDATAZ "7.62mm     54"                                 ;
+	.SDATAZ "7.76mm     55"                                 ;
+	.SDATAZ "7.90mm     56"                                 ;
+	.SDATAZ "8.04mm     57"                                 ;
+	.SDATAZ "8.18mm     58"                                 ;
+	.SDATAZ "8.33mm     59"                                 ;
+	.SDATAZ "8.47mm     60"                                 ;
+	.SDATAZ "8.61mm     61"                                 ;
+	.SDATAZ "8.75mm     62"                                 ;
+	.SDATAZ "8.89mm     63"                                 ;
+	.SDATAZ "9.03mm     64"                                 ;
+	.SDATAZ "9.17mm     65"                                 ;
+	.SDATAZ "9.31mm     66"                                 ;
+	.SDATAZ "9.45mm     67"                                 ;
+	.SDATAZ "9.60mm     68"                                 ;
+	.SDATAZ "9.74mm     69"                                 ;
+	.SDATAZ "9.88mm     70"                                 ;
+	.SDATAZ "10.0mm     71"                                 ;
+	.SDATAZ "10.2mm     72"                                 ;
+	.SDATAZ "10.3mm     73"                                 ;
+	.SDATAZ "10.4mm     74"                                 ;
+	.SDATAZ "10.6mm     75"                                 ;
+	.SDATAZ "10.7mm     76"                                 ;
+	.SDATAZ "10.9mm     77"                                 ;
+	.SDATAZ "11.0mm     78"                                 ;
+	.SDATAZ "11.1mm     79"                                 ;
+	.SDATAZ "11.3mm     80"                                 ;
+	.SDATAZ "11.4mm     81"                                 ;
+	.SDATAZ "11.6mm     82"                                 ;
+	.SDATAZ "11.7mm     83"                                 ;
+	.SDATAZ "11.9mm     84"                                 ;
+	.SDATAZ "12.0mm     85"                                 ;
+	.SDATAZ "12.1mm     86"                                 ;
+	.SDATAZ "12.3mm     87"                                 ;
+	.SDATAZ "12.4mm     88"                                 ;
+	.SDATAZ "12.6mm     89"                                 ;
+	.SDATAZ "12.7mm     90"                                 ;
+	.SDATAZ "12.8mm     91"                                 ;
+	.SDATAZ "13.0mm     92"                                 ;
+	.SDATAZ "13.1mm     93"                                 ;
+	.SDATAZ "13.3mm     94"                                 ;
+	.SDATAZ "13.4mm     95"                                 ;
+	.SDATAZ "13.5mm     96"                                 ;
+	.SDATAZ "13.7mm     97"                                 ;
+	.SDATAZ "13.8mm     98"                                 ;
+	.SDATAZ "14.0mm     99"                                 ;
+	.SDATAZ "14.1mm    100"                                 ;
+	.SDATAZ "14.3mm    101"                                 ;
+	.SDATAZ "14.4mm    102"                                 ;
+	.SDATAZ "14.5mm    103"                                 ;
+	.SDATAZ "14.7mm    104"                                 ;
+	.SDATAZ "14.8mm    105"                                 ;
+	.SDATAZ "15.0mm    106"                                 ;
+	.SDATAZ "15.1mm    107"                                 ;
+	.SDATAZ "15.2mm    108"                                 ;
+	.SDATAZ "15.4mm    109"                                 ;
+	.SDATAZ "15.5mm    110"                                 ;
+	.SDATAZ "15.7mm    111"                                 ;
+	.SDATAZ "15.8mm    112"                                 ;
+	.SDATAZ "15.9mm    113"                                 ;
+	.SDATAZ "16.1mm    114"                                 ;
+	.SDATAZ "16.2mm    115"                                 ;
+	.SDATAZ "16.4mm    116"                                 ;
+	.SDATAZ "16.5mm    117"                                 ;
+	.SDATAZ "16.7mm    118"                                 ;
+	.SDATAZ "16.8mm    119"                                 ;
+	.SDATAZ "16.9mm    120"                                 ;
+	.SDATAZ "17.1mm    121"                                 ;
+	.SDATAZ "17.2mm    122"                                 ;
+	.SDATAZ "17.4mm    123"                                 ;
+	.SDATAZ "17.5mm    124"                                 ;
+	.SDATAZ "17.6mm    125"                                 ;
+	.SDATAZ "17.8mm    126"                                 ;
+	.SDATAZ "17.9mm    127"                                 ;
+	.SDATAZ "18.1mm    128"                                 ;
+	.SDATAZ "18.2mm    129"                                 ;
+	.SDATAZ "18.3mm    130"                                 ;
+	.SDATAZ "18.5mm    131"                                 ;
+	.SDATAZ "18.6mm    132"                                 ;
+	.SDATAZ "18.8mm    133"                                 ;
+	.SDATAZ "18.9mm    134"                                 ;
+	.SDATAZ "19.1mm    135"                                 ;
+	.SDATAZ "19.2mm    136"                                 ;
+	.SDATAZ "19.3mm    137"                                 ;
+	.SDATAZ "19.5mm    138"                                 ;
+	.SDATAZ "19.6mm    139"                                 ;
+	.SDATAZ "19.8mm    140"                                 ;
+	.SDATAZ "19.9mm    141"                                 ;
+	.SDATAZ "20.0mm    142"                                 ;
+	.SDATAZ "20.2mm    143"                                 ;
+	.SDATAZ "20.3mm    144"                                 ;
+	.SDATAZ "20.5mm    145"                                 ;
+	.SDATAZ "20.6mm    146"                                 ;
+	.SDATAZ "20.7mm    147"                                 ;
+	.SDATAZ "20.9mm    148"                                 ;
+	.SDATAZ "21.0mm    149"                                 ;
+	.SDATAZ "21.2mm    150"                                 ;
+	.SDATAZ "21.3mm    151"                                 ;
+	.SDATAZ "21.4mm    152"                                 ;
+	.SDATAZ "21.6mm    153"                                 ;
+	.SDATAZ "21.7mm    154"                                 ;
+	.SDATAZ "21.9mm    155"                                 ;
+	.SDATAZ "22.0mm    156"                                 ;
+	.SDATAZ "22.2mm    157"                                 ;
+	.SDATAZ "22.3mm    158"                                 ;
+	.SDATAZ "22.4mm    159"                                 ;
+	.SDATAZ "22.6mm    160"                                 ;
+	.SDATAZ "22.7mm    161"                                 ;
+	.SDATAZ "22.9mm    162"                                 ;
+	.SDATAZ "23.0mm    163"                                 ;
+	.SDATAZ "23.1mm    164"                                 ;
+	.SDATAZ "23.3mm    165"                                 ;
+	.SDATAZ "23.4mm    166"                                 ;
+	.SDATAZ "23.6mm    167"                                 ;
+	.SDATAZ "23.7mm    168"                                 ;
+	.SDATAZ "23.8mm    169"                                 ;
+	.SDATAZ "24.0mm    170"                                 ;
+	.SDATAZ "24.1mm    171"                                 ;
+	.SDATAZ "24.3mm    172"                                 ;
+	.SDATAZ "24.4mm    173"                                 ;
+	.SDATAZ "24.6mm    174"                                 ;
+	.SDATAZ "24.7mm    175"                                 ;
+	.SDATAZ "24.8mm    176"                                 ;
+	.SDATAZ "25.0mm    177"                                 ;
+	.SDATAZ "25.1mm    178"                                 ;
+	.SDATAZ "25.3mm    179"                                 ;
+	.SDATAZ "25.4mm    180"                                 ;
+	.SDATAZ "25.5mm    181"                                 ;
+	.SDATAZ "25.7mm    182"                                 ;
+	.SDATAZ "25.8mm    183"                                 ;
+	.SDATAZ "26.0mm    184"                                 ;
+	.SDATAZ "26.1mm    185"                                 ;
+	.SDATAZ "26.2mm    186"                                 ;
+	.SDATAZ "26.4mm    187"                                 ;
+	.SDATAZ "26.5mm    188"                                 ;
+	.SDATAZ "26.7mm    189"                                 ;
+	.SDATAZ "26.8mm    190"                                 ;
+	.SDATAZ "27.0mm    191"                                 ;
+	.SDATAZ "27.1mm    192"                                 ;
+	.SDATAZ "27.2mm    193"                                 ;
+	.SDATAZ "27.4mm    194"                                 ;
+	.SDATAZ "27.5mm    195"                                 ;
+								;
+	.DATA.B E2PFTB+E2PF2					; OFFSET
+MGPF8:	.DATA.B H'43,H'3A,H'54,H'65,H'61,H'72,H'2D,H'4F         ; C:Tear-Off
+	.DATA.B H'66,H'66,ZLCL1,0                               ;
+	.DATA.B    QTEAR,  1					; BIT, MAX
+MLPF8:	.DATA.B ZLPOS+27,  3					; POS, SIZE
+	.DATA.B H'58,H'20,0                                     ; X
+	.DATA.B H'4F,H'20,0                                     ; O
+								;
+	.DATA.B E2PFTB+E2PGL					;
+MGPF9:	.DATA.B H'44,H'3A,H'50,H'61,H'67,H'65,H'2D,H'53         ; D:Page-Size
+	.DATA.B H'69,H'7A,H'65,H'20,H'20,ZLCL1,0                ;
+								;
+	.DATA.B E2PFTB+E2WDF					;
+MGPFA:	.DATA.B H'44,H'3A,H'4C,H'50,H'49,H'20,H'53,H'45         ; D:LPI SET
+	.DATA.B H'54,H'20,H'20,ZLCL1,0                          ;
+MLPFA:	.DATA.B ZLPOS+16, 14					; POS, SIZE
+	.SDATAZ "00.0mm      0"                                 ;
+	.SDATAZ "25.4mm      1"                                 ;
+	.SDATAZ "50.8mm      2"                                 ;
+	.SDATAZ "76.2mm      3"                                 ;
+	.SDATAZ "102.mm      4"                                 ;
+	.SDATAZ "127.mm      5"                                 ;
+	.SDATAZ "152.mm      6"                                 ;
+	.SDATAZ "178.mm      7"                                 ;
+	.SDATAZ "203.mm      8"                                 ;
+	.SDATAZ "229.mm      9"                                 ;
+	.SDATAZ "254.mm     10"                                 ;
+	.SDATAZ "279.mm     11"                                 ;
+	.SDATAZ "305.mm     12"                                 ;
+	.SDATAZ "330.mm     13"                                 ;
+	.SDATAZ "356.mm     14"                                 ;
+	.SDATAZ "381.mm     15"                                 ;
+	.PAGE
+;
+;	SPECIFICATION CHANGE MESSAGE
+;
+MGSPC:	.DATA.B H'53,H'70,H'65,H'63,H'20,H'43,H'68,H'61         ; Spec Change
+	.DATA.B H'6E,H'67,H'65,H'20,H'4D,H'6F,H'64,H'65         ; Mode
+	.DATA.B ZLCL1,0 					;
+								;
+	.DATA.B E2CON						; OFFSET
+MGSP1:	.DATA.B H'41,H'3A,H'43,H'6F,H'6E,H'74,H'72,H'61         ; A:Contrast
+	.DATA.B H'73,H'74,ZLCL1,0                               ;
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP2:	.DATA.B H'45,H'3A,H'43,H'68,H'20,H'43,H'6F,H'64         ; E:Ch Code
+	.DATA.B H'65,ZLCL1,0                                    ;
+	.DATA.B   0,QGRSET,1					; JMP, BIT, MAX
+MLSP2:	.DATA.B ZLPOS+22,  8					; POS, SIZE
+	.DATA.B H'54,H'65,H'78,H'74,H'20,H'20,H'20,0            ; Text
+	.DATA.B H'47,H'72,H'61,H'70,H'68,H'69,H'63,0            ; Graphic
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP2A: .DATA.B H'45,H'3A,H'43,H'52,H'20,H'4F,H'6E,H'20         ; E:CR On
+	.DATA.B ZLCL1,0 					;
+	.DATA.B   1,QAUTLF,1					; JMP, BIT, MAX
+MLSP2A: .DATA.B ZLPOS+24,  6					; POS, SIZE
+	.SDATAZ "CR   "                                         ;
+	.SDATAZ "CR+LF"                                         ;
+;
+	.DATA.B E2SIF1						; OFFSET
+MGSP3:	.DATA.B H'45,H'6D,H'75,H'6C,H'20,H'4D,H'6F,H'64         ; Emul Mode
+	.DATA.B H'65,H'20,H'20,ZLCL1,0                          ;
+	.DATA.B   4  ;5 					; MAX
+MLSP3:	.DATA.B ZLPOS+21,  9					; POS, SIZE
+	.DATA.B H'45,H'50,H'53,H'4E,H'20,H'20,H'20,H'20,0       ; EPSN
+	.DATA.B H'4B,H'53,H'43,H'20,H'20,H'20,H'20,H'20,0       ; KSC
+	.DATA.B H'4B,H'53,H'53,H'4D,H'20,H'20,H'20,H'20,0       ; KSSM
+	.DATA.B H'54,H'47,H'20,H'20,H'20,H'20,H'20,H'20,0       ; TG
+	.DATA.B H'49,H'42,H'4D,H'20,H'20,H'20,H'20,H'20,0       ; IBM
+;	.DATA.B H'48,H'50,H'20,H'20,H'20,H'20,H'20,H'20,0       ; HP
+	.PAGE
+;
+	.DATA.B E2CPF2						; OFFSET
+MGSP7:	.DATA.B H'47,H'3A,H'50,H'61,H'70,H'65,H'72,H'20         ; G:Paper Thick
+	.DATA.B H'54,H'68,H'69,H'63,H'6B,ZLCL1,0                ;
+	.DATA.B   0,QHSFIX,1					; JMP, BIT, MAX
+MLSP7:	.DATA.B ZLPOS+24,  6					; POS, SIZE
+	.DATA.B H'41,H'75,H'74,H'6F,H'20,0                      ; Auto
+	.DATA.B H'46,H'69,H'78,H'20,H'20,0                      ; Fix
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP7A: .DATA.B H'47,H'3A,H'52,H'69,H'62,H'62,H'6F,H'6E         ; G:Ribbon Type
+	.DATA.B H'20,H'54,H'79,H'70,H'65,ZLCL1,0                ;
+	.DATA.B   1,QRBRBM,1					; JMP, BIT, MAX
+MLSP7A: .DATA.B ZLPOS+24,  6					; POS, SIZE
+	.DATA.B H'43,H'6F,H'6C,H'6F,H'72,0                      ; Color
+	.DATA.B H'42,H'6C,H'61,H'63,H'6B,0                      ; Black
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP7B: .DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'53,H'65         ; G:Paper sensor
+	.DATA.B H'6E,H'73,H'6F,H'72,ZLCL1,0                     ;
+	.DATA.B   2,QHSMMD,1					; JMP, BIT, MAX
+MLSP7B: .DATA.B ZLPOS+24,  6					; POS, SIZE
+	.DATA.B H'41,H'75,H'74,H'6F,H'20,0                      ; Auto
+	.DATA.B H'48,H'61,H'6E,H'64,H'20,0                      ; Hand
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP7C: .DATA.B H'47,H'3A,H'41,H'43,H'53,H'46,H'20,H'53         ; G:ACSF Sensor
+	.DATA.B H'65,H'6E,H'73,H'6F,H'72,ZLCL1,0                ;
+	.DATA.B   3,QHSAIN,1					; JMP, BIT, MAX
+MLSP7C: .DATA.B ZLPOS+20, 10					; POS, SIZE
+	.DATA.B H'50,H'5F,H'6C,H'6F,H'61,H'65,H'20,H'43,H'4B,0  ; P_load Ck
+	.DATA.B H'4D,H'5F,H'63,H'68,H'61,H'6E,H'67,H'43,H'4B,0  ; M_changCK
+								;
+	.DATA.B E2CPF2						; OFFSET
+MGSP7D: .DATA.B H'47,H'3A,H'43,H'6F,H'70,H'79,H'20,H'4D         ; G:Copy More
+	.DATA.B H'6F,H'72,H'65,ZLCL1,0                          ;
+	.DATA.B   4,QCPYEM,1					; JMP, BIT, MAX
+MLSP7D: .DATA.B ZLPOS+27,  4					; POS, SIZE
+	.DATA.B H'4F,H'6E,H'20,0                                ; On
+	.DATA.B H'4F,H'66,H'66,0                                ; Off
+								;
+	.DATA.B E2CPF1						; OFFSET
+MGSP7E: .DATA.B H'47,H'3A,H'43,H'75,H'74,H'20,H'53,H'68         ; G:Cut Sheet
+	.DATA.B H'65,H'65,H'74,H'20,H'54,H'79,H'70,H'65         ;   Type
+	.DATA.B ZLCL1,0 					;
+	.DATA.B   5,QNOPHO,1					; JMP, BIT, MAX
+MLSP7E: .DATA.B ZLPOS+24,  7					; POS, SIZE
+	.DATA.B H'4E,H'6F,H'72,H'6D,H'61,H'6C,0                 ; Normal
+	.DATA.B H'43,H'6F,H'70,H'79,H'20,H'20,0                 ; Copy
+								;
+	.DATA.B E2CPF1						; OFFSET
+MGSP7F: .DATA.B H'47,H'3A,H'53,H'46,H'2D,H'32,H'36,H'31         ; G:SF-261
+	.DATA.B H'20,H'43,H'75,H'74,H'20,H'50,H'6F,H'73         ;   Cut Pos
+	.DATA.B ZLCL1,0 					;
+	.DATA.B   6,QCP261,1					; JMP, BIT, MAX
+MLSP7F: .DATA.B ZLPOS+25,  6					; POS, SIZE
+	.DATA.B H'31,H'69,H'6E,H'63,H'68,0                      ; 1inch
+	.DATA.B H'37,H'69,H'6E,H'63,H'68,0                      ; 7inch
+								;
+	.DATA.B E2PRAV						; OFFSET
+MGSP8:	.DATA.B H'47,H'3A,H'43,H'6F,H'6E,H'6E,H'65,H'63         ; G:Connect
+	.DATA.B H'74,ZLCL1,0                                    ;
+MLSP8:	.DATA.B ZLPOS+26,  4					; POS, SIZE
+	.SDATAZ "-10"                                           ;
+	.SDATAZ " -9"                                           ;
+	.SDATAZ " -8"                                           ;
+	.SDATAZ " -7"                                           ;
+	.SDATAZ " -6"                                           ;
+	.SDATAZ " -5"                                           ;
+	.SDATAZ " -4"                                           ;
+	.SDATAZ " -3"                                           ;
+	.SDATAZ " -2"                                           ;
+	.SDATAZ " -1"                                           ;
+	.SDATAZ "  0"                                           ;
+	.SDATAZ "  1"                                           ;
+	.SDATAZ "  2"                                           ;
+	.SDATAZ "  3"                                           ;
+	.SDATAZ "  4"                                           ;
+	.SDATAZ "  5"                                           ;
+	.SDATAZ "  6"                                           ;
+	.SDATAZ "  7"                                           ;
+	.SDATAZ "  8"                                           ;
+	.SDATAZ "  9"                                           ;
+	.SDATAZ " 10"                                           ;
+	.PAGE
+;
+;	SERVICE MODE MESSAGE
+;
+MGSRV:	.DATA.B ZLCL0,0 					;
+								;
+	.DATA.B   0						; OFFSET
+MGSR1:	.DATA.B H'41,H'64,H'64,H'72,H'65,H'73,H'73,H'3D         ; Address=
+	.DATA.B ZLCL1,0 					;
+								;
+	.DATA.B E2ADV						; OFFSET
+MGSR2:	.DATA.B H'53,H'65,H'6E,H'73,H'6F,H'72,H'20,H'4C         ; Sensor Level
+	.DATA.B H'65,H'76,H'65,H'6C,ZLCL1,0                     ;
+								;
+	.DATA.B E2INF						; OFFSET
+MGSR3:	.DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'46,H'6F,H'72,H'6D,H'73,ZLCL1,0                ; Forms
+								;
+	.DATA.B E2INS0						; OFFSET
+MGSR3A: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'43,H'75,H'74,ZLCL1,0                          ; Cut
+								;
+	.DATA.B E2INS1						; OFFSET
+MGSR3B: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'43,H'75,H'74,H'28,H'41,H'43,H'53,H'46,H'29    ; Cut(ACSF)
+	.DATA.B ZLCL1,0 					;
+								;
+	.DATA.B E2INA0						; OFFSET
+MGSR3C: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'41,H'43,H'53,H'46,H'30,ZLCL1,0                ; ACSF0
+								;
+	.DATA.B E2INA1						; OFFSET
+MGSR3D: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'41,H'43,H'53,H'46,H'31,ZLCL1,0                ; ACSF1
+								;
+	.DATA.B E2INA2						; OFFSET
+MGSR3E: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'41,H'43,H'53,H'46,H'32,ZLCL1,0                ; ACSF2
+								;
+	.DATA.B E2INA3						; OFFSET
+MGSR3F: .DATA.B H'50,H'61,H'70,H'65,H'72,H'3D,H'20              ; Paper=
+	.DATA.B H'41,H'43,H'53,H'46,H'33,ZLCL1,0                ; ACSF3
+								;
+	.DATA.B E2HSL						; OFFSET
+MGSR4:	.DATA.B H'4E,H'6F,H'73,H'65,H'20,H'20,H'20,ZLCL1,0      ; Nose
+								;
+	.DATA.B E2HSN						; OFFSET
+MGSR4A: .DATA.B H'48,H'65,H'61,H'64,H'20,H'47,H'61,H'70         ; Head Gap
+	.DATA.B H'20,H'20,ZLCL1,0                               ;
+								;
+	.DATA.B E2HSL						; OFFSET
+MGSR4B: .DATA.B H'48,H'65,H'61,H'64,H'20,H'45,H'78,H'63         ; Head Exchange
+	.DATA.B H'68,H'61,H'6E,H'67,H'65,ZLCL1,0                ;
+								;
+	.DATA.B   0						; OFFSET
+MGSR4C: .DATA.B H'50,H'6C,H'61,H'74,H'65,H'6E,H'20,H'45         ; Platen
+	.DATA.B H'78,H'63,H'68,H'61,H'6E,H'67,H'65,ZLCL1,0      ; Exchange
+								;
+	.DATA.B   0,E2PRA2+3					; OFFSET
+MGSR5:	.DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'41,ZLCL1,0           ;  =1.0A
+								;
+	.DATA.B   1,E2PRA2+2					; OFFSET
+MGSR5A: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'42,ZLCL1,0           ;  =1.0B
+								;
+	.DATA.B   2,E2PRA2+1					; OFFSET
+MGSR5B: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'43,ZLCL1,0           ;  =1.0C
+								;
+	.DATA.B   3,E2PRA2+0					; OFFSET
+MGSR5C: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'44,ZLCL1,0           ;  =1.0D
+								;
+	.DATA.B   4,E2PRA2+4					; OFFSET
+MGSR5D: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'35,ZLCL1,0                ;  =1.5
+								;
+	.DATA.B   5,E2PRA2+5					; OFFSET
+MGSR5E: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'32,H'2E,H'30,ZLCL1,0                ;  =2.0
+								;
+	.DATA.B   6,E2PRA2+6					; OFFSET
+MGSR5F: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'33,H'2E,H'30,ZLCL1,0                ;  =3.0
+								;
+	.DATA.B   7,E2PRA1+3					; OFFSET
+MGSR6:	.DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'41,ZLCL1,0           ;  =1.0A
+								;
+	.DATA.B   8,E2PRA1+2					; OFFSET
+MGSR6A: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'42,ZLCL1,0           ;  =1.0B
+								;
+	.DATA.B   9,E2PRA1+1					; OFFSET
+MGSR6B: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'43,ZLCL1,0           ;  =1.0C
+								;
+	.DATA.B  10,E2PRA1+0					; OFFSET
+MGSR6C: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'30,H'44,ZLCL1,0           ;  =1.0D
+								;
+	.DATA.B  11,E2PRA1+4					; OFFSET
+MGSR6D: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'31,H'2E,H'35,ZLCL1,0                ;  =1.5
+								;
+	.DATA.B  12,E2PRA1+5					; OFFSET
+MGSR6E: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'32,H'2E,H'30,ZLCL1,0                ;  =2.0
+								;
+	.DATA.B  13,E2PRA1+6					; OFFSET
+MGSR6F: .DATA.B H'43,H'6F,H'6E,H'6E,H'20,H'53,H'50,H'44         ; Conn SPD
+	.DATA.B H'20,H'3D,H'33,H'2E,H'30,ZLCL1,0                ;  =3.0
+								;
+	.DATA.B E2RBSA						; OFFSET
+MGSR7:	.DATA.B H'43,H'6F,H'6C,H'6F,H'72,H'20,ZLCL1,0           ; Color
+								;
+	.DATA.B E2CUT						; OFFSET
+MGSR8:	.DATA.B H'43,H'61,H'72,H'74,H'72,H'69,H'64,H'67         ; Cartridge
+	.DATA.B H'65,ZLCL1,0                                    ;
+	.PAGE
+;
+;	CHECK ERROR MESSAGE LIST
+;
+MLERR:	.DATA.B ZLPOS+0, 14					; POS, SIZE
+MGCVR:	.DATA.B H'43,H'6F,H'76,H'65,H'72,H'20,H'4F,H'70         ; Cover Open
+	.DATA.B H'65,H'6E,H'20,H'20,H'20,0                      ;
+	.DATA.B H'20,H'20,H'20,H'20,H'20,H'20,H'20,H'20         ; RESERVED
+	.DATA.B H'20,H'20,H'20,H'20,H'20,0                      ;
+	.DATA.B H'53,H'46,H'32,H'36,H'31,H'20,H'45,H'72         ; SF261 Error
+	.DATA.B H'72,H'6F,H'72,H'20,H'20,0                      ;
+	.DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'45,H'72         ; Paper Error
+	.DATA.B H'72,H'6F,H'72,H'20,H'20,0                      ;
+	.DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'4A,H'61         ; Paper Jam
+	.DATA.B H'6D,H'20,H'20,H'20,H'20,0                      ;
+	.DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'45,H'6D         ; Paper Empty
+	.DATA.B H'70,H'74,H'79,H'20,H'20,0                      ;
+	.DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'45,H'6D         ; Paper Empty
+	.DATA.B H'70,H'74,H'79,H'20,H'20,0                      ;
+	.DATA.B H'50,H'61,H'70,H'65,H'72,H'20,H'45,H'6E         ; Paper End
+	.DATA.B H'64,H'20,H'20,H'20,H'20,0                      ;
+
+;
+;	ALARM ERROR MESSAGE LIST
+;
+MLALM:	.DATA.B ZLPOS+0, 33			; POS, SIZE
+	.SDATA	"RAM ERR         "              ; 129  RAM ERROR
+	.SDATAZ "      CODE = 129"              ;
+	.SDATA	"ROM ERR         "              ; 130  ROM ERROR
+	.SDATAZ "      CODE = 130"              ;
+	.SDATA	"BABO BABO >>    "              ; 131  EEROM 920117
+	.SDATAZ " Don't copy ROM "              ;
+	.SDATA	"EE ERR          "              ; 132  EEPROM ERROR
+	.SDATAZ "      CODE = 132"              ;
+	.SDATA	"CG ERR   BANK="                ; 133  CG ROM ERROR
+	.DATA.B ZLON0,ZLPOS+16			;
+	.SDATAZ "      CODE = 133"              ;
+	.SDATA	"WD ERR          "              ; 134  PROGRAM ERROR
+	.SDATAZ "      CODE = 134"              ;
+	.SDATA	"SLV ERR         "              ; 135  SLAVE CPU ERROR
+	.SDATAZ "      CODE = 135"              ;
+	.SDATA	"DRV ERR         "              ; 136  CR/LF MOTOR ERROR
+	.SDATAZ "      CODE = 136"              ;
+	.SDATA	"TR ERR          "              ; 137  STEPPING MOTOR ERROR
+	.SDATAZ "      CODE = 137"              ;
+	.SDATA	"HEAD ERR        "              ; 138  PRINT HEAD ERROR
+	.SDATAZ "      CODE = 138"              ;
+	.SDATA	"EC ERR          "              ; 139  ENCODER ERROR
+	.SDATAZ "      CODE = 139"              ;
+	.SDATA	"FRM ERR         "              ; 140  FRAME WIDTH ERROR
+	.SDATAZ "      CODE = 140"              ;
+	.SDATA	"SPEED ERR       "              ; 141  CR SPEED ERROR
+	.SDATAZ "      CODE = 141"              ;
+	.SDATA	"FAN ERR         "              ; 142  FAN ERROR
+	.SDATAZ "      CODE = 142"              ;
+	.SDATA	"RBN MTR ERR     "              ; 143  RIBBON WIND MOTOR ERROR
+	.SDATAZ "      CODE = 143"              ;
+	.SDATA	"LVR ERR         "              ; 144  FORMS/SHEET LEVER ERROR
+	.SDATAZ "      CODE = 144"              ;
+	.SDATA	"RBN ERR         "              ; 145  RIBBON SHIFT ERROR
+	.SDATAZ "      CODE = 145"              ;
+	.SDATA	"HDS ERR         "              ; 146  HEAD SHIFT ERROR
+	.SDATAZ "      CODE = 146"              ;
+	.SDATA	"PWR ERR         "              ; 147  POWER SUPLY ERROR
+	.SDATAZ "      CODE = 147"              ;
+	.SDATA	"THM ERR         "              ; 148  HEAD THERMAL ERROR
+	.SDATAZ "      CODE = 148"              ;
+	.SDATA	"PIF ERR         "              ; 149  PIF ERROR
+	.SDATAZ "      CODE = 149"              ;
+	.SDATA	"Don't copy ROM  "              ; 150  ROM COPY
+	.SDATAZ "      CODE = 150"              ;
+;
+;	CG ROM CHECK MESSAGE
+;
+MGCGC:	.SDATA	"CG CHK   BANK="                ; CG ROM CHECK
+	.DATA.B ZLCL1,ZLPOS+14,0		;
+
+;
+;	PROGRAM ERROR PC MESSAGE
+;
+MGPER:	.DATA.B ZLPOS+7,H'50,H'43,H'3D,0        ; PC=
+	.END

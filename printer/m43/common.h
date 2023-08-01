@@ -1,0 +1,89 @@
+	.LIST	OFF
+;********************************************************
+;							*
+;	M4324 COMMON DEFINITION				*
+;							*
+;	FILE NAME	COMMON.H			*
+;	CREATED		21/DEC/1990			*
+;							*
+;********************************************************
+;
+;	GENERAL CONSTANT
+;
+ZH:	.EQU	  256		;
+ZK:	.EQU	 1024		;
+ZN:	.EQU	  255		;
+ZNN:	.EQU	65535		;
+ZBYTE:	.EQU	    8		; NO. OF BIT IN BYTE
+ZWORD:	.EQU	   16		; NO. OF BIT IN WORD
+ZMSB:	.EQU	  128		; MSB OF BYTE
+QMSB:	.EQU	    7		; MSB OF BYTE
+ZMSBW:	.EQU	32768		; MSB OF WORD
+QMSBW:	.EQU	   15		; MSB OF WORD
+ZBR:	.EQU	  254		; COMMON BASE ADDRESS
+ZTI:	.EQU	   25		; M43RTM TIMER INTERVAL
+;
+;	STATUS REGISTER BIT
+;
+XI0:	.EQU	H'0100		; INTERRUPT MASK 0
+XI1:	.EQU	H'0200		; INTERRUPT MASK 1
+XI2:	.EQU	H'0400		; INTERRUPT MASK 2
+;
+;	SPECIAL COMMAND MACRO
+;
+;
+	.MACRO	PUSHBR
+	.DATA.B	H'B7,H'9B
+	.ENDM
+;
+	.MACRO	PUSHEP
+	.DATA.B	H'B7,H'9C
+	.ENDM
+;
+	.MACRO	PUSHDP
+	.DATA.B	H'B7,H'9D
+	.ENDM
+;
+	.MACRO	POPBR
+	.DATA.B	H'C7,H'8B
+	.ENDM
+;
+	.MACRO	POPEP
+	.DATA.B	H'C7,H'8C
+	.ENDM
+;
+	.MACRO	POPDP
+	.DATA.B	H'C7,H'8D
+	.ENDM
+;
+	.MACRO	RTS2
+	.DATA.B	H'19,H'00
+	.ENDM
+;
+	.MACRO	RTS3
+	.DATA.B	H'19,H'00,H'00
+	.ENDM
+;
+;	I/O SYSTEM CALL MACRO
+;
+	.MACRO	CALIOS	E
+\;	.AIF	"\E" EQ "R1"
+\;	TRAPA	#9
+\;	.EXITM
+\;	.AENDI
+	MOV.W	\E,R1
+	TRAPA	#9
+	.ENDM
+;
+;	MONITOR CALL MACRO
+;
+	.MACRO	CALMON	F
+\;	.AIF	"\F" EQ "R2"
+\;	TRAPA	#10
+\;	.EXITM
+\;	.AENDI
+	MOV.W	\F,R2
+	TRAPA	#10
+	.ENDM
+	.LIST	ON
+

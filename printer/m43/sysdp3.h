@@ -1,0 +1,55 @@
+	.LIST	OFF
+;********************************************************
+;							*
+;	M4324 DATA PROCESS 3 TASK COMMON DEFINITION	*
+;							*
+;	FILE NAME	SYSDP3.H			*
+;	CREATED		 1/DEC/1990			*
+;							*
+;********************************************************
+;
+	.IMPORT		DP3TCB	; DP3 TCB
+;
+;	EVENT FLAG
+;
+FACTF:	.EQU	H'0001		; ACTION FINISH
+FCMDE:	.EQU	H'0002		; COMMAND TRANSMIT ENABLE
+FPRTF:	.EQU	H'0004		; PRINT FINISH
+FSTOP:	.EQU	H'0008		; FORMS ECAPE STOP REQUEST
+;
+;	PACKET CODE FLAG
+;
+XWACTF:	.EQU	H'80		; ACTION WAIT FLAG
+QWACTF:	.EQU	  7		;
+;
+;	FORMS ESCAPE TYPE NO.
+;
+;	.EQU	  0		; NORMAL TYPE
+ZESCFS:	.EQU	  1		; STOP BY PANEL SW ON
+ZESCFU:	.EQU	  2		; STOP BY USER CONDTION
+;
+;	DP3 CALL MACRO
+;
+	.MACRO	CALDPH	C
+\;	.AIF	"\C" EQ "R2"
+\;	TRAPA	#11
+\;	.EXITM
+\;	.AENDI
+	MOV.W	\C,R2
+	TRAPA	#11
+	.ENDM
+
+	.MACRO	CALDP3	C
+\;	.AIF	"\C" EQ "R2"
+\;	TRAPA	#12
+\;	.EXITM
+\;	.AENDI
+	MOV.W	\C,R2
+	TRAPA	#12
+	.ENDM
+
+	.MACRO	WAIDP3
+	TRAPA	#13
+	.ENDM
+	.LIST	ON
+

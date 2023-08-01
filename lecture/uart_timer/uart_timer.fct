@@ -1,0 +1,3 @@
+main DSTACK_USAGE:0 DSTACK_LEVEL:0 FILE:"uart_timer.c" LINE:59
+putch DSTACK_USAGE:1 DSTACK_LEVEL:1 FILE:"uart_timer.c" LINE:36
+timer1_ovf_isr DSTACK_USAGE:4 DSTACK_LEVEL:5 FILE:"uart_timer.c" LINE:43

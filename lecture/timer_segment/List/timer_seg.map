@@ -1,0 +1,16 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+pattern_table                                                     0x0500      19
+delay_table                                                       0x0513      19
+FndDef                                                            0x0526      10
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+LedCnt                                                            R5           1
+Cnt                                                               R6,R7        2

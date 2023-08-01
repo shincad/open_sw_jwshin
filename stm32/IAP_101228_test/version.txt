@@ -1,0 +1,82 @@
+/******************** (C) COPYRIGHT 2008 STMicroelectronics ********************
+* File Name          : version.txt
+* Author             : MCD Application Team
+* Version            : V2.0.2
+* Date               : 09/22/2008
+* Description        : Version file for AN2557 "STM32F10xxx in-application
+*                      programming using the USART (IAP)" firmware.
+*                      The enclosed firmware and all the related documentation
+*                      are not covered by a License Agreement, if you need such
+*                      License you can contact your local STMicroelectronics
+*                      office.
+********************************************************************************
+* THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+* WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE TIME.
+* AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY DIRECT,
+* INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING FROM THE
+* CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE CODING
+* INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+*******************************************************************************/
+
+* V2.0.2 - 09/22/2008
+=====================
+   + ymodem.c source file update: Ymodem_Receive() function
+
+* V2.0.1 - 06/13/2008
+=====================
+   + Remove the Firmware License Agreement file
+    
+   + Update the source files's header to remove reference to the License
+
+
+
+* V2.0 - 05/30/2008
+====================
+   + Update with STM32F10x FWLib V2.0 to support the extra peripherals and
+     features embedded in the STM32 High-density devices
+
+   + Update to support up to 512KB of Flash memory programming in STM32
+     High-density devices 
+   
+   + Add support of STMicroelectronics STM3210E-EVAL evaluation board (in addition
+     to STM3210B-EVAL)
+    
+   + Add Firmware License Agreement file
+
+   + For more details about this example implementation, please refer to the
+     AN2557 "STM32F10xxx in-application programming using the USART (IAP)",
+     available for download from the ST microcontrollers website: www.st.com/stm32
+           
+   Glossary
+       - Medium-density devices are STM32F101xx and STM32F103xx microcontrollers
+         where the Flash memory density ranges between 32 and 128 Kbytes.
+       - High-density devices are STM32F101xx and STM32F103xx microcontrollers
+         where the Flash memory density ranges between 256 and 512 Kbytes.
+
+
+         
+* V1.0 - 10/08/2007
+====================
+ + Updated with STM32F10x FWLib V1.0 
+
+ + Add IAP project with RIDE toolchain
+ 
+ + Add program example with RIDE, EWARM and RVMDK toolchain for the binary image
+   to be loaded with the IAP  
+ 
+ + stm32f10x_vector.s
+   - Change "Stack_Size" value to 0x800
+
+ + lnkarm_flash.xcl
+   - Change "_CSTACK_SIZE" value to 0x800 
+
+ + common.c/main.c
+   - Initialize user application's Stack Pointer before jumping to user application
+
+
+* V0.1 - 05/21/2007
+====================
+  Created.
+
+
+******************* (C) COPYRIGHT 2008 STMicroelectronics *****END OF FILE******

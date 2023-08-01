@@ -1,0 +1,10 @@
+VERSION:3 SOURCE_TIMESTAMP:411259C1
+NODE:I LEVEL:0 LINE:24 "C:\cvavr2\inc\delay.h"
+NODE:I LEVEL:0 LINE:25 "C:\cvavr2\inc\mega128.h"
+NODE:V LEVEL:0 LINE:33 "pattern_table -> RAM:????"
+NODE:V LEVEL:0 LINE:54 "delay_table -> RAM:????"
+NODE:V LEVEL:0 LINE:75 "LedCnt -> R5"
+NODE:V LEVEL:0 LINE:78 "FndDef -> RAM:????"
+NODE:V LEVEL:0 LINE:80 "Cnt -> R6,R7"
+NODE:F LEVEL:0 LINE:82 "timer1_ovf_isr(void)"
+NODE:F LEVEL:0 LINE:90 "main(void)"

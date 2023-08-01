@@ -1,0 +1,3 @@
+main DSTACK_USAGE:0 DSTACK_LEVEL:0 FILE:"total_test.c" LINE:314
+Action DSTACK_USAGE:1 DSTACK_LEVEL:1 FILE:"total_test.c" LINE:301
+usart0_rx_isr DSTACK_USAGE:6 DSTACK_LEVEL:7 FILE:"total_test.c" LINE:164

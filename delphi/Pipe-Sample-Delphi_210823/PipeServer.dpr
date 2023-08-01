@@ -1,0 +1,105 @@
+// ** Sample of inter-process communication using named pipes.
+// ** Purpose: Learn a good method to exchange data among different processes in Windows.
+// ** Author:  ~TheHardRoad~ alias Viotto
+// ** Website: http://BreakingSecurity.net
+// ** Credits: Peter Bloomfield, who wrote a nice tutorial about Windows pipes. You can find here:
+// **          http://avid-insight.co.uk/2012/03/introduction-to-win32-named-pipes-cpp/
+
+program PipeServer;
+// Server application which creates an inbound pipe and waits for connection and data from client processes.
+
+{$APPTYPE CONSOLE}
+
+uses
+  SysUtils,
+  Windows;
+
+
+procedure ReceivePipeData();
+var
+  pipe: Cardinal;
+  RecBuffer: Array[0..999] of Byte;
+  numBytesRead: DWORD;
+  result: LongBool;
+  sReadData: AnsiString;
+  sa: SECURITY_ATTRIBUTES;
+  sd: SECURITY_DESCRIPTOR;
+begin
+
+  // Must grant access rights in case User Account Control is on, on WinVista and above,
+  // and communicating processes are under a different user (which can be also SYSTEM).
+  // Otherwise, the other side of the pipe will receive ERROR_ACCESS_DENIED upon CreateFile().
+  // If UAC is on and we are trying to use pipe between a userlevel and a system process,
+  // even if we are inside the same user account, pipe communication will fail.
+	// In order to avoid this, we must initialize a security descriptor for the pipe.
+	InitializeSecurityDescriptor(@sd, SECURITY_DESCRIPTOR_REVISION);
+
+	// There is an important difference between an empty and a nonexistent DACL.
+	// When a DACL is empty, it contains no access control entries (ACEs); therefore, no access rights are explicitly granted.
+	// As a result, access to the object is implicitly denied.
+  // When an object has no DACL (when the pDacl parameter is NULL),
+	// no protection is assigned to the object, and all access requests are granted.
+	SetSecurityDescriptorDacl(@sd, True, nil, False);
+
+	sa.bInheritHandle := false;
+	sa.lpSecurityDescriptor := @sd;
+	sa.nLength := sizeof(sa);
+
+  while true do begin
+
+    repeat
+      // Create a new pipe to receive data
+      pipe := CreateNamedPipe(
+         '\\.\pipe\EPPDWS', // Our pipe name
+         PIPE_ACCESS_INBOUND, // Read-only pipe
+         PIPE_TYPE_MESSAGE or PIPE_READMODE_MESSAGE, //Using Message mode
+         PIPE_UNLIMITED_INSTANCES ,
+         0,  // No outbound buffer
+         0,  // No inbound buffer
+         0,  // Use default wait time
+         @sa // Set security attributes to grant access rights
+      );
+      if (pipe = INVALID_HANDLE_VALUE) then begin
+        Write('[ERROR] Failed to create pipe. Error code ' + IntToStr(GetLastError()) + #13#10 + 'Press Enter to retry');
+        Readln;
+      end;
+    until pipe <> INVALID_HANDLE_VALUE;
+
+    WriteLn('[INFO] Inbound pipe created! Waiting for a client process to connect...');
+
+    // This call blocks until a client process connects to the pipe
+    result := ConnectNamedPipe(pipe, nil);
+    if (result = false) then begin
+      Writeln('[ERROR] Failed to connect to pipe. Error code ' + IntToStr(GetLastError()));
+    end
+    else begin
+      Writeln('[INFO] Client connected! Waiting for data...');
+      numBytesRead := 0;
+      // The read operation will block until there is data to read
+      result := ReadFile(
+          pipe,
+          RecBuffer[0], // the data from the pipe will be put here
+          sizeof(RecBuffer), // number of bytes allocated
+          numBytesRead, // this will store number of bytes actually read
+          nil // not using overlapped IO
+      );
+      if (result = false) then begin
+          Writeln('[ERROR] Failed to read pipe data! Error code ' + IntToStr(GetLastError()));
+      end else begin
+          SetString(sReadData,PAnsiChar(@recBuffer[0]), numBytesRead); //Copy byte array to string
+          Writeln('[SUCCESS] Data received: ' + sReadData);
+      end;
+    end;
+    //Close our pipe handle
+    CloseHandle(pipe);
+  end;
+
+end;
+
+
+begin
+  Writeln('*** Pipe Server Application ***' + #13#10);
+  Write('[INFO] Press Enter to create pipe server and start listening for incoming data');
+  ReadLn;
+  ReceivePipeData();
+end.

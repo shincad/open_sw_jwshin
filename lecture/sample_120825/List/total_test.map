@@ -1,0 +1,28 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+pattern_table                                                     0x0500      19
+delay_table                                                       0x0513      19
+FndDef                                                            0x0526      10
+adc                                                               0x0530       2
+rx_buffer0                                                        0x0532       8
+tx_buffer0                                                        0x053A       8
+tx_rd_index0                                                      0x0542       1
+tx_counter0                                                       0x0543       1
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+LedCnt                                                            R5           1
+Cnt                                                               R6,R7        2
+TotalFlag                                                         R4           1
+AdcVal                                                            R8,R9        2
+rx_wr_index0                                                      R11          1
+rx_rd_index0                                                      R10          1
+rx_counter0                                                       R13          1
+rx_buffer_overflow0                                               R2.0      1bit
+tx_wr_index0                                                      R12          1

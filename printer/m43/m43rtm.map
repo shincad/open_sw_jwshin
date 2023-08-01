@@ -1,0 +1,227 @@
+                                        H SERIES LINKAGE EDITOR Ver. 3.2
+
+
+LINK COMMAND LINE
+
+
+LNK /SUBCOMMAND=M43RTM.SUB 
+
+
+
+LINK SUBCOMMANDS
+
+
+FORM	R
+INPUT	M43RTM
+INPUT	M43RTMT
+INPUT	H8RTMS0
+INPUT	H8RTMM0
+INPUT	M43RTMP
+INPUT	H8RTMB0
+OUTPUT	M43RTM.REL
+PRINT	M43RTM.MAP
+EXIT
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$RAM)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$TBL)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$SP)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$TP)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$ERR)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$FG)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$RAM)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$TP)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$FG)
+** 105 EXTERNAL SYMBOL NOT DEFINED(SYS$TP)
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+RTM                               H'0000:0000   -   H'0000:0788   H'00000789
+                                                              M43RTM                             m43rtm                          
+                                  H'0000:0789   -   H'0000:08A5   H'0000011D
+                                                              M43RTMT                            m43tmr                          
+                                  H'0000:08A6   -   H'0000:08A8   H'00000003
+                                                              H8RTMS0                            h8sem                           
+                                  H'0000:08A9   -   H'0000:08AB   H'00000003
+                                                              H8RTMM0                            h8mbx                           
+                                  H'0000:08AC   -   H'0000:0ACE   H'00000223
+                                                              M43RTMP                            m43pkt                          
+                                  H'0000:0ACF   -   H'0000:0AD1   H'00000003
+                                                              H8RTMB0                            h8mpl                           
+
+* TOTAL ADDRESS *                 H'0000:0000   -   H'0000:0AD1   H'00000AD2
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  CALTSK                               H'0000:00B0            DAT
+                                  CANCYC                               H'0000:0117            DAT
+                                  CHKBLK                               H'0000:0000            DAT
+                                  CHKMSG                               H'0000:0000            DAT
+                                  CHKPKT                               H'0000:021B            DAT
+                                  CHKSEM                               H'0000:0000            DAT
+                                  CYCWUP                               H'0000:00D2            DAT
+                                  GETBLK                               H'0000:0000            DAT
+                                  INIRTM                               H'0000:0000            DAT
+                                  INITMR                               H'0000:0000            DAT
+                                  INTTMR                               H'0000:002F            DAT
+                                  LKNPKT                               H'0000:01BC            DAT
+                                  LOKPKT                               H'0000:01A5            DAT
+                                  POLBLK                               H'0000:0000            DAT
+                                  POLMSG                               H'0000:0000            DAT
+                                  POLPKT                               H'0000:0114            DAT
+                                  POLSEM                               H'0000:0000            DAT
+                                  RCVMSG                               H'0000:0000            DAT
+                                  RCVPKT                               H'0000:00E4            DAT
+                                  RELBLK                               H'0000:0000            DAT
+                                  RETIH1                               H'0000:021E            DAT
+                                  RETIH2                               H'0000:0220            DAT
+                                  RETIH3                               H'0000:0223            DAT
+                                  RETINT                               H'0000:021B            DAT
+                                  RETOR1                               H'0000:01BA            DAT
+                                  RETOR2                               H'0000:01BE            DAT
+                                  RETORF                               H'0000:01A6            DAT
+                                  RETTSK                               H'0000:0113            DAT
+                                  RETWU1                               H'0000:0164            DAT
+                                  RETWU2                               H'0000:0168            DAT
+                                  RETWUP                               H'0000:0154            DAT
+                                  RTNBLK                               H'0000:0000            DAT
+                                  RTNMSG                               H'0000:0000            DAT
+                                  SCHDLR                               H'0000:0238            DAT
+                                  SDCPKT                               H'0000:0032            DAT
+                                  SIGSEM                               H'0000:0000            DAT
+                                  SNDMSG                               H'0000:0000            DAT
+                                  SNDPKT                               H'0000:0000            DAT
+                                  SYSCAL                               H'0000:004B            DAT
+                                  UGEBLK                               H'0000:0000            DAT
+                                  UPOBLK                               H'0000:0000            DAT
+                                  WAIMSG                               H'0000:0000            DAT
+                                  WAIPKT                               H'0000:01D9            DAT
+                                  WAISEM                               H'0000:0000            DAT
+                                  WAITSK                               H'0000:008B            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     1
+
+                                      *** LINKAGE EDITOR UNRESOLVED EXTERNAL REFERENCE LIST ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$ERR                                                ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$FG                                                 ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$RAM                                                ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$SP                                                 ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$TBL                                                ***
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     2
+
+                                      *** LINKAGE EDITOR UNRESOLVED EXTERNAL REFERENCE LIST ***
+
+ FILE NAME   : M43RTM.OBJ                                                     
+                                                                              
+
+ MODULE NAME : m43rtm                          
+ UNIT NAME   : M43RTM                          
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$TP                                                 ***
+
+ FILE NAME   : M43RTMT.OBJ                                                    
+                                                                              
+
+ MODULE NAME : m43tmr                          
+ UNIT NAME   : M43RTMT                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$FG                                                 ***
+
+ FILE NAME   : M43RTMT.OBJ                                                    
+                                                                              
+
+ MODULE NAME : m43tmr                          
+ UNIT NAME   : M43RTMT                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$RAM                                                ***
+
+ FILE NAME   : M43RTMT.OBJ                                                    
+                                                                              
+
+ MODULE NAME : m43tmr                          
+ UNIT NAME   : M43RTMT                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$TP                                                 ***
+
+ FILE NAME   : M43RTMP.OBJ                                                    
+                                                                              
+
+ MODULE NAME : m43pkt                          
+ UNIT NAME   : M43RTMP                         
+
+                                 SYMBOL  NAME                                          TYPE
+
+                                  SYS$TP                                                 ***

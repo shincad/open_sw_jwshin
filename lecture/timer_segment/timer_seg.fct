@@ -1,0 +1,2 @@
+main DSTACK_USAGE:0 DSTACK_LEVEL:0 FILE:"timer_seg.c" LINE:90
+timer1_ovf_isr DSTACK_USAGE:3 DSTACK_LEVEL:3 FILE:"timer_seg.c" LINE:82

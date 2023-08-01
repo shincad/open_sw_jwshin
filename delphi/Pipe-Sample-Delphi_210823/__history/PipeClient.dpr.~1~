@@ -1,0 +1,104 @@
+// ** Sample of inter-process communication using named pipes.
+// ** Purpose: Learn a good method to exchange data among different processes in Windows.
+// ** Author:  ~TheHardRoad~ alias Viotto
+// ** Website: http://BreakingSecurity.net
+// ** Credits: Peter Bloomfield, who wrote a nice tutorial about Windows pipes. You can find here:
+// **          http://avid-insight.co.uk/2012/03/introduction-to-win32-named-pipes-cpp/
+
+program PipeClient;
+// Client application which sends data to pipe server.
+
+{$APPTYPE CONSOLE}
+
+uses
+  SysUtils,
+  Windows,
+  Classes;
+
+
+// Data to send via pipe is read from a file.
+function GetDataFromFile(sFileName: AnsiString): AnsiString;
+var
+  DataFile: TFileStream;
+  ReadBuffer: array of Byte;
+  sDataToSend: AnsiString;
+begin
+  try
+    DataFile := TFileStream.Create( sFileName , fmOpenRead);
+    SetLength(ReadBuffer, DataFile.Size);
+    DataFile.Read(ReadBuffer[0], Length(ReadBuffer));
+    SetString(sDataToSend,PAnsiChar(@ReadBuffer[0]), DataFile.Size); //Copy byte array to string
+    DataFile.Free;
+    Result := sDataToSend;
+  except
+    Result := '';
+  end;
+end;
+
+
+procedure SendPipeData();
+var
+  pipe: Cardinal;
+  numBytesWritten: DWORD;
+  result: LongBool;
+  sDataToSend: AnsiString;
+begin
+
+  repeat
+    // Open the named pipe, previusly created by server application
+    pipe := CreateFile(
+          '\\.\pipe\SamplePipe', // Our pipe name
+          GENERIC_WRITE,
+          FILE_SHARE_READ or FILE_SHARE_WRITE,
+          nil,
+          OPEN_EXISTING,
+          FILE_ATTRIBUTE_NORMAL,
+          0
+    );
+    if (pipe = INVALID_HANDLE_VALUE) then begin
+       Write('[ERROR] Failed to open pipe (server must be running first).' + #13#10 + 'Press Enter to retry');
+       Readln;
+    end;
+  until pipe <> INVALID_HANDLE_VALUE;
+
+  repeat
+    //Get data to send from file
+    sDataToSend := GetDataFromFile(ExtractFilePath(ParamStr(0)) + 'DataToSend.txt');
+    if sDataToSend = '' then begin
+       Write('[ERROR] Unable to read data from file (may be unexistent or empty).' + #13#10 + 'Press Enter to retry');
+       Readln;
+    end;
+  until sDataToSend <> '';
+
+  numBytesWritten := 0;
+  result := WriteFile(
+      pipe, // Handle to our outbound pipe
+      sDataToSend[1], // Pointer to data to send
+      Length(sDataToSend), // Length of data to send (bytes)
+      numBytesWritten, // Will store actual amount of data sent
+      nil // Not using overlapped IO
+  );
+
+  if (result = false) then
+       Writeln('[ERROR] Failed to send pipe data. Error code ' + IntToStr(GetLastError()))
+  else Writeln('[SUCCESS] Pipe data sent: ' + sDataToSend);
+
+  // Close the pipe handle
+  CloseHandle(pipe);
+end;
+
+
+begin
+  Writeln('*** Pipe Client Application ***' + #13#10);
+  while true do begin
+    Write('[INFO] Press Enter to send pipe data to server');
+    Readln;
+    SendPipeData();
+  end;
+end.
+
+
+
+
+
+

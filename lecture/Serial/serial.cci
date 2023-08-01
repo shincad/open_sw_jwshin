@@ -1,0 +1,6 @@
+VERSION:3 SOURCE_TIMESTAMP:40FC7528
+NODE:I LEVEL:0 LINE:25 "C:\cvavreval\inc\mega128.h"
+NODE:I LEVEL:0 LINE:30 "C:\cvavreval\inc\stdio.h"
+NODE:F LEVEL:0 LINE:33 "putch(unsigned char data)"
+NODE:F LEVEL:0 LINE:39 "getch(void)"
+NODE:F LEVEL:0 LINE:47 "main(void)"

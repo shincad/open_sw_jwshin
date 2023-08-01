@@ -1,0 +1,9 @@
+*** H8/500 ASSEMBLER               VER 2.3A **    04/06/10 11:34:17                                                      PAGE     1
+PROGRAM NAME = aplesc                           M4324 AX ESC SEQUENCE MODULE
+
+ 5597      1B09  2789              4016     BEQ ESC713
+  *****ERROR   402 (ax_esc.SRC)
+ 5622      1B33  278F              4041         BEQ     ESC714
+  *****ERROR   402 (ax_esc.SRC)
+  *****TOTAL ERRORS       2
+  *****TOTAL WARNINGS     0

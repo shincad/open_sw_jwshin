@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<infocenter_data version="1.0">
+  <iar_name>STM32F10x_IAP_AN</iar_name>   <!--App-->
+  <iar_description>Sources files and pre-configured projects that describes how to build an application to be loaded into Flash memory using In-Application Programming (IAP, through USART1).</iar_description><!--App short description-->
+  <iar_curdir>$CUR_DIR$</iar_curdir>
+</infocenter_data>

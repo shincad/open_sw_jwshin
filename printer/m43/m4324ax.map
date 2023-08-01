@@ -1,0 +1,1545 @@
+                                        H SERIES LINKAGE EDITOR Ver. 3.2
+
+
+LINK COMMAND LINE
+
+
+LNK /SUBCOMMAND=M4324AX.SUB 
+
+
+
+LINK SUBCOMMANDS
+
+
+DEBUG
+FORM	A
+START	RTM, SYS1,APL1(00:1000),&
+	SYS2,APL2(01:0000),&
+	APL3(02:4000),&
+	APL4,APL5,APL6,APL7(02:8000),&
+	CG1 (08:0000),&
+	CG2 (09:0000),&
+	RAM2(0A:0000),&
+	RAM3(0B:0000),&
+	RAM4(0D:0000),&
+	RAM5(0E:0000),&
+	RAM6(0F:0000)
+ENTRY	RESET
+INPUT	AX_SYS.REL
+INPUT	AX_DP1
+INPUT	AX_DP2.REL
+INPUT	AX_PRT
+INPUT	AX_DP3
+INPUT	AX_DP3L
+OUTPUT	M4324AX.ABS
+PRINT	M4324AX.MAP
+EXIT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     1
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+RTM                               H'0000:1000   -   H'0000:1788   H'00000789
+                                                              M43RTM                             AX_SYS                          
+                                  H'0000:1789   -   H'0000:18A5   H'0000011D
+                                                              M43RTMT                            AX_SYS                          
+                                  H'0000:18A6   -   H'0000:18A8   H'00000003
+                                                              H8RTMS0                            AX_SYS                          
+                                  H'0000:18A9   -   H'0000:18AB   H'00000003
+                                                              H8RTMM0                            AX_SYS                          
+                                  H'0000:18AC   -   H'0000:1ACE   H'00000223
+                                                              M43RTMP                            AX_SYS                          
+                                  H'0000:1ACF   -   H'0000:1AD1   H'00000003
+                                                              H8RTMB0                            AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:1000   -   H'0000:1AD1   H'00000AD2
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+SYS1                              H'0000:1AE0   -   H'0000:1CAF   H'000001D0
+                                                              sysini                             AX_SYS                          
+                                  H'0000:1CB0   -   H'0000:25C2   H'00000913
+                                                              SYSLIB                             AX_SYS                          
+                                  H'0000:25D0   -   H'0000:2F65   H'00000996
+                                                              sysios                             AX_SYS                          
+                                  H'0000:2F70   -   H'0000:3373   H'00000404
+                                                              PNLIOS                             AX_SYS                          
+                                  H'0000:3380   -   H'0000:3443   H'000000C4
+                                                              EEPIOS                             AX_SYS                          
+                                  H'0000:3450   -   H'0000:346C   H'0000001D
+                                                              SYSDP3                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:1AE0   -   H'0000:346C   H'0000198D
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL1                              H'0000:3470   -   H'0000:3988   H'00000519
+                                                              AX_IOS                             AX_SYS                          
+                                  H'0000:3990   -   H'0000:39F9   H'0000006A
+                                                              AX_MON                             AX_SYS                          
+                                  H'0000:3A00   -   H'0000:3AEF   H'000000F0
+                                                              AX_DP1                             apldp1                          
+
+* TOTAL ADDRESS *                 H'0000:3470   -   H'0000:3AEF   H'00000680
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     2
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+SYS2                              H'0001:0000   -   H'0001:012B   H'0000012C
+                                                              sysios                             AX_SYS                          
+                                  H'0001:0130   -   H'0001:0B07   H'000009D8
+                                                              SYSDP3                             AX_SYS                          
+                                  H'0001:0B10   -   H'0001:1299   H'0000078A
+                                                              SYSDP3L                            AX_SYS                          
+                                  H'0001:12A0   -   H'0001:18D6   H'00000637
+                                                              SYSPRT                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0001:0000   -   H'0001:18D6   H'000018D7
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL2                              H'0001:18E0   -   H'0001:1BA4   H'000002C5
+                                                              AX_MON                             AX_SYS                          
+                                  H'0001:1BB0   -   H'0001:227B   H'000006CC
+                                                              ax_swp                             AX_SYS                          
+                                  H'0001:2280   -   H'0001:26FA   H'0000047B
+                                                              AX_SWS                             AX_SYS                          
+                                  H'0001:2700   -   H'0001:43CD   H'00001CCE
+                                                              ax_msg                             AX_SYS                          
+                                  H'0001:43D0   -   H'0001:4856   H'00000487
+                                                              AX_DP1                             apldp1                          
+                                  H'0001:4860   -   H'0001:4E3C   H'000005DD
+                                                              AX_HG                              AX_DP2                          
+                                  H'0001:4E40   -   H'0001:550C   H'000006CD
+                                                              AX_DP2                             AX_DP2                          
+                                  H'0001:5510   -   H'0001:72AC   H'00001D9D
+                                                              ax_esc                             AX_DP2                          
+                                  H'0001:72B0   -   H'0001:7CBC   H'00000A0D
+                                                              ax_svt                             AX_DP2                          
+                                  H'0001:7CC0   -   H'0001:8483   H'000007C4
+                                                              AX_IMG                             AX_DP2                          
+                                  H'0001:8490   -   H'0001:9493   H'00001004
+                                                              AX_ANK                             AX_DP2                          
+                                  H'0001:94A0   -   H'0001:A334   H'00000E95
+                                                              AX_KNJ                             AX_DP2                          
+                                  H'0001:A340   -   H'0001:AA63   H'00000724
+                                                              AX_DLD                             AX_DP2                          
+                                  H'0001:AA70   -   H'0001:AF61   H'000004F2
+                                                              AX_BCD                             AX_DP2                          
+                                  H'0001:AF70   -   H'0001:BDC1   H'00000E52
+                                                              AX_EDT                             AX_DP2                          
+                                  H'0001:BDD0   -   H'0001:BF44   H'00000175
+                                                              AX_JST                             AX_DP2                          
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     3
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL2                              H'0001:BF50   -   H'0001:C41D   H'000004CE
+                                                              ax_sub                             AX_DP2                          
+                                  H'0001:C420   -   H'0001:CBEA   H'000007CB
+                                                              AX_OCR                             AX_DP2                          
+                                  H'0001:CBF0   -   H'0001:D630   H'00000A41
+                                                              AX_PRT                             aplprt                          
+                                  H'0001:D640   -   H'0001:E1DA   H'00000B9B
+                                                              AX_DP3                             apldp3                          
+                                  H'0001:E1E0   -   H'0001:E548   H'00000369
+                                                              AX_DP3L                            apldp3l                         
+
+* TOTAL ADDRESS *                 H'0001:18E0   -   H'0001:E548   H'0000CC69
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL3                              H'0002:4000   -   H'0002:5BFF   H'00001C00
+                                                              NLQFNT                             AX_DP2                          
+
+* TOTAL ADDRESS *                 H'0002:4000   -   H'0002:5BFF   H'00001C00
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+APL4                              H'0002:8000   -   H'0002:A8FD   H'000028FE
+                                                              AX_TB2                             AX_DP2                          
+
+* TOTAL ADDRESS *                 H'0002:8000   -   H'0002:A8FD   H'000028FE
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL5                              H'0002:A900   -   H'0002:BA6F   H'00001170
+                                                              AX_EXPM                            AX_DP2                          
+
+* TOTAL ADDRESS *                 H'0002:A900   -   H'0002:BA6F   H'00001170
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+APL6                              H'0002:BA70   -   H'0002:BDEB   H'0000037C
+                                                              KCCTBL                             AX_DP2                          
+                                  H'0002:BDF0   -   H'0002:E2AB   H'000024BC
+                                                              ksctbl                             AX_DP2                          
+
+* TOTAL ADDRESS *                 H'0002:BA70   -   H'0002:E2AB   H'0000283C
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     4
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+APL7                              H'0002:E300   -   H'0002:ECFF   H'00000A00
+                                                              NDRFNT                             AX_DP2                          
+
+* TOTAL ADDRESS *                 H'0002:E300   -   H'0002:ECFF   H'00000A00
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+CG1                               H'0008:0000   -   H'0008:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0008:0000   -   H'0008:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+CG2                               H'0009:0000   -   H'0009:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0009:0000   -   H'0009:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM2                              H'000A:0000   -   H'000A:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'000A:0000   -   H'000A:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM3                              H'000B:0000   -   H'000B:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'000B:0000   -   H'000B:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM4                              H'000D:0000   -   H'000D:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+                                  H'000D:0000   -   H'000D:FFFE   H'0000FFFF
+                                                              AX_MAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'000D:0000   -   H'000D:FFFE   H'0000FFFF
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     5
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM5                              H'000E:0000   -   H'000E:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'000E:0000   -   H'000E:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM6                              H'000F:0000   -   H'000F:FFFE   H'0000FFFF
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'000F:0000   -   H'000F:FFFE   H'0000FFFF
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM1                              H'0000:8000   -   H'0000:FF7F   H'00007F80
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:8000   -   H'0000:FF7F   H'00007F80
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RAM1                              H'0000:8000   -   H'0000:FF7F   H'00007F80
+                                                              AX_MAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:8000   -   H'0000:FF7F   H'00007F80
+
+
+ATTRIBUTE  :   DATA  SHR  
+
+RTMRAM                            H'0000:00FC   -   H'0000:00FF   H'00000004
+                                                              SYSMAP                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:00FC   -   H'0000:00FF   H'00000004
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+SYS0                              H'0000:0000   -   H'0000:06F8   H'000006F9
+                                                              SYSTBL                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:0000   -   H'0000:06F8   H'000006F9
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     6
+
+                                        ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION   NAME                       START      -      END         LENGTH
+                                                              UNIT NAME                          MODULE NAME
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+APL0                              H'0000:6000   -   H'0000:7FC1   H'00001FC2
+                                                              ax_tb1                             AX_SYS                          
+
+* TOTAL ADDRESS *                 H'0000:6000   -   H'0000:7FC1   H'00001FC2
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     1
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  ACFTB                                H'0000:61D8            DAT
+                                  ACFTB1                               H'0000:61DC            DAT
+                                  ACFTB2                               H'0000:61E2            DAT
+                                  ACFTB3                               H'0000:61E8            DAT
+                                  ACFTB4                               H'0000:61EE            DAT
+                                  AKDIN                                H'0001:B909            DAT
+                                  AKLIN                                H'0001:B978            DAT
+                                  AMIKE                                H'0001:84C7            DAT
+                                  ANKPRT                               H'0001:5555            DAT
+                                  BARCD                                H'0001:AA70            DAT
+                                  BATRAM                               H'000E:8000            DAT
+                                  BC39LD                               H'0001:ADC4            DAT
+                                  BCDBLD                               H'0001:ADC4            DAT
+                                  BCDCTB                               H'0002:A600            DAT
+                                  BCDFTB                               H'0002:8000            DAT
+                                  BCDPR                                H'0001:D134            DAT
+                                  BJ08LD                               H'0001:ADC4            DAT
+                                  BJ13LD                               H'0001:ADC4            DAT
+                                  BOCTB                                H'0000:7B00            DAT
+                                  BSRTB                                H'0000:0200            DAT
+                                  BUZT                                 H'0000:FF24            DAT
+                                  BZBEL                                H'0000:36AD            DAT
+                                  BZCON1                               H'0000:32AB            DAT
+                                  BZCON2                               H'0000:32B4            DAT
+                                  BZEOF                                H'0000:36D5            DAT
+                                  BZEON                                H'0000:36C7            DAT
+                                  BZINT1                               H'0000:32E1            DAT
+                                  BZINT2                               H'0000:32EA            DAT
+                                  BZMDC                                H'0000:36B9            DAT
+                                  BZOFF                                H'0000:3249            DAT
+                                  BZOFF1                               H'0000:3266            DAT
+                                  BZON1                                H'0000:3280            DAT
+                                  BZON2                                H'0000:3289            DAT
+                                  BZPSW                                H'0000:36B3            DAT
+                                  CALDP3                               H'0000:3455            DAT
+                                  CALDPH                               H'0000:3450            DAT
+                                  CALIOS                               H'0000:2CFB            DAT
+                                  CALMON                               H'0000:39F2            DAT
+                                  CALSYS                               H'0000:1CB0            DAT
+                                  CALTSK                               H'0000:10B0            DAT
+                                  CANCD                                H'0001:76DE            DAT
+                                  CANCYC                               H'0000:18A0            DAT
+                                  CD39TB                               H'0002:A500            DAT
+                                  CDBTB                                H'0002:A400            DAT
+                                  CG0020                               H'0002:4148            DAT
+                                  CG1020                               H'0002:E418            DAT
+                                  CHGDAT                               H'0001:BF50            DAT
+                                  CHGMD                                H'0001:4495            DAT
+                                  CHGPF                                H'0001:448E            DAT
+                                  CHKBLK                               H'0000:1ACF            DAT
+                                  CHKCAN                               H'0001:0B22            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     2
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  CHKCG                                H'0000:1CD9            DAT
+                                  CHKDP3                               H'0001:E270            DAT
+                                  CHKEJC                               H'0001:E3E3            DAT
+                                  CHKHDC                               H'0001:E29A            DAT
+                                  CHKJST                               H'0001:61F9            DAT
+                                  CHKKCD                               H'0001:570B            DAT
+                                  CHKLF                                H'0001:E43D            DAT
+                                  CHKMD                                H'0001:450A            DAT
+                                  CHKMSG                               H'0000:18A9            DAT
+                                  CHKOCG                               H'0000:1C63            DAT
+                                  CHKPEO                               H'0001:762A            DAT
+                                  CHKPKT                               H'0000:1AC7            DAT
+                                  CHKPM                                H'0001:0B7E            DAT
+                                  CHKPMD                               H'0001:E321            DAT
+                                  CHKPXN                               H'0001:7A02            DAT
+                                  CHKRAM                               H'0000:1CF4            DAT
+                                  CHKRBW                               H'0001:0000            DAT
+                                  CHKROM                               H'0000:1CB6            DAT
+                                  CHKSCG                               H'0000:1C6B            DAT
+                                  CHKSEM                               H'0000:18A6            DAT
+                                  CKDT01                               H'0001:61B6            DAT
+                                  CKSPDB                               H'0001:61D6            DAT
+                                  CKTXTB                               H'0001:7C58            DAT
+                                  CLDBF                                H'0001:A5E8            DAT
+                                  CLGBF                                H'0001:A5DD            DAT
+                                  CLIMB                                H'0001:189A            DAT
+                                  CLRBF                                H'0000:1D59            DAT
+                                  CLRBFW                               H'0000:1F75            DAT
+                                  CLREDT                               H'0001:9B02            DAT
+                                  CLRLFP                               H'0001:01CC            DAT
+                                  CLRLNM                               H'0001:12AA            DAT
+                                  CLRPHM                               H'0001:0B8E            DAT
+                                  CLRPRR                               H'0001:52BA            DAT
+                                  CMDBF                                H'0000:FD00            DAT
+                                  CMDCAN                               H'0001:0B17            DAT
+                                  CNKNJ                                H'0001:7797            DAT
+                                  COPY                                 H'0001:1613            DAT
+                                  COPYBF                               H'0000:21A9            DAT
+                                  CP123                                H'0001:172E            DAT
+                                  CP1T2                                H'0001:9AC9            DAT
+                                  CP321                                H'0001:1776            DAT
+                                  CPCHG                                H'0001:C30C            DAT
+                                  CPI2P                                H'0001:16BA            DAT
+                                  CPRAM                                H'0001:A50B            DAT
+                                  CPS2C                                H'0001:16C4            DAT
+                                  CPSCRT                               H'0001:A97D            DAT
+                                  CPYEDT                               H'0001:8DB8            DAT
+                                  CRCD                                 H'0001:7675            DAT
+                                  CRCHK                                H'0001:0C89            DAT
+                                  CRCL                                 H'0001:0C29            DAT
+                                  CRESC                                H'0001:0C85            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     3
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  CRHM                                 H'0001:0BE0            DAT
+                                  CRHOME                               H'0001:E238            DAT
+                                  CRHS                                 H'0001:0BF2            DAT
+                                  CRINI                                H'0001:0C99            DAT
+                                  CRMV                                 H'0001:0C2C            DAT
+                                  CRMVPR                               H'0001:0C63            DAT
+                                  CRMVX                                H'0001:0C4C            DAT
+                                  CRP1                                 H'0001:0C05            DAT
+                                  CRP2                                 H'0001:0C17            DAT
+                                  CUTLR                                H'0001:144E            DAT
+                                  CUTPF                                H'0001:E4C6            DAT
+                                  CUTPF1                               H'0001:E4D6            DAT
+                                  CUTPR                                H'0001:13FC            DAT
+                                  CUTSP                                H'0001:1473            DAT
+                                  CV123                                H'0001:154A            DAT
+                                  CV321                                H'0001:15A6            DAT
+                                  CVCTP                                H'0001:13AC            DAT
+                                  CVDR10                               H'0001:931D            DAT
+                                  CVDR15                               H'0001:9381            DAT
+                                  CVLQ10                               H'0001:9333            DAT
+                                  CVLQ15                               H'0001:9390            DAT
+                                  CVPTC                                H'0001:13CD            DAT
+                                  CWETB                                H'0000:7C00            DAT
+                                  CYCWUP                               H'0000:185B            DAT
+                                  D2STX                                H'0001:54CB            DAT
+                                  D3HPKT                               H'0000:FB16            DAT
+                                  D3HTBL                               H'0001:D65C            DAT
+                                  D3LPKT                               H'0000:FB44            DAT
+                                  D3PTBL                               H'0001:D64E            DAT
+                                  D3WPKT                               H'0000:FB00            DAT
+                                  D4SEMI                               H'0002:A800            DAT
+                                  DATBE                                H'0000:C000            DAT
+                                  DATBF                                H'0000:8000            DAT
+                                  DATCOV                               H'0001:4CDE            DAT
+                                  DELCD                                H'0001:76FE            DAT
+                                  DFDLF                                H'0001:A365            DAT
+                                  DFGAJ                                H'0001:A541            DAT
+                                  DIV32                                H'0001:C396            DAT
+                                  DLDBF                                H'000D:4E02            DAT
+                                  DLDID                                H'000D:4E00            DAT
+                                  DLRBF                                H'000D:7F44            DAT
+                                  DODIG                                H'0001:7DD0            DAT
+                                  DOTTB1                               H'0000:0300            DAT
+                                  DOTTB2                               H'0000:0330            DAT
+                                  DOTTB3                               H'0000:0350            DAT
+                                  DOTTB4                               H'0000:0370            DAT
+                                  DOTTB5                               H'0000:0390            DAT
+                                  DP1ALM                               H'0000:3ADB            DAT
+                                  DP1IMG                               H'0001:446B            DAT
+                                  DP1INI                               H'0001:441D            DAT
+                                  DP1INT                               H'0001:4459            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     4
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  DP1OFF                               H'0001:43E2            DAT
+                                  DP1OFP                               H'0001:43DC            DAT
+                                  DP1ON                                H'0001:43D0            DAT
+                                  DP1PER                               H'0001:43FC            DAT
+                                  DP1PES                               H'0001:4401            DAT
+                                  DP1POL                               H'0001:446E            DAT
+                                  DP2IPR                               H'0001:634C            DAT
+                                  DP2MDC                               H'0001:635B            DAT
+                                  DP2PFC                               H'0001:620D            DAT
+                                  DP2PON                               H'0001:6352            DAT
+                                  DP2PRT                               H'0001:4ED2            DAT
+                                  DP2RST                               H'0001:4E74            DAT
+                                  DP2STA                               H'0001:5510            DAT
+                                  DP2STK                               H'0000:FA00            DAT
+                                  DP2S_2                               H'0001:5513            DAT
+                                  DP2TBL                               H'0001:4E40            DAT
+                                  DP2TCB                               H'0000:F900            DAT
+                                  DP2TPR                               H'0001:52BE            DAT
+                                  DP3INI                               H'0001:0130            DAT
+                                  DP3LI                                H'0001:0B10            DAT
+                                  DP3STA                               H'0001:D875            DAT
+                                  DP3STK                               H'0000:FB00            DAT
+                                  DP3TBL                               H'0001:D640            DAT
+                                  DP3TCB                               H'0000:FA00            DAT
+                                  DR10C                                H'0002:9A00            DAT
+                                  DR15C                                H'0002:9D00            DAT
+                                  DR15S                                H'0002:9E00            DAT
+                                  DRGRP                                H'0002:9C00            DAT
+                                  DRKAT                                H'0002:9B00            DAT
+                                  DSPADS                               H'0000:390C            DAT
+                                  DSPALM                               H'0000:3718            DAT
+                                  DSPCHR                               H'0000:3950            DAT
+                                  DSPCOF                               H'0000:394E            DAT
+                                  DSPCON                               H'0000:393C            DAT
+                                  DSPCPM                               H'0000:38C5            DAT
+                                  DSPCUR                               H'0000:3920            DAT
+                                  DSPDE2                               H'0000:395D            DAT
+                                  DSPHX1                               H'0000:3964            DAT
+                                  DSPHX2                               H'0000:3969            DAT
+                                  DSPHX4                               H'0000:396E            DAT
+                                  DSPHXS                               H'0000:3973            DAT
+                                  DSPKCP                               H'0000:3956            DAT
+                                  DSPLST                               H'0000:3948            DAT
+                                  DSPMDC                               H'0000:3901            DAT
+                                  DSPMEN                               H'0000:3940            DAT
+                                  DSPNOR                               H'0000:379F            DAT
+                                  DSPPAM                               H'0000:38B0            DAT
+                                  DSPPFN                               H'0000:38ED            DAT
+                                  DSPPON                               H'0000:3750            DAT
+                                  DSPSTA                               H'0000:3895            DAT
+                                  DTOPC                                H'0001:1244            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     5
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  DTPAV                                H'0001:1260            DAT
+                                  EDBF1                                H'0000:DC3A            DAT
+                                  EDBF2                                H'0000:DD90            DAT
+                                  EDTCP1                               H'0001:98AD            DAT
+                                  EDTCPH                               H'0001:98E5            DAT
+                                  EDTCPY                               H'0001:98BC            DAT
+                                  EEPBF                                H'0000:FC00            DAT
+                                  EEPTB                                H'0000:6200            DAT
+                                  EERD                                 H'0000:3395            DAT
+                                  EERDBF                               H'0000:3380            DAT
+                                  EERDWD                               H'0000:338C            DAT
+                                  EESAVE                               H'0000:3645            DAT
+                                  EEWRBF                               H'0000:3438            DAT
+                                  EEWRDI                               H'0000:33C4            DAT
+                                  EEWREN                               H'0000:33C9            DAT
+                                  EEWRWD                               H'0000:3407            DAT
+                                  EJCA                                 H'0001:10DB            DAT
+                                  EJCB                                 H'0001:10A6            DAT
+                                  EJCBTM                               H'0001:05BF            DAT
+                                  EJCF                                 H'0001:109D            DAT
+                                  EJCFRM                               H'0001:0575            DAT
+                                  EJCS                                 H'0001:10E0            DAT
+                                  EJCSHT                               H'0001:05EA            DAT
+                                  EJECT                                H'0001:E405            DAT
+                                  EMPDR                                H'0001:B7F8            DAT
+                                  EMPKJ                                H'0001:BA62            DAT
+                                  EMPLQ                                H'0001:B7F8            DAT
+                                  ESCCT                                H'0001:5A1A            DAT
+                                  ESCF                                 H'0001:1052            DAT
+                                  EXRAM1                               H'000A:0000            DAT
+                                  EXRAM2                               H'000B:0000            DAT
+                                  FEEDF                                H'0001:E478            DAT
+                                  FEEDF1                               H'0001:E47C            DAT
+                                  FEEDN                                H'0001:E4BC            DAT
+                                  FEEDR                                H'0001:E49A            DAT
+                                  FEEDR1                               H'0001:E49E            DAT
+                                  FFCD2                                H'0001:766E            DAT
+                                  FILBF                                H'0000:1D5B            DAT
+                                  FILBFW                               H'0000:1F77            DAT
+                                  FJUST                                H'0001:BDD0            DAT
+                                  FNCCD                                H'0001:72B0            DAT
+                                  FS58R                                H'0001:722C            DAT
+                                  FSCTL                                H'0001:72BA            DAT
+                                  GAHDTB                               H'0000:04D2            DAT
+                                  GAINI                                H'0001:11C7            DAT
+                                  GETBLC                               H'0001:0FE6            DAT
+                                  GETBLK                               H'0000:1ACF            DAT
+                                  GETC                                 H'0001:469C            DAT
+                                  GETDEL                               H'0001:00F5            DAT
+                                  GETDLB                               H'0001:AA3A            DAT
+                                  GETEJB                               H'0001:1006            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     6
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  GETEJF                               H'0001:0FFD            DAT
+                                  GETEJS                               H'0001:1016            DAT
+                                  GETI24                               H'0001:477B            DAT
+                                  GETI8                                H'0001:482C            DAT
+                                  GETIBP                               H'0001:836D            DAT
+                                  GETLFP                               H'0001:01D0            DAT
+                                  GETLRC                               H'0001:13E3            DAT
+                                  GETLRP                               H'0001:13C0            DAT
+                                  GETPC1                               H'0001:C0C2            DAT
+                                  GETPC3                               H'0001:C0F2            DAT
+                                  GETPCB                               H'0001:181B            DAT
+                                  GETPE2                               H'0001:0FF8            DAT
+                                  GETPFP                               H'0001:E315            DAT
+                                  GETPKT                               H'0001:E2C3            DAT
+                                  GETPRB                               H'0001:1829            DAT
+                                  GETRSA                               H'0001:0D9B            DAT
+                                  GETWTF                               H'0001:C2A0            DAT
+                                  GIJBF                                H'0000:C000            DAT
+                                  GPTPM                                H'0001:C2B8            DAT
+                                  GPTTB                                H'0001:C40E            DAT
+                                  GTSPD                                H'0001:796B            DAT
+                                  HBUF20                               H'0000:FDE8            DAT
+                                  HDDIG                                H'0001:7DD5            DAT
+                                  HELDR                                H'0001:B846            DAT
+                                  HELKJ                                H'0001:BAB2            DAT
+                                  HELLQ                                H'0001:B846            DAT
+                                  HEPDR                                H'0001:B8A3            DAT
+                                  HEPKJ                                H'0001:BB06            DAT
+                                  HEPLQ                                H'0001:B8A3            DAT
+                                  HGPR0                                H'0001:4D84            DAT
+                                  HIGHC                                H'0000:FDE6            DAT
+                                  HSADJ1                               H'0001:020A            DAT
+                                  HSADJ2                               H'0001:023A            DAT
+                                  HSADJ3                               H'0001:0278            DAT
+                                  HSAMD                                H'0001:0293            DAT
+                                  HSAUTO                               H'0001:02EB            DAT
+                                  HSDOWN                               H'0001:0233            DAT
+                                  HSEEMD                               H'0001:E244            DAT
+                                  HSFIX                                H'0001:02E7            DAT
+                                  HSINI                                H'0001:0CE9            DAT
+                                  HSINIT                               H'0001:0288            DAT
+                                  HSMDCH                               H'0001:E264            DAT
+                                  HSMMD                                H'0001:029E            DAT
+                                  HSMODE                               H'0001:E25B            DAT
+                                  HSMV                                 H'0001:0D44            DAT
+                                  HSMVP                                H'0001:0D39            DAT
+                                  HSNTTB                               H'0000:01DA            DAT
+                                  HSNYTB                               H'0000:01CA            DAT
+                                  HSOP                                 H'0001:0CE0            DAT
+                                  HSOPEN                               H'0001:02CC            DAT
+                                  HSOPN1                               H'0001:02D1            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     7
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  HSOPN2                               H'0001:02D6            DAT
+                                  HSOPSR                               H'0001:02C9            DAT
+                                  HSOPSS                               H'0001:02C5            DAT
+                                  HSPH                                 H'0001:0CD3            DAT
+                                  HSPOS                                H'0001:0D8C            DAT
+                                  HSPU                                 H'0001:0D78            DAT
+                                  HSPUMV                               H'0001:021B            DAT
+                                  HSPUOP                               H'0001:02BB            DAT
+                                  HSPUSH                               H'0001:0D6F            DAT
+                                  HSUP                                 H'0001:0223            DAT
+                                  HTBF                                 H'0000:DA70            DAT
+                                  HVCON                                H'0001:7508            DAT
+                                  IMGBF                                H'000D:012C            DAT
+                                  IMGTB1                               H'0000:6300            DAT
+                                  IMGTB2                               H'0000:6400            DAT
+                                  IMGTB3                               H'0000:6500            DAT
+                                  INBFC                                H'0001:C359            DAT
+                                  INBFP                                H'0001:C343            DAT
+                                  INBFP2                               H'0001:C346            DAT
+                                  INCTB                                H'0000:7EA8            DAT
+                                  INI2                                 H'0001:116B            DAT
+                                  INIA                                 H'0001:1174            DAT
+                                  INIDP3                               H'0001:E203            DAT
+                                  INIEX1                               H'0000:1BF2            DAT
+                                  INIEX2                               H'0000:1BFC            DAT
+                                  INIEX3                               H'0000:1C06            DAT
+                                  INIEX4                               H'0000:1C10            DAT
+                                  INILBF                               H'0000:2FE6            DAT
+                                  INILCD                               H'0000:2F9E            DAT
+                                  INIMEX                               H'0001:E233            DAT
+                                  INIPBF                               H'0000:1C36            DAT
+                                  INIPNL                               H'0000:2C95            DAT
+                                  INIPR                                H'0001:E22A            DAT
+                                  INIPR1                               H'0001:E22D            DAT
+                                  INIRAM                               H'0000:1C24            DAT
+                                  INIRTM                               H'0000:1000            DAT
+                                  INISHT                               H'0001:0659            DAT
+                                  INITMR                               H'0000:1789            DAT
+                                  INS2                                 H'0001:1134            DAT
+                                  INS260                               H'0001:077C            DAT
+                                  INSA                                 H'0001:113B            DAT
+                                  INSAF1                               H'0001:07FF            DAT
+                                  INSAF2                               H'0001:080F            DAT
+                                  INSAF3                               H'0001:081F            DAT
+                                  INSAF4                               H'0001:082F            DAT
+                                  INSERT                               H'0001:E3A7            DAT
+                                  INSF                                 H'0001:110A            DAT
+                                  INSFRM                               H'0001:06C0            DAT
+                                  INSP1                                H'0001:D72D            DAT
+                                  INSSHT                               H'0001:06D7            DAT
+                                  INTACF                               H'0000:399F            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     8
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  INTACT                               H'0000:3990            DAT
+                                  INTAER                               H'0000:36DE            DAT
+                                  INTCVR                               H'0000:3991            DAT
+                                  INTDA1                               H'0000:3A2C            DAT
+                                  INTDA2                               H'0000:3A1B            DAT
+                                  INTER1                               H'0000:26F4            DAT
+                                  INTERR                               H'0000:1B98            DAT
+                                  INTFAN                               H'0000:28D7            DAT
+                                  INTFER                               H'0000:36F5            DAT
+                                  INTGA                                H'0000:25E0            DAT
+                                  INTHSM                               H'0000:39B8            DAT
+                                  INTOPC                               H'0000:39DE            DAT
+                                  INTP0                                H'0000:3A16            DAT
+                                  INTP1                                H'0000:3A00            DAT
+                                  INTPNL                               H'0000:29D8            DAT
+                                  INTPON                               H'0000:34FB            DAT
+                                  INTRX1                               H'0000:26F4            DAT
+                                  INTSNS                               H'0000:39D5            DAT
+                                  INTTMR                               H'0000:17B8            DAT
+                                  INTUSR                               H'0000:3470            DAT
+                                  IOSSTK                               H'0000:F700            DAT
+                                  IOSTBL                               H'0000:25D0            DAT
+                                  IOSTCB                               H'0000:F600            DAT
+                                  I_IMG1                               H'0001:80CE            DAT
+                                  I_IMG2                               H'0001:808C            DAT
+                                  JN08L                                H'0002:A100            DAT
+                                  JN08R                                H'0002:A300            DAT
+                                  JN13LE                               H'0002:A200            DAT
+                                  JN13LO                               H'0002:A100            DAT
+                                  JN13R                                H'0002:A300            DAT
+                                  JN13TB                               H'0002:8388            DAT
+                                  K21HT                                H'0002:8500            DAT
+                                  K22HT                                H'0002:8600            DAT
+                                  K23HT                                H'0002:8700            DAT
+                                  KCCTBL                               H'0002:BA70            DAT
+                                  KF1HT                                H'0002:9100            DAT
+                                  KF2HT                                H'0002:9200            DAT
+                                  KF3HT                                H'0002:9300            DAT
+                                  KF4HT                                H'0002:9400            DAT
+                                  KJITL                                H'0001:BB74            DAT
+                                  KJVEL                                H'0001:9FA2            DAT
+                                  KJVEL1                               H'0001:9FFB            DAT
+                                  KOUTSH                               H'0001:B3CB            DAT
+                                  KSCTBL                               H'0002:BDF0            DAT
+                                  KTBHT                                H'0002:8370            DAT
+                                  KTBVT                                H'0002:8370            DAT
+                                  LCDBF                                H'0000:FF34            DAT
+                                  LCDBF1                               H'0000:FF3A            DAT
+                                  LCDBF2                               H'0000:FF60            DAT
+                                  LCDBFS                               H'0000:306E            DAT
+                                  LCDBLC                               H'0000:305B            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :     9
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  LCDBLS                               H'0000:3037            DAT
+                                  LCDCAL                               H'0000:2F80            DAT
+                                  LCDCHR                               H'0000:3113            DAT
+                                  LCDCON                               H'0000:301E            DAT
+                                  LCDCX                                H'0000:310D            DAT
+                                  LCDDE0                               H'0000:3209            DAT
+                                  LCDDEC                               H'0000:320D            DAT
+                                  LCDDLD                               H'0000:3019            DAT
+                                  LCDHX1                               H'0000:31F7            DAT
+                                  LCDHX2                               H'0000:31EB            DAT
+                                  LCDHX3                               H'0000:31E5            DAT
+                                  LCDHX4                               H'0000:31DF            DAT
+                                  LCDLST                               H'0000:30FD            DAT
+                                  LCDLX                                H'0000:30FF            DAT
+                                  LCDS1                                H'0000:30F5            DAT
+                                  LCDS2                                H'0000:30F9            DAT
+                                  LCDSTK                               H'0000:0000            EQU
+                                  LCDSTR                               H'0000:3105            DAT
+                                  LCDSX                                H'0000:3103            DAT
+                                  LCDTBL                               H'0000:2F70            DAT
+                                  LCDTCB                               H'0000:0000            EQU
+                                  LDANK1                               H'0001:8490            DAT
+                                  LDANK2                               H'0001:8501            DAT
+                                  LDANK3                               H'0001:8599            DAT
+                                  LDDWL                                H'0001:A8F5            DAT
+                                  LDGIJ                                H'0001:A79D            DAT
+                                  LDKNJ1                               H'0001:94A0            DAT
+                                  LDKNJ2                               H'0001:94CE            DAT
+                                  LDKNJX                               H'0001:94CE            DAT
+                                  LDKNJY                               H'0001:95A5            DAT
+                                  LEDBLC                               H'0000:3364            DAT
+                                  LEDBLS                               H'0000:3344            DAT
+                                  LEDOFF                               H'0000:3318            DAT
+                                  LEDON                                H'0000:3326            DAT
+                                  LEDSET                               H'0000:3341            DAT
+                                  LEDT                                 H'0000:FF2E            DAT
+                                  LEDXOR                               H'0000:3336            DAT
+                                  LFCAN                                H'0001:DF70            DAT
+                                  LFCD1                                H'0001:760A            DAT
+                                  LFF1                                 H'0001:0F2C            DAT
+                                  LFF2                                 H'0001:0F30            DAT
+                                  LFFW                                 H'0001:0F27            DAT
+                                  LFFWD                                H'0001:0440            DAT
+                                  LFPO                                 H'0001:0FAA            DAT
+                                  LFR1                                 H'0001:0F39            DAT
+                                  LFR2                                 H'0001:0F40            DAT
+                                  LFRVS                                H'0001:03C5            DAT
+                                  LFRVS0                               H'0001:03C1            DAT
+                                  LFRVSN                               H'0001:03C8            DAT
+                                  LFRW                                 H'0001:0F34            DAT
+                                  LFSTB1                               H'0000:60C8            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    10
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  LFSTB2                               H'0000:610B            DAT
+                                  LFSTB3                               H'0000:613E            DAT
+                                  LFSTB4                               H'0000:6171            DAT
+                                  LFSTB5                               H'0000:61A4            DAT
+                                  LINFD                                H'0001:7613            DAT
+                                  LKNPKT                               H'0000:1A68            DAT
+                                  LOKPKT                               H'0000:1A51            DAT
+                                  LOWC                                 H'0000:FDE2            DAT
+                                  LQ10C                                H'0002:9500            DAT
+                                  LQ15C                                H'0002:9800            DAT
+                                  LQ15S                                H'0002:9900            DAT
+                                  LQGRP                                H'0002:9700            DAT
+                                  LQKAT                                H'0002:9600            DAT
+                                  LVFM                                 H'0001:0EC3            DAT
+                                  LVPM                                 H'0001:0EAD            DAT
+                                  LVSH                                 H'0001:0F07            DAT
+                                  MDFIX                                H'0001:44B8            DAT
+                                  MDFIX1                               H'0001:44C1            DAT
+                                  MDFIX2                               H'0001:44CA            DAT
+                                  MGCGC                                H'0001:43B8            DAT
+                                  MGCVR                                H'0001:4070            DAT
+                                  MGMDM                                H'0001:282D            DAT
+                                  MGMKM                                H'0001:287D            DAT
+                                  MGMYM                                H'0001:28CA            DAT
+                                  MGMZM                                H'0001:2917            DAT
+                                  MGPER                                H'0001:43C9            DAT
+                                  MGPF1                                H'0001:2977            DAT
+                                  MGPF2                                H'0001:2988            DAT
+                                  MGPF3                                H'0001:29A4            DAT
+                                  MGPF4                                H'0001:29B0            DAT
+                                  MGPF5                                H'0001:29EF            DAT
+                                  MGPF6                                H'0001:2A02            DAT
+                                  MGPF7                                H'0001:3155            DAT
+                                  MGPF7A                               H'0001:3166            DAT
+                                  MGPF7B                               H'0001:3175            DAT
+                                  MGPF7C                               H'0001:3186            DAT
+                                  MGPF7D                               H'0001:3197            DAT
+                                  MGPF7E                               H'0001:31A8            DAT
+                                  MGPF8                                H'0001:3BA1            DAT
+                                  MGPF9                                H'0001:3BB8            DAT
+                                  MGPFA                                H'0001:3BC8            DAT
+                                  MGPFC                                H'0001:2964            DAT
+                                  MGPFS                                H'0001:281B            DAT
+                                  MGSP1                                H'0001:3CCA            DAT
+                                  MGSP2                                H'0001:3CD7            DAT
+                                  MGSP2A                               H'0001:3CF8            DAT
+                                  MGSP3                                H'0001:3D14            DAT
+                                  MGSP7                                H'0001:3D52            DAT
+                                  MGSP7A                               H'0001:3D73            DAT
+                                  MGSP7B                               H'0001:3D94            DAT
+                                  MGSP7C                               H'0001:3DB4            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    11
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  MGSP7D                               H'0001:3DDD            DAT
+                                  MGSP7E                               H'0001:3DF8            DAT
+                                  MGSP7F                               H'0001:3E1E            DAT
+                                  MGSP8                                H'0001:3E42            DAT
+                                  MGSPC                                H'0001:3CB7            DAT
+                                  MGSR1                                H'0001:3EA6            DAT
+                                  MGSR2                                H'0001:3EB1            DAT
+                                  MGSR3                                H'0001:3EC0            DAT
+                                  MGSR3A                               H'0001:3ECF            DAT
+                                  MGSR3B                               H'0001:3EDC            DAT
+                                  MGSR3C                               H'0001:3EEF            DAT
+                                  MGSR3D                               H'0001:3EFE            DAT
+                                  MGSR3E                               H'0001:3F0D            DAT
+                                  MGSR3F                               H'0001:3F1C            DAT
+                                  MGSR4                                H'0001:3F2B            DAT
+                                  MGSR4A                               H'0001:3F35            DAT
+                                  MGSR4B                               H'0001:3F42            DAT
+                                  MGSR4C                               H'0001:3F52            DAT
+                                  MGSR5                                H'0001:3F65            DAT
+                                  MGSR5A                               H'0001:3F77            DAT
+                                  MGSR5B                               H'0001:3F89            DAT
+                                  MGSR5C                               H'0001:3F9B            DAT
+                                  MGSR5D                               H'0001:3FAD            DAT
+                                  MGSR5E                               H'0001:3FBE            DAT
+                                  MGSR5F                               H'0001:3FCF            DAT
+                                  MGSR6                                H'0001:3FE0            DAT
+                                  MGSR6A                               H'0001:3FF2            DAT
+                                  MGSR6B                               H'0001:4004            DAT
+                                  MGSR6C                               H'0001:4016            DAT
+                                  MGSR6D                               H'0001:4028            DAT
+                                  MGSR6E                               H'0001:4039            DAT
+                                  MGSR6F                               H'0001:404A            DAT
+                                  MGSR7                                H'0001:405A            DAT
+                                  MGSR8                                H'0001:4063            DAT
+                                  MGSRV                                H'0001:3EA3            DAT
+                                  MIDC                                 H'0000:FDE4            DAT
+                                  MKVRT                                H'0001:A066            DAT
+                                  MKVRT4                               H'0001:A08F            DAT
+                                  MLALM                                H'0001:40E0            DAT
+                                  MLERR                                H'0001:406E            DAT
+                                  MLMDM                                H'0001:2839            DAT
+                                  MLMKM                                H'0001:2889            DAT
+                                  MLMYM                                H'0001:28D9            DAT
+                                  MLMZM                                H'0001:2923            DAT
+                                  MLON                                 H'0001:273A            DAT
+                                  MLONA                                H'0001:2765            DAT
+                                  MLONB                                H'0001:2799            DAT
+                                  MLONC                                H'0001:27AD            DAT
+                                  MLOND                                H'0001:2811            DAT
+                                  MLPF2                                H'0001:2999            DAT
+                                  MLPF3                                H'0001:27AC            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    12
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  MLPF4                                H'0001:29BC            DAT
+                                  MLPF6                                H'0001:2A0C            DAT
+                                  MLPF7                                H'0001:31B8            DAT
+                                  MLPF8                                H'0001:3BAF            DAT
+                                  MLPFA                                H'0001:3BD5            DAT
+                                  MLPON                                H'0001:2700            DAT
+                                  MLSP2                                H'0001:3CE5            DAT
+                                  MLSP2A                               H'0001:3D05            DAT
+                                  MLSP3                                H'0001:3D22            DAT
+                                  MLSP7                                H'0001:3D64            DAT
+                                  MLSP7A                               H'0001:3D85            DAT
+                                  MLSP7B                               H'0001:3DA5            DAT
+                                  MLSP7C                               H'0001:3DC6            DAT
+                                  MLSP7D                               H'0001:3DED            DAT
+                                  MLSP7E                               H'0001:3E0D            DAT
+                                  MLSP7F                               H'0001:3E33            DAT
+                                  MLSP8                                H'0001:3E4D            DAT
+                                  MONSTK                               H'0000:F800            DAT
+                                  MONTBL                               H'0001:18E0            DAT
+                                  MONTCB                               H'0000:F700            DAT
+                                  MSGPOS                               H'0001:2702            DAT
+                                  MSKBL                                H'0001:BD76            DAT
+                                  MX21                                 H'0002:A900            DAT
+                                  MX22                                 H'0002:A94B            DAT
+                                  MX31                                 H'0002:A996            DAT
+                                  MX32                                 H'0002:A9EA            DAT
+                                  MX33                                 H'0002:AA42            DAT
+                                  MX41                                 H'0002:AA96            DAT
+                                  MX42                                 H'0002:AB02            DAT
+                                  MX43                                 H'0002:AB71            DAT
+                                  MX44                                 H'0002:ABE0            DAT
+                                  MX51                                 H'0002:AC4C            DAT
+                                  MX52                                 H'0002:ACB8            DAT
+                                  MX53                                 H'0002:AD2B            DAT
+                                  MX54                                 H'0002:AD9B            DAT
+                                  MX55                                 H'0002:AE0E            DAT
+                                  MX61                                 H'0002:AE7A            DAT
+                                  MX62                                 H'0002:AEFA            DAT
+                                  MX63                                 H'0002:AF7A            DAT
+                                  MX64                                 H'0002:AFFE            DAT
+                                  MX65                                 H'0002:B082            DAT
+                                  MX66                                 H'0002:B102            DAT
+                                  MX71                                 H'0002:B182            DAT
+                                  MX72                                 H'0002:B206            DAT
+                                  MX73                                 H'0002:B28A            DAT
+                                  MX74                                 H'0002:B315            DAT
+                                  MX75                                 H'0002:B39D            DAT
+                                  MX76                                 H'0002:B428            DAT
+                                  MX77                                 H'0002:B4AC            DAT
+                                  MX81                                 H'0002:B530            DAT
+                                  MX82                                 H'0002:B5D7            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    13
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  MX83                                 H'0002:B67E            DAT
+                                  MX84                                 H'0002:B726            DAT
+                                  MX85                                 H'0002:B7D1            DAT
+                                  MX86                                 H'0002:B87C            DAT
+                                  MX87                                 H'0002:B926            DAT
+                                  MX88                                 H'0002:B9CD            DAT
+                                  NDR15                                H'0002:E300            DAT
+                                  NLQ15                                H'0002:4000            DAT
+                                  NMI                                  H'0000:1BE5            DAT
+                                  NXCLM                                H'0001:5EF6            DAT
+                                  OC39LD                               H'0001:AF12            DAT
+                                  OCDBLD                               H'0001:AF12            DAT
+                                  OCGSUM                               H'0000:01F0            DAT
+                                  OCRTB                                H'0002:9F00            DAT
+                                  OCRTB1                               H'0002:A000            DAT
+                                  OJ08LD                               H'0001:AED9            DAT
+                                  OJ13LD                               H'0001:AE5D            DAT
+                                  OLNKNJ                               H'0001:9535            DAT
+                                  OLTTB                                H'0000:7D00            DAT
+                                  OPTCG                                H'0009:0000            DAT
+                                  OUTSH                                H'0001:AF70            DAT
+                                  PAMDTB                               H'0000:61F4            DAT
+                                  PBCL                                 H'0001:0E5E            DAT
+                                  PBCL1                                H'0001:0E63            DAT
+                                  PBHO                                 H'0001:0E95            DAT
+                                  PBHOC                                H'0001:0530            DAT
+                                  PBHOC1                               H'0001:0535            DAT
+                                  PBINI                                H'0001:0E42            DAT
+                                  PBOP                                 H'0001:0E6F            DAT
+                                  PCDBF1                               H'0000:FD24            DAT
+                                  PCDBF2                               H'0000:FD52            DAT
+                                  PCLK                                 H'0001:1185            DAT
+                                  PCLMTB                               H'0000:01BE            DAT
+                                  PDELTB                               H'0000:0572            DAT
+                                  PDPITB                               H'0000:01C2            DAT
+                                  PECOPC                               H'0000:60FD            DAT
+                                  PGAPTB                               H'0000:01C6            DAT
+                                  POLBLK                               H'0000:1ACF            DAT
+                                  POLMSG                               H'0000:18A9            DAT
+                                  POLPKT                               H'0000:19C0            DAT
+                                  POLSEM                               H'0000:18A6            DAT
+                                  PRATB                                H'0000:05D2            DAT
+                                  PRCHK                                H'0001:0507            DAT
+                                  PRDPF                                H'0000:FD81            DAT
+                                  PRGERR                               H'0000:1B9D            DAT
+                                  PRGID1                               H'0000:6003            DAT
+                                  PRGID2                               H'0000:602A            DAT
+                                  PRGID3                               H'0000:6051            DAT
+                                  PRINT                                H'0001:CEBC            DAT
+                                  PRINT1                               H'0001:CEA1            DAT
+                                  PRINT2                               H'0001:CEA9            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    14
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  PRO00                                H'0001:4860            DAT
+                                  PRPTB                                H'0002:A700            DAT
+                                  PRSBF                                H'0000:FD82            DAT
+                                  PRSFC                                H'0000:FD80            DAT
+                                  PRT                                  H'0001:E50F            DAT
+                                  PRT11                                H'0001:0998            DAT
+                                  PRT12                                H'0001:09CC            DAT
+                                  PRT13                                H'0001:09D7            DAT
+                                  PRT2                                 H'0001:09E3            DAT
+                                  PRT2L                                H'0001:0A02            DAT
+                                  PRT3                                 H'0001:0A30            DAT
+                                  PRT3L                                H'0001:0A20            DAT
+                                  PRT4                                 H'0001:0A3E            DAT
+                                  PRT4L                                H'0001:0A4E            DAT
+                                  PRTBF                                H'000D:812C            DAT
+                                  PRTINI                               H'0001:12A0            DAT
+                                  PRTTB1                               H'0000:03A0            DAT
+                                  PRTTB2                               H'0000:03D0            DAT
+                                  PRTTB3                               H'0000:0400            DAT
+                                  PRTTB4                               H'0000:0430            DAT
+                                  PRWBF                                H'0000:FDC0            DAT
+                                  QTBHT                                H'0002:8370            DAT
+                                  QTBVT                                H'0002:8370            DAT
+                                  QUAIG                                H'0001:7DDA            DAT
+                                  RBSTB1                               H'0000:0187            DAT
+                                  RBSTB2                               H'0000:018D            DAT
+                                  RBSTB3                               H'0000:0198            DAT
+                                  RCVMSG                               H'0000:18A9            DAT
+                                  RCVPKT                               H'0000:1990            DAT
+                                  RDHSNT                               H'0001:010C            DAT
+                                  REIMG                                H'0001:7D88            DAT
+                                  RELBLK                               H'0000:1ACF            DAT
+                                  RELDP3                               H'0001:0160            DAT
+                                  RELPRB                               H'0001:188B            DAT
+                                  REQTP                                H'0001:44D3            DAT
+                                  RESET                                H'0000:1AE0            DAT
+                                  RETIH1                               H'0000:121E            DAT
+                                  RETIH2                               H'0000:1220            DAT
+                                  RETIH3                               H'0000:1223            DAT
+                                  RETINT                               H'0000:121B            DAT
+                                  RETOR1                               H'0000:11BA            DAT
+                                  RETOR2                               H'0000:11BE            DAT
+                                  RETORF                               H'0000:11A6            DAT
+                                  RETPM                                H'0001:0B74            DAT
+                                  RETPM2                               H'0001:01B9            DAT
+                                  RETTSK                               H'0000:1113            DAT
+                                  RETWU1                               H'0000:1164            DAT
+                                  RETWU2                               H'0000:1168            DAT
+                                  RETWUP                               H'0000:1154            DAT
+                                  REVERS                               H'0001:BBE0            DAT
+                                  RMVIMG                               H'0001:844A            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    15
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  ROMCG0                               H'0001:C420            DAT
+                                  ROMCG1                               H'0001:C468            DAT
+                                  ROMSIZ                               H'0000:6002            DAT
+                                  ROMSUM                               H'0000:0000            DAT
+                                  RSADJ                                H'0001:0DEB            DAT
+                                  RSESC                                H'0001:0E0B            DAT
+                                  RSHM                                 H'0001:0DF8            DAT
+                                  RSINI                                H'0001:0DCB            DAT
+                                  RSMSC                                H'0001:447C            DAT
+                                  RSMV                                 H'0001:0E25            DAT
+                                  RSMV1                                H'0001:0E1D            DAT
+                                  RSMVX                                H'0001:0E39            DAT
+                                  RTNBLK                               H'0000:1ACF            DAT
+                                  RTNMSG                               H'0000:18A9            DAT
+                                  SCGSUM                               H'0000:01E0            DAT
+                                  SCHDLR                               H'0000:1238            DAT
+                                  SCIADS                               H'0000:2E66            DAT
+                                  SCIADV                               H'0000:2E97            DAT
+                                  SCIADW                               H'0000:2E1F            DAT
+                                  SCIBDT                               H'0000:2E9B            DAT
+                                  SCICAL                               H'0000:2DB5            DAT
+                                  SCICAN                               H'0000:2E73            DAT
+                                  SCICLC                               H'0000:2E80            DAT
+                                  SCICLE                               H'0000:2E85            DAT
+                                  SCICMD                               H'0000:2F0A            DAT
+                                  SCIDAT                               H'0000:2EEE            DAT
+                                  SCIEEP                               H'0000:3575            DAT
+                                  SCIHSP                               H'0000:2E1A            DAT
+                                  SCILFT                               H'0000:2EEA            DAT
+                                  SCINMI                               H'0000:2DFC            DAT
+                                  SCIPAJ                               H'0000:3592            DAT
+                                  SCIPEC                               H'0000:2EA1            DAT
+                                  SCIPRA                               H'0000:2EB5            DAT
+                                  SCIPRT                               H'0000:2F01            DAT
+                                  SCISNS                               H'0000:2E37            DAT
+                                  SCISTP                               H'0000:2E7B            DAT
+                                  SCISTS                               H'0000:2E68            DAT
+                                  SCIVER                               H'0000:2E24            DAT
+                                  SDCPKT                               H'0000:18DE            DAT
+                                  SELKCG                               H'0001:C3AC            DAT
+                                  SELPMA                               H'0001:0B65            DAT
+                                  SELPMB                               H'0001:0B56            DAT
+                                  SELPMD                               H'0001:E342            DAT
+                                  SELPMF                               H'0001:0B47            DAT
+                                  SELPMS                               H'0001:0B38            DAT
+                                  SELPRB                               H'0001:1192            DAT
+                                  SENDC1                               H'0001:0BB6            DAT
+                                  SENDC2                               H'0001:0BC1            DAT
+                                  SENDC3                               H'0001:0BC6            DAT
+                                  SENDP                                H'0001:0BCB            DAT
+                                  SET10A                               H'0001:12BB            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    16
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  SET10B                               H'0001:12B8            DAT
+                                  SET10C                               H'0001:12B3            DAT
+                                  SET10D                               H'0001:12AE            DAT
+                                  SET15                                H'0001:12C0            DAT
+                                  SET20                                H'0001:12C5            DAT
+                                  SET30                                H'0001:12CA            DAT
+                                  SETADV                               H'0001:E53B            DAT
+                                  SETALM                               H'0000:2899            DAT
+                                  SETCM1                               H'0001:0B92            DAT
+                                  SETCM2                               H'0001:0B96            DAT
+                                  SETDS1                               H'0001:93BE            DAT
+                                  SETDS2                               H'0001:93C3            DAT
+                                  SETDSA                               H'0001:93D0            DAT
+                                  SETDSK                               H'0001:A2E7            DAT
+                                  SETECC                               H'0001:E2F9            DAT
+                                  SETECD                               H'0001:0B30            DAT
+                                  SETECE                               H'0001:0B34            DAT
+                                  SETGJD                               H'0001:A59F            DAT
+                                  SETIBP                               H'0001:12A3            DAT
+                                  SETIPG                               H'0001:835C            DAT
+                                  SETLCD                               H'0001:E543            DAT
+                                  SETLF1                               H'0001:0F77            DAT
+                                  SETLF2                               H'0001:0F7F            DAT
+                                  SETLF3                               H'0001:0F87            DAT
+                                  SETLF4                               H'0001:0F8F            DAT
+                                  SETLF5                               H'0001:0F97            DAT
+                                  SETLFP                               H'0001:01BD            DAT
+                                  SETLFS                               H'0001:0F9D            DAT
+                                  SETLNM                               H'0001:12A6            DAT
+                                  SETPEL                               H'0001:7C88            DAT
+                                  SETPHM                               H'0001:0B8A            DAT
+                                  SETPM2                               H'0001:01B5            DAT
+                                  SETPMA                               H'0001:0B6A            DAT
+                                  SETPMB                               H'0001:0B5B            DAT
+                                  SETPMD                               H'0001:E35F            DAT
+                                  SETPMF                               H'0001:0B4C            DAT
+                                  SETPMS                               H'0001:0B3D            DAT
+                                  SETPR1                               H'0001:768B            DAT
+                                  SETPRD                               H'0001:0972            DAT
+                                  SETPRN                               H'0001:7691            DAT
+                                  SETPRR                               H'0001:52B6            DAT
+                                  SETPRS                               H'0001:0882            DAT
+                                  SETPRT                               H'0001:0867            DAT
+                                  SETRMG                               H'0001:5D99            DAT
+                                  SETRS                                H'0001:E21B            DAT
+                                  SETRS1                               H'0001:01DD            DAT
+                                  SETRS2                               H'0001:01E8            DAT
+                                  SETRS3                               H'0001:01F5            DAT
+                                  SETRSH                               H'0001:0DA0            DAT
+                                  SETSPB                               H'0001:61F5            DAT
+                                  SETSPD                               H'0001:CBFC            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    17
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  SETUDI                               H'0001:5DE1            DAT
+                                  SIDIG                                H'0001:7DCB            DAT
+                                  SIGSEM                               H'0000:18A6            DAT
+                                  SIPTB                                H'0000:6096            DAT
+                                  SJSTP1                               H'0001:603E            DAT
+                                  SLDB1                                H'0001:76B6            DAT
+                                  SLDLS                                H'0001:A340            DAT
+                                  SLIMG                                H'0001:7CC0            DAT
+                                  SLKNJ                                H'0001:7773            DAT
+                                  SLMOD                                H'0001:6139            DAT
+                                  SLVVER                               H'0000:FB92            DAT
+                                  SNDMSG                               H'0000:18A9            DAT
+                                  SNDPKT                               H'0000:18AC            DAT
+                                  ST10S                                H'0001:846B            DAT
+                                  STCND                                H'0001:76BA            DAT
+                                  STCOL                                H'0001:607F            DAT
+                                  STCOMN                               H'0001:7C9B            DAT
+                                  STCRM                                H'0001:C2DF            DAT
+                                  STDCG                                H'0008:0000            DAT
+                                  STENDM                               H'0001:7699            DAT
+                                  STLSM                                H'0001:78E9            DAT
+                                  STMS0                                H'0001:4482            DAT
+                                  STMS1                                H'0001:4488            DAT
+                                  STPRNT                               H'0001:768E            DAT
+                                  STPVF                                H'0001:78F4            DAT
+                                  SVANK                                H'0001:7A0F            DAT
+                                  SVCCM                                H'0001:7B83            DAT
+                                  SVDTA                                H'0001:57AD            DAT
+                                  SVDTA3                               H'0001:5830            DAT
+                                  SVDTK                                H'0001:5899            DAT
+                                  SVDTK2                               H'0001:593A            DAT
+                                  SVFCM                                H'0001:7C31            DAT
+                                  SVKCM                                H'0001:7B77            DAT
+                                  SVKNJ                                H'0001:7A8D            DAT
+                                  SWJMP                                H'0001:1BD7            DAT
+                                  SWJMP1                               H'0001:1BD9            DAT
+                                  SWPDI                                H'0000:2F4B            DAT
+                                  SWPEN                                H'0000:2F4F            DAT
+                                  SWPRST                               H'0001:1BC0            DAT
+                                  SWPSRV                               H'0001:2280            DAT
+                                  SWPSTA                               H'0001:1BCC            DAT
+                                  SWPSTK                               H'0000:F900            DAT
+                                  SWPT1S                               H'0000:2F5A            DAT
+                                  SWPT2S                               H'0000:2F60            DAT
+                                  SWPTB1                               H'0000:7EC4            DAT
+                                  SWPTB2                               H'0000:7F14            DAT
+                                  SWPTB3                               H'0000:7F30            DAT
+                                  SWPTB4                               H'0000:7F60            DAT
+                                  SWPTB5                               H'0000:7F86            DAT
+                                  SWPTBL                               H'0001:1BB0            DAT
+                                  SWPTCB                               H'0000:F800            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    18
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  SWTONE                               H'0001:1BDD            DAT
+                                  SYS$ERR                              H'0000:1B92            DAT
+                                  SYS$FG                               H'0000:00FC            DAT
+                                  SYS$RAM                              H'0000:FEFC            DAT
+                                  SYS$SP                               H'0000:FC00            DAT
+                                  SYS$TBL                              H'0000:607C            DAT
+                                  SYS$TP                               H'0000:00FE            DAT
+                                  SYSCAL                               H'0000:104B            DAT
+                                  SYSVER                               H'0000:0183            DAT
+                                  TGXXP                                H'0001:6F43            DAT
+                                  TXTBE                                H'0000:F5F2            DAT
+                                  TXTBF                                H'0000:DEE6            DAT
+                                  UGEBLK                               H'0000:1ACF            DAT
+                                  ULANK1                               H'0001:865E            DAT
+                                  ULANK2                               H'0001:8675            DAT
+                                  ULNKNJ                               H'0001:9528            DAT
+                                  UPCLMX                               H'0001:5F1F            DAT
+                                  UPCRDC                               H'0001:0054            DAT
+                                  UPDOTC                               H'0001:006F            DAT
+                                  UPIG2                                H'0001:8338            DAT
+                                  UPOBLK                               H'0000:1ACF            DAT
+                                  UPSEQ                                H'0001:0BA7            DAT
+                                  UPTBFP                               H'0001:5FDA            DAT
+                                  USATB                                H'0000:7E00            DAT
+                                  USERID                               H'0000:6000            DAT
+                                  VCMTB                                H'0000:6B00            DAT
+                                  VELTB1                               H'0000:6600            DAT
+                                  VELTB2                               H'0000:6700            DAT
+                                  VELTB3                               H'0000:6800            DAT
+                                  VELTB4                               H'0000:6900            DAT
+                                  VELTB5                               H'0000:6A00            DAT
+                                  VTBF                                 H'0000:DABA            DAT
+                                  VTC                                  H'0000:DAB2            DAT
+                                  VX3TB1                               H'0000:6C00            DAT
+                                  VX3TB2                               H'0000:6D00            DAT
+                                  VX3TB3                               H'0000:6E00            DAT
+                                  VX5TB1                               H'0000:6F00            DAT
+                                  VX5TB2                               H'0000:7000            DAT
+                                  VX5TB3                               H'0000:7100            DAT
+                                  VX5TB4                               H'0000:7200            DAT
+                                  VX5TB5                               H'0000:7300            DAT
+                                  VX7TB1                               H'0000:7400            DAT
+                                  VX7TB2                               H'0000:7500            DAT
+                                  VX7TB3                               H'0000:7600            DAT
+                                  VX7TB4                               H'0000:7700            DAT
+                                  VX7TB5                               H'0000:7800            DAT
+                                  VX7TB6                               H'0000:7900            DAT
+                                  VX7TB7                               H'0000:7A00            DAT
+                                  WAIDP3                               H'0000:3463            DAT
+                                  WAIMSG                               H'0000:18A9            DAT
+                                  WAIPKT                               H'0000:1A85            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    19
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  WAISEM                               H'0000:18A6            DAT
+                                  WAITSK                               H'0000:1814            DAT
+                                  WRKRAM                               H'000F:8000            DAT
+                                  WTACTF                               H'0001:0185            DAT
+                                  WTCMDE                               H'0001:017E            DAT
+                                  WTESCE                               H'0001:0194            DAT
+                                  WTPRTF                               H'0001:0199            DAT
+                                  ZBLN1                                H'0000:0006            EQU
+                                  ZBLN2                                H'0000:003C            EQU
+                                  ZCRP1                                H'0000:023B            EQU
+                                  ZCRP2                                H'0000:031C            EQU
+                                  ZCTRL                                H'0000:0000            EQU
+                                  ZEJBN                                H'0000:1EF0            EQU
+                                  ZEJFN                                H'0000:1EF0            EQU
+                                  ZEJN1                                H'0000:0000            EQU
+                                  ZEJN2                                H'0000:0716            EQU
+                                  ZEJN3                                H'0000:08BB            EQU
+                                  ZEJN4                                H'0000:0589            EQU
+                                  ZEJN5                                H'0000:003C            EQU
+                                  ZEJN6                                H'0000:00B4            EQU
+                                  ZEJSN                                H'0000:1EF0            EQU
+                                  ZFET1                                H'0000:00CC            EQU
+                                  ZFET2                                H'0000:000A            EQU
+                                  ZHSNZ                                H'0000:0034            EQU
+                                  ZHST                                 H'0000:0020            EQU
+                                  ZI2N1                                H'0000:0384            EQU
+                                  ZIAN1                                H'0000:0384            EQU
+                                  ZIAN2                                H'0000:10E0            EQU
+                                  ZIFPA                                H'0000:0017            EQU
+                                  ZIFPB                                H'0000:00DA            EQU
+                                  ZIN2N                                H'0000:1EF0            EQU
+                                  ZINAN                                H'0000:1EF0            EQU
+                                  ZINFN                                H'0000:1EF0            EQU
+                                  ZLF3P1                               H'0000:089D            EQU
+                                  ZLF3P2                               H'0000:08FE            EQU
+                                  ZLFN1                                H'0000:003C            EQU
+                                  ZLFN2                                H'0000:001E            EQU
+                                  ZLFN3                                H'0000:003C            EQU
+                                  ZLFN4                                H'0000:003C            EQU
+                                  ZLFP1                                H'0000:0890            EQU
+                                  ZLFP2                                H'0000:0919            EQU
+                                  ZLFP3                                H'0000:0A1C            EQU
+                                  ZLFP4                                H'0000:0384            EQU
+                                  ZLFP5                                H'0000:0896            EQU
+                                  ZLFP6                                H'0000:085A            EQU
+                                  ZLFP7                                H'0000:0F78            EQU
+                                  ZLFP8                                H'0000:003C            EQU
+                                  ZLFP9                                H'0000:01E9            EQU
+                                  ZLFPC                                H'0000:0800            EQU
+                                  ZLFSPO                               H'0000:0014            EQU
+                                  ZOCR00                               H'0001:C4B0            DAT
+
+
+
+                                  H SERIES LINKAGE EDITOR Ver. 3.2                       PAGE :    20
+
+                                      ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+                                 SYMBOL  NAME                         ADDR                 TYPE
+
+                                  ZOCR15                               H'0001:C50A            DAT
+                                  ZOCR5C                               H'0001:C537            DAT
+                                  ZOCR60                               H'0001:C564            DAT
+                                  ZOCR7C                               H'0001:C591            DAT
+                                  ZOCR81                               H'0001:C5C1            DAT
+                                  ZOCR82                               H'0001:C5EE            DAT
+                                  ZOCR84                               H'0001:C61B            DAT
+                                  ZOCR85                               H'0001:C648            DAT
+                                  ZOCR86                               H'0001:C675            DAT
+                                  ZOCR87                               H'0001:C6A2            DAT
+                                  ZOCR8A                               H'0001:C6CF            DAT
+                                  ZOCR8D                               H'0001:C6FC            DAT
+                                  ZOCR8E                               H'0001:C729            DAT
+                                  ZOCR8F                               H'0001:C756            DAT
+                                  ZOCR90                               H'0001:C783            DAT
+                                  ZOCR91                               H'0001:C7B0            DAT
+                                  ZOCR92                               H'0001:C7DD            DAT
+                                  ZOCR94                               H'0001:C80A            DAT
+                                  ZOCR95                               H'0001:C837            DAT
+                                  ZOCR97                               H'0001:C864            DAT
+                                  ZOCR99                               H'0001:C891            DAT
+                                  ZOCR9A                               H'0001:C8BE            DAT
+                                  ZOCR9C                               H'0001:C8EB            DAT
+                                  ZOCR9D                               H'0001:C918            DAT
+                                  ZOCR9E                               H'0001:C948            DAT
+                                  ZOCRA0                               H'0001:C975            DAT
+                                  ZOCRA1                               H'0001:C9A2            DAT
+                                  ZOCRA2                               H'0001:C9CF            DAT
+                                  ZOCRA3                               H'0001:C9FC            DAT
+                                  ZOCRA4                               H'0001:CA29            DAT
+                                  ZOCRA5                               H'0001:CA56            DAT
+                                  ZOCRA8                               H'0001:CA83            DAT
+                                  ZOCRAD                               H'0001:CAB0            DAT
+                                  ZOCRC8                               H'0001:CADD            DAT
+                                  ZOCRCF                               H'0001:CB0A            DAT
+                                  ZOCRD0                               H'0001:CB37            DAT
+                                  ZOCRD1                               H'0001:CB64            DAT
+                                  ZOCRD2                               H'0001:CB91            DAT
+                                  ZOCRD5                               H'0001:CBBE            DAT
+                                  ZOCRSP                               H'0001:C4DD            DAT
+                                  ZPE2N                                H'0000:0047            EQU
+                                  ZPRTLC                               H'0000:000A            EQU
+                                  ZRDMD                                H'0000:008C            EQU
+                                  ZSWMK                                H'0000:00FF            EQU
+                                  ZTLCD                                H'0000:0010            EQU
+                                  ZWRMD                                H'0000:0088            EQU

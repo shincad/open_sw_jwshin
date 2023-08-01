@@ -1,0 +1,10 @@
+[Log file]
+LoggingEnabled=_ 0
+LogFile=_ ""
+Category=_ 0
+[Disassemble mode]
+mode=1
+[Breakpoints]
+Bp0=_ "STD_CODE" "{C:\develop\iqs_hw\work\101217_test1\project\app\main.c}.64.1@1" 1 0 0 0 "" 0 "" 0
+Bp1=_ "STD_CODE" "{C:\develop\iqs_hw\work\101220_test\project\app\main.c}.79.1@1" 1 0 0 0 "" 0 "" 0
+Count=2

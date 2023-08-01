@@ -1,0 +1,14 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+adc                                                               0x0500       2
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+LData                                                             R5           1
+DisCnt                                                            R4           1

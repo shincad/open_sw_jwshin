@@ -1,0 +1,3 @@
+PRE8 %1.MAR/NOLIST
+ASM8 %1.SRC/NOLIST=%1.ERR
+del %1.src

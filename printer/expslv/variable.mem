@@ -1,0 +1,106 @@
+/*=============================================================*/
+/*                  KD20B Controller Program                   */
+/*                  Module Name : SLAVE                        */
+/*                  Variable.mem                               */
+/*                  Programming Date : 1997. 1. 15             */
+/*                  Kia Information Systems.                   */
+/*                  Printer Development Team.                  */
+/*                  Programmed by Shin Jung Wook               */
+/*=============================================================*/
+
+/*------------------------------------- Configuration Setting  -*/
+unsigned char InitOption;
+/*--------------------------------------------- Saving Message -*/
+char DspMsg1[17];
+/*------------------------------------ Print Mode Led Position -*/
+int ModeLedPos;
+/*------------------------------------------ Mode Value Saving -*/
+unsigned char PModeSave1;
+unsigned char PModeSave2;
+/*--------------------------------------------- Operating Mode -*/
+unsigned char OpMode;
+/*------------------------------------------------------- Menu -*/
+char *DspMenu[16] = {
+                      "1.EMULATION","2.CHAR PITCH","3.LINE SPACING",
+                      "4.PRINT MODE","5.AUTO WRAP","6.HANGULE STYLE",
+                      "7.HAN FONT","8.ENG FONT","9.PAGE LENGTH",
+                      "10.BAUDRATE","11.PARITY","12.DATA LENGTH",
+                      "13.STOP BIT","14.PROTOCOL","15.HOST MODE",
+                      "16.TIMEOUT MODE"
+                    };
+
+char *DspItem[16][11] = {
+                          {"KS","KSSM","TG","HEXDUMP-N","HEXDUMP-W"},
+                          {"10 CPI (2:1)","12 CPI (2:1)","10 CPI (1:1)",
+                           "13.3 CPI (2:1)","10 CPI (3:2)","15 CPI (2:1)"},
+                          {"6 LPI","8 LPI"},
+                          {"NORMAL","COPY","HAN300LPM","ENG410LPM"},
+                          {"ON","OFF"},
+                          {"2BYTE (WAN)","2BYTE (JOH)","3BYTE (JOH)",
+                           "NBYTE (JOH)"},
+                          {"MYUNGJO","GODIC"},
+                          {"PRO-ENG","OCR B","OCR B-1"},
+                          {"7 INCH","7.5 INCH","8 INCH","8.5 INCH",
+                           "9 INCH","9.5 INCH","11 INCH","11.5INCH",
+                           "12 INCH","14 INCH"},
+                          {"300 BPS","600 BPS","1200 BPS","2400 BPS",
+                           "4800 BPS","9600 BPS","19200 BPS","38400 BPS"},
+                          {"NON","ODD","EVEN"},
+                          {"8 BIT","7 BIT"},
+                          {"1 STOP","2 STOP"},
+                          {"XON/XOFF","DTR"},
+                          {"SERIAL","PARALLEL"},
+                          {"ON","OFF"}
+                        };
+unsigned char SetItem[17];
+
+char *ErrorMenu[49] = {
+                     "PAPER END...","02 PLATEN OPEN",
+                     "03 PAPER NEA END","04 PAPER PH OPEN","05 FORMS CHECK",
+                     "06 RIBBON CHECK","10 IF PARITY ERR","11 BUFFER FULL",
+                     "12 INV FUNC CODE","21 SHUTTLE LOCK","19 HD FIRE ERROR",
+                     "20 HD OVER HEAT"," ","25 SHTTL SNS ERR",
+                     " ","27 SHTTL SPD ERR"," ",
+                     "29 HD REG ERROR","33 HD EOH CHK 20","30 MEMORY ERROR",
+                     "49 BLOWER STOP","31 SHTTL DRV ERR","32 TR DRIVER ERR",
+                     "43 H TR ERROR 50","34 HD TR CHK 30","35 SLNID DRV ERR",
+                     "39 SLV INVAL ERR","38 SLAVE CPU ERR"," ",
+                     " ","41 MASTR CPU ERR","37 POWER ALARM",
+                     " ","46 RBN DRVER ERR","31 SHTTL DRV ERR",
+                     " "," ","48 EEPROM ERROR",
+                     " "," ","23 FAN #1 STOP",
+                     " "," "," "," "," "," "," ",
+                     "37 POWER ALARM" };
+
+
+/*------------------------------------------- ReadKey Variable -*/
+unsigned char OldKey1;
+unsigned char NewKey1;
+unsigned char OldKey2;
+unsigned char NewKey2;
+
+/*------------------------------------------------- OnLineFlag -*/
+unsigned char OnLineFlag;
+
+/*----------------------------------------------- PaperEndFlag -*/
+unsigned char PaperEndFlag;
+
+/*------------------------------------------- Command Variable -*/
+unsigned char MCmd1;
+unsigned char MCmd2;
+unsigned int  MValueH;
+unsigned int  MValueL;
+
+/*---------------------------------------- Dot Length Variable -*/
+unsigned int  CharDotLen;
+unsigned int  PageDotLen;
+unsigned int  RLen;
+int      CurPos;
+
+/*-------------------------------------------- EEPROM Variable -*/
+unsigned char EEPTEMP2;
+unsigned int  EEPDATA;
+
+/*------------------------------------------------- Error Code -*/
+unsigned char ErrCode;
+unsigned char EqualFlag;

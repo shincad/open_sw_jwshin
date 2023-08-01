@@ -1,0 +1,608 @@
+###############################################################################
+#                                                                             #
+# IAR ELF Linker V5.40.0.51500/W32 for ARM              07/Apr/2011  21:04:53 #
+# Copyright (C) 2007-2009 IAR Systems AB.                                     #
+#                                                                             #
+#    Output file  =  D:\develop\iqs_hw\work\양산                              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Exe\ST #
+#                    M3210E-EVAL.out                                          #
+#    Map file     =  D:\develop\iqs_hw\work\양산                              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\List\S #
+#                    TM3210E-EVAL.map                                         #
+#    Command line =  "D:\develop\iqs_hw\work\양산                             #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\CP #
+#                    Uinit.o" "D:\develop\iqs_hw\work\양산                    #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\Db #
+#                    gPrint.o" "D:\develop\iqs_hw\work\양산                   #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\Ho #
+#                    stLine.o" "D:\develop\iqs_hw\work\양산                   #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\Pr #
+#                    inter.o" "D:\develop\iqs_hw\work\양산                    #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\RT #
+#                    C.o" "D:\develop\iqs_hw\work\양산                        #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\Se #
+#                    rial.o" "D:\develop\iqs_hw\work\양산                     #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\co #
+#                    rtexm3_macro.o" "D:\develop\iqs_hw\work\양산             #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\ma #
+#                    in.o" "D:\develop\iqs_hw\work\양산                       #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_bkp.o" "D:\develop\iqs_hw\work\양산              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_flash.o" "D:\develop\iqs_hw\work\양산            #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_gpio.o" "D:\develop\iqs_hw\work\양산             #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_it.o" "D:\develop\iqs_hw\work\양산               #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_iwdg.o" "D:\develop\iqs_hw\work\양산             #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_nvic.o" "D:\develop\iqs_hw\work\양산             #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_pwr.o" "D:\develop\iqs_hw\work\양산              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_rcc.o" "D:\develop\iqs_hw\work\양산              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_rtc.o" "D:\develop\iqs_hw\work\양산              #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_systick.o" "D:\develop\iqs_hw\work\양산          #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_usart.o" "D:\develop\iqs_hw\work\양산            #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\st #
+#                    m32f10x_vector.o" "D:\develop\iqs_hw\work\양산           #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\ut #
+#                    il.o" "D:\develop\iqs_hw\work\양산                       #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj\wi #
+#                    znet.o" -o "D:\develop\iqs_hw\work\양산                  #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Exe\ST #
+#                    M3210E-EVAL.out" --map "D:\develop\iqs_hw\work\양산      #
+#                    firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\List\S #
+#                    TM3210E-EVAL.map" --config "D:\develop\iqs_hw\work\양산  #
+#                    firmware\110223_IAP\project\EWARMv5\stm32f10x_iap.icf"   #
+#                    --semihosting --entry __iar_program_start                #
+#                                                                             #
+#                                                                             #
+###############################################################################
+
+*******************************************************************************
+*** PLACEMENT SUMMARY
+***
+
+"A1":  place at 0x08002000 { ro section .intvec };
+"P1":  place in [from 0x08002000 to 0x0807ffff] { ro };
+"P2":  place in [from 0x20000000 to 0x2000ffff] {
+          rw, block CSTACK, block HEAP };
+
+  Section            Kind        Address    Size  Object
+  -------            ----        -------    ----  ------
+"A1":                                      0x130
+  .intvec            const    0x08002000   0x130  stm32f10x_vector.o [1]
+                            - 0x08002130   0x130
+
+"P1":                                     0x2a08
+  .text              ro code  0x08002130   0x75c  util.o [1]
+  .text              ro code  0x0800288c   0x674  Printer.o [1]
+  .text              ro code  0x08002f00   0x5a8  HostLine.o [1]
+  .text              ro code  0x080034a8   0x3ae  RTC.o [1]
+  .text              ro code  0x08003858   0x352  CPUinit.o [1]
+  .text              ro code  0x08003bac   0x318  stm32f10x_rcc.o [1]
+  .text              ro code  0x08003ec4   0x1c8  Serial.o [1]
+  .text              ro code  0x0800408c   0x1a8  stm32f10x_flash.o [1]
+  .text              ro code  0x08004234   0x12a  stm32f10x_usart.o [1]
+  .text              ro code  0x08004360   0x110  stm32f10x_nvic.o [1]
+  .text              ro code  0x08004470    0xf0  stm32f10x_gpio.o [1]
+  .text              ro code  0x08004560    0xc4  stm32f10x_rtc.o [1]
+  .text              ro code  0x08004624    0xb6  stm32f10x_it.o [1]
+  CODE               ro code  0x080046dc    0x7a  cortexm3_macro.o [1]
+  .text              ro code  0x08004758    0x74  main.o [1]
+  .text              ro code  0x080047cc    0x64  stm32f10x_systick.o [1]
+  .text              ro code  0x08004830    0x5c  DbgPrint.o [1]
+  .text              ro code  0x0800488c    0x38  stm32f10x_iwdg.o [1]
+  .rodata            const    0x080048c4    0x34  RTC.o [1]
+  .text              ro code  0x080048f8    0x24  stm32f10x_bkp.o [1]
+  .text              ro code  0x0800491c    0x24  copy_init2.o [4]
+  .iar.init_table    const    0x08004940    0x24  - Linker created -
+  .text              ro code  0x08004964    0x20  data_init2.o [4]
+  .text              ro code  0x08004984    0x1c  iarwstd.o [5]
+  .text              ro code  0x080049a0    0x1a  zero_init2.o [4]
+  .text              ro code  0x080049bc    0x18  cmain.o [4]
+  .text              ro code  0x080049d4    0x14  exit.o [5]
+  .rodata            const    0x080049e8    0x10  stm32f10x_rcc.o [1]
+  .rodata            const    0x080049f8     0xc  RTC.o [1]
+  .text              ro code  0x08004a04     0xc  stm32f10x_pwr.o [1]
+  .text              ro code  0x08004a10     0xa  cexit.o [4]
+  .rodata            const    0x08004a1c     0x8  RTC.o [1]
+  .rodata            const    0x08004a24     0x8  RTC.o [1]
+  .rodata            const    0x08004a2c     0x8  RTC.o [1]
+  .rodata            const    0x08004a34     0x8  RTC.o [1]
+  .rodata            const    0x08004a3c     0x8  RTC.o [1]
+  .text              ro code  0x08004a44     0x6  exit.o [3]
+  .rodata            const    0x08004a4c     0x4  stm32f10x_rcc.o [1]
+  .text              ro code  0x08004a50     0x2  wiznet.o [1]
+  .text              ro code  0x08004a52     0x4  low_level_init.o [3]
+  Initializer bytes  ro data  0x08004a58    0xe0  <for P2 s0> (used: 0xde)
+                            - 0x08004b38  0x2a08
+
+"P2", part 1 of 3:                         0x800
+  CSTACK                      0x20000000   0x800  <Block>
+    CSTACK           uninit   0x20000000   0x800  <Block tail>
+                            - 0x20000800   0x800
+
+"P2", part 2 of 3:                         0xcf4
+  .bss               zero     0x20000800   0x400  Serial.o [1]
+  .bss               zero     0x20000c00   0x400  Serial.o [1]
+  .bss               zero     0x20001000   0x400  Serial.o [1]
+  .bss               zero     0x20001400    0x64  DbgPrint.o [1]
+  .bss               zero     0x20001464    0x20  Serial.o [1]
+  .bss               zero     0x20001484     0xc  Serial.o [1]
+  .bss               zero     0x20001490     0xc  Serial.o [1]
+  .bss               zero     0x2000149c     0xc  Serial.o [1]
+  .bss               zero     0x200014a8     0x8  util.o [1]
+  .bss               zero     0x200014b0     0x4  Printer.o [1]
+  .bss               zero     0x200014b4     0x4  Printer.o [1]
+  .bss               zero     0x200014b8     0x4  util.o [1]
+  .bss               zero     0x200014bc     0x4  util.o [1]
+  .bss               zero     0x200014c0     0x4  util.o [1]
+  .bss               zero     0x200014c4     0x4  iarwstd.o [5]
+  .bss               zero     0x200014c8     0x2  HostLine.o [1]
+  .bss               zero     0x200014ca     0x2  Printer.o [1]
+  .bss               zero     0x200014cc     0x2  Printer.o [1]
+  .bss               zero     0x200014ce     0x2  Printer.o [1]
+  .bss               zero     0x200014d0     0x2  Printer.o [1]
+  .bss               zero     0x200014d2     0x2  Printer.o [1]
+  .bss               zero     0x200014d4     0x2  Printer.o [1]
+  .bss               zero     0x200014d6     0x2  Printer.o [1]
+  .bss               zero     0x200014d8     0x2  Printer.o [1]
+  .bss               zero     0x200014da     0x2  Printer.o [1]
+  .bss               zero     0x200014dc     0x2  Printer.o [1]
+  .bss               zero     0x200014de     0x2  util.o [1]
+  .bss               zero     0x200014e0     0x2  util.o [1]
+  .bss               zero     0x200014e2     0x1  Printer.o [1]
+  .bss               zero     0x200014e3     0x1  Printer.o [1]
+  .bss               zero     0x200014e4     0x1  util.o [1]
+  .bss               zero     0x200014e5     0x1  util.o [1]
+  .bss               zero     0x200014e6     0x1  util.o [1]
+  .bss               zero     0x200014e7     0x1  util.o [1]
+  .bss               zero     0x200014e8     0x1  util.o [1]
+  .bss               zero     0x200014e9     0x1  util.o [1]
+  .bss               zero     0x200014ea     0x1  util.o [1]
+  .bss               zero     0x200014eb     0x1  util.o [1]
+  .bss               zero     0x200014ec     0x1  util.o [1]
+  .bss               zero     0x200014ed     0x1  util.o [1]
+  .bss               zero     0x200014ee     0x1  util.o [1]
+  .bss               zero     0x200014ef     0x1  util.o [1]
+  .bss               zero     0x200014f0     0x1  util.o [1]
+  .bss               zero     0x200014f1     0x1  util.o [1]
+  .bss               zero     0x200014f2     0x1  util.o [1]
+  .bss               zero     0x200014f3     0x1  util.o [1]
+                            - 0x200014f4   0xcf4
+
+"P2", part 3 of 3:                          0xe0
+  P2 s0                       0x200014f4    0xe0  <Init block>
+    .data            inited   0x200014f4    0xb4  Printer.o [1]
+    .data            inited   0x200015a8    0x10  HostLine.o [1]
+    .data            inited   0x200015b8    0x10  RTC.o [1]
+    .data            inited   0x200015c8     0x8  Printer.o [1]
+    .data            inited   0x200015d0     0x2  Printer.o [1]
+                            - 0x200015d4    0xe0
+
+
+*******************************************************************************
+*** INIT TABLE
+***
+
+          Address     Size
+          -------     ----
+Zero (__iar_zero_init2)
+    1 destination range, total size 0xcf4:
+          0x20000800  0xcf4
+
+Copy (__iar_copy_init2)
+    1 source range, total size 0xe0 (100% of destination):
+          0x08004a58   0xe0
+    1 destination range, total size 0xde:
+          0x200014f4   0xde
+
+
+*******************************************************************************
+*** MODULE SUMMARY
+***
+
+    Module               ro code  ro data  rw data
+    ------               -------  -------  -------
+D:\develop\iqs_hw\work\양산 firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj: [1]
+    CPUinit.o                850
+    DbgPrint.o                92               100
+    HostLine.o             1 448       16       18
+    Printer.o              1 652      190      220
+    RTC.o                    942      120       16
+    Serial.o                 456             3 140
+    cortexm3_macro.o         122
+    main.o                   116
+    stm32f10x_bkp.o           36
+    stm32f10x_flash.o        424
+    stm32f10x_gpio.o         240
+    stm32f10x_it.o           182
+    stm32f10x_iwdg.o          56
+    stm32f10x_nvic.o         272
+    stm32f10x_pwr.o           12
+    stm32f10x_rcc.o          792       20
+    stm32f10x_rtc.o          196
+    stm32f10x_systick.o      100
+    stm32f10x_usart.o        298
+    stm32f10x_vector.o                304
+    util.o                 1 884                40
+    wiznet.o                   2
+    ----------------------------------------------
+    Total:                10 172      650    3 534
+
+command line: [2]
+    ----------------------------------------------
+    Total:
+
+dl7M_tl_in.a: [3]
+    exit.o                     6
+    low_level_init.o           4
+    ----------------------------------------------
+    Total:                    10
+
+rt7M_tl.a: [4]
+    cexit.o                   10
+    cmain.o                   24
+    copy_init2.o              36
+    data_init2.o              32
+    zero_init2.o              26
+    ----------------------------------------------
+    Total:                   128
+
+shb_l.a: [5]
+    exit.o                    20
+    iarwstd.o                 28                 4
+    ----------------------------------------------
+    Total:                    48                 4
+
+    Gaps                      12        4        2
+    Linker created                     40    2 048
+--------------------------------------------------
+    Grand Total:          10 370      694    5 588
+
+
+*******************************************************************************
+*** ENTRY LIST
+***
+
+Entry                      Address   Size  Type      Object
+-----                      -------   ----  ----      ------
+ADC1_2_IRQHandler       0x08004661    0x2  Code  Gb  stm32f10x_it.o [1]
+ADC3_IRQHandler         0x080046c1    0x2  Code  Gb  stm32f10x_it.o [1]
+ADCPrescTable           0x08004a4c    0x4  Data  Lc  stm32f10x_rcc.o [1]
+APBAHBPrescTable        0x080049e8   0x10  Data  Lc  stm32f10x_rcc.o [1]
+AbnormalIsr             0x08002a91   0x98  Code  Gb  Printer.o [1]
+AbnormalLine            0x08002a29   0x68  Code  Gb  Printer.o [1]
+BKP_ReadBackupRegister  0x0800490d    0xa  Code  Gb  stm32f10x_bkp.o [1]
+BKP_TamperPinCmd        0x080048f9    0xc  Code  Gb  stm32f10x_bkp.o [1]
+BKP_WriteBackupRegister
+                        0x08004905    0x8  Code  Gb  stm32f10x_bkp.o [1]
+BusFaultException       0x0800462b    0x2  Code  Gb  stm32f10x_it.o [1]
+CAN_RX1_IRQHandler      0x08004667    0x2  Code  Gb  stm32f10x_it.o [1]
+CAN_SCE_IRQHandler      0x08004669    0x2  Code  Gb  stm32f10x_it.o [1]
+COM1                    0x20001484    0xc  Data  Gb  Serial.o [1]
+COM2                    0x20001490    0xc  Data  Gb  Serial.o [1]
+COM4                    0x2000149c    0xc  Data  Gb  Serial.o [1]
+CPUInit                 0x08003859   0x22  Code  Gb  CPUinit.o [1]
+CSTACK$$Base            0x20000000          --   Gb  - Linker created -
+CSTACK$$Limit           0x20000800          --   Gb  - Linker created -
+CalcNewDate             0x08003691   0x72  Code  Gb  RTC.o [1]
+CheckBisangMode         0x080022fd   0x78  Code  Gb  util.o [1]
+CheckDevicePower        0x080022ad   0x4c  Code  Gb  util.o [1]
+CheckPowerSwitch        0x08002131   0xda  Code  Gb  util.o [1]
+ClearCom1TimeOut        0x0800237f    0x8  Code  Gb  util.o [1]
+CmdPos                  0x200014c8    0x2  Data  Gb  HostLine.o [1]
+Com1Send                0x08004065   0x10  Code  Gb  Serial.o [1]
+Com1Tick                0x200014c0    0x4  Data  Gb  util.o [1]
+Com2Send                0x08004079   0x10  Code  Gb  Serial.o [1]
+Com2Tick                0x200014e5    0x1  Data  Gb  util.o [1]
+CutCmd                  0x200015c8    0x8  Data  Gb  Printer.o [1]
+DAYOFWEEK_TABLE         0x200015b8   0x10  Data  Gb  RTC.o [1]
+DMA1_Channel1_IRQHandler
+                        0x08004653    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel2_IRQHandler
+                        0x08004655    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel3_IRQHandler
+                        0x08004657    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel4_IRQHandler
+                        0x08004659    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel5_IRQHandler
+                        0x0800465b    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel6_IRQHandler
+                        0x0800465d    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA1_Channel7_IRQHandler
+                        0x0800465f    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA2_Channel1_IRQHandler
+                        0x080046d3    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA2_Channel2_IRQHandler
+                        0x080046d5    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA2_Channel3_IRQHandler
+                        0x080046d7    0x2  Code  Gb  stm32f10x_it.o [1]
+DMA2_Channel4_5_IRQHandler
+                        0x080046d9    0x2  Code  Gb  stm32f10x_it.o [1]
+DataPos                 0x200014ca    0x2  Data  Gb  Printer.o [1]
+DbgOutRTC               0x080035e1   0xb0  Code  Gb  RTC.o [1]
+DebugMonitor            0x0800462f    0x2  Code  Gb  stm32f10x_it.o [1]
+DelayTick               0x200014b8    0x4  Data  Gb  util.o [1]
+DoCommand               0x0800304d  0x2d0  Code  Gb  HostLine.o [1]
+Dump                    0x200014f4   0xb4  Data  Gb  Printer.o [1]
+EXTI0_IRQHandler        0x08004649    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI15_10_IRQHandler    0x080046b3    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI1_IRQHandler        0x0800464b    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI2_IRQHandler        0x0800464d    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI3_IRQHandler        0x0800464f    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI4_IRQHandler        0x08004651    0x2  Code  Gb  stm32f10x_it.o [1]
+EXTI9_5_IRQHandler      0x0800466b    0x2  Code  Gb  stm32f10x_it.o [1]
+EmerLedFlag             0x200014eb    0x1  Data  Gb  util.o [1]
+FLASH_ErasePage         0x080040f9   0x68  Code  Gb  stm32f10x_flash.o [1]
+FLASH_GetStatus         0x080041b9   0x2c  Code  Gb  stm32f10x_flash.o [1]
+FLASH_IRQHandler        0x08004645    0x2  Code  Gb  stm32f10x_it.o [1]
+FLASH_Lock              0x080040e5   0x12  Code  Gb  stm32f10x_flash.o [1]
+FLASH_PrefetchBufferCmd
+                        0x080040ad   0x20  Code  Gb  stm32f10x_flash.o [1]
+FLASH_ProgramHalfWord   0x08004161   0x46  Code  Gb  stm32f10x_flash.o [1]
+FLASH_SetLatency        0x0800408d   0x20  Code  Gb  stm32f10x_flash.o [1]
+FLASH_Unlock            0x080040cd   0x18  Code  Gb  stm32f10x_flash.o [1]
+FLASH_WaitForLastOperation
+                        0x080041e9   0x30  Code  Gb  stm32f10x_flash.o [1]
+FSMC_IRQHandler         0x080046c3    0x2  Code  Gb  stm32f10x_it.o [1]
+FeedDog                 0x08002885    0x8  Code  Gb  util.o [1]
+FindIndex               0x08002c0d   0xbe  Code  Gb  Printer.o [1]
+GPIO_Configuration      0x080038f5  0x138  Code  Gb  CPUinit.o [1]
+GPIO_Init               0x08004471   0xcc  Code  Gb  stm32f10x_gpio.o [1]
+GPIO_ReadInputData      0x0800453d    0x6  Code  Gb  stm32f10x_gpio.o [1]
+GPIO_ResetBits          0x08004549    0x6  Code  Gb  stm32f10x_gpio.o [1]
+GPIO_SetBits            0x08004543    0x6  Code  Gb  stm32f10x_gpio.o [1]
+GPIO_WriteBit           0x0800454f   0x12  Code  Gb  stm32f10x_gpio.o [1]
+GetBCD16                0x080027c3   0x3e  Code  Gb  util.o [1]
+GetBCD32                0x080026f9   0xca  Code  Gb  util.o [1]
+GetCloseSensor          0x080024d5   0x52  Code  Gb  util.o [1]
+GetDR1                  0x080037df   0x10  Code  Gb  RTC.o [1]
+GetDayOfWeek            0x080035cd   0x14  Code  Gb  RTC.o [1]
+GetHex                  0x080026e5   0x14  Code  Gb  util.o [1]
+GetPcPower              0x0800220b   0x16  Code  Gb  util.o [1]
+GetPrinterSensor        0x080028b5   0x10  Code  Gb  Printer.o [1]
+GetRTC                  0x08003503   0xc8  Code  Gb  RTC.o [1]
+GetRTCVal               0x08003385   0x14  Code  Gb  HostLine.o [1]
+GetSensor               0x08002469   0x58  Code  Gb  util.o [1]
+HardFaultException      0x08004627    0x2  Code  Gb  stm32f10x_it.o [1]
+HexOut                  0x200014a8    0x8  Data  Gb  util.o [1]
+HostLine                0x08002fc9   0x84  Code  Gb  HostLine.o [1]
+HostLineIsr             0x08002f01   0xc8  Code  Gb  HostLine.o [1]
+I2C1_ER_IRQHandler      0x0800467d    0x2  Code  Gb  stm32f10x_it.o [1]
+I2C1_EV_IRQHandler      0x0800467b    0x2  Code  Gb  stm32f10x_it.o [1]
+I2C2_ER_IRQHandler      0x08004681    0x2  Code  Gb  stm32f10x_it.o [1]
+I2C2_EV_IRQHandler      0x0800467f    0x2  Code  Gb  stm32f10x_it.o [1]
+IWDG_Enable             0x080048b7    0xa  Code  Gb  stm32f10x_iwdg.o [1]
+IWDG_ReloadCounter      0x080048ad    0xa  Code  Gb  stm32f10x_iwdg.o [1]
+IWDG_SetPrescaler       0x08004895    0xc  Code  Gb  stm32f10x_iwdg.o [1]
+IWDG_SetReload          0x080048a1    0xc  Code  Gb  stm32f10x_iwdg.o [1]
+IWDG_WriteAccessCmd     0x0800488d    0x8  Code  Gb  stm32f10x_iwdg.o [1]
+IncDay                  0x08003703   0xb6  Code  Gb  RTC.o [1]
+LedCnt                  0x200014e7    0x1  Data  Gb  util.o [1]
+LedFreq                 0x200014e8    0x1  Data  Gb  util.o [1]
+LedIsr                  0x08002445   0x24  Code  Gb  util.o [1]
+LedStatus               0x200014e9    0x1  Data  Gb  util.o [1]
+LedToggle               0x200014ea    0x1  Data  Gb  util.o [1]
+LoopMode                0x200014f0    0x1  Data  Gb  util.o [1]
+MemManageException      0x08004629    0x2  Code  Gb  stm32f10x_it.o [1]
+NMIException            0x08004625    0x2  Code  Gb  stm32f10x_it.o [1]
+NVIC_Configuration      0x08003a2d   0x6c  Code  Gb  CPUinit.o [1]
+NVIC_DeInit             0x08004361   0x40  Code  Gb  stm32f10x_nvic.o [1]
+NVIC_Init               0x080043b1   0x9c  Code  Gb  stm32f10x_nvic.o [1]
+NVIC_PriorityGroupConfig
+                        0x080043a1    0xa  Code  Gb  stm32f10x_nvic.o [1]
+NVIC_SetVectorTable     0x08004459   0x10  Code  Gb  stm32f10x_nvic.o [1]
+OldSensor               0x200014ed    0x1  Data  Gb  util.o [1]
+OldSensorClose          0x200014ef    0x1  Data  Gb  util.o [1]
+P24V_ON                 0x08002601   0x24  Code  Gb  util.o [1]
+P5V_ON                  0x08002625   0x24  Code  Gb  util.o [1]
+PVD_IRQHandler          0x0800463f    0x2  Code  Gb  stm32f10x_it.o [1]
+PWR_BackupAccessCmd     0x08004a05    0xc  Code  Gb  stm32f10x_pwr.o [1]
+PaperSensorState        0x200014e2    0x1  Data  Gb  Printer.o [1]
+PendSVC                 0x08004633    0x2  Code  Gb  stm32f10x_it.o [1]
+PeriPheralFlag          0x200014f1    0x1  Data  Gb  util.o [1]
+PowerOffEvent           0x200014f3    0x1  Data  Gb  util.o [1]
+PowerOffOneTime         0x200014e6    0x1  Data  Gb  util.o [1]
+PowerOnEvent            0x200014f2    0x1  Data  Gb  util.o [1]
+PowerTick               0x200014e0    0x2  Data  Gb  util.o [1]
+PrintDumpTest1          0x08002ee5    0xc  Code  Gb  Printer.o [1]
+PrinterInit             0x0800288d   0x26  Code  Gb  Printer.o [1]
+PrinterIsr              0x08002d99   0x48  Code  Gb  Printer.o [1]
+PrinterLine             0x08002b2d   0x98  Code  Gb  Printer.o [1]
+PrinterOut              0x08002bc9   0x3e  Code  Gb  Printer.o [1]
+PrinterSensor           0x200014e3    0x1  Data  Gb  Printer.o [1]
+PrtBuf                  0x20001400   0x64  Data  Gb  DbgPrint.o [1]
+PrtCnt                  0x200014b0    0x4  Data  Gb  Printer.o [1]
+PrtInt                  0x08004831   0x14  Code  Gb  DbgPrint.o [1]
+PrtMsg                  0x08004845   0x48  Code  Gb  DbgPrint.o [1]
+PrtSize                 0x200014cc    0x2  Data  Gb  Printer.o [1]
+RCC_APB1PeriphClockCmd  0x08003e4d   0x24  Code  Gb  stm32f10x_rcc.o [1]
+RCC_APB2PeriphClockCmd  0x08003e29   0x24  Code  Gb  stm32f10x_rcc.o [1]
+RCC_Configuration       0x0800387b   0x78  Code  Gb  CPUinit.o [1]
+RCC_DeInit              0x08003bad   0x5c  Code  Gb  stm32f10x_rcc.o [1]
+RCC_GetClocksFreq       0x08003d55   0xd0  Code  Gb  stm32f10x_rcc.o [1]
+RCC_GetFlagStatus       0x08003e71   0x44  Code  Gb  stm32f10x_rcc.o [1]
+RCC_GetSYSCLKSource     0x08003ccd    0xa  Code  Gb  stm32f10x_rcc.o [1]
+RCC_HCLKConfig          0x08003cd7   0x14  Code  Gb  stm32f10x_rcc.o [1]
+RCC_HSEConfig           0x08003c09   0x52  Code  Gb  stm32f10x_rcc.o [1]
+RCC_IRQHandler          0x08004647    0x2  Code  Gb  stm32f10x_it.o [1]
+RCC_LSEConfig           0x08003d15   0x28  Code  Gb  stm32f10x_rcc.o [1]
+RCC_PCLK1Config         0x08003ceb   0x14  Code  Gb  stm32f10x_rcc.o [1]
+RCC_PCLK2Config         0x08003cff   0x16  Code  Gb  stm32f10x_rcc.o [1]
+RCC_PLLCmd              0x08003cad    0xc  Code  Gb  stm32f10x_rcc.o [1]
+RCC_PLLConfig           0x08003c95   0x16  Code  Gb  stm32f10x_rcc.o [1]
+RCC_RTCCLKCmd           0x08003d49    0xc  Code  Gb  stm32f10x_rcc.o [1]
+RCC_RTCCLKConfig        0x08003d3d    0xc  Code  Gb  stm32f10x_rcc.o [1]
+RCC_SYSCLKConfig        0x08003cb9   0x14  Code  Gb  stm32f10x_rcc.o [1]
+RCC_WaitForHSEStartUp   0x08003c5b   0x3a  Code  Gb  stm32f10x_rcc.o [1]
+RTCAlarm_IRQHandler     0x080046b5    0x2  Code  Gb  stm32f10x_it.o [1]
+RTCConfiguration        0x08003805   0x52  Code  Gb  RTC.o [1]
+RTCInit                 0x080037b9   0x26  Code  Gb  RTC.o [1]
+RTC_EnterConfigMode     0x08004581    0xe  Code  Gb  stm32f10x_rtc.o [1]
+RTC_ExitConfigMode      0x0800458f   0x10  Code  Gb  stm32f10x_rtc.o [1]
+RTC_GetCounter          0x0800459f   0x16  Code  Gb  stm32f10x_rtc.o [1]
+RTC_IRQHandler          0x08004643    0x2  Code  Gb  stm32f10x_it.o [1]
+RTC_ITConfig            0x08004561   0x20  Code  Gb  stm32f10x_rtc.o [1]
+RTC_SetCounter          0x080045b5   0x18  Code  Gb  stm32f10x_rtc.o [1]
+RTC_SetPrescaler        0x080045d5   0x24  Code  Gb  stm32f10x_rtc.o [1]
+RTC_WaitForLastTask     0x080045f9    0xa  Code  Gb  stm32f10x_rtc.o [1]
+RTC_WaitForSynchro      0x08004603   0x18  Code  Gb  stm32f10x_rtc.o [1]
+Region$$Table$$Base     0x08004940          --   Gb  - Linker created -
+Region$$Table$$Limit    0x08004964          --   Gb  - Linker created -
+ReportSensor            0x08003431   0x50  Code  Gb  HostLine.o [1]
+ReportVersion           0x08003399   0x98  Code  Gb  HostLine.o [1]
+RestoreIndex            0x080028c5   0x90  Code  Gb  Printer.o [1]
+RestoreMode             0x0800284f   0x2e  Code  Gb  util.o [1]
+SDIO_IRQHandler         0x080046c5    0x2  Code  Gb  stm32f10x_it.o [1]
+SPI1_IRQHandler         0x08004683    0x2  Code  Gb  stm32f10x_it.o [1]
+SPI2_IRQHandler         0x08004685    0x2  Code  Gb  stm32f10x_it.o [1]
+SPI3_IRQHandler         0x080046c9    0x2  Code  Gb  stm32f10x_it.o [1]
+SVCHandler              0x08004631    0x2  Code  Gb  stm32f10x_it.o [1]
+SaveIndex               0x08002955   0xd2  Code  Gb  Printer.o [1]
+SavePMode               0x08002801   0x4e  Code  Gb  util.o [1]
+SendACK                 0x08003497   0x12  Code  Gb  HostLine.o [1]
+SendHost                0x08003f25   0x74  Code  Gb  Serial.o [1]
+SendNAK                 0x08003485   0x12  Code  Gb  HostLine.o [1]
+SendPrinter             0x08003f99   0x74  Code  Gb  Serial.o [1]
+SendTime                0x08002e15   0xcc  Code  Gb  Printer.o [1]
+Sensor                  0x200014ec    0x1  Data  Gb  util.o [1]
+SensorClose             0x200014ee    0x1  Data  Gb  util.o [1]
+SensorCmd               0x200015d0    0x2  Data  Gb  Printer.o [1]
+SerialInit              0x08003ec5   0x60  Code  Gb  Serial.o [1]
+SetCom1TimeOut          0x08002379    0x6  Code  Gb  util.o [1]
+SetDR1                  0x080037ef   0x16  Code  Gb  RTC.o [1]
+SetLedBits              0x0800256d   0x1c  Code  Gb  util.o [1]
+SetLedToggle            0x08002539   0x34  Code  Gb  util.o [1]
+SetPowerOff2            0x080025b5   0x24  Code  Gb  util.o [1]
+SetPowerOn              0x08002599   0x1c  Code  Gb  util.o [1]
+SetPrintCounter         0x08002de9   0x16  Code  Gb  Printer.o [1]
+SetPrinterTimeOut       0x08002e09    0xc  Code  Gb  Printer.o [1]
+SetRTC                  0x080034a9   0x5a  Code  Gb  RTC.o [1]
+SetRTCValue             0x08003329   0x5c  Code  Gb  HostLine.o [1]
+SysTickHandler          0x08004635    0x8  Code  Gb  stm32f10x_it.o [1]
+SysTick_Configuration   0x08003b6d   0x20  Code  Gb  CPUinit.o [1]
+SysTick_CounterCmd      0x080047d9   0x2e  Code  Gb  stm32f10x_systick.o [1]
+SysTick_ITConfig        0x08004807   0x22  Code  Gb  stm32f10x_systick.o [1]
+SysTick_SetReload       0x080047cd    0xc  Code  Gb  stm32f10x_systick.o [1]
+SystemTick              0x200014bc    0x4  Data  Gb  util.o [1]
+TAMPER_IRQHandler       0x08004641    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM1_BRK_IRQHandler     0x0800466d    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM1_CC_IRQHandler      0x08004673    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM1_TRG_COM_IRQHandler
+                        0x08004671    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM1_UP_IRQHandler      0x0800466f    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM2_IRQHandler         0x08004675    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM3_IRQHandler         0x08004677    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM4_IRQHandler         0x08004679    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM5_IRQHandler         0x080046c7    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM6_IRQHandler         0x080046cf    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM7_IRQHandler         0x080046d1    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM8_BRK_IRQHandler     0x080046b9    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM8_CC_IRQHandler      0x080046bf    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM8_TRG_COM_IRQHandler
+                        0x080046bd    0x2  Code  Gb  stm32f10x_it.o [1]
+TIM8_UP_IRQHandler      0x080046bb    0x2  Code  Gb  stm32f10x_it.o [1]
+TickIsr                 0x08002389   0xb0  Code  Gb  util.o [1]
+TogglePower             0x080025dd   0x24  Code  Gb  util.o [1]
+UART1RxBuf              0x20000800  0x400  Data  Gb  Serial.o [1]
+UART1RxIsr              0x08004011   0x20  Code  Gb  Serial.o [1]
+UART1TxBuf              0x20000c00  0x400  Data  Gb  Serial.o [1]
+UART2RxBuf              0x20001464   0x20  Data  Gb  Serial.o [1]
+UART2RxIsr              0x0800403d   0x24  Code  Gb  Serial.o [1]
+UART2TxBuf              0x20001000  0x400  Data  Gb  Serial.o [1]
+UART4_IRQHandler        0x080046cb    0x2  Code  Gb  stm32f10x_it.o [1]
+UART5_IRQHandler        0x080046cd    0x2  Code  Gb  stm32f10x_it.o [1]
+USART1_IRQHandler       0x08004689   0x14  Code  Gb  stm32f10x_it.o [1]
+USART2_IRQHandler       0x0800469d   0x14  Code  Gb  stm32f10x_it.o [1]
+USART3_IRQHandler       0x080046b1    0x2  Code  Gb  stm32f10x_it.o [1]
+USART_Cmd               0x080042d1   0x1c  Code  Gb  stm32f10x_usart.o [1]
+USART_Configuration     0x08003a99   0xd4  Code  Gb  CPUinit.o [1]
+USART_GetFlagStatus     0x0800434b   0x14  Code  Gb  stm32f10x_usart.o [1]
+USART_ITConfig          0x080042ed   0x4e  Code  Gb  stm32f10x_usart.o [1]
+USART_Init              0x08004235   0x9c  Code  Gb  stm32f10x_usart.o [1]
+USART_ReceiveData       0x08004343    0x8  Code  Gb  stm32f10x_usart.o [1]
+USART_SendData          0x0800433b    0x8  Code  Gb  stm32f10x_usart.o [1]
+USBWakeUp_IRQHandler    0x080046b7    0x2  Code  Gb  stm32f10x_it.o [1]
+USB_HP_CAN_TX_IRQHandler
+                        0x08004663    0x2  Code  Gb  stm32f10x_it.o [1]
+USB_LP_CAN_RX0_IRQHandler
+                        0x08004665    0x2  Code  Gb  stm32f10x_it.o [1]
+UsageFaultException     0x0800462d    0x2  Code  Gb  stm32f10x_it.o [1]
+UtilInit                0x08002221   0x8c  Code  Gb  util.o [1]
+VersionString           0x200015a8   0x10  Data  Gb  HostLine.o [1]
+WWDG_IRQHandler         0x0800463d    0x2  Code  Gb  stm32f10x_it.o [1]
+WatchDog_Config         0x08003b8d   0x1e  Code  Gb  CPUinit.o [1]
+WizInit                 0x08004a51    0x2  Code  Gb  wiznet.o [1]
+WriteDumpData           0x08002ced   0xa6  Code  Gb  Printer.o [1]
+WriteDumpFlash          0x08002ef1    0xc  Code  Gb  Printer.o [1]
+__BASEPRICONFIG         0x08004743         Code  Gb  cortexm3_macro.o [1]
+__DMB                   0x080046f5         Code  Gb  cortexm3_macro.o [1]
+__DSB                   0x080046ef         Code  Gb  cortexm3_macro.o [1]
+__GetBASEPRI            0x08004749         Code  Gb  cortexm3_macro.o [1]
+__ISB                   0x080046e9         Code  Gb  cortexm3_macro.o [1]
+__MRS_CONTROL           0x080046ff         Code  Gb  cortexm3_macro.o [1]
+__MRS_MSP               0x0800471b         Code  Gb  cortexm3_macro.o [1]
+__MRS_PSP               0x0800470f         Code  Gb  cortexm3_macro.o [1]
+__MSR_CONTROL           0x08004705         Code  Gb  cortexm3_macro.o [1]
+__MSR_MSP               0x08004721         Code  Gb  cortexm3_macro.o [1]
+__MSR_PSP               0x08004715         Code  Gb  cortexm3_macro.o [1]
+__READ_FAULTMASK        0x0800473d         Code  Gb  cortexm3_macro.o [1]
+__READ_PRIMASK          0x0800472f         Code  Gb  cortexm3_macro.o [1]
+__RESETFAULTMASK        0x08004735         Code  Gb  cortexm3_macro.o [1]
+__RESETPRIMASK          0x08004727         Code  Gb  cortexm3_macro.o [1]
+__REV_HalfWord          0x0800474f         Code  Gb  cortexm3_macro.o [1]
+__REV_Word              0x08004753         Code  Gb  cortexm3_macro.o [1]
+__SETFAULTMASK          0x08004739         Code  Gb  cortexm3_macro.o [1]
+__SETPRIMASK            0x0800472b         Code  Gb  cortexm3_macro.o [1]
+__SEV                   0x080046e5         Code  Gb  cortexm3_macro.o [1]
+__SVC                   0x080046fb         Code  Gb  cortexm3_macro.o [1]
+__WFE                   0x080046e1         Code  Gb  cortexm3_macro.o [1]
+__WFI                   0x080046dd         Code  Gb  cortexm3_macro.o [1]
+__exit                  0x080049d5   0x14  Code  Gb  exit.o [5]
+__iar_copy_init2        0x0800491d   0x24  Code  Gb  copy_init2.o [4]
+__iar_data_init2        0x08004965   0x20  Code  Gb  data_init2.o [4]
+__iar_program_start     0x080049bd         Code  Gb  cmain.o [4]
+__iar_sh_stdout_close   0x08004985   0x16  Code  Gb  iarwstd.o [5]
+__iar_sh_stdout_handle  0x200014c4    0x4  Data  Lc  iarwstd.o [5]
+__iar_zero_init2        0x080049a1   0x1a  Code  Gb  zero_init2.o [4]
+__low_level_init        0x08004a53    0x4  Code  Gb  low_level_init.o [3]
+__vector_table          0x08002000  0x130  Data  Gb  stm32f10x_vector.o [1]
+_exit                   0x08004a11         Code  Gb  cexit.o [4]
+_main                   0x080049cf         Code  Gb  cmain.o [4]
+bPcControlState         0x200014e4    0x1  Data  Gb  util.o [1]
+delay                   0x08004219   0x1c  Code  Lc  stm32f10x_flash.o [1]
+delay                   0x0800264d   0x16  Code  Gb  util.o [1]
+exit                    0x08004a45    0x6  Code  Gb  exit.o [3]
+main                    0x08004759   0x74  Code  Gb  main.o [1]
+mcnt                    0x200014ce    0x2  Data  Gb  Printer.o [1]
+pampm                   0x200014d6    0x2  Data  Gb  Printer.o [1]
+pcnt                    0x200014b4    0x4  Data  Gb  Printer.o [1]
+pday                    0x200014d4    0x2  Data  Gb  Printer.o [1]
+phour                   0x200014d8    0x2  Data  Gb  Printer.o [1]
+pminute                 0x200014da    0x2  Data  Gb  Printer.o [1]
+pmonth                  0x200014d2    0x2  Data  Gb  Printer.o [1]
+psecond                 0x200014dc    0x2  Data  Gb  Printer.o [1]
+pyear                   0x200014d0    0x2  Data  Gb  Printer.o [1]
+sPcControlTimeOut       0x200014de    0x2  Data  Gb  util.o [1]
+u32ToHex                0x08002669   0x7c  Code  Gb  util.o [1]
+
+
+[1] = D:\develop\iqs_hw\work\양산 firmware\110223_IAP\project\EWARMv5\STM3210E-EVAL\Obj
+[2] = command line
+[3] = dl7M_tl_in.a
+[4] = rt7M_tl.a
+[5] = shb_l.a
+
+  10 370 bytes of readonly  code memory
+     694 bytes of readonly  data memory
+   5 588 bytes of readwrite data memory
+
+Errors: none
+Warnings: none

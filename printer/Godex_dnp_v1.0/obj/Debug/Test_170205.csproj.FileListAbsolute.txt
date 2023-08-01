@@ -1,0 +1,11 @@
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\bin\Debug\Test_170205.exe.config
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\bin\Debug\Test_170205.exe
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\bin\Debug\Test_170205.pdb
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.csprojResolveAssemblyReference.cache
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.Form1.resources
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.Properties.Resources.resources
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.csproj.GenerateResource.Cache
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.exe
+c:\users\jwshin\documents\visual studio 2015\Projects\Test_170205\obj\Debug\Test_170205.pdb
+C:\Users\jwshin\Documents\Visual Studio 2015\Projects\Test_170205\obj\Debug\Test_170205.Frm_PrinterSetting.resources
+C:\Users\jwshin\Documents\Visual Studio 2015\Projects\Test_170205\obj\Debug\Test_170205.Form3.resources
