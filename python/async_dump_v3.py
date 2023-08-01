@@ -1,6 +1,6 @@
 '''
-sindo 485 packet 모니터링을 위한 program.
-대기인원, 호출창구, 호출번호등을 모니터링해서 상위 서버로 전송 
+485 packet 모니터링을 위한 program.
+모니터링해서 상위 서버로 전송 
 485 to ethernet converter에 소켓 클라이언트로 접속
 parsing 한 데이터를 상위 소켓 서버로 접속하여 데이터 전송
 설정 파일은 config-485.ini를 참조
@@ -76,7 +76,7 @@ class Client:
                 await asyncio.sleep(1)
                 await self.connect()
 
-    # 데이터 취득 함수 (신도)
+    # 데이터 취득 함수 ()
     async def handle_data(self, data):
         while len(data) >= 8:
             byte_data = data[:8]
