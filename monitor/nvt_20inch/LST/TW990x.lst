@@ -1,0 +1,806 @@
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE TW990X
+OBJECT MODULE PLACED IN .\BIN\TW990x.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\TW990x.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\T
+                    -W990x.lst) OBJECT(.\BIN\TW990x.obj)
+
+stmt level    source
+
+   1          #include "tw990x.h"
+   2          #include "Scaler.H"
+   3          #include "MCU.H"
+   4          #include "UserAdj.H"
+   5          #include "MyDef.H"
+   6          #include "F63xREG.H"
+   7          #include "IIC.H"
+   8          #include "stdio.h"
+   9          #include "PANEL.H"
+  10          #include "RAM.H"
+  11          #include "sRGB.H"
+  12          #include "OSD.H"
+  13          #include "rom_map.h"
+  14          #include "Z86229.h"
+  15          
+  16          
+  17          //#define TW990x_Addr           0x88
+  18          
+  19          //****************************************************************//
+  20          //변수선언
+  21          //****************************************************************//
+  22          
+  23          
+  24          code unsigned char TW990x_ResetTable[] =
+  25          {                                       //NTSC
+  26          //******************************************
+  27          //원래는 초기화 되야 하는데 간혹 안되서 강제로 초기화.
+  28          
+  29                  0x04,                           0x00,
+  30                  0x05,                           0x00,
+  31                  0x06,                           0x40,   
+  32                  0x07,                           0x02,
+  33                  0x08,                           0x15,
+  34                  0x09,                           0xf0,
+  35                  0x0a,                           0x80,
+  36                  0x0b,                           0xd0,
+  37                  0x0c,                           0x8c,
+  38                  0x0d,                           0x00,
+  39                  0x0e,                           0x11,
+  40                  0x0f,                           0x00,
+  41                  0x10,                           0x00,
+  42                  0x11,                           0x60,
+  43                  0x12,                           0x51,
+  44                  0x13,                           0x7f,
+  45                  0x14,                           0x5a,
+  46                  0x15,                           0x00,
+  47                  //0x16,                         0xc3,
+  48                  0x16,                           0xc0,//2003-11-21
+  49          //      0x17,                           0x80,
+  50                  0x18,                           0x00,
+  51                  0x19,                           0x58,
+  52                  0x1a,                           0x80,
+  53                  0x1e,                           0x00,
+  54                  0x1f,                           0x00,
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 2   
+
+  55                  //0x20,                         0xa0,
+  56                  0x20,                           0x57,   //2004-05-19    clamp 일정값이하에서는 특정패턴에서 규칙적가로줄무늬가 나타남.
+  57                  0x21,                           0x22,
+  58                  0x22,                           0xf0,
+  59                  0x23,                           0xfe,
+  60                  //#ifdef WXGA_Panel
+  61          //      0x23,                           0xa0,   //2003-11-18
+  62                  //#endif
+  63                  //0x24,                         0x3c,
+  64                  //0x24,                         0x33,   //2003-11-21
+  65                  //0x24,                         0x47,   //2004-05-19
+  66                  #ifdef USE_NTSCtuner
+                      0x24,                           0x45,   
+                      #else
+  69                  0x24,                           0x4e,   //2004-07-01
+  70                  #endif
+  71                  0x25,                           0x38,
+  72                  //0x25,                         0x30,   //2003-11-05
+  73                  0x27,                           0x20,
+  74                  //0x27,                         0x08,   //2003-11-21
+  75                  0x28,                           0x00,
+  76                  0x29,                           0x15,
+  77                  0x2a,                           0xa0,
+  78                  0x2b,                           0x44,
+  79                  0x2c,                           0x37,
+  80                  0x2d,                           0x00,
+  81                  0x30,                           0x00,
+  82                  0x31,                           0x10,
+  83                  0x32,                           0xa0,
+  84                  0x33,                           0x22,
+  85                  0x34,                           0x11,
+  86                  0x35,                           0x35,
+  87                  0x36,                           0x72,   
+  88                  0x39,                           0x00,   
+  89                  //0x3B,                         0x05,   //2003-09-02
+  90                  //0x3B,                         0x14,   //2003-11-05
+  91                  //0x3B,                         0x25,   //2003-11-05
+  92                  0x3B,                           0x05,   //2004-05-19
+  93                  0x3C,                           0xE3,   
+  94                  0x3D,                           0x20,   
+  95                  0x3E,                           0xAF,   
+  96                  0x3F,                           0x00,   
+  97                  0x40,                           0x00,   
+  98                  0x41,                           0x40,   
+  99                  0x42,                           0x40,   
+ 100                  0x43,                           0xC0,   
+ 101                  0x44,                           0x00,   
+ 102                  0x00    // 마지막을 나타내는 데이터임.
+ 103          };
+ 104          
+ 105          /*
+ 106          
+ 107          code unsigned char TW990x_ResetTable[] =
+ 108          {                                       //NTSC
+ 109                          
+ 110          //******************************************
+ 111          //원래는 초기화 되야 하는데 간혹 안되서 강제로 초기화.
+ 112          
+ 113                  0x04,                           0x00,
+ 114                  0x05,                           0x00,
+ 115                  0x06,                           0x40,   
+ 116                  0x07,                           0x02,
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 3   
+
+ 117                  0x08,                           0x15,
+ 118                  0x09,                           0xf0,
+ 119                  0x0a,                           0x80,
+ 120                  0x0b,                           0xd0,
+ 121                  0x0c,                           0x8c,
+ 122                  0x0d,                           0x00,
+ 123                  0x0e,                           0x11,
+ 124                  0x0f,                           0x00,
+ 125                  0x10,                           0x00,
+ 126                  0x11,                           0x60,
+ 127                  0x12,                           0x51,
+ 128                  0x13,                           0x7f,
+ 129                  0x14,                           0x5a,
+ 130                  0x15,                           0x00,
+ 131                  0x16,                           0xc3,
+ 132          
+ 133                  0x18,                           0x00,
+ 134                  0x19,                           0x58,
+ 135                  0x1a,                           0x80,
+ 136          
+ 137                  0x1e,                           0x00,
+ 138                  0x1f,                           0x00,
+ 139                  0x20,                           0xa0,
+ 140                  0x21,                           0x22,
+ 141                  0x22,                           0xf0,
+ 142          
+ 143                  0x24,                           0x3c,
+ 144                  0x25,                           0x38,
+ 145                  
+ 146                  0x27,                           0x20,
+ 147                  0x28,                           0x00,
+ 148                  0x29,                           0x15,
+ 149                  0x2a,                           0xa0,
+ 150                  0x2b,                           0x44,
+ 151                  0x2c,                           0x37,
+ 152                  0x2d,                           0x00,
+ 153                  
+ 154                  0x30,                           0x00,
+ 155                  0x31,                           0x10,
+ 156                  0x32,                           0xa0,
+ 157                  0x33,                           0x22,
+ 158                  0x34,                           0x11,
+ 159                  0x35,                           0x35,
+ 160                  0x36,                           0x72,   
+ 161                  0x39,                           0x00,   
+ 162          
+ 163                  0x3B,                           0x14,   
+ 164                  0x3C,                           0xE3,   
+ 165                  0x3D,                           0x20,   
+ 166                  0x3E,                           0xAF,   
+ 167                  0x3F,                           0x00,   
+ 168                  0x3F,                           0x00,   
+ 169                  0x40,                           0x00,   
+ 170                  0x41,                           0x40,   
+ 171                  0x42,                           0x40,   
+ 172                  0x43,                           0xC0,   
+ 173                  0x44,                           0x00,   
+ 174                  0x00    // 마지막을 나타내는 데이터임.
+ 175          };
+ 176          */
+ 177          /*
+ 178          code unsigned char TW9908B_Table_Init[] =
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 4   
+
+ 179          {                                       //NTSC
+ 180          
+ 181          //*********************************************
+ 182          //실제 필요한 셋팅 
+ 183          
+ 184                  TW99_ACNTL,                     0x40,           //
+ 185                  TW99_INFORM,            0x40,
+ 186                  TW99_OPFORM,            0x92,           //656 format
+ 187          //      TW99_OPFORM,            0x52,           //601 format
+ 188                  TW99_CROP_HI,           0x03,
+ 189                  TW99_VDELAY_LO,         0x11,           //youngdo 2003.5.19
+ 190          //      TW99_VACTIVE_LO,        0x10,           //youngdo 2003.5.19ntsc
+ 191                  TW99_VACTIVE_LO,        0xf5,           //youngdo 2003.5.19  PAL
+ 192                  TW99_HDELAY_LO,         0x7a,           //youngdo 2003.5.19 0x90,
+ 193                  TW99_HACTIVE_LO,        0x00,
+ 194                  TW99_CNTRL1,            0x9c,           //
+ 195                  TW99_SDT,               0x07,
+ 196                  TW99_SDTR,              0x7f,
+ 197                  TW99_CLMPG,             0x50,
+ 198                  TW99_MISSCNT,           0x4c,           //remove vcr jitter
+ 199                  TW99_VCNTL,             0x02,           //aflf on.
+ 200                  TW99_MISC2,             0xa9,
+ 201                  TW99_MISC3,             0xE2,   // no video blue 0xe6,  
+ 202          //  RGB, FB  control    
+ 203                  TW9908B_SBRIGHT,                0x20,
+ 204                  TW9908B_SCONTRAST,              0x70,
+ 205                  TW9908B_RGBCNTL,                0x03,   //RGB on,FB disablee
+ 206                  TW9908B_SCBGAIN,                0x80,   //sub is RGB
+ 207                  TW9908B_SCRGAIN,                0x40,   //DAC enable
+ 208                  TW99_PEAKWT,            0xe0,
+ 209                  TW99_VSHARP,            0x84,
+ 210          //      TW99_VSHARP,            0x80,           // smpark 20030730
+ 211                  
+ 212          
+ 213                  TW99_ACNTL,             0xc0,   
+ 214                  0x00    // 마지막을 나타내는 데이터임.
+ 215          };
+ 216          */
+ 217          code unsigned char TW9908C_Table_Init[] =
+ 218          {                                       //NTSC
+ 219          
+ 220          //*********************************************
+ 221          //실제 필요한 셋팅 
+ 222                  TW99_INFORM,            0x40,
+ 223                  TW99_OPFORM,            0x82,  //656 format
+ 224          //      TW99_OPFORM,            0x52,  //601 format
+ 225                  TW99_ACNTL,                     0x40,           //
+ 226                  TW99_SDT,                       0x0f,   
+ 227                  TW99_CROP_HI,           0x13,
+ 228          //      TW99_VDELAY_LO,         0x02,           //youngdo 2003.5.19
+ 229                  TW99_VDELAY_LO,         0x13,           //Kort 
+ 230                  TW99_VACTIVE_LO,        0x10,           //youngdo 2003.5.19ntsc
+ 231          //      TW99_HDELAY_LO,         0x38,           //lee 38<---36 youngdo 2003.5.19 0x90,
+ 232                  TW99_HDELAY_LO,         0x94,           //lee 38<---36 youngdo 2003.5.19 0x90,
+ 233                  TW99_HACTIVE_LO,        0x38,           //lee 38<---28  2004.10.27 0x90,
+ 234                  TW99_SDTR,                      0x7f,
+ 235                  TW99_CLMPG,                     0x50,
+ 236                  TW99_MISSCNT,           0x4c,           //remove vcr jitter
+ 237                  TW99_VCNTL,                     0x02,           //aflf on.
+ 238          
+ 239          //      TW99_VSHARP,            0x80,           // smpark 20030730
+ 240                          
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 5   
+
+ 241                  TW9908C_LOOP,                   0xa9,
+ 242                  TW9908C_MISC2,                  0xE2,           // no video blue 0xe6,  
+ 243          //  RGB, FB  control    
+ 244                  TW9908C_SBRIGHT,                0x20,   
+ 245                  TW9908C_SCONTRAST,              0x70,
+ 246                  TW9908C_SCBGAIN,                0xC0,   //sub is RGB,DAC enable
+ 247                  TW99_PEAKWT,                    0xe0,   
+ 248                  TW99_VSHARP,            0xf7,           //  2004.3.22 youngdo
+ 249                  TW99_CNTRL1,            0x9c,           //      
+ 250                  TW99_SHARP      ,               0x73,           //cti enable  2004.3.22 youngdo
+ 251                  TW99_ACNTL,                     0xc0,   
+ 252                  
+ 253                          0x00    // 마지막을 나타내는 데이터임.
+ 254                  };
+ 255          
+ 256                  
+ 257          
+ 258          
+ 259          #define TW990xWrite(_y_,_z_)    WriteIIC(TW990x_Addr,_y_,_z_)
+ 260          #define TW990xRead(_z_)                 ReadIIC(TW990x_Addr,_z_)
+ 261          
+ 262          #define TW990x_SetBrightness(_z_)               WriteIIC(TW990x_Addr,TW99_BRIGHT,_z_)
+ 263          #define TW990x_SetContrast(_z_)                         WriteIIC(TW990x_Addr,TW99_CONTRAST,_z_)
+ 264          #define TW990x_SetTint(_z_)                             WriteIIC(TW990x_Addr,TW99_HUE,_z_)
+ 265          
+ 266          
+ 267          
+ 268          
+ 269          
+ 270          
+ 271          //sharpness  range is 0-7
+ 272          void TW990x_SetSharpness(unsigned char value)
+ 273          {
+ 274   1              unsigned char setvalue;
+ 275   1              setvalue=ReadIIC(TW990x_Addr,TW99_SHARP)&0xf8;
+ 276   1              setvalue+=value;
+ 277   1              TW990xWrite(TW99_SHARP,setvalue);
+ 278   1      }
+ 279          
+ 280          
+ 281          void TW990x_Setaturation(unsigned char value)
+ 282          {
+ 283   1              unsigned short  bigvalue;
+ 284   1              bigvalue=(unsigned short)value*0x7f;    
+ 285   1              bigvalue/=127;
+ 286   1              TW990xWrite(TW99_SAT_U,(unsigned char)bigvalue);
+ 287   1              bigvalue=(unsigned short)value*0x5a;
+ 288   1              bigvalue/=127;
+ 289   1              TW990xWrite(TW99_SAT_V,(unsigned char)bigvalue);
+ 290   1      }
+ 291          
+ 292          
+ 293          
+ 294          // 값이 0이면 wirte종료된다.
+ 295          void TW990x_RegInit(unsigned char *B_Addr_Table)
+ 296          {
+ 297   1              while(*B_Addr_Table){
+ 298   2      //              printf("TW990x_RegInit B_Addr_Table=0x%x,B_Addr_Table++=0x%x\r\n",(unsigned short)*B_Addr_Table,(unsig
+             -ned short)*(B_Addr_Table+1));
+ 299   2                      TW990xWrite(*B_Addr_Table++,*B_Addr_Table++);
+ 300   2      //              printf("After\r\n");
+ 301   2                      Sleep(12);
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 6   
+
+ 302   2                      CLRWDT=0x55;
+ 303   2              }
+ 304   1      }
+ 305          
+ 306          
+ 307          void AVDecoderSleep(void)
+ 308          {
+ 309   1              TW990xWrite(TW99_ACNTL,0x0f);
+ 310   1      //      printf("TW9908 Sleep\n");
+ 311   1      }
+ 312          
+ 313          
+ 314          void AVDecoderWakeup(void)
+ 315          {
+ 316   1              TW990xWrite(TW99_ACNTL,0xC0);
+ 317   1      //      printf("TW9908 Wake Up\n");
+ 318   1      }
+ 319          
+ 320          
+ 321          
+ 322          void AVDecoder_SelectInputPort(void)
+ 323          {
+ 324   1      
+ 325   1              unsigned char value;//,tw_id;
+ 326   1              value = ReadIIC(TW990x_Addr,TW99_INFORM)&0x42;  /// rev C is added YSEL2
+ 327   1              
+ 328   1      //IC에서 IC Type을 확인함
+ 329   1      //      tw_id=TW990xRead(TW99_ID);
+ 330   1      
+ 331   1              switch(FuncBuf[pVIDEOSOURCE]){
+ 332   2                      case cANALOG:
+ 333   2                      case cDVI:
+ 334   2                      case cYPbPr:
+ 335   2                              value|=0x00;            // TV_INPUT select(VIN3)        
+ 336   2                              break;
+ 337   2                      case cSVIDEO:
+ 338   2                              value|=0x18;            // S-Video select +jwshin 050726
+ 339   2                              break;
+ 340   2                      case cCOMPOSIT:
+ 341   2                              value|=0x04;            // VIDEO_INPUT select(VIN2)     // 661->665로 수정 by LKE Chroma Input을 항상 고정하기 위함.
+ 342   2                              break;
+ 343   2                      case cTV:
+ 344   2                              value|=0x00;            // TV_INPUT select(VIN3)        
+ 345   2                              break;
+ 346   2              }
+ 347   1              
+ 348   1               TW990xWrite(TW99_INFORM,value);
+ 349   1      
+ 350   1      }
+ 351                  
+ 352          void SetDecoder_Brightness(void)
+ 353          {       
+ 354   1              unsigned char value;
+ 355   1              value = (FuncBuf[pBRIGHTNESS] * 2+28-128);      
+ 356   1              TW990x_SetBrightness( value);   
+ 357   1      }
+ 358          
+ 359          void SetDecoder_Contrast(void)
+ 360          {
+ 361   1              unsigned char value;
+ 362   1              value = (FuncBuf[pCONTRAST] * 2);
+ 363   1              TW990x_SetContrast(value);      
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 7   
+
+ 364   1      }
+ 365          
+ 366          
+ 367          void SetDecoder_Saturation(void)
+ 368          {
+ 369   1              unsigned char  value;
+ 370   1              value=(FuncBuf[pSATURATION] * 2+28);            
+ 371   1              TW990x_Setaturation(value);             
+ 372   1      }
+ 373          
+ 374          void SetDecoder_Tint(void)
+ 375          {
+ 376   1              unsigned char value;
+ 377   1              value = 100-FuncBuf[pTINT] * 2;
+ 378   1              TW990x_SetTint(value);
+ 379   1      }
+ 380          
+ 381          
+ 382          void SetDecoder_Sharpness(void)
+ 383          {
+ 384   1              TW990x_SetSharpness(FuncBuf[pSHARPNESS]);
+ 385   1      }
+ 386          
+ 387          /*
+ 388          void    SetBlueScrren(unsigned char MenuVal)
+ 389          {
+ 390          
+ 391                  if(MenuVal) TW990xWrite(TW99_MISC3,0xE6);
+ 392                  else TW990xWrite(TW99_MISC3,0xE2);
+ 393          
+ 394          
+ 395          
+ 396          }
+ 397          
+ 398          */
+ 399          
+ 400          void Decoder_Init(void)
+ 401          {
+ 402   1              
+ 403   1      //      unsigned char tw_id;
+ 404   1      //      tw_id=TW990xRead(TW99_ID);
+ 405   1               
+ 406   1              VideoStandard=0xff;
+ 407   1      
+ 408   1              if(FuncBuf[pVIDEOSOURCE] < cSVIDEO) return;
+ 409   1              //printf("decoder init start\r\n");
+ 410   1              AVDecoderWakeup();
+ 411   1              //printf("AVDecoderWakeup\r\n");
+ 412   1      //      ScalerPowerUp();
+ 413   1              if(VPXinit == 0){
+ 414   2                      TW990x_RegInit(TW990x_ResetTable); //Parameters loading  
+ 415   2      //                              switch(tw_id) {
+ 416   2      //                      case ID_TW9908B :   //9908B와 9903B의 ID� “걋� �
+ 417   2      //                                      TW990x_RegInit(TW9908B_Table_Init); //Parameters loading  
+ 418   2      //                                      Sleep(50);
+ 419   2      //                                      TW990x_RegInit(TW9908B_Table_Init); //Parameters loading  
+ 420   2      //                                      Sleep(50);
+ 421   2      //                                      TW990x_RegInit(TW9908B_Table_Init); //Parameters loading  
+ 422   2      //                                      Sleep(50);
+ 423   2      //                                      TW990x_RegInit(TW9908B_Table_Init); //Parameters loading  
+ 424   2      //                                      Sleep(50);
+ 425   2      //                                      printf("TW9908B Init\r\n");
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 8   
+
+ 426   2      //                                      break;          
+ 427   2      //                      case ID_TW9908C :
+ 428   2                                              TW990x_RegInit(TW9908C_Table_Init); //Parameters loading  
+ 429   2                                              Sleep(50);
+ 430   2      /*                                      TW990x_RegInit(TW9908C_Table_Init); //Parameters loading  
+ 431   2                                              Sleep(50);
+ 432   2                                              TW990x_RegInit(TW9908C_Table_Init); //Parameters loading  
+ 433   2                                              Sleep(50);
+ 434   2                                              TW990x_RegInit(TW9908C_Table_Init); //Parameters loading  
+ 435   2                                              Sleep(50); */
+ 436   2      
+ 437   2                                              FB_Enable(); //test
+ 438   2      //                                      printf("TW9908C Init\r\n");
+ 439   2      //                                      break;  
+ 440   2      //                      }
+ 441   2      
+ 442   2                      /*
+ 443   2                      TW990x_RegInit(TW990x_Table_Init); //Parameters loading  
+ 444   2                      Sleep(50);
+ 445   2                      TW990x_RegInit(TW990x_Table_Init); //Parameters loading  
+ 446   2                      Sleep(50);
+ 447   2                      TW990x_RegInit(TW990x_Table_Init); //Parameters loading  
+ 448   2                      Sleep(50);
+ 449   2                      */
+ 450   2              }
+ 451   1              AVDecoder_SelectInputPort();
+ 452   1      //      printf("SelectInputPort\r\n");
+ 453   1      
+ 454   1      //      if(ColorSystem&NTSC) {flag3 |= BIT_6;}
+ 455   1      //      if(ColorSystem&PAL)     {
+ 456   1      //              if(TunerBrand==SAMSUNG_TCPN9082DA27C) {flag3 |= BIT_6;}
+ 457   1      //              else {flag3 &= ~BIT_6;}
+ 458   1      //      }
+ 459   1      //      if(ColorSystem&SECAM)   {
+ 460   1      //              if(TunerBrand==SAMSUNG_TCPN9082DA27C) {flag3 |= BIT_6;}
+ 461   1      //              else    {flag3 &= ~BIT_6;}
+ 462   1      //      }
+ 463   1      //      printf("color setting\r\n");
+ 464   1      
+ 465   1              TVColorLoad();
+ 466   1              SetDecoder_Brightness();
+ 467   1              SetDecoder_Contrast();
+ 468   1              SetDecoder_Saturation();
+ 469   1              SetDecoder_Sharpness();
+ 470   1              SetDecoder_Tint();
+ 471   1              //SetBlueScrren(xEEPROMBuffer[BscrFlag_buf]);
+ 472   1      
+ 473   1      //      SetScalerAV();
+ 474   1      
+ 475   1              VPXinit = 1;
+ 476   1              VideoFlagTW = 0;
+ 477   1              SyncFlag = 0;
+ 478   1              WriteIIC(TW990x_Addr,TW99_OPFORM, 0x92);      //Output Enable  mode
+ 479   1              Z86229_Init();  // Jason Choi
+ 480   1      }
+ 481          
+ 482          
+ 483          
+ 484          
+ 485          void FB_Enable()        
+ 486          {
+ 487   1              TW990xWrite(TW9908C_RGBCNTL,0x01);
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 9   
+
+ 488   1      }
+ 489          
+ 490          
+ 491          void    FB_Disable()
+ 492          {
+ 493   1      
+ 494   1                              TW990xWrite(TW9908C_RGBCNTL,0x03);
+ 495   1      
+ 496   1      }
+ 497          
+ 498          /*
+ 499          void ForceBlueScreen()
+ 500          {
+ 501                  TW990xWrite(TW99_MISC3,0xEA);
+ 502          }
+ 503          
+ 504          void ClearBlueScreen()
+ 505          {
+ 506                  //SetBlueScrren(xEEPROMBuffer[BscrFlag_buf]);
+ 507          }
+ 508          */
+ 509          
+ 510          
+ 511          // Sync을check하여 VideoFlag를 설정한다.
+ 512          // Sync Ok --> SyncFlag,VideoFlag=1
+ 513          // No Sync --> SyncFlag,VideoFlag=0 
+ 514          // note:
+ 515          // ntsc인 경우 : flag3 |= BIT_6,
+ 516          // pal/secam인 경우 : flag3 &= ~BIT_6,
+ 517          void CheckVideoSignal(void)
+ 518          {
+ 519   1              unsigned short value;//, value1;
+ 520   1      
+ 521   1              // 칼라 시스템 세팅 상태를 체크한다. 
+ 522   1                      //value = ReadVPX_FP(VPX_SDT)&0x007;
+ 523   1      //              value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS)&0xef;
+ 524   1                      value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0x81;
+ 525   1      //              printf("TW_Cstatus=0x%x\r\n",(unsigned short)value);    
+ 526   1      //              printf("TW_Cstatus=0x%x Val=0x%x\r\n",(unsigned short)value,(unsigned short)VideoStandard);     
+ 527   1                      if(value != VideoStandard) {    //이전에 세팅한 칼라 시스템과 비교하여 다르다면 다시 세팅한다.
+ 528   2                              LCDMute();
+ 529   2      
+ 530   2                              //--------------
+ 531   2      //                      Sleep(150);
+ 532   2      //                      value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS)&0x01;
+ 533   2                              value =ReadIIC(TW990x_Addr,TW99_CSTATUS)&0x81;
+ 534   2                              if(value != VideoStandard);// printf("Color Change\r\n");
+ 535   2                              else{
+ 536   3      //                      printf("TW_Cstatus3=0x%x\r\n",(unsigned short)value);   
+ 537   3      
+ 538   3                                      LCDMuteOff();
+ 539   3                                      return;
+ 540   3                                      }
+ 541   2                              //--------------                        
+ 542   2      //                      Sleep(100);
+ 543   2      //                      value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS)&0x01;
+ 544   2                              value =ReadIIC(TW990x_Addr,TW99_CSTATUS)&0x81;
+ 545   2                              if(value != VideoStandard);// printf("Color Change\r\n");
+ 546   2                              else{
+ 547   3      //                      printf("TW_Cstatus4=0x%x\r\n",(unsigned short)value);   
+ 548   3      
+ 549   3                                      LCDMuteOff();
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 10  
+
+ 550   3                                      return;
+ 551   3                                      }
+ 552   2                              //--------------                        ;
+ 553   2      //                      Sleep(100);
+ 554   2      //                      value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS)&0x01;
+ 555   2                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0x81;
+ 556   2                              if(value != VideoStandard);// printf("Color Change\r\n");
+ 557   2                              else{
+ 558   3      //                      printf("TW_Cstatus5=0x%x\r\n",(unsigned short)value);   
+ 559   3      
+ 560   3                                      LCDMuteOff();
+ 561   3                                      return;
+ 562   3                                      }
+ 563   2                              //--------------
+ 564   2                              VideoFlagTW=0;  SyncFlag=0;
+ 565   2                              /*switch(value){
+ 566   2                                      case 0: //NTSC M
+ 567   2                                      case 3: //NTSC4.43
+ 568   2                                      case 4: //PAL M
+ 569   2                                      case 6: //PAL 60
+ 570   2                                              flag3 |= BIT_6; break;
+ 571   2                                      case 1: //PAL  B,D,G,H,I
+ 572   2                                      case 2: //SECAM
+ 573   2                                      case 5: //PAL CN
+ 574   2                                              flag3 &= ~BIT_6;        break   ;                                                       
+ 575   2                                      case 7: //not valid
+ 576   2                                              break;
+ 577   2                              }*/
+ 578   2                              if((value & BIT_0) !=0) Video_60Hz = 0; // 50Hz detected...
+ 579   2                              else Video_60Hz = 1;  // 60Hz detected...
+ 580   2                              VideoStandard=value;
+ 581   2                              
+ 582   2      //                      Sleep(50);
+ 583   2                              SetScalerAV();
+ 584   2                              BackLightOn();
+ 585   2      
+ 586   2                              if((value & BIT_7)==0) {
+ 587   3                                      SetDisplayNormal_Video();
+ 588   3                                      TVSignalNormalFlag = 1; 
+ 589   3      
+ 590   3                              }
+ 591   2                              if(((value & BIT_7))&&(FuncBuf[pVIDEOSOURCE] == cTV)){
+ 592   3                                      if(TVSignalNormalFlag ==0){     
+ 593   4                                              WriteWordIIC563(0x55,0x023);
+ 594   4                                              WriteWordIIC563(0x53,0x022);
+ 595   4                                      }
+ 596   3                                      SetDisplayNormal_Video();
+ 597   3                              }
+ 598   2                              
+ 599   2      //                      printf("TW_Cstatus1=0x%x\r\n",(unsigned short)value);   
+ 600   2      //                      VChip_Block =0;
+ 601   2      //                      Non_VChip_Count =0;
+ 602   2      
+ 603   2              
+ 604   2                      }
+ 605   1                      else{
+ 606   2                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS);
+ 607   2                              //------------//싱크가 있다가 비디오 싱크가 사라진 경우---------------------
+ 608   2                              if((value & 0x80) && (VideoFlagTW == 1)){               
+ 609   3                                      LCDMute();
+ 610   3                                      VideoFlagTW=0;  SyncFlag=0;//(0,0) -->  background color=Black, free running mode로 osd는 띄우고 data�
+             -� mute시킨다.
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 11  
+
+ 611   3                              }
+ 612   2      
+ 613   2                              //-----------//싱크가 없다가 비디오 싱크가 검출된 경우----------------------
+ 614   2                              if(((value & 0x80) == 0x00) && (VideoFlagTW == 0)){     
+ 615   3                                      //printf(" B ");
+ 616   3                                      VideoFlagTW=1;  SyncFlag=1;     //delay5m(10);                          
+ 617   3                                      LCDMuteOff();           
+ 618   3      //                      printf("TW_Cstatus2=0x%x\r\n",(unsigned short)value);   
+ 619   3                              }
+ 620   2                      }
+ 621   1      //              ScalerAutoSync2(); // 1.22
+ 622   1                              
+ 623   1      }
+ 624          
+ 625          
+ 626          
+ 627          // 이 함수는 비정상적인 Sync가 들어 올 경우 이상동작하는 스케일러에 디코더가 free run하게 하는 함수.
+ 628          //일부 스케일어에 한한다.
+ 629          /*
+ 630          bit CheckTvSub(void){
+ 631                          xdata unsigned char i;
+ 632                          
+ 633                          for (i=0;i<3;i++){
+ 634                                          //스케일러에서 싱크를 잀어옴.
+ 635                                          if( 1  //H,V상크의 주기가 맞는지 검사.                                  
+ 636                                          )
+ 637                                                  break;
+ 638                                          else  
+ 639                                                  continue;                                       
+ 640                                  }
+ 641                                  
+ 642          
+ 643                  if(i>=3){       // 에러 발생.
+ 644                          //디코더에 강제로 free run하도록 함.  
+ 645                          return 1;
+ 646                  }
+ 647                  else{
+ 648                          //아님 말구.
+ 649                          return 0;
+ 650          
+ 651                  }               
+ 652          }
+ 653          */
+ 654          //TV Auto Setup시에 사용하기 위한 함수이다.     //TV신호를 분석하여 보여줌.
+ 655          /*
+ 656          void CheckTVSignalColor(unsigned char Count)
+ 657          {               xdata unsigned char value;
+ 658                          xdata unsigned char i;
+ 659                          
+ 660                          
+ 661                          if(CheckTvSub() == 1){
+ 662                                  eTVSyncFlag=0;
+ 663                                  return;
+ 664                          }
+ 665          
+ 666                  //-----color체크및 신호처리.(Main이 되는 처리이다.)-------
+ 667                                  
+ 668                  for (i=0;i<Count;i++){
+ 669                          value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS);
+ 670                          if(value & 0x80 ) {     // no sync
+ 671                                          eTVSyncFlag=0;
+ 672                                  }
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 12  
+
+ 673                                  else{   // Decoder h/v Locking.
+ 674                                          eTVSyncFlag=1;
+ 675                                          return;
+ 676                                  }
+ 677                                  
+ 678                          }
+ 679                          
+ 680          }
+ 681          
+ 682          */
+ 683          /*
+ 684          //채널변경후에 시그날이 존재하는지 확인하기 위한 함수이다.      //TV신호를 분석하여 보여줌.
+ 685          void CheckTVSignal(unsigned char Count)
+ 686          {               xdata unsigned char value;
+ 687                          xdata unsigned char i;
+ 688          
+ 689                  if(CheckTvSub() == 1){
+ 690                          SyncFlag=0;
+ 691                          VideoFlag=0;            
+ 692                          return;
+ 693                  }
+ 694                  //-----color체크및 신호처리.(Main이 되는 처리이다.)-------
+ 695                          
+ 696                  for (i=0;i<Count;i++){
+ 697                          value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS);           
+ 698                          if(value & 0x80 ) {     // no sync
+ 699                                          SyncFlag=0;
+ 700                                          VideoFlag=0;
+ 701                          }
+ 702                          else{   // Decoder h/v Locking.
+ 703                                          SyncFlag=1;
+ 704                                          VideoFlag=1;
+ 705                                  return;
+ 706                          }                       
+ 707                  }               
+ 708          }
+ 709          */
+ 710          /*
+ 711          // Main루틴에서 TV가 동작 중일때, 계속해서  TV Live Signal을 감시하기 위해서 사용되는 루틴이다.
+ 712          // Vsync/Hsync벗어나는것과 동축게이블 착탈 등의 비정상적인 요인에 대해서 체크한다.
+ 713          void CheckTVSignalChange()
+ 714          {
+ 715                  unsigned char   value;
+ 716                  
+ 717          
+ 718                  if(CheckTvSub()) {
+ 719                  // 잘못된 H/V Sync신호에 대해서 Decoder에 Lock을 걸기 위해서 .....      
+ 720                          TVSyncFlag=0;
+ 721                          return;
+ 722                          }
+ 723                  
+ 724                          //----이부분부터 Main이 되는 작업을 행한다.--------
+ 725                  value = ReadIIC_HW(TW990x_Addr,TW99_CSTATUS);
+ 726          
+ 727                  //----싱크가 사라지는 것을 체크하는 부분이다    
+ 728                  if(TVSyncFlag==1) {
+ 729                          if(value & 0x80) { 
+ 730                                  TVSyncFlag=0; 
+ 731                                  return;
+ 732                          }
+ 733                  }
+ 734          
+C51 COMPILER V7.03   TW990X                                                                12/21/2006 18:12:28 PAGE 13  
+
+ 735                  //----싱크가 나타나는 것을 체크하는 부분이다    
+ 736                  if(TVSyncFlag==0) {
+ 737                          if((value & 0x80)==0) {
+ 738                          //              ScalerAutoSync();       
+ 739                                  TVSyncFlag=1;
+ 740                                  }
+ 741                          }       
+ 742          }
+ 743          
+ 744          */
+ 745          void    TVColorLoad(void)
+ 746          {
+ 747   1      
+ 748   1              FuncBuf[pBRIGHTNESS] = (Word)Read24C16(ep_Video_Brightness);
+ 749   1              FuncBuf[pCONTRAST] = (Word)Read24C16(ep_Video_Contrast);
+ 750   1              FuncBuf[pTINT] = (Word)Read24C16(ep_Video_Tint);
+ 751   1              FuncBuf[pSHARPNESS] =(Word)Read24C16(ep_Video_Shapness);
+ 752   1              FuncBuf[pSATURATION] = (Word)Read24C16(ep_Video_Saturation);
+ 753   1      
+ 754   1      }
+ 755          
+ 756          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    685    ----
+   CONSTANT SIZE    =    158    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       7
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

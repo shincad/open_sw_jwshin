@@ -1,0 +1,677 @@
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE BOARD
+OBJECT MODULE PLACED IN .\BIN\Board.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\Board.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Model
+                    -Name=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\Board.lst) OBJECT(.\BIN\Board.obj)
+
+line level    source
+
+   1          #include "MyDef.H"
+   2          #include "NT686xx_MCU_REG.H"
+   3          #include "NT686xx_SC_REG.H"
+   4          #include "RAM.H"
+   5          #include "Board.H"
+   6          #include "stdio.H"
+   7          #include "Panel.H"
+   8          #include "Scaler.H"
+   9          #include "Mis.H"
+  10          #include "OSD.H"
+  11          #include "8051.H"
+  12          
+  13          
+  14          #if SCALAR_BOARD==PCBA_Q80x67
+  15          /*************************************************
+  16                  P C B _ Q 8 0 x 6 7 
+  17          **************************************************/
+  18          //--------------------- Schematic에 맞게 Grn과 Red를 Change... +jwshin 110602
+  19          void LED_RedOn(void)
+  20          {
+  21   1      /*      
+  22   1      unsigned char port;
+  23   1              port = PortA;
+  24   1              port |= RDPA_REG;
+  25   1              port |= BIT_2;
+  26   1              PortA = port;
+  27   1      */      
+  28   1      }
+  29          
+  30          void LED_RedOff(void)
+  31          {
+  32   1      /*      
+  33   1      unsigned char port;
+  34   1              port = PortA;
+  35   1              port |= RDPA_REG;
+  36   1              port &= ~BIT_2;
+  37   1              PortA = port;
+  38   1      */      
+  39   1      }
+  40          
+  41          //------------------ +jwshin 120223
+  42          //---- LED On/Off Reverse... Dual B/D
+  43          void LED_GrnOn(void)
+  44          {
+  45   1      unsigned char port;
+  46   1              port = PortA;
+  47   1              port |= RDPA_REG;
+  48   1              port |= BIT_1;
+  49   1              PortA = port;   
+  50   1      }
+  51          
+  52          void LED_GrnOff(void)
+  53          {
+  54   1      unsigned char port;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 2   
+
+  55   1              port = PortA;
+  56   1              port |= RDPA_REG;
+  57   1              port &= ~BIT_1;
+  58   1              PortA = port;
+  59   1      }
+  60          
+  61          void BackLightOn(void)
+  62          {
+  63   1      unsigned char port;
+  64   1              SetBrightness();
+  65   1              port = PortC;
+  66   1              port |= RDPC_REG;
+  67   1              port &= ~BIT_4;
+  68   1              PortC = port;
+  69   1              
+  70   1              //-------------- +jwshin 120228
+  71   1              bPowerSaveFlag = 0;
+  72   1      }
+  73          
+  74          void BackLightOff(void)
+  75          {
+  76   1      unsigned char port;
+  77   1              port = PortC;
+  78   1              port |= RDPC_REG;
+  79   1              port |= BIT_4;
+  80   1              PortC = port;
+  81   1              ucTime2Backlight = 0;
+  82   1      
+  83   1      #ifdef _USE_PWM_B_
+  84   1              WriteIIC560(PWM1_LCNT, 0xFF);
+  85   1              WriteIIC560(PWM1_HCNT, 0x00);
+  86   1      #else
+                      WriteIIC560(PWM0_LCNT, 0xFF);
+                      WriteIIC560(PWM0_HCNT, 0x00);
+              #endif
+  90   1      
+  91   1              //------------- +jwshin 120228
+  92   1              bPowerSaveFlag = 1;
+  93   1      }
+  94          
+  95          //-------------- -jwshin 110414
+  96          /*
+  97          void PanelPowerOn(void)
+  98          {
+  99          unsigned char port;
+ 100          port = PortA;
+ 101                  port |= RDPA_REG;
+ 102                  port |= BIT_0;
+ 103                  PortA = port;   
+ 104          }
+ 105          
+ 106          void PanelPowerOff(void)
+ 107          {
+ 108          unsigned char port;
+ 109          port = PortA;
+ 110                  port |= RDPA_REG;
+ 111                  port &= ~BIT_0;
+ 112                  PortA = port;
+ 113          }
+ 114          */
+ 115          
+ 116          //-------------------- +jwshin 110414
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 3   
+
+ 117          //------------- Panel Power On / Off가 반대로 되어 있으므로, Reverse 처리.~!
+ 118          //----------------- Off,On Reverse 처리함...
+ 119          
+ 120          // --- +jwshin 120223 다시 반대로 처리..~!
+ 121          void PanelPowerOn(void)
+ 122          {
+ 123   1      unsigned char port;
+ 124   1      port = PortA;
+ 125   1              port |= RDPA_REG;
+ 126   1              port |= BIT_0;
+ 127   1              PortA = port;   
+ 128   1      }
+ 129          
+ 130          void PanelPowerOff(void)
+ 131          {
+ 132   1      unsigned char port;
+ 133   1      port = PortA;
+ 134   1              port |= RDPA_REG;
+ 135   1              port &= ~BIT_0;
+ 136   1              PortA = port;
+ 137   1      }
+ 138          //---------------------------------
+ 139          
+ 140          //---------------------- +jwshin A/B Button 선택... 120223
+ 141          /*
+ 142          void    Button_En_SelA(void)
+ 143          {
+ 144                  unsigned char port;
+ 145                  port = PortA;
+ 146                  port |= RDPA_REG;
+ 147                  port &= ~BIT_7;
+ 148                  PortA = port;
+ 149          }
+ 150          
+ 151          void Button_En_SelB(void)
+ 152          {
+ 153                  unsigned char port;
+ 154                  port = PortA;
+ 155                  port |= RDPA_REG;
+ 156                  port |= BIT_7;
+ 157                  PortA = port;
+ 158          }
+ 159          */
+ 160          //------------------------------------------------------------ 
+ 161          
+ 162          //----------------------- +jwshin RGB 1/2 선택... 120223    A Scaler와 반대로 적용
+ 163          void RGB_SW1_RGB1(void)
+ 164          {
+ 165   1              unsigned char port;
+ 166   1              port = PortA;
+ 167   1              port |= RDPA_REG;
+ 168   1              port &= ~BIT_6;
+ 169   1              PortA = port;
+ 170   1      }
+ 171          
+ 172          void RGB_SW1_RGB2(void)
+ 173          {
+ 174   1              unsigned char port;
+ 175   1              port = PortA;
+ 176   1              port |= RDPA_REG;
+ 177   1              port |= BIT_6;
+ 178   1              PortA = port;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 4   
+
+ 179   1      }
+ 180          //----------------------------------------------------------
+ 181          
+ 182          //--------------------+jwshin Copy LED 120224
+ 183          
+ 184          void COPYLED_GrnOn(void)
+ 185          {
+ 186   1      unsigned char port;
+ 187   1              port = PortA;
+ 188   1              port |= RDPA_REG;
+ 189   1              port |= BIT_2;
+ 190   1              PortA = port;   
+ 191   1      }
+ 192          
+ 193          void COPYLED_GrnOff(void)
+ 194          {
+ 195   1      unsigned char port;
+ 196   1              port = PortA;
+ 197   1              port |= RDPA_REG;
+ 198   1              port &= ~BIT_2;
+ 199   1              PortA = port;
+ 200   1      }
+ 201          
+ 202          //-----------------------------------------
+ 203          
+ 204          //--------------------+jwshin SEL_2 LED 120223
+ 205          /*
+ 206          void SEL2_GrnOn(void)
+ 207          {
+ 208          unsigned char port;
+ 209                  port = PortA;
+ 210                  port |= RDPA_REG;
+ 211                  port |= BIT_5;
+ 212                  PortA = port;   
+ 213          }
+ 214          
+ 215          void SEL2_GrnOff(void)
+ 216          {
+ 217          unsigned char port;
+ 218                  port = PortA;
+ 219                  port |= RDPA_REG;
+ 220                  port &= ~BIT_5;
+ 221                  PortA = port;
+ 222          }
+ 223          */
+ 224          //-----------------------------------------
+ 225          
+ 226          
+ 227          
+ 228          
+ 229          
+ 230          
+ 231          #if !(NT68670 || NT68670B)
+              void ResetOff(void)
+              {
+              unsigned char port;
+                      port = PortD;
+                      port |= RDPD_REG;
+                      port |= BIT_5;
+                      PortD = port;
+              
+              //      PortE |= (BIT_0 | BIT_1);
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 5   
+
+              }
+              
+              void ResetOn(void)
+              {
+              unsigned char port;
+                      port = PortD;
+                      port |= RDPD_REG;
+                      port &= ~BIT_5;
+                      PortD = port;
+              
+              //      PortE &= ~(BIT_0 | BIT_1);
+              }
+              #endif
+ 254          
+ 255          
+ 256          #if 1//AUDIO_HW == AUDIO_ENABLED
+ 257          void AUDIO_MUTE(void)
+ 258          {
+ 259   1      unsigned char port;
+ 260   1              port = PortC;
+ 261   1              port |= RDPC_REG;
+ 262   1              port |= BIT_1;
+ 263   1              PortC = port;
+ 264   1      }
+ 265          
+ 266          void AUDIO_On(void)
+ 267          {
+ 268   1      unsigned char port;
+ 269   1              port = PortC;
+ 270   1              port |= RDPC_REG;
+ 271   1              port &= ~BIT_1;
+ 272   1              PortC = port;
+ 273   1      }
+ 274          
+ 275          void AMP_STBY(void)
+ 276          {
+ 277   1      unsigned char port;
+ 278   1              port = PortC;
+ 279   1              port |= RDPC_REG;
+ 280   1              port |= BIT_0;
+ 281   1              PortC = port;
+ 282   1      }
+ 283          
+ 284          void AMP_On(void)
+ 285          {
+ 286   1      unsigned char port;
+ 287   1              port = PortC;
+ 288   1              port |= RDPC_REG;
+ 289   1              port &= ~BIT_0;
+ 290   1              PortC = port;
+ 291   1      }
+ 292          #endif
+ 293          
+ 294          #if FE2P_LIB==OFF
+ 295          void EEP_WP_OFF(void)
+ 296          {
+ 297   1      unsigned char port;
+ 298   1              port = PortC;
+ 299   1              port |= RDPC_REG;
+ 300   1              port &= ~BIT_2;
+ 301   1              PortC = port;
+ 302   1              port = 10;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 6   
+
+ 303   1              while(port != 0){
+ 304   2                      port--;
+ 305   2              }
+ 306   1      }
+ 307          
+ 308          void EEP_WP_ON(void)
+ 309          {
+ 310   1      unsigned char port;
+ 311   1              port = PortC;
+ 312   1              port |= RDPC_REG;
+ 313   1              port |= BIT_2;
+ 314   1              PortC = port;
+ 315   1      }
+ 316          #endif
+ 317          
+ 318          #ifdef Use24C02
+              /*
+              void EDID_WP_OFF(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port &= ~BIT_5;
+                      PortA = port;
+                      port = 5;
+                      while(port != 0){
+                              port--;
+                      }
+              }
+              
+              void EDID_WP_ON(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port |= BIT_5;
+                      PortA = port;
+              }
+              */
+              #endif
+ 343          
+ 344          bit IsPanelPowerOn(void)
+ 345          {
+ 346   1              if((PortA & BIT_0)!= 0){
+ 347   2                      return ON;
+ 348   2              }
+ 349   1              else{
+ 350   2                      return OFF;
+ 351   2              }
+ 352   1      }
+ 353          
+ 354          bit IsBackLightOn(void)
+ 355          {
+ 356   1              if((PortC & BIT_4) == 0){
+ 357   2                      return TRUE;
+ 358   2              }
+ 359   1              else{
+ 360   2                      return FALSE;
+ 361   2              }
+ 362   1      }
+ 363          
+ 364          bit IsVGAconnected(void)
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 7   
+
+ 365          {
+ 366   1              if((PortD & BIT_6) == 0){
+ 367   2                      return TRUE;
+ 368   2              }
+ 369   1              else{
+ 370   2                      return FALSE;
+ 371   2              }
+ 372   1      }
+ 373          
+ 374          #if DUAL_MODE == ON
+ 375          bit IsDVIconnected(void)
+ 376          {
+ 377   1              //if((PortC & BIT_2) == 0){
+ 378   1              if((PortB & BIT_4) == 0){
+ 379   2                      return TRUE;
+ 380   2              }
+ 381   1              else{
+ 382   2                      return FALSE;
+ 383   2              }
+ 384   1      }
+ 385          #endif
+ 386          
+ 387          #elif SCALAR_BOARD==PCBA_Q50x50
+              /*************************************************
+                      P C B _ Q 5 0 x 5 0 
+              **************************************************/
+              
+              void LED_GrnOn(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port |= BIT_2;
+                      PortA = port;
+              
+              }
+              
+              void LED_GrnOff(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port &= ~BIT_2;
+                      PortA = port;
+                      
+              }
+              
+              void LED_RedOn(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port |= BIT_1;
+                      PortA = port;   
+              }
+              
+              void LED_RedOff(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port &= ~BIT_1;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 8   
+
+                      PortA = port;
+              }
+              
+              void BackLightOn(void)
+              {
+              unsigned char port;
+                      SetBrightness();
+                      port = PortB;
+                      port |= RDPB_REG;
+                      port &= ~BIT_2;
+                      PortB = port;
+              }
+              
+              void BackLightOff(void)
+              {
+              unsigned char port;
+                      port = PortB;
+                      port |= RDPB_REG;
+                      port |= BIT_2;
+                      PortB = port;
+                      ucTime2Backlight = 0;
+              
+              #ifdef _USE_PWM_B_
+                      WriteIIC560(PWM1_LCNT, 0xFF);
+                      WriteIIC560(PWM1_HCNT, 0x00);
+              #else
+                      WriteIIC560(PWM0_LCNT, 0xFF);
+                      WriteIIC560(PWM0_HCNT, 0x00);
+              #endif
+              
+              }
+              
+              void PanelPowerOn(void)
+              {
+              unsigned char port;
+              port = PortA;
+                      port |= RDPA_REG;
+                      port |= BIT_0;
+                      PortA = port;   
+              }
+              
+              void PanelPowerOff(void)
+              {
+              unsigned char port;
+              port = PortA;
+                      port |= RDPA_REG;
+                      port &= ~BIT_0;
+                      PortA = port;
+              }
+              
+              #if !(NT68670 || NT68670B || NT68167)
+              void ResetOff(void)
+              {
+              unsigned char port;
+                      port = PortD;
+                      port |= RDPD_REG;
+                      port |= BIT_5;
+                      PortD = port;
+              
+              //      PortE |= (BIT_0 | BIT_1);
+              }
+              
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 9   
+
+              void ResetOn(void)
+              {
+              unsigned char port;
+                      port = PortD;
+                      port |= RDPD_REG;
+                      port &= ~BIT_5;
+                      PortD = port;
+              
+              //      PortE &= ~(BIT_0 | BIT_1);
+              }
+              #endif
+              
+              
+              #if 1//AUDIO_HW == AUDIO_ENABLED
+              void AUDIO_MUTE(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port |= BIT_1;
+                      PortC = port;
+              }
+              
+              void AUDIO_On(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port &= ~BIT_1;
+                      PortC = port;
+              }
+              
+              void AMP_STBY(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port |= BIT_0;
+                      PortC = port;
+              }
+              
+              void AMP_On(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port &= ~BIT_0;
+                      PortC = port;
+              }
+              #endif
+              
+              #if FE2P_LIB==OFF
+              void EEP_WP_OFF(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port &= ~BIT_2;
+                      PortC = port;
+                      port = 10;
+                      while(port != 0){
+                              port--;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 10  
+
+                      }
+              }
+              
+              void EEP_WP_ON(void)
+              {
+              unsigned char port;
+                      port = PortC;
+                      port |= RDPC_REG;
+                      port |= BIT_2;
+                      PortC = port;
+              }
+              #endif
+              
+              #ifdef Use24C02
+              /*
+              void EDID_WP_OFF(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port &= ~BIT_5;
+                      PortA = port;
+                      port = 5;
+                      while(port != 0){
+                              port--;
+                      }
+              }
+              
+              void EDID_WP_ON(void)
+              {
+              unsigned char port;
+                      port = PortA;
+                      port |= RDPA_REG;
+                      port |= BIT_5;
+                      PortA = port;
+              }
+              */
+              #endif
+              
+              bit IsPanelPowerOn(void)
+              {
+                      if((PortA & BIT_0)!= 0){
+                              return ON;
+                      }
+                      else{
+                              return OFF;
+                      }
+              }
+              
+              bit IsBackLightOn(void)
+              {
+                      if((PortB & BIT_2) == 0){
+                              return TRUE;
+                      }
+                      else{
+                              return FALSE;
+                      }
+              }
+              
+              bit IsVGAconnected(void)
+              {
+                      return P35;
+C51 COMPILER V8.12   BOARD                                                                 04/16/2014 18:12:32 PAGE 11  
+
+              }
+              
+              #if DUAL_MODE == ON
+              bit IsDVIconnected(void)
+              {
+                      if((PortC & BIT_2) == 0){
+                              return TRUE;
+                      }
+                      else{
+                              return FALSE;
+                      }
+              }
+              
+              #endif
+              
+              
+              
+              
+              
+              #endif
+ 633          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    259    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

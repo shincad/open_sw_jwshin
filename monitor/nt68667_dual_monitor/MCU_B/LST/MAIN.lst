@@ -1,0 +1,173 @@
+C51 COMPILER V8.12   MAIN                                                                  04/16/2014 18:12:22 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\BIN\MAIN.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\MAIN.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelN
+                    -ame=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\MAIN.lst) OBJECT(.\BIN\MAIN.obj)
+
+line level    source
+
+   1          #include "MCU.H"
+   2          #include "NT686xx_SC_REG.H"
+   3          #include "NT686xx_MCU_REG.H"
+   4          #include "8051.H"
+   5          #include "RAM.H"
+   6          #include "NVRAM.H"
+   7          #include "UserAdj.H"
+   8          #include "ModeHandle.H"
+   9          #include "Scaler.H"
+  10          #include "OSD.H"
+  11          #include "AutoAdj.H"
+  12          #include "sRGB.H"
+  13          #include "DDC_Ci.H"
+  14          #include "Board.H"
+  15          #include "Mis.H"
+  16          #include "NVTDebug.h"
+  17          #include "OSD_TAB.H"
+  18          #include "IIC.H"
+  19          #include "OSD_LF.H"
+  20          #if FE2P_LIB==ON
+                      #if NT68167
+                              #include "fe2p_nt68167 v1.1.h"
+                      #elif NT68667
+                              #include "fe2p_nt68667.h"
+                      #endif
+              #endif
+  27          
+  28          //extern code unsigned char ID_Table[];
+  29          
+  30          void main(void);
+  31          
+  32          void main(void) using 0
+  33          {
+  34   1      ReStart:
+  35   1              while(1) {
+  36   2      
+  37   2              EA = 0;
+  38   2              BANK_SET = 0x22;        //select 2 banks architecture
+  39   2      
+  40   2      #if PBusProtocol
+  41   2              SC_HW_RST = PBUS_EN;
+  42   2              SC_HW_RST = PBUS_EN|SC_RST;
+  43   2              MCU_INT_ENABLE();
+  44   2      #endif  
+  45   2      
+  46   2              InitMCU();
+  47   2      
+  48   2              
+  49   2              NVRAM_Init();                           
+  50   2              
+  51   2              
+  52   2              if(bExitSysLoop) continue;                      
+  53   2              
+  54   2      //      printf("Start Program\r\n");
+C51 COMPILER V8.12   MAIN                                                                  04/16/2014 18:12:22 PAGE 2   
+
+  55   2              printf("Dnp System NT68667\r\n");
+  56   2              
+  57   2      //      WriteIIC(SCALER_I2C_ADDR,0xff, 0x00);
+  58   2      
+  59   2              InitScaler();
+  60   2              LoadModeIndependentSettings();
+  61   2              
+  62   2      //      RGB_SW1_RGB2();                 // -jwshin 121010
+  63   2      
+  64   2              if((ucPowerStatus & SoftPowerOnFlag)== 0){
+  65   3                      LED_RedOff();
+  66   3                      LED_GrnOff();
+  67   3              }
+  68   2              else{
+  69   3                      LED_GrnOn();
+  70   3              }
+  71   2              
+  72   2              LoadFont();
+  73   2      
+  74   2              
+  75   2      /*      if(ucSource == mSource_DVI)
+  76   2                      ucPowerStatus |= InputSourceDVI;
+  77   2              else
+  78   2                      ucPowerStatus &= ~InputSourceDVI;*/
+  79   2              InputSourceSelect();
+  80   2      
+  81   2        CheckPowerStatus();                           
+  82   2      
+  83   2              // Load RGB Gain & Offset
+  84   2              LoadADC_Gain();
+  85   2      
+  86   2      //      Write24C16(EPADDR_SN0,'C');
+  87   2      //      Write24C16(EPADDR_SN1,'S');
+  88   2      
+  89   2      #ifdef ENABLE_TD_       //      THEFT DETERRENCE
+                      TD_Init();
+              #endif
+  92   2      
+  93   2      #ifdef NVT_HW_DEBUG
+  94   2              IsNVTDebugActive = 0;
+  95   2      #endif
+  96   2      
+  97   2      //#ifndef NO_PRINT_LIB
+  98   2      //      printf("Start Program\r\n");
+  99   2      //#endif
+ 100   2      
+ 101   2      
+ 102   2              ucLoopTimer_10ms = 100;
+ 103   2              while(ucLoopTimer_10ms!=0){
+ 104   3                      if(IsAC_PowerOff()) { printf("off\r\n"); bExitSysLoop=TRUE; break; }
+ 105   3              }
+ 106   2              
+ 107   2              while(bExitSysLoop == FALSE){
+ 108   3                      
+ 109   3                      CheckDDC2Bi();
+ 110   3      
+ 111   3      #ifdef NVT_HW_DEBUG
+ 112   3                      if(IsNVTDebugActive)    continue;
+ 113   3      #endif  
+ 114   3      
+ 115   3                      CheckKey();
+ 116   3      
+C51 COMPILER V8.12   MAIN                                                                  04/16/2014 18:12:22 PAGE 3   
+
+ 117   3                      if(bExitSysLoop == TRUE){               //Exit
+ 118   4      //                      printf("exit\r\n");
+ 119   4                              break;
+ 120   4                      }                       
+ 121   3                      
+ 122   3                      // Check frequency & sync
+ 123   3                      Mode_Check();
+ 124   3      
+ 125   3                      // time out??
+ 126   3                      CheckTimer();
+ 127   3                      
+ 128   3                      Check_DDC_Update();
+ 129   3      
+ 130   3              //      LEDFlash();
+ 131   3      
+ 132   3      #if FE2P_LIB==ON
+                              FE2P_Process(0);
+              #endif
+ 135   3              }
+ 136   2      
+ 137   2              
+ 138   2              printf("Restart\r\n");
+ 139   2      
+ 140   2              goto ReStart;
+ 141   2              }       //      end while(1)
+ 142   1      }
+ 143          
+ 144          
+ 145          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    135    ----
+   CONSTANT SIZE    =     37    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

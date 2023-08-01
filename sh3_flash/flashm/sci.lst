@@ -1,0 +1,797 @@
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    1
+
+************ OBJECT LISTING ************
+
+FILE NAME: sci.c
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+P                         ; File sci.c     , Line 94       ; block
+    00000000              _sci_init:                       ; function: sci_init
+                                                           ; frame size=12
+    00000000 4F22                   STS.L       PR,@-R15
+    00000002 4F12                   STS.L       MACL,@-R15
+    00000004 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 95       ; block
+                          ; File sci.c     , Line 98       ; expression statement
+    00000006 B11F                   BSR         L240
+    00000008 0009                   NOP
+                          ; File sci.c     , Line 100      ; for
+    0000000A E000                   MOV         #0,R0
+    0000000C 81F1                   MOV.W       R0,@(2,R15)
+    0000000E A02E                   BRA         L283
+    00000010 0009                   NOP
+    00000012              L284:                             
+                          ; File sci.c     , Line 101      ; block
+                          ; File sci.c     , Line 102      ; expression statement
+    00000012 85F1                   MOV.W       @(2,R15),R0
+    00000014 9333                   MOV.W       L296,R3    ; H'0148
+    00000016 203F                   MULS        R3,R0
+    00000018 001A                   STS         MACL,R0
+    0000001A E200                   MOV         #0,R2
+    0000001C D118                   MOV.L       L296+2,R1  ; _cmData
+    0000001E 310C                   ADD         R0,R1
+    00000020 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 103      ; expression statement
+    00000022 85F1                   MOV.W       @(2,R15),R0
+    00000024 203F                   MULS        R3,R0
+    00000026 001A                   STS         MACL,R0
+    00000028 E200                   MOV         #0,R2
+    0000002A D116                   MOV.L       L296+6,R1  ; H'000000A4+_cmData
+    0000002C 310C                   ADD         R0,R1
+    0000002E 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 104      ; expression statement
+    00000030 85F1                   MOV.W       @(2,R15),R0
+    00000032 203F                   MULS        R3,R0
+    00000034 001A                   STS         MACL,R0
+    00000036 E200                   MOV         #0,R2
+    00000038 D113                   MOV.L       L296+10,R1 ; H'00000002+_cmData
+    0000003A 310C                   ADD         R0,R1
+    0000003C 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 105      ; expression statement
+    0000003E 85F1                   MOV.W       @(2,R15),R0
+    00000040 203F                   MULS        R3,R0
+    00000042 001A                   STS         MACL,R0
+    00000044 E200                   MOV         #0,R2
+    00000046 D111                   MOV.L       L296+14,R1 ; H'000000A6+_cmData
+    00000048 310C                   ADD         R0,R1
+    0000004A 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 106      ; expression statement
+    0000004C 85F1                   MOV.W       @(2,R15),R0
+    0000004E 203F                   MULS        R3,R0
+    00000050 001A                   STS         MACL,R0
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    2
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000052 E200                   MOV         #0,R2
+    00000054 D10E                   MOV.L       L296+18,R1 ; H'000000A2+_cmData
+    00000056 310C                   ADD         R0,R1
+    00000058 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 107      ; expression statement
+    0000005A 85F1                   MOV.W       @(2,R15),R0
+    0000005C 203F                   MULS        R3,R0
+    0000005E 001A                   STS         MACL,R0
+    00000060 E200                   MOV         #0,R2
+    00000062 D10C                   MOV.L       L296+22,R1 ; H'00000146+_cmData
+    00000064 310C                   ADD         R0,R1
+    00000066 2121                   MOV.W       R2,@R1
+    00000068 85F1                   MOV.W       @(2,R15),R0
+    0000006A 7001                   ADD         #1,R0
+    0000006C 81F1                   MOV.W       R0,@(2,R15)
+    0000006E              L283:                             
+    0000006E 85F1                   MOV.W       @(2,R15),R0
+    00000070 E301                   MOV         #1,R3
+    00000072 3033                   CMP/GE      R3,R0
+    00000074 8BCD                   BF          L284
+                          ; File sci.c     , Line 110      ; for
+    00000076 E000                   MOV         #0,R0
+    00000078 81F1                   MOV.W       R0,@(2,R15)
+    0000007A A016                   BRA         L285
+    0000007C 0009                   NOP
+    0000007E              L296:                             
+    0000007E 0148                   .DATA.W     H'0148
+    00000080 <00000000>             .DATA.L     _cmData
+    00000084 <000000A4>             .DATA.L     H'000000A4+_cmData
+    00000088 <00000002>             .DATA.L     H'00000002+_cmData
+    0000008C <000000A6>             .DATA.L     H'000000A6+_cmData
+    00000090 <000000A2>             .DATA.L     H'000000A2+_cmData
+    00000094 <00000146>             .DATA.L     H'00000146+_cmData
+    00000098              L286:                             
+                          ; File sci.c     , Line 111      ; block
+                          ; File sci.c     , Line 112      ; expression statement
+    00000098 85F1                   MOV.W       @(2,R15),R0
+    0000009A D11C                   MOV.L       L297+2,R1  ; _start_mes
+    0000009C 051C                   MOV.B       @(R0,R1),R5
+    0000009E E400                   MOV         #0,R4
+    000000A0 B00C                   BSR         _set_send_data
+    000000A2 0009                   NOP
+    000000A4 85F1                   MOV.W       @(2,R15),R0
+    000000A6 7001                   ADD         #1,R0
+    000000A8 81F1                   MOV.W       R0,@(2,R15)
+    000000AA              L285:                             
+    000000AA 85F1                   MOV.W       @(2,R15),R0
+    000000AC E311                   MOV         #17,R3
+    000000AE 3032                   CMP/HS      R3,R0
+    000000B0 8BF2                   BF          L286
+                          ; File sci.c     , Line 114      ; block
+    000000B2 7F04                   ADD         #4,R15
+    000000B4 4F16                   LDS.L       @R15+,MACL
+    000000B6 4F26                   LDS.L       @R15+,PR
+    000000B8 000B                   RTS
+    000000BA 0009                   NOP
+                          ; File sci.c     , Line 117      ; block
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    3
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    000000BC              _set_send_data:                  ; function: set_send_data
+                                                           ; frame size=8
+    000000BC 4F12                   STS.L       MACL,@-R15
+    000000BE 7FFC                   ADD         #-4,R15
+    000000C0 62F3                   MOV         R15,R2
+    000000C2 7202                   ADD         #2,R2
+    000000C4 2241                   MOV.W       R4,@R2
+    000000C6 61F3                   MOV         R15,R1
+    000000C8 7101                   ADD         #1,R1
+    000000CA 2150                   MOV.B       R5,@R1
+                          ; File sci.c     , Line 118      ; block
+                          ; File sci.c     , Line 119      ; expression statement
+    000000CC 85F1                   MOV.W       @(2,R15),R0
+    000000CE 931C                   MOV.W       L297,R3    ; H'0148
+    000000D0 203F                   MULS        R3,R0
+    000000D2 001A                   STS         MACL,R0
+    000000D4 D40E                   MOV.L       L297+6,R4  ; H'00000004+_cmData
+    000000D6 340C                   ADD         R0,R4
+    000000D8 85F1                   MOV.W       @(2,R15),R0
+    000000DA 203F                   MULS        R3,R0
+    000000DC 001A                   STS         MACL,R0
+    000000DE D10D                   MOV.L       L297+10,R1 ; _cmData
+    000000E0 021D                   MOV.W       @(R0,R1),R2
+    000000E2 342C                   ADD         R2,R4
+    000000E4 84F1                   MOV.B       @(1,R15),R0
+    000000E6 2400                   MOV.B       R0,@R4
+                          ; File sci.c     , Line 120      ; expression statement
+    000000E8 85F1                   MOV.W       @(2,R15),R0
+    000000EA 203F                   MULS        R3,R0
+    000000EC 001A                   STS         MACL,R0
+    000000EE D209                   MOV.L       L297+10,R2 ; _cmData
+    000000F0 320C                   ADD         R0,R2
+    000000F2 85F1                   MOV.W       @(2,R15),R0
+    000000F4 203F                   MULS        R3,R0
+    000000F6 001A                   STS         MACL,R0
+    000000F8 D106                   MOV.L       L297+10,R1 ; _cmData
+    000000FA 001D                   MOV.W       @(R0,R1),R0
+    000000FC 7001                   ADD         #1,R0
+    000000FE C97F                   AND         #127,R0
+    00000100 2201                   MOV.W       R0,@R2
+                          ; File sci.c     , Line 121      ; block
+    00000102 7F04                   ADD         #4,R15
+    00000104 4F16                   LDS.L       @R15+,MACL
+    00000106 000B                   RTS
+    00000108 0009                   NOP
+    0000010A              L297:                             
+    0000010A 0148                   .DATA.W     H'0148
+    0000010C <00000000>             .DATA.L     _start_mes
+    00000110 <00000004>             .DATA.L     H'00000004+_cmData
+    00000114 <00000000>             .DATA.L     _cmData
+                          ; File sci.c     , Line 124      ; block
+    00000118              _get_proc:                       ; function: get_proc
+                                                           ; frame size=8
+    00000118 4F12                   STS.L       MACL,@-R15
+    0000011A 7FFC                   ADD         #-4,R15
+    0000011C 63F3                   MOV         R15,R3
+    0000011E 7302                   ADD         #2,R3
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    4
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000120 2341                   MOV.W       R4,@R3
+                          ; File sci.c     , Line 125      ; block
+                          ; File sci.c     , Line 128      ; expression statement
+    00000122 D320                   MOV.L       L298+6,R3  ; H'A4000154
+    00000124 6030                   MOV.B       @R3,R0
+    00000126 C9BF                   AND         #191,R0
+    00000128 2300                   MOV.B       R0,@R3
+                          ; File sci.c     , Line 130      ; if
+    0000012A 85F1                   MOV.W       @(2,R15),R0
+    0000012C 9337                   MOV.W       L298,R3    ; H'0148
+    0000012E 203F                   MULS        R3,R0
+    00000130 001A                   STS         MACL,R0
+    00000132 D11D                   MOV.L       L298+10,R1 ; H'000000A4+_cmData
+    00000134 021D                   MOV.W       @(R0,R1),R2
+    00000136 85F1                   MOV.W       @(2,R15),R0
+    00000138 203F                   MULS        R3,R0
+    0000013A 001A                   STS         MACL,R0
+    0000013C D11B                   MOV.L       L298+14,R1 ; H'000000A6+_cmData
+    0000013E 001D                   MOV.W       @(R0,R1),R0
+    00000140 3200                   CMP/EQ      R0,R2
+    00000142 891D                   BT          L287
+                          ; File sci.c     , Line 131      ; block
+                          ; File sci.c     , Line 132      ; expression statement
+    00000144 85F1                   MOV.W       @(2,R15),R0
+    00000146 203F                   MULS        R3,R0
+    00000148 001A                   STS         MACL,R0
+    0000014A D419                   MOV.L       L298+18,R4 ; H'000000A8+_cmData
+    0000014C 340C                   ADD         R0,R4
+    0000014E 85F1                   MOV.W       @(2,R15),R0
+    00000150 203F                   MULS        R3,R0
+    00000152 001A                   STS         MACL,R0
+    00000154 D115                   MOV.L       L298+14,R1 ; H'000000A6+_cmData
+    00000156 021D                   MOV.W       @(R0,R1),R2
+    00000158 342C                   ADD         R2,R4
+    0000015A 6240                   MOV.B       @R4,R2
+    0000015C 622C                   EXTU.B      R2,R2
+    0000015E 622C                   EXTU.B      R2,R2
+    00000160 2F21                   MOV.W       R2,@R15
+                          ; File sci.c     , Line 134      ; expression statement
+    00000162 85F1                   MOV.W       @(2,R15),R0
+    00000164 203F                   MULS        R3,R0
+    00000166 001A                   STS         MACL,R0
+    00000168 D210                   MOV.L       L298+14,R2 ; H'000000A6+_cmData
+    0000016A 320C                   ADD         R0,R2
+    0000016C 85F1                   MOV.W       @(2,R15),R0
+    0000016E 203F                   MULS        R3,R0
+    00000170 001A                   STS         MACL,R0
+    00000172 D10E                   MOV.L       L298+14,R1 ; H'000000A6+_cmData
+    00000174 001D                   MOV.W       @(R0,R1),R0
+    00000176 7001                   ADD         #1,R0
+    00000178 C97F                   AND         #127,R0
+    0000017A 2201                   MOV.W       R0,@R2
+    0000017C A002                   BRA         L288
+    0000017E 0009                   NOP
+    00000180              L287:                             
+                          ; File sci.c     , Line 137      ; block
+                          ; File sci.c     , Line 138      ; expression statement
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    5
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000180 920E                   MOV.W       L298+2,R2  ; H'0100
+    00000182 2F21                   MOV.W       R2,@R15
+    00000184              L288:                             
+                          ; File sci.c     , Line 141      ; expression statement
+    00000184 D307                   MOV.L       L298+6,R3  ; H'A4000154
+    00000186 6030                   MOV.B       @R3,R0
+    00000188 CB40                   OR          #64,R0
+    0000018A 2300                   MOV.B       R0,@R3
+                          ; File sci.c     , Line 143      ; return
+    0000018C 60F1                   MOV.W       @R15,R0
+    0000018E 7F04                   ADD         #4,R15
+    00000190 4F16                   LDS.L       @R15+,MACL
+    00000192 000B                   RTS
+    00000194 0009                   NOP
+                          ; File sci.c     , Line 144      ; block
+    00000196              L289:                             
+    00000196 7F04                   ADD         #4,R15
+    00000198 4F16                   LDS.L       @R15+,MACL
+    0000019A 000B                   RTS
+    0000019C 0009                   NOP
+    0000019E              L298:                             
+    0000019E 0148                   .DATA.W     H'0148
+    000001A0 0100                   .DATA.W     H'0100
+    000001A2 00000002               .RES.W      1
+    000001A4 A4000154               .DATA.L     H'A4000154
+    000001A8 <000000A4>             .DATA.L     H'000000A4+_cmData
+    000001AC <000000A6>             .DATA.L     H'000000A6+_cmData
+    000001B0 <000000A8>             .DATA.L     H'000000A8+_cmData
+                          ; File sci.c     , Line 147      ; block
+    000001B4              _send_proc:                      ; function: send_proc
+                                                           ; frame size=4
+    000001B4 7FFC                   ADD         #-4,R15
+    000001B6 63F3                   MOV         R15,R3
+    000001B8 7302                   ADD         #2,R3
+    000001BA 2341                   MOV.W       R4,@R3
+                          ; File sci.c     , Line 148      ; block
+                          ; File sci.c     , Line 149      ; if
+    000001BC D31C                   MOV.L       L299+2,R3  ; H'A4000158
+    000001BE 6031                   MOV.W       @R3,R0
+    000001C0 600D                   EXTU.W      R0,R0
+    000001C2 C820                   TST         #32,R0
+    000001C4 8918                   BT          L290
+                          ; File sci.c     , Line 150      ; block
+                          ; File sci.c     , Line 151      ; if
+    000001C6 D11B                   MOV.L       L299+6,R1  ; _cmData
+    000001C8 6211                   MOV.W       @R1,R2
+    000001CA 8511                   MOV.W       @(2,R1),R0
+    000001CC 3200                   CMP/EQ      R0,R2
+    000001CE 8913                   BT          L291
+                          ; File sci.c     , Line 152      ; block
+                          ; File sci.c     , Line 153      ; expression statement
+    000001D0 6213                   MOV         R1,R2
+    000001D2 7204                   ADD         #4,R2
+    000001D4 8511                   MOV.W       @(2,R1),R0
+    000001D6 002C                   MOV.B       @(R0,R2),R0
+    000001D8 D217                   MOV.L       L299+10,R2 ; H'A4000156
+    000001DA 2200                   MOV.B       R0,@R2
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    6
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+                          ; File sci.c     , Line 155      ; expression statement
+    000001DC 6213                   MOV         R1,R2
+    000001DE 7202                   ADD         #2,R2
+    000001E0 8511                   MOV.W       @(2,R1),R0
+    000001E2 7001                   ADD         #1,R0
+    000001E4 C97F                   AND         #127,R0
+    000001E6 2201                   MOV.W       R0,@R2
+                          ; File sci.c     , Line 156      ; expression statement
+    000001E8 D214                   MOV.L       L299+14,R2 ; H'A4000154
+    000001EA 6020                   MOV.B       @R2,R0
+    000001EC CB80                   OR          #128,R0
+    000001EE 2200                   MOV.B       R0,@R2
+                          ; File sci.c     , Line 157      ; expression statement
+    000001F0 D213                   MOV.L       L299+18,R2 ; H'0000FFDF
+    000001F2 6031                   MOV.W       @R3,R0
+    000001F4 2029                   AND         R2,R0
+    000001F6 2301                   MOV.W       R0,@R3
+    000001F8              L291:                             
+    000001F8              L290:                             
+                          ; File sci.c     , Line 160      ; block
+    000001F8 7F04                   ADD         #4,R15
+    000001FA 000B                   RTS
+    000001FC 0009                   NOP
+                          ; File sci.c     , Line 163      ; block
+    000001FE              _rec_proc:                       ; function: rec_proc
+                                                           ; frame size=8
+    000001FE 4F22                   STS.L       PR,@-R15
+    00000200 7FFC                   ADD         #-4,R15
+    00000202 63F3                   MOV         R15,R3
+    00000204 7302                   ADD         #2,R3
+    00000206 2341                   MOV.W       R4,@R3
+                          ; File sci.c     , Line 164      ; block
+                          ; File sci.c     , Line 167      ; expression statement
+    00000208 85F1                   MOV.W       @(2,R15),R0
+    0000020A 6403                   MOV         R0,R4
+    0000020C BF84                   BSR         _get_proc
+    0000020E 0009                   NOP
+    00000210 2F01                   MOV.W       R0,@R15
+                          ; File sci.c     , Line 169      ; if
+    00000212 600D                   EXTU.W      R0,R0
+    00000214 930B                   MOV.W       L299,R3    ; H'0100
+    00000216 3030                   CMP/EQ      R3,R0
+    00000218 8905                   BT          L292
+                          ; File sci.c     , Line 170      ; block
+                          ; File sci.c     , Line 171      ; expression statement
+    0000021A 84F1                   MOV.B       @(1,R15),R0
+    0000021C 6403                   MOV         R0,R4
+    0000021E 644C                   EXTU.B      R4,R4
+    00000220 D308                   MOV.L       L299+22,R3 ; _comm_proc
+    00000222 430B                   JSR         @R3
+    00000224 0009                   NOP
+    00000226              L292:                             
+                          ; File sci.c     , Line 173      ; block
+    00000226 7F04                   ADD         #4,R15
+    00000228 4F26                   LDS.L       @R15+,PR
+    0000022A 000B                   RTS
+    0000022C 0009                   NOP
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    7
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000022E              L299:                             
+    0000022E 0100                   .DATA.W     H'0100
+    00000230 A4000158               .DATA.L     H'A4000158
+    00000234 <00000000>             .DATA.L     _cmData
+    00000238 A4000156               .DATA.L     H'A4000156
+    0000023C A4000154               .DATA.L     H'A4000154
+    00000240 0000FFDF               .DATA.L     H'0000FFDF
+    00000244 <00000000>             .DATA.L     _comm_proc
+                          ; File sci.c     , Line 176      ; block
+    00000248              L240:                            ; function: scif_init
+                                                           ; frame size=4
+    00000248 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 177      ; block
+                          ; File sci.c     , Line 182      ; expression statement
+    0000024A D314                   MOV.L       L300,R3    ; H'0000FF0F
+    0000024C D214                   MOV.L       L300+4,R2  ; H'A400001A
+    0000024E 6021                   MOV.W       @R2,R0
+    00000250 2039                   AND         R3,R0
+    00000252 CB70                   OR          #112,R0
+    00000254 D112                   MOV.L       L300+4,R1  ; H'A400001A
+    00000256 2101                   MOV.W       R0,@R1
+                          ; File sci.c     , Line 183      ; expression statement
+    00000258 E200                   MOV         #0,R2
+    0000025A D012                   MOV.L       L300+8,R0  ; H'A4000150
+    0000025C 2020                   MOV.B       R2,@R0
+                          ; File sci.c     , Line 188      ; expression statement
+    0000025E E019                   MOV         #25,R0
+    00000260 80F1                   MOV.B       R0,@(1,R15)
+                          ; File sci.c     , Line 189      ; expression statement
+    00000262 84F1                   MOV.B       @(1,R15),R0
+    00000264 D210                   MOV.L       L300+12,R2 ; H'A4000152
+    00000266 2200                   MOV.B       R0,@R2
+                          ; File sci.c     , Line 190      ; expression statement
+    00000268 E370                   MOV         #112,R3
+    0000026A D010                   MOV.L       L300+16,R0 ; H'A4000154
+    0000026C 2030                   MOV.B       R3,@R0
+                          ; File sci.c     , Line 193      ; expression statement
+    0000026E D110                   MOV.L       L300+20,R1 ; H'A4000158
+    00000270 6011                   MOV.W       @R1,R0
+    00000272 81F1                   MOV.W       R0,@(2,R15)
+                          ; File sci.c     , Line 194      ; expression statement
+    00000274 E360                   MOV         #96,R3
+    00000276 D00E                   MOV.L       L300+20,R0 ; H'A4000158
+    00000278 2031                   MOV.W       R3,@R0
+                          ; File sci.c     , Line 195      ; expression statement
+    0000027A E230                   MOV         #48,R2
+    0000027C D30D                   MOV.L       L300+24,R3 ; H'A400015C
+    0000027E 2320                   MOV.B       R2,@R3
+                          ; File sci.c     , Line 196      ; block
+    00000280 7F04                   ADD         #4,R15
+    00000282 000B                   RTS
+    00000284 0009                   NOP
+                          ; File sci.c     , Line 199      ; block
+    00000286              _bri2:                           ; function: bri2
+                                                           ; frame size=4
+    00000286 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 200      ; block
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    8
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+                          ; File sci.c     , Line 203      ; expression statement
+    00000288 D109                   MOV.L       L300+20,R1 ; H'A4000158
+    0000028A 6011                   MOV.W       @R1,R0
+    0000028C 81F1                   MOV.W       R0,@(2,R15)
+                          ; File sci.c     , Line 204      ; expression statement
+    0000028E D30A                   MOV.L       L300+28,R3 ; H'0000FFEF
+    00000290 6211                   MOV.W       @R1,R2
+    00000292 2239                   AND         R3,R2
+    00000294 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 205      ; block
+    00000296 7F04                   ADD         #4,R15
+    00000298 000B                   RTS
+    0000029A 0009                   NOP
+    0000029C              L300:                             
+    0000029C 0000FF0F               .DATA.L     H'0000FF0F
+    000002A0 A400001A               .DATA.L     H'A400001A
+    000002A4 A4000150               .DATA.L     H'A4000150
+    000002A8 A4000152               .DATA.L     H'A4000152
+    000002AC A4000154               .DATA.L     H'A4000154
+    000002B0 A4000158               .DATA.L     H'A4000158
+    000002B4 A400015C               .DATA.L     H'A400015C
+    000002B8 0000FFEF               .DATA.L     H'0000FFEF
+                          ; File sci.c     , Line 208      ; block
+    000002BC              _eri2:                           ; function: eri2
+                                                           ; frame size=4
+    000002BC 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 209      ; block
+                          ; File sci.c     , Line 212      ; expression statement
+    000002BE D117                   MOV.L       L301+2,R1  ; H'A4000158
+    000002C0 6011                   MOV.W       @R1,R0
+    000002C2 81F1                   MOV.W       R0,@(2,R15)
+                          ; File sci.c     , Line 213      ; expression statement
+    000002C4 D316                   MOV.L       L301+6,R3  ; H'0000FF7F
+    000002C6 6211                   MOV.W       @R1,R2
+    000002C8 2239                   AND         R3,R2
+    000002CA 2121                   MOV.W       R2,@R1
+                          ; File sci.c     , Line 214      ; block
+    000002CC 7F04                   ADD         #4,R15
+    000002CE 000B                   RTS
+    000002D0 0009                   NOP
+                          ; File sci.c     , Line 217      ; block
+    000002D2              _rxi2:                           ; function: rxi2
+                                                           ; frame size=4
+    000002D2 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 218      ; block
+                          ; File sci.c     , Line 222      ; expression statement
+    000002D4 D111                   MOV.L       L301+2,R1  ; H'A4000158
+    000002D6 6011                   MOV.W       @R1,R0
+    000002D8 81F1                   MOV.W       R0,@(2,R15)
+                          ; File sci.c     , Line 224      ; expression statement
+    000002DA D012                   MOV.L       L301+10,R0 ; H'000000A4+_cmData
+    000002DC 6203                   MOV         R0,R2
+    000002DE 7204                   ADD         #4,R2
+    000002E0 6301                   MOV.W       @R0,R3
+    000002E2 323C                   ADD         R3,R2
+    000002E4 D110                   MOV.L       L301+14,R1 ; H'A400015A
+    000002E6 6310                   MOV.B       @R1,R3
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    9
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    000002E8 2230                   MOV.B       R3,@R2
+                          ; File sci.c     , Line 225      ; expression statement
+    000002EA 6303                   MOV         R0,R3
+    000002EC 7304                   ADD         #4,R3
+    000002EE 6001                   MOV.W       @R0,R0
+    000002F0 003C                   MOV.B       @(R0,R3),R0
+    000002F2 80F1                   MOV.B       R0,@(1,R15)
+                          ; File sci.c     , Line 227      ; expression statement
+    000002F4 D30B                   MOV.L       L301+10,R3 ; H'000000A4+_cmData
+    000002F6 6233                   MOV         R3,R2
+    000002F8 6031                   MOV.W       @R3,R0
+    000002FA 7001                   ADD         #1,R0
+    000002FC C97F                   AND         #127,R0
+    000002FE 2201                   MOV.W       R0,@R2
+                          ; File sci.c     , Line 229      ; expression statement
+    00000300 D206                   MOV.L       L301+2,R2  ; H'A4000158
+    00000302 D10A                   MOV.L       L301+18,R1 ; H'0000FFFE
+    00000304 6021                   MOV.W       @R2,R0
+    00000306 2019                   AND         R1,R0
+    00000308 2201                   MOV.W       R0,@R2
+                          ; File sci.c     , Line 230      ; expression statement
+    0000030A D204                   MOV.L       L301+2,R2  ; H'A4000158
+    0000030C D008                   MOV.L       L301+22,R0 ; H'0000FFFD
+    0000030E 6321                   MOV.W       @R2,R3
+    00000310 2309                   AND         R0,R3
+    00000312 2231                   MOV.W       R3,@R2
+                          ; File sci.c     , Line 231      ; block
+    00000314 7F04                   ADD         #4,R15
+    00000316 000B                   RTS
+    00000318 0009                   NOP
+    0000031A              L301:                             
+    0000031A 00000002               .RES.W      1
+    0000031C A4000158               .DATA.L     H'A4000158
+    00000320 0000FF7F               .DATA.L     H'0000FF7F
+    00000324 <000000A4>             .DATA.L     H'000000A4+_cmData
+    00000328 A400015A               .DATA.L     H'A400015A
+    0000032C 0000FFFE               .DATA.L     H'0000FFFE
+    00000330 0000FFFD               .DATA.L     H'0000FFFD
+                          ; File sci.c     , Line 234      ; block
+    00000334              _txi2:                           ; function: txi2
+                                                           ; frame size=4
+    00000334 7FFC                   ADD         #-4,R15
+                          ; File sci.c     , Line 235      ; block
+                          ; File sci.c     , Line 238      ; expression statement
+    00000336 D216                   MOV.L       L302+2,R2  ; H'A4000158
+    00000338 6021                   MOV.W       @R2,R0
+    0000033A 81F1                   MOV.W       R0,@(2,R15)
+                          ; File sci.c     , Line 239      ; if
+    0000033C D314                   MOV.L       L302+2,R3  ; H'A4000158
+    0000033E 6031                   MOV.W       @R3,R0
+    00000340 600D                   EXTU.W      R0,R0
+    00000342 C820                   TST         #32,R0
+    00000344 8916                   BT          L293
+                          ; File sci.c     , Line 240      ; block
+                          ; File sci.c     , Line 241      ; if
+    00000346 D113                   MOV.L       L302+6,R1  ; _cmData
+    00000348 6211                   MOV.W       @R1,R2
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE   10
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000034A 8511                   MOV.W       @(2,R1),R0
+    0000034C 3200                   CMP/EQ      R0,R2
+    0000034E 890D                   BT          L294
+                          ; File sci.c     , Line 242      ; block
+                          ; File sci.c     , Line 243      ; expression statement
+    00000350 6213                   MOV         R1,R2
+    00000352 7204                   ADD         #4,R2
+    00000354 8511                   MOV.W       @(2,R1),R0
+    00000356 002C                   MOV.B       @(R0,R2),R0
+    00000358 D20F                   MOV.L       L302+10,R2 ; H'A4000156
+    0000035A 2200                   MOV.B       R0,@R2
+                          ; File sci.c     , Line 245      ; expression statement
+    0000035C 6213                   MOV         R1,R2
+    0000035E 7202                   ADD         #2,R2
+    00000360 8511                   MOV.W       @(2,R1),R0
+    00000362 7001                   ADD         #1,R0
+    00000364 C97F                   AND         #127,R0
+    00000366 2201                   MOV.W       R0,@R2
+    00000368 A004                   BRA         L295
+    0000036A 0009                   NOP
+    0000036C              L294:                             
+                          ; File sci.c     , Line 248      ; block
+                          ; File sci.c     , Line 249      ; expression statement
+    0000036C D20B                   MOV.L       L302+14,R2 ; H'A4000154
+    0000036E 6020                   MOV.B       @R2,R0
+    00000370 C97F                   AND         #127,R0
+    00000372 2200                   MOV.B       R0,@R2
+    00000374              L295:                             
+    00000374              L293:                             
+                          ; File sci.c     , Line 252      ; expression statement
+    00000374 D306                   MOV.L       L302+2,R3  ; H'A4000158
+    00000376 D20A                   MOV.L       L302+18,R2 ; H'0000FFDF
+    00000378 6131                   MOV.W       @R3,R1
+    0000037A 2129                   AND         R2,R1
+    0000037C 2311                   MOV.W       R1,@R3
+                          ; File sci.c     , Line 253      ; expression statement
+    0000037E D304                   MOV.L       L302+2,R3  ; H'A4000158
+    00000380 D108                   MOV.L       L302+22,R1 ; H'0000FFBF
+    00000382 6031                   MOV.W       @R3,R0
+    00000384 2019                   AND         R1,R0
+    00000386 2301                   MOV.W       R0,@R3
+                          ; File sci.c     , Line 254      ; block
+    00000388 7F04                   ADD         #4,R15
+    0000038A 000B                   RTS
+    0000038C 0009                   NOP
+    0000038E              L302:                             
+    0000038E 00000002               .RES.W      1
+    00000390 A4000158               .DATA.L     H'A4000158
+    00000394 <00000000>             .DATA.L     _cmData
+    00000398 A4000156               .DATA.L     H'A4000156
+    0000039C A4000154               .DATA.L     H'A4000154
+    000003A0 0000FFDF               .DATA.L     H'0000FFDF
+    000003A4 0000FFBF               .DATA.L     H'0000FFBF
+C   00000000              _start_mes:                      ; static: start_mes
+    00000000 4B4420466C             .SDATA      "KD Flash Write.."
+             6173682057   
+             726974652E   
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE   11
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+             2E           
+    00000010 00                     .DATA.B     H'00
+B   00000000              _cmData:                         ; static: cmData
+    00000000 00000148               .RES.W      164
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:33  PAGE    1
+
+
+******** STATISTICS INFORMATION ********
+
+
+********** ERROR INFORMATION ***********
+
+NUMBER OF ERRORS:           0
+NUMBER OF WARNINGS:         0
+
+
+
+
+******* SOURCE LINE INFORMATION ********
+
+COMPILED SOURCE LINE:      254
+
+
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION (P):                               000003A8 Byte(s)
+CONSTANT SECTION (C):                               00000011 Byte(s)
+DATA     SECTION (D):                               00000000 Byte(s)
+BSS      SECTION (B):                               00000148 Byte(s)
+
+ TOTAL PROGRAM SIZE: 00000501 Byte(s)
+
+
+
+********** LABEL INFORMATION ***********
+
+NUMBER OF EXTERNAL REFERENCE SYMBOLS:            1
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:          11
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:            33
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** COMMAND PARAMETER ***
+
+
+  /op=0 /cpu=SH3 /endian=b /define=_SHC3_ /show=ob,noso /list sci.c 
+

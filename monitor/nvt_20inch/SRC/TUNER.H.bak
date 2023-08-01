@@ -1,0 +1,73 @@
+#ifndef _TUNER_H_
+#define  _TUNER_H_
+
+#define CCIR
+
+#define TunerAddr 0xc0
+#define TunerTimer PoSvTimer
+#define TunerBrand 0	// 0: new one     1: old 
+#if TunerBrand == 0
+#define VHF_NT 0x0ab0//127.25MHz NTSC SAMSUNG TUNER
+#define UHF_NT 0x1990// 364.25MHz NTSC 
+#define StepCode 0xc0
+#else
+#define VHF_NT 0x1090//127.25MHz NTSC SAMSUNG TUNER
+#define UHF_NT 0x2710// 364.25MHz NTSC 
+#define StepCode 0xcc
+#endif
+#define VHF_NT_JAP 0x0FB4//142.25MHz NTSC JAPAN SAMSUNG TUNER
+#define UHF_NT_JAP 0x23D7//400MHz NTSC JAPAN 
+#define VHF_PAL 0x106B//PAL BG CCIR
+#define UHF_PAL 0x278b//PAL BG CCIR
+
+#define AFT_LOW 0x04		// need + over 3step
+#define AFT_LNEAR 0x03		// near but need +
+#define AFT_OK 0x02		// FINE TUNE OK
+#define AFT_HNEAR 0x01		// near but need -
+#define AFT_HIGH 0x00		// need - over 3step
+
+void ChannelSel(unsigned char ch);
+void WriteTuner(unsigned char DivH,unsigned char DivL,unsigned char Band);
+unsigned char ReadTuner(void);
+void ChannelUp(void);
+void ChannelDown(void);
+void ManualChannelUp(void);
+void ManualChannelDown(void);
+void ProgUp(void);
+void ProgDown(void);
+
+void ChNumber(void);
+void CheckTuner(void);
+void SetTuner(void);
+void ChannelSel(unsigned char ch);
+void ManualChannelSel(unsigned char ch);
+unsigned char CheckChMask(void);
+void ChannelMask(unsigned char);
+void ScanChannel(void);
+void ScanChannelNtsc(void);
+
+unsigned char AFT(unsigned char ch);
+void LoadChLimit(void);
+void LoadPRLimit(void);
+code unsigned short CatvTabUSA[];
+code unsigned short AirtvTabUSA[];
+code unsigned int CatvTabJPN[];
+code unsigned int AirtvTabJPN[];
+code unsigned short CatvTabCCIR[];
+code unsigned short AirtvTabCCIR[];
+code unsigned short CatvTabFRA[];
+code unsigned short AirtvTabFRA[];
+code unsigned short CatvTabITA[];
+code unsigned short AirtvTabITA[];
+code unsigned short CatvTabAUS[];
+code unsigned short AirtvTabAUS[];
+code unsigned short CatvTabGBR[];
+code unsigned short AirtvTabGBR[];
+code unsigned short CatvTabRUS[];
+code unsigned short AirtvTabRUS[];
+code unsigned short AirtvTabRUS[];
+code unsigned short AirtvTabNZL[];
+code unsigned short CatvTabNZL[];
+
+
+#endif

@@ -1,0 +1,406 @@
+#include "OSD.H"
+#include "8051.H"
+#include "RAM.H"
+#include "MCU.H"
+//#include "MyDef.H"
+#include "NT686xx_MCU_REG.H"
+#include "NVRAM.H"
+#include "DDC_Ci.H"
+//#include <stdio.h>
+#include "Board.H"
+#include "Mis.H"
+#include "IIC.H"
+#include "BFControl.H"
+#include "smartbright.H"
+#include "NT686xx_SC_REG.H"
+#include "Scaler.H"
+#if FE2P_LIB==ON
+	#if NT68167
+		#include "fe2p_nt68167 v1.1.h"
+	#elif NT68667
+		#include "fe2p_nt68667.h"
+	#endif
+#endif
+
+code unsigned char SystemRegTab[]={
+	PORTA_DEFAULT_OUT,	// PortA
+	PORTB_DEFAULT_OUT,	// PortB
+	PORTC_DEFAULT_OUT,	// PortC
+	PORTD_DEFAULT_OUT,	// PortD
+	PORTE_DEFAULT_OUT,	// PortE
+	PORTA_DEFAULT_DIR,	// RDPA_REG
+	PORTB_DEFAULT_DIR,	// RDPB_REG 
+	PORTC_DEFAULT_DIR,	// RDPC_REG
+	PORTD_DEFAULT_DIR,	// RDPD_REG
+	PORTE_DEFAULT_DIR,	// RDPE_REG
+	DEFAULT_CLRWDT,		// CLRWDT
+	DEFAULT_ADC_CON,	// ADC_CON
+	DEFAULT_ADC0_REG,	// ADC0_REG
+	DEFAULT_ADC1_REG,	// ADC1_REG
+	DEFAULT_ADC2_REG,	// ADC2_REG
+	DEFAULT_ADC3_REG,	// ADC3_REG
+	DEFAULT_PWMEN_1_0,	// PWM0/1 Enable
+	DEFAULT_PWMEN_9_2,	// PWM2...9 Enable
+	DEFAULT_PWM0,		// PWM0 Brightness (Panel IDX)
+	DEFAULT_PWM1,		// PWM1
+	DEFAULT_PWM2,		// PWM2
+	DEFAULT_PWM3,		// PWM3 
+	DEFAULT_PWM4,		// PWM4
+	DEFAULT_PWM5,		// PWM5	
+	DEFAULT_PWM6,		// PWM6 Volume
+	DEFAULT_PWM7,		// PWM7
+	DEFAULT_PWM8,		// PWM8
+	DEFAULT_PWM9,		// PWM9
+	DEFAULT_DDC_CTRL_0,	// DDC_CTRL_0
+	DEFAULT_DDC_ADDR_0,	// DDC_ADDR_0
+	DEFAULT_DDC_CTRL_1,	// DDC_CTRL_1
+	DEFAULT_DDC_ADDR_1,	// DDC_ADDR_1
+	DEFAULT_INT_SRC,	// INT_SRC
+	DEFAULT_INTEXT_FLG,	// INTEXT_FLG/CLR
+	DEFAULT_INTEXT_EN,	// INTEXT_EN
+};
+
+
+
+void InitMCU(void)
+{
+unsigned char *p;
+unsigned char i,k;
+CLRWDT = DEFAULT_CLRWDT;
+
+	k = sizeof(SystemRegTab);
+	p = &PortA;
+	for(i=0; i<k; i++){
+		*p = SystemRegTab[i];
+		p++;
+	}
+
+	ucPowerStatus = 0xff;
+
+
+#if NT68167
+MCUINIT:
+ 	ucLoopTimer_10ms = 100;
+	while(ucLoopTimer_10ms != 0){
+        if((SC_HW_RST & SC_LOSS) != 0){
+            SC_HW_RST = SC_LOSS | PBUS_EN;
+            SC_HW_RST = PBUS_EN;
+  		 	ucLoopTimer_10ms = 10;
+        }
+        else{
+            SC_HW_RST = PBUS_EN;
+            SC_HW_RST = PBUS_EN | SC_RST;
+            break;
+        }
+    }
+
+#if NT68167
+	#if _167_VERSION_C
+		LDO_ADJ = LDO_ADJ | BIT7 | BIT3;
+		CURR_ADJ2 = CURR_ADJ2 & 0xCF;
+	#endif
+#endif
+
+	WriteIIC560(0x000, REG_F000);	// Turn On ADC power
+	WriteIIC560(0x102, REG_F102);	// DPLL power & DPLL power
+	//Samuel-2008-05-21, Change MCU Speed, No Bypass
+	//WriteIIC560(0xB04, REG_FB04);	// MCU PLL by pass
+	WriteIIC560(0xB40, REG_FB40);	// MPLL max. range
+	WriteIIC560(0xB43, REG_FB43);	// MPLL VCO swing
+
+	if ( REG_F000 !=ReadIIC560(0x000) || REG_F102 !=ReadIIC560(0x102) || ReadIIC560(0xB40) != REG_FB40 || ReadIIC560(0xB43) != REG_FB43)
+		goto  MCUINIT;
+#endif
+			
+
+#if NT68667
+	HDCP_MUX = 0x00;	//NT68667 HDCP issue
+	SC_SR = 0x01;		//LcdLink through D-Sub
+#endif
+	
+	StartDDCCI();
+
+	// set timer 0
+#if NT68167
+		TL0 = (65536-T0_Speed)%256;
+		TH0 = (65536-T0_Speed)/256;
+#else
+	#if CoreSpeed == 0x36
+		TL0 = (65536-3000)%256;			//1mS for (36MHz) CPU
+		TH0 = (65536-3000)/256;
+	#else
+		TL0 = (65536-2000)%256;			//1mS for (24MHz) CPU
+	TH0 = (65536-2000)/256;
+	#endif
+#endif
+	TCON &= 0xcf;
+	TCON |= 0x10;
+
+// set timer 1
+//	TL1 = 256-(2*24*1000000/384/9600);
+//	TH1 = 256-(2*24*1000000/384/9600);
+#if NT68167
+//	CPU_CLK = (CoreSpeed<<4)|FAST_SPI;
+	CPU_CLK = (CoreSpeed<<4);
+
+	TL1 = 256-(2*CoreSpeed*12*1000000/384/4800);
+	TH1 = 256-(2*CoreSpeed*12*1000000/384/4800);
+#else
+#if CoreSpeed == 0x36
+	CPU_CLK = CoreSpeed;
+	TL1 = 256-(2*36*1000000/384/4800);
+	TH1 = 256-(2*36*1000000/384/4800);
+#else
+		CPU_CLK = CoreSpeed;
+	TL1 = 256-(2*24*1000000/384/4800);
+	TH1 = 256-(2*24*1000000/384/4800);
+#endif
+#endif
+
+	TCON &= 0x3f;
+	TCON |= 0x40;
+
+	SCON = 0x52;	//ENABLE RS232 9bit uart mode2, 
+	TMOD = 0x21;	//Set Timer0 = 16-bit timer for system , Set usTimer1_1ms = 8-bit timer auto load for RS232
+	PCON = 0x80;	//rs232 bourate double
+
+// set interrupt
+	ucDDCCiTxOut = 0;
+	ucDDCCiTxIn = 0;
+	ucDDCCiRxIn = 0;
+	ucDDCCiRxOut = 0;
+	ucDDCCiTxChecksum = 0;
+	ucDDCCiRxChecksum = 0;
+	SendNullCmd(DDCCI_ADDR);
+//	rwbuf = 0;
+//	abuf = 0;
+
+	ucUARTTxIn = 0;
+	ucUARTTxOut = 0;
+	ucUARTRxOut = 0;
+	ucUARTRxIn = 0;
+
+//	NewMode = 0;
+	Set_usTimer1_1ms(0);
+	ucTimer10ms = 0;
+	Set_usOSDTimer_10ms(0);
+	ucLoopTimer_10ms = 0;
+	ucSyncStableTimer_10ms = 0;
+	Set_usWarningMsgTimer_1s(0);
+	ucTime2RepeatKey = 0;
+	ucLEDTimer_10ms = 0;
+	ucTimer1000ms = 0;
+	usPOTTimerS_900 = 0;
+	ucNoSigTimer = 3;					// +jwshin 111213
+	//ucPOTTimerM_4 = 0;
+	ucTime2Backlight = 0;
+	ucBF_Status = 0;
+
+#if FE2P_LIB==ON
+	//Fe2p Initial value
+	feSave = 0;
+	feValid_Block = 0;
+	feSave_Timer = 0;
+	FE2P_ClearBuffer();
+#endif
+
+	IE = 0x97;
+	Sleep(40);
+	
+#if NT68667
+	WriteIIC560(0x143,0x87);
+	WriteIIC560(0x144,0x01);
+	WriteIIC560(0x146,0xb3);
+#endif
+	
+#if NT68167
+	if ( REG_F000!=ReadIIC560(0x000) || REG_F102 !=ReadIIC560(0x102) || ReadIIC560(0xB40) != REG_FB40 || ReadIIC560(0xB43) != REG_FB43 ) {bExitSysLoop=TRUE; return; }
+#endif
+#if FE2P_LIB==ON
+	FE2P_LoadToSram();
+#endif
+
+
+//------------------ +jwshin 111214
+WriteIIC560(GPIO_CTRL,0x30);			// PWMA,PWMB Enable...
+
+
+#ifndef Use24C02
+//	#if (!PBusProtocol)
+//		IIC_Release();
+//	#endif
+//	NVRAM_Flag=1;
+	
+#if NT68167
+	LoadDDCData(1);
+#else
+		#if DUAL_MODE==ON
+			LoadDDCData(1);		//digital ddc
+		#endif
+		
+		LoadDDCData(2);		//analog ddc
+#endif
+#endif
+
+//^^
+
+//check +5Vcc	
+   	ucLoopTimer_10ms = 100;
+	while(ucLoopTimer_10ms != 0){
+		ADC_CON = DEFAULT_ADC_CON;		//Channel;  // Start AD Convert
+
+		WaitADConversion();
+		
+		if ( IsAC_PowerOff() ) {
+			ucLoopTimer_10ms = 100;
+		}
+		Check_DDC_Update();
+	}
+//CVDD RESET
+//	p = &RDPD_REG;
+//	*p= *p | BIT_2;	
+
+//	printf("Check +5V ok\r\n")
+	printf("MCU Init\r\n");
+
+	Sleep(50);
+
+/*
+#if (!PBusProtocol)
+	ResetOff();
+	Sleep(2);
+	ResetOn();
+	Sleep(12);
+	ResetOff();
+	Sleep(12);
+#endif
+*/
+	CLRWDT = DEFAULT_CLRWDT;
+	
+bB_Screen_ReverseFlag = 0;						// +jwshin 120224	
+bCopy_Flag = 0;												// +jwshin 120224
+bRGB_SW_Flag = 0;											// +jwshin 120224
+	
+	
+bPowerSaveFlag = 0;										// +jwshin 120228	
+	
+bInSync = 0;
+bBGMode = 0;
+bKeyChanged = 0;
+bVideoMuted = 0;
+bModeChanged = 0;
+bForceToSleep = 0;
+//bIsDPMS = 0;
+bExitSysLoop = 0;
+              
+bOptAbort = 0;
+bShowNoSync = 0;
+bShowDiscon = 0;
+bShowOutRange = 0;
+bShowOutRange85 = 0;
+//bSOG2nd = 0;
+bShowNoInput = 0;
+bDDCUpdate = 0;
+
+bFactoryMode = 0;
+bOutOfRange = 0;
+//bStatusReport = 0;
+bOutOfLimit = 0;
+bPOTUpdate = 0;
+bPowerKeyFlag = 0;
+bIsInterlaced = 0;
+bDDCCmdUpdate = 0;
+
+bSyncFlag = 0;
+bIsFRCMode = 0;
+bIsNonFullScreen = 0;
+//bIsBurnInEnabled = 0;	
+bIsSyncConfirmed = 0;
+//bIsOSDLocked = 0;//2006-12-05 -
+//bIsNewMode = 0;
+bGLEDState = 0;
+bIsLEDFlashing = 0;
+
+//bLFLEDState = 0;
+//bIsLFLEDFlashing = 0;
+ucIsLFDemoMode = 0;
+
+bFactoryModeType = 0;  
+//bOSDReady = 0;
+//bOSDInfoChange = 0;
+bDCReset = 0;
+bAC1stOn = 1;
+
+//bShowNotAvailable=0;
+bSwitchSource = 0;
+bStatusReport = 0;
+
+	ucCurKey = IGNORE_KEY;
+	ucOSDLvl1_Cursor= 0;
+	ucOSDLvl2_Cursor = 0;
+	ucOSDLvl3_Cursor = 0;
+	ucOSDType = OSDOFF;
+	ucSavePointer = svNONE;
+	ucNewControlValue = 0xff;
+	
+	ucSignalType = 0;
+
+	usTmpHSync = 0xffff;
+	usTmpVSync = 0xffff;
+	Set_usPoSvTimer(500);
+	ucModeNumber = 0xff;
+
+#if PanelID == CMO_M190E5_L0E  //neo 060811
+	bScalerOutput = 0;
+#endif
+
+#ifdef ANTI_ESD
+
+	ucESDSaveD1=0;
+	ucESDSaveD2=0;
+	ucESDSaveD3=0;
+	ucESDSaveD4=0;
+	ucESDSaveF1=0;
+
+#endif
+
+#if _SmartBright_ == ON
+	usBrightCounter = 0;
+	ulBrightV = 0;
+	ucTempBrightADC = 0;
+	bSaveSmartBright = 0;
+#endif
+
+	bShowAging = 0;
+#ifdef GREEN_POWER
+	ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+#endif
+
+//^^
+
+}
+
+
+
+void StartDDCCI(void)
+{
+	IIC0_ADDR = DDCCI_ADDR;
+	IIC0_ADDR = DDCCI_ADDR | ENIIC;
+	IIC0INT_CLR = 0xff;
+	IIC0_INT_EN = 0xf8;
+#if(!NT68167)
+	IIC1_ADDR = DDCCI_ADDR;
+	IIC1_ADDR = DDCCI_ADDR | ENIIC;
+	IIC1INT_CLR = 0xff;
+	IIC1_INT_EN = 0xf8;
+#endif
+}
+
+void StopDDCCI(void)
+{
+	IIC0_ADDR = 0x00;
+#if(!NT68167)
+	IIC1_ADDR = 0x00;
+#endif
+}
+

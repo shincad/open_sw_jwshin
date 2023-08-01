@@ -1,0 +1,303 @@
+C51 COMPILER V8.12   HDCP                                                                  04/16/2014 18:12:29 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE HDCP
+OBJECT MODULE PLACED IN .\BIN\HDCP.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\HDCP.c LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelN
+                    -ame=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\HDCP.lst) OBJECT(.\BIN\HDCP.obj)
+
+line level    source
+
+   1          #include "NT686xx_SC_REG.H"
+   2          #include "MyDef.h"
+   3          #include "Board.h"
+   4          #include "Scaler.h"
+   5          #include "ROM_MAP.H"
+   6          #include "NVRAM.H"
+   7          #include "Mis.h"
+   8          #include "HDCP.h"
+   9          #include <stdio.h>
+  10          
+  11          //#define HDCPDebug
+  12          
+  13          //===========================================
+  14          //              WRITE KEY FROM FACTORY:
+  15          //              1. LINCENSE KEY = 8+280+20 BYTES (8=KSVx5+0x00x3)
+  16          //              2. READ (8+280)
+  17          //              3. XOR (280)
+  18          //              4. WRITE TO EEPROM (288=OP(0x68); 289=OPERATION(0x00) )
+  19          //              
+  20          //              LOAD:
+  21          //              1. KSV TO SCALER 0x300..0x304
+  22          //              2. KEY TO INDEX 0..287 ( 280 KEY + 0x68 + 0x00 + 5 FACTORY_ID )
+  23          //              
+  24          //===========================================
+  25          
+  26          #if _ENABLE_HDCP_
+  27          
+  28          xdata unsigned char ucHDCPFlag = 0;
+  29          
+  30          xdata unsigned short usNVRamAddr_HDCP;
+  31          xdata unsigned short usHDCPChkSum1, usHDCPChkSum2 = 0;
+  32          
+  33          
+  34          void InitHDCP(void)
+  35          {
+  36   1              WriteHDCPKey();
+  37   1              EnableHDCP();
+  38   1      }
+  39          
+  40          void WriteHDCPKey(void)
+  41          {
+  42   1              unsigned char tmpReg;
+  43   1              unsigned short i;
+  44   1              
+  45   1      //      NVTprintf("[HDCP KEY] WriteHDCPKey\n\r");
+  46   1              
+  47   1              WriteIIC560(0x360, 0xC0); // Set Refclk * clk inverted
+  48   1              WriteIIC560(0x361, 0x08); // Set decryption key
+  49   1              WriteIIC560(0x369, 0x0B); // Enable HDCP
+  50   1              
+  51   1              // Write KSV
+  52   1              usNVRamAddr_HDCP = NVRAM_HDCP_KEY;
+  53   1      
+  54   1      //printf("[HDCP KSV] Start:%04X Num:%d\n\r", usNVRamAddr_HDCP, (unsigned short)NUM_HDCP_KSV);
+C51 COMPILER V8.12   HDCP                                                                  04/16/2014 18:12:29 PAGE 2   
+
+  55   1              for(i=0; i<NUM_HDCP_KSV; i++){
+  56   2                      tmpReg = Read24C16(usNVRamAddr_HDCP+i);
+  57   2                      WriteIIC560(0x300+i, tmpReg);
+  58   2      //              printf("%x ",(unsigned short)tmpReg);
+  59   2              }
+  60   1      //      printf("--KSV\r\n");    
+  61   1              usNVRamAddr_HDCP += NUM_HDCP_KSV;
+  62   1      
+  63   1              // Write Key
+  64   1              tmpReg = ReadIIC560(INDEX_CTRL) & 0x04;
+  65   1              tmpReg |= 0xE0;
+  66   1              WriteIIC560(INDEX_CTRL, tmpReg);
+  67   1      
+  68   1      //printf("[HDCP KEY] Start:%04X Num:%d\n\r", usNVRamAddr_HDCP, (unsigned short)NUM_HDCP_KEY);
+  69   1              for(i=0; i<NUM_HDCP_KEY; i++){
+  70   2                      tmpReg = Read24C16(usNVRamAddr_HDCP+i);
+  71   2                      WriteIIC560(INDEX_ADDR_LI,(unsigned char)(i&0xff));
+  72   2                      WriteIIC560(INDEX_ADDR_HI,(unsigned char)(i >> 8));
+  73   2                      WriteIIC560(INDEX_DATA,tmpReg);
+  74   2      //if (i>272)
+  75   2      //      printf("%02x ",(unsigned short)tmpReg);
+  76   2              }
+  77   1      //printf("--KEY SET\r\n");      
+  78   1      }
+  79          
+  80          void CheckHDCP(void)
+  81          {
+  82   1              unsigned char tmpReg;
+  83   1              tmpReg = ReadIIC560(0x369);
+  84   1              
+  85   1              if((tmpReg & BIT_0) != 0){      // AKSV transfer done
+  86   2                      ucHDCPFlag |= BIT_0;
+  87   2                      printf("AKSV transfer done\r\n");
+  88   2              }
+  89   1      
+  90   1              if((tmpReg & BIT_1) != 0){      // Authentication done
+  91   2                      ucHDCPFlag |= BIT_1;
+  92   2                      printf("Authentication done\r\n");
+  93   2              }
+  94   1      
+  95   1              WriteIIC560(0x369,0x0B);
+  96   1      }
+  97          
+  98          void CheckHDCPSyncMode(void)
+  99          {
+ 100   1              unsigned char reg;
+ 101   1              
+ 102   1      //      NVTprintf("[HDCP KEY] CheckHDCPSyncMode\n\r");
+ 103   1              
+ 104   1              reg = ReadIIC560(GI_SYNC_CTRL);
+ 105   1              WriteIIC560(GI_SYNC_CTRL,0x90);//0x94
+ 106   1              Sleep(20);
+ 107   1      
+ 108   1              if((ReadIIC560(GI_SYNC_STATUS) & 0xD8) == 0x18){
+ 109   2      //              printf("SyncMode 0\r\n");
+ 110   2                      WriteIIC560(0x361, 0x08); // Set decryption key
+ 111   2              }
+ 112   1              else{
+ 113   2      //              printf("SyncMode 1\r\n");
+ 114   2                      WriteIIC560(0x361, 0x0B); // Set decryption key
+ 115   2              }
+ 116   1      //#endif
+C51 COMPILER V8.12   HDCP                                                                  04/16/2014 18:12:29 PAGE 3   
+
+ 117   1      
+ 118   1      #if DVI_MODE == DVI_DE_MODE
+ 119   1              WriteIIC560(GI_SYNC_CTRL,reg&(~BIT_7));
+ 120   1      #else
+                      WriteIIC560(GI_SYNC_CTRL,reg|BIT_7);
+              #endif
+ 123   1      }
+ 124          
+ 125          #ifdef NOVATEK_HDCP_WRITER
+ 126          void StartHDCPStoring(void)
+ 127          {
+ 128   1              usHDCPChkSum1 = 0;
+ 129   1              usHDCPChkSum2 = 0xffff;
+ 130   1              usNVRamAddr_HDCP = NVRAM_HDCP_KEY;
+ 131   1      }
+ 132          
+ 133          void StoreHDCP( unsigned char *pData,  unsigned short num)
+ 134          {
+ 135   1              unsigned char i,j;
+ 136   1              
+ 137   1      //      printf("[HDCP Write] Start:%04X Num:%d\n\r", usNVRamAddr_HDCP, (unsigned short)num);
+ 138   1              for(i=0; i<(num/8); i++){
+ 139   2                      WritePage24C16(usNVRamAddr_HDCP, 0, (pData+(i*8)), 8);
+ 140   2                      for(j=0; j<8; j++){
+ 141   3                              if((usNVRamAddr_HDCP+j) < (NVRAM_HDCP_KEY+NUM_HDCP_TOTAL))
+ 142   3                                      usHDCPChkSum1 += *(pData+i*8+j);
+ 143   3      //                              printf("%x\n\r",usHDCPChkSum1);
+ 144   3      //                      }
+ 145   3                      }
+ 146   2      //              printf("%02X ...", (unsigned short)*(pData+i*8));
+ 147   2                      usNVRamAddr_HDCP += 8;
+ 148   2              }
+ 149   1              num = num % 8;
+ 150   1              
+ 151   1              for(j = 0; j < num; j++){
+ 152   2                      //printf("%x=%02X,", (unsigned short)(usNVRamAddr_HDCP+j),(unsigned short)*(pData+i*8+j));
+ 153   2                      Write24C16(usNVRamAddr_HDCP+j, *(pData+i*8+j));
+ 154   2                      if((usNVRamAddr_HDCP+j) < (NVRAM_HDCP_KEY+NUM_HDCP_TOTAL))
+ 155   2                              usHDCPChkSum1 += *(pData+i*8+j);
+ 156   2      //                      printf("%x\n\r",usHDCPChkSum1);
+ 157   2      //              }
+ 158   2              }
+ 159   1      //      printf("\n\r");
+ 160   1              usNVRamAddr_HDCP += num;
+ 161   1      //      printf("%d\n\r",usNVRamAddr_HDCP-NVRAM_HDCP_KEY);
+ 162   1      }
+ 163          #endif
+ 164          
+ 165          #ifdef NOVATEK_HDCP_WRITER
+ 166          unsigned char CheckHDCPChkSum(void)
+ 167          {
+ 168   1              usHDCPChkSum2 = Read24C16(NVRAM_HDCP_KEY+0x121);
+ 169   1              usHDCPChkSum2 = usHDCPChkSum2 << 8;
+ 170   1              usHDCPChkSum2 = usHDCPChkSum2 + Read24C16(NVRAM_HDCP_KEY+0x122);
+ 171   1      
+ 172   1      //      printf("0x%04X 0x%04X 0x%04X\n\r",usHDCPChkSum1, usHDCPChkSum2,usNVRamAddr_HDCP);
+ 173   1      
+ 174   1              if(usHDCPChkSum1 == usHDCPChkSum2)
+ 175   1                      return 1;
+ 176   1              else
+ 177   1                      return 0;
+ 178   1      }
+C51 COMPILER V8.12   HDCP                                                                  04/16/2014 18:12:29 PAGE 4   
+
+ 179          #endif
+ 180          
+ 181          #ifdef DEMO_HDCP_KEY
+              
+              void InitHDCP_DemoKey()
+              {
+              
+              code unsigned char demo_key[]={
+              /*
+              0x2E,0xAC,0xDD,0x91,0x58,0x00,0x00,0x00,
+              
+              0x2A,0xF6,0x82,0xD5,0x8E,0xA3,0x11,0x45,
+              0x47,0x2A,0x7E,0x55,0x65,0xE9,0xC0,0x63,0x3C,0xE6,0x54,0xB8,0xED,0x2F,0xAD,0xB6,
+              0x63,0xA9,0xFC,0xA6,0xFB,0x08,0x48,0x78,0xCC,0x49,0x29,0x36,0xF1,0x51,0x18,0xF4,
+              0xB0,0x76,0xC4,0xE2,0x01,0x22,0xF1,0xAA,0x58,0x2D,0xF2,0x61,0xDA,0x29,0xB4,0x65,
+              0xA6,0x05,0xAE,0xD6,0xA6,0x49,0x8E,0xFE,0x8F,0x33,0xB3,0x5D,0xA8,0x53,0xE1,0xD3,
+              0x04,0x7B,0x4F,0x1C,0xCB,0x75,0xB0,0xEE,0x48,0xCC,0xB8,0x32,0xD6,0x9E,0xE5,0xEA,
+              0x80,0xD5,0x4A,0xCC,0x21,0xAB,0x0B,0x92,0xA7,0xA4,0xE7,0x41,0xFC,0xCE,0x6F,0xCC,
+              0xFD,0xEB,0x13,0x23,0xB9,0xD5,0x58,0x30,0x5F,0x4C,0xC3,0x6A,0xF0,0x5F,0x99,0x2F,
+              0x02,0xA7,0xEB,0xFF,0x4D,0xA0,0x97,0x0B,0x1B,0x5D,0x44,0xBF,0x9D,0x99,0xE0,0xE4,
+              0x4F,0xE0,0x7F,0x6D,0xD9,0x9F,0xA9,0x6B,0x82,0x83,0xF0,0x17,0x6F,0xFB,0x0C,0x41,
+              0x32,0x84,0xFE,0x40,0x1B,0x8E,0xA2,0xA8,0x5B,0x69,0x51,0x45,0x5B,0x4A,0x1A,0x46,
+              0x55,0xC9,0xDC,0xA9,0x07,0x84,0x2C,0x33,0x3B,0xE0,0x38,0x3B,0x46,0xF2,0x05,0x38,
+              0x1B,0xFD,0x08,0x4E,0x6C,0xB8,0x82,0x2F,0x20,0x30,0x9E,0x24,0x96,0x88,0x46,0x3E,
+              0xCA,0x2F,0xAF,0x9D,0xB8,0x93,0x4B,0x49,0xE7,0x91,0x07,0xE9,0x2F,0x37,0xC6,0x80,
+              0x83,0xE0,0x63,0xB2,0xC9,0x28,0x64,0x36,0x89,0x8A,0xA2,0x77,0x13,0x88,0x09,0x08,
+              0xD1,0xC2,0x55,0x89,0x8C,0x77,0xC9,0xCE,0xDB,0x2E,0x97,0x14,0x4C,0xC0,0xDF,0x0E,
+              0x7B,0x71,0x1A,0xB3,0xA4,0xAB,0xAB,0x6D,0x23,0x2B,0xF1,0x38,0xFE,0x6F,0x9B,0xCF,
+              0x39,0x4F,0x71,0xB8,0x98,0x88,0x82,0x00,0x0B,0xD3,0xF2,0x5B,0x63,0x4C,0x7C,0x04,
+              
+              0x00,0x00
+              */
+              
+                      0x24,0xC8,0xEB,0x3E,0x9C,0x00,0x00,0x00,
+              
+                      0xF1,0x04,0x43,0x87,0x2C,0x22,0x0D,
+                      0xDA,0x6D,0xF9,0x4C,0x25,0xCA,0x04,
+                      0x03,0xA9,0x63,0x6D,0x9F,0xA3,0x71,
+                      0x62,0x0E,0xB4,0xFB,0x29,0xBA,0xB4,
+                      0xFB,0xD9,0xDB,0x0C,0x9E,0xD3,0x5A,
+                      0x0A,0xDD,0x7C,0x5A,0x9E,0x9F,0x88,
+                      0x15,0x0B,0x34,0x13,0x20,0xBB,0xFC,
+                      0x2C,0x36,0x24,0xC1,0x60,0xCF,0xC2,
+                      0x56,0x55,0x80,0x11,0x5D,0x2A,0x61,
+                      0xD0,0x8C,0xEF,0xF1,0x20,0xE7,0xAC,
+                      0x5D,0xD4,0xC3,0xD4,0x11,0x75,0x8D,
+                      0x33,0x3C,0xA9,0x95,0x2C,0x4D,0x13,
+                      0x14,0x51,0xA5,0x48,0xEB,0x5A,0x68,
+                      0x99,0xC6,0xBE,0xF0,0x4A,0xA7,0x4D,
+                      0x64,0x30,0x77,0x22,0x52,0xA4,0x23,
+                      0xBD,0x96,0xAA,0xAA,0x3E,0x44,0xB8,
+                      0x8F,0xEA,0x23,0x6F,0xE7,0xB4,0xEF,
+                      0xE7,0x66,0x1B,0x3C,0xB0,0x3E,0x83,
+                      0x6D,0x5C,0xBE,0xA4,0x95,0x88,0x0D,
+                      0x0B,0xA4,0xFA,0x96,0x02,0xB5,0xC4,
+                      0xE5,0xD8,0x9A,0xAB,0x7F,0xF7,0x6E,
+                      0xAA,0x90,0x95,0x73,0xC5,0x82,0x02,
+                      0x87,0x3F,0xD0,0xC4,0xFA,0xBF,0x5D,
+                      0xFC,0x5D,0x55,0x18,0x24,0xDE,0x63,
+                      0xA7,0x12,0x72,0x25,0x66,0x6E,0xB4,
+                      0x6E,0x9F,0x18,0x5D,0xC1,0x36,0xC7,
+                      0xBA,0xD0,0x56,0x34,0xCE,0x62,0x90,
+C51 COMPILER V8.12   HDCP                                                                  04/16/2014 18:12:29 PAGE 5   
+
+                      0x6C,0x72,0x64,0x31,0x71,0x18,0x73,
+                      0x1E,0x8D,0xDF,0x13,0xFB,0x66,0xAC,
+                      0xB2,0xA3,0x1A,0xE7,0xB3,0x59,0xBD,
+                      0x97,0xB1,0x4C,0xC9,0x52,0x93,0x4F,
+                      0xAA,0x63,0x3F,0xF0,0x86,0x35,0x81,
+                      0xC1,0x11,0x49,0x89,0x60,0x2A,0xAB,
+                      0x96,0xB7,0xD2,0x58,0x68,0xBA,0x86,
+                      0x2F,0xC9,0x7E,0xE8,0x1D,0x77,0x0F,
+                      0x36,0x20,0xFC,0xCC,0x3E,0xDB,0x33,
+                      0x98,0xEF,0x82,0xCC,0x51,0x74,0xD5,
+                      0x3A,0x08,0xE4,0xBB,0xA3,0x27,0x6A,
+                      0xFF,0x59,0x6B,0xBC,0x09,0x8A,0xD4,
+                      0x5C,0x00,0x31,0x87,0x3E,0x20,0x38,
+                      0x68,0x00,0x01,0x02,0x03,0x04,0x05
+              
+              
+              };
+              
+                      StartHDCPStoring();
+                      
+                      StoreHDCP(demo_key,     NUM_HDCP_TOTAL);
+                      
+                      Write24C16(NVRAM_HDCP_KEY_CRC, 0x00);
+                      Write24C16(NVRAM_HDCP_KEY_CRC+1, 0x00);
+              
+              }
+              
+              
+              #endif
+ 270          
+ 271          #endif  //#if _ENABLE_HDCP_
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    791    ----
+   CONSTANT SIZE    =     43    ----
+   XDATA SIZE       =      7      12
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

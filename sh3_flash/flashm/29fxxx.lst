@@ -1,0 +1,797 @@
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    1
+
+************ OBJECT LISTING ************
+
+FILE NAME: 29fxxx.c
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+P                         ; File 29fxxx.c  , Line 203      ; block
+    00000000              __29fxxx_set_offset:             ; function: _29fxxx_set_offset
+                                                           ; frame size=4
+    00000000 7FFC                   ADD         #-4,R15
+    00000002 2F42                   MOV.L       R4,@R15
+                          ; File 29fxxx.c  , Line 204      ; block
+                          ; File 29fxxx.c  , Line 205      ; expression statement
+    00000004 62F2                   MOV.L       @R15,R2
+    00000006 D30E                   MOV.L       L327+8,R3  ; L237
+    00000008 2322                   MOV.L       R2,@R3
+                          ; File 29fxxx.c  , Line 206      ; block
+    0000000A 7F04                   ADD         #4,R15
+    0000000C 000B                   RTS
+    0000000E 0009                   NOP
+                          ; File 29fxxx.c  , Line 209      ; block
+    00000010              L239:                            ; function: flash_reset_word
+                                                           ; frame size=0
+                          ; File 29fxxx.c  , Line 210      ; block
+                          ; File 29fxxx.c  , Line 211      ; expression statement
+    00000010 9312                   MOV.W       L327,R3    ; H'0AAA
+    00000012 D20B                   MOV.L       L327+8,R2  ; L237
+    00000014 6122                   MOV.L       @R2,R1
+    00000016 313C                   ADD         R3,R1
+    00000018 900F                   MOV.W       L327+2,R0  ; H'00AA
+    0000001A 2101                   MOV.W       R0,@R1
+                          ; File 29fxxx.c  , Line 212      ; expression statement
+    0000001C 920E                   MOV.W       L327+4,R2  ; H'0554
+    0000001E D008                   MOV.L       L327+8,R0  ; L237
+    00000020 6102                   MOV.L       @R0,R1
+    00000022 312C                   ADD         R2,R1
+    00000024 E355                   MOV         #85,R3
+    00000026 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 213      ; expression statement
+    00000028 9306                   MOV.W       L327,R3    ; H'0AAA
+    0000002A D005                   MOV.L       L327+8,R0  ; L237
+    0000002C 6102                   MOV.L       @R0,R1
+    0000002E 313C                   ADD         R3,R1
+    00000030 9205                   MOV.W       L327+6,R2  ; H'00F0
+    00000032 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 214      ; block
+    00000034 000B                   RTS
+    00000036 0009                   NOP
+    00000038              L327:                             
+    00000038 0AAA                   .DATA.W     H'0AAA
+    0000003A 00AA                   .DATA.W     H'00AA
+    0000003C 0554                   .DATA.W     H'0554
+    0000003E 00F0                   .DATA.W     H'00F0
+    00000040 <00000000>             .DATA.L     L237
+                          ; File 29fxxx.c  , Line 217      ; block
+    00000044              L240:                            ; function: flash_write_word
+                                                           ; frame size=8
+    00000044 7FF8                   ADD         #-8,R15
+    00000046 1F41                   MOV.L       R4,@(4,R15)
+    00000048 61F3                   MOV         R15,R1
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    2
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000004A 7102                   ADD         #2,R1
+    0000004C 2151                   MOV.W       R5,@R1
+                          ; File 29fxxx.c  , Line 218      ; block
+                          ; File 29fxxx.c  , Line 219      ; expression statement
+    0000004E 9345                   MOV.W       L328,R3    ; H'0AAA
+    00000050 D025                   MOV.L       L328+12,R0 ; L237
+    00000052 6102                   MOV.L       @R0,R1
+    00000054 313C                   ADD         R3,R1
+    00000056 9242                   MOV.W       L328+2,R2  ; H'00AA
+    00000058 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 220      ; expression statement
+    0000005A 9241                   MOV.W       L328+4,R2  ; H'0554
+    0000005C D022                   MOV.L       L328+12,R0 ; L237
+    0000005E 6102                   MOV.L       @R0,R1
+    00000060 312C                   ADD         R2,R1
+    00000062 E355                   MOV         #85,R3
+    00000064 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 221      ; expression statement
+    00000066 9339                   MOV.W       L328,R3    ; H'0AAA
+    00000068 D01F                   MOV.L       L328+12,R0 ; L237
+    0000006A 6102                   MOV.L       @R0,R1
+    0000006C 313C                   ADD         R3,R1
+    0000006E 9238                   MOV.W       L328+6,R2  ; H'00A0
+    00000070 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 222      ; expression statement
+    00000072 51F1                   MOV.L       @(4,R15),R1
+    00000074 85F1                   MOV.W       @(2,R15),R0
+    00000076 2101                   MOV.W       R0,@R1
+                          ; File 29fxxx.c  , Line 223      ; block
+    00000078 7F08                   ADD         #8,R15
+    0000007A 000B                   RTS
+    0000007C 0009                   NOP
+                          ; File 29fxxx.c  , Line 226      ; block
+    0000007E              L241:                            ; function: flash_erase_sector
+                                                           ; frame size=8
+    0000007E 7FF8                   ADD         #-8,R15
+    00000080 63F3                   MOV         R15,R3
+    00000082 7306                   ADD         #6,R3
+    00000084 2341                   MOV.W       R4,@R3
+                          ; File 29fxxx.c  , Line 227      ; block
+                          ; File 29fxxx.c  , Line 231      ; expression statement
+    00000086 9329                   MOV.W       L328,R3    ; H'0AAA
+    00000088 D117                   MOV.L       L328+12,R1 ; L237
+    0000008A 6212                   MOV.L       @R1,R2
+    0000008C 323C                   ADD         R3,R2
+    0000008E 9026                   MOV.W       L328+2,R0  ; H'00AA
+    00000090 2201                   MOV.W       R0,@R2
+                          ; File 29fxxx.c  , Line 232      ; expression statement
+    00000092 9225                   MOV.W       L328+4,R2  ; H'0554
+    00000094 D014                   MOV.L       L328+12,R0 ; L237
+    00000096 6102                   MOV.L       @R0,R1
+    00000098 312C                   ADD         R2,R1
+    0000009A E355                   MOV         #85,R3
+    0000009C 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 233      ; expression statement
+    0000009E 931D                   MOV.W       L328,R3    ; H'0AAA
+    000000A0 D011                   MOV.L       L328+12,R0 ; L237
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    3
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    000000A2 6102                   MOV.L       @R0,R1
+    000000A4 313C                   ADD         R3,R1
+    000000A6 921D                   MOV.W       L328+8,R2  ; H'0080
+    000000A8 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 234      ; expression statement
+    000000AA D00F                   MOV.L       L328+12,R0 ; L237
+    000000AC 6102                   MOV.L       @R0,R1
+    000000AE 331C                   ADD         R1,R3
+    000000B0 9215                   MOV.W       L328+2,R2  ; H'00AA
+    000000B2 2321                   MOV.W       R2,@R3
+                          ; File 29fxxx.c  , Line 235      ; expression statement
+    000000B4 9314                   MOV.W       L328+4,R3  ; H'0554
+    000000B6 D00C                   MOV.L       L328+12,R0 ; L237
+    000000B8 6102                   MOV.L       @R0,R1
+    000000BA 313C                   ADD         R3,R1
+    000000BC E255                   MOV         #85,R2
+    000000BE 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 237      ; expression statement
+    000000C0 85F3                   MOV.W       @(6,R15),R0
+    000000C2 600D                   EXTU.W      R0,R0
+    000000C4 4008                   SHLL2       R0
+    000000C6 D108                   MOV.L       L328+12,R1 ; L237
+    000000C8 6212                   MOV.L       @R1,R2
+    000000CA D108                   MOV.L       L328+16,R1 ; _SectorAddress
+    000000CC 011E                   MOV.L       @(R0,R1),R1
+    000000CE 312C                   ADD         R2,R1
+    000000D0 2F12                   MOV.L       R1,@R15
+                          ; File 29fxxx.c  , Line 238      ; expression statement
+    000000D2 E330                   MOV         #48,R3
+    000000D4 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 239      ; block
+    000000D6 7F08                   ADD         #8,R15
+    000000D8 000B                   RTS
+    000000DA 0009                   NOP
+    000000DC              L328:                             
+    000000DC 0AAA                   .DATA.W     H'0AAA
+    000000DE 00AA                   .DATA.W     H'00AA
+    000000E0 0554                   .DATA.W     H'0554
+    000000E2 00A0                   .DATA.W     H'00A0
+    000000E4 0080                   .DATA.W     H'0080
+    000000E6 00000002               .RES.W      1
+    000000E8 <00000000>             .DATA.L     L237
+    000000EC <00000000>             .DATA.L     _SectorAddress
+                          ; File 29fxxx.c  , Line 242      ; block
+    000000F0              _flash_erase_all:                ; function: flash_erase_all
+                                                           ; frame size=8
+    000000F0 4F22                   STS.L       PR,@-R15
+    000000F2 7FFC                   ADD         #-4,R15
+                          ; File 29fxxx.c  , Line 243      ; block
+                          ; File 29fxxx.c  , Line 247      ; expression statement
+    000000F4 933B                   MOV.W       L329,R3    ; H'0AAA
+    000000F6 D120                   MOV.L       L329+10,R1 ; L237
+    000000F8 6212                   MOV.L       @R1,R2
+    000000FA 323C                   ADD         R3,R2
+    000000FC 9038                   MOV.W       L329+2,R0  ; H'00AA
+    000000FE 2201                   MOV.W       R0,@R2
+                          ; File 29fxxx.c  , Line 248      ; expression statement
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    4
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000100 9237                   MOV.W       L329+4,R2  ; H'0554
+    00000102 D01D                   MOV.L       L329+10,R0 ; L237
+    00000104 6102                   MOV.L       @R0,R1
+    00000106 312C                   ADD         R2,R1
+    00000108 E355                   MOV         #85,R3
+    0000010A 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 249      ; expression statement
+    0000010C 932F                   MOV.W       L329,R3    ; H'0AAA
+    0000010E D01A                   MOV.L       L329+10,R0 ; L237
+    00000110 6102                   MOV.L       @R0,R1
+    00000112 313C                   ADD         R3,R1
+    00000114 922E                   MOV.W       L329+6,R2  ; H'0080
+    00000116 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 250      ; expression statement
+    00000118 D017                   MOV.L       L329+10,R0 ; L237
+    0000011A 6102                   MOV.L       @R0,R1
+    0000011C 331C                   ADD         R1,R3
+    0000011E 9227                   MOV.W       L329+2,R2  ; H'00AA
+    00000120 2321                   MOV.W       R2,@R3
+                          ; File 29fxxx.c  , Line 251      ; expression statement
+    00000122 9326                   MOV.W       L329+4,R3  ; H'0554
+    00000124 D014                   MOV.L       L329+10,R0 ; L237
+    00000126 6102                   MOV.L       @R0,R1
+    00000128 313C                   ADD         R3,R1
+    0000012A E255                   MOV         #85,R2
+    0000012C 2121                   MOV.W       R2,@R1
+                          ; File 29fxxx.c  , Line 252      ; expression statement
+    0000012E 921E                   MOV.W       L329,R2    ; H'0AAA
+    00000130 D011                   MOV.L       L329+10,R0 ; L237
+    00000132 6102                   MOV.L       @R0,R1
+    00000134 312C                   ADD         R2,R1
+    00000136 E310                   MOV         #16,R3
+    00000138 2131                   MOV.W       R3,@R1
+                          ; File 29fxxx.c  , Line 254      ; expression statement
+    0000013A E101                   MOV         #1,R1
+    0000013C 2F11                   MOV.W       R1,@R15
+                          ; File 29fxxx.c  , Line 255      ; for
+    0000013E E000                   MOV         #0,R0
+    00000140 81F1                   MOV.W       R0,@(2,R15)
+    00000142 A009                   BRA         L303
+    00000144 0009                   NOP
+    00000146              L304:                             
+                          ; File 29fxxx.c  , Line 256      ; block
+                          ; File 29fxxx.c  , Line 257      ; expression statement
+    00000146 85F1                   MOV.W       @(2,R15),R0
+    00000148 6403                   MOV         R0,R4
+    0000014A 644D                   EXTU.W      R4,R4
+    0000014C B092                   BSR         L238
+    0000014E 0009                   NOP
+    00000150 2F01                   MOV.W       R0,@R15
+    00000152 85F1                   MOV.W       @(2,R15),R0
+    00000154 7001                   ADD         #1,R0
+    00000156 81F1                   MOV.W       R0,@(2,R15)
+    00000158              L303:                             
+    00000158 85F1                   MOV.W       @(2,R15),R0
+    0000015A 600D                   EXTU.W      R0,R0
+    0000015C E313                   MOV         #19,R3
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    5
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000015E 3032                   CMP/HS      R3,R0
+    00000160 8BF1                   BF          L304
+                          ; File 29fxxx.c  , Line 260      ; expression statement
+    00000162 BF55                   BSR         L239
+    00000164 0009                   NOP
+                          ; File 29fxxx.c  , Line 261      ; block
+    00000166 7F04                   ADD         #4,R15
+    00000168 4F26                   LDS.L       @R15+,PR
+    0000016A 000B                   RTS
+    0000016C 0009                   NOP
+    0000016E              L329:                             
+    0000016E 0AAA                   .DATA.W     H'0AAA
+    00000170 00AA                   .DATA.W     H'00AA
+    00000172 0554                   .DATA.W     H'0554
+    00000174 0080                   .DATA.W     H'0080
+    00000176 00000002               .RES.W      1
+    00000178 <00000000>             .DATA.L     L237
+                          ; File 29fxxx.c  , Line 264      ; block
+    0000017C              L242:                            ; function: flash_pooling_word
+                                                           ; frame size=12
+    0000017C 7FF4                   ADD         #-12,R15
+    0000017E 1F42                   MOV.L       R4,@(8,R15)
+    00000180 61F3                   MOV         R15,R1
+    00000182 7106                   ADD         #6,R1
+    00000184 2151                   MOV.W       R5,@R1
+                          ; File 29fxxx.c  , Line 266      ; block
+                          ; File 29fxxx.c  , Line 271      ; expression statement
+    00000186 E001                   MOV         #1,R0
+    00000188 81F1                   MOV.W       R0,@(2,R15)
+                          ; File 29fxxx.c  , Line 272      ; expression statement
+                          ; File 29fxxx.c  , Line 274      ; while
+    0000018A A02A                   BRA         L305
+    0000018C 0009                   NOP
+    0000018E              L306:                             
+                          ; File 29fxxx.c  , Line 275      ; block
+                          ; File 29fxxx.c  , Line 276      ; expression statement
+    0000018E 50F2                   MOV.L       @(8,R15),R0
+    00000190 6001                   MOV.W       @R0,R0
+    00000192 81F2                   MOV.W       R0,@(4,R15)
+                          ; File 29fxxx.c  , Line 277      ; if
+    00000194 85F2                   MOV.W       @(4,R15),R0
+    00000196 600D                   EXTU.W      R0,R0
+    00000198 C980                   AND         #128,R0
+    0000019A 6303                   MOV         R0,R3
+    0000019C 85F3                   MOV.W       @(6,R15),R0
+    0000019E 600D                   EXTU.W      R0,R0
+    000001A0 C980                   AND         #128,R0
+    000001A2 3300                   CMP/EQ      R0,R3
+    000001A4 8919                   BT          L307
+                          ; File 29fxxx.c  , Line 278      ; block
+                          ; File 29fxxx.c  , Line 279      ; if
+    000001A6 85F2                   MOV.W       @(4,R15),R0
+    000001A8 600D                   EXTU.W      R0,R0
+    000001AA C820                   TST         #32,R0
+    000001AC 8913                   BT          L308
+                          ; File 29fxxx.c  , Line 280      ; block
+                          ; File 29fxxx.c  , Line 281      ; expression statement
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    6
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    000001AE E000                   MOV         #0,R0
+    000001B0 81F1                   MOV.W       R0,@(2,R15)
+                          ; File 29fxxx.c  , Line 282      ; expression statement
+    000001B2 50F2                   MOV.L       @(8,R15),R0
+    000001B4 6001                   MOV.W       @R0,R0
+    000001B6 81F2                   MOV.W       R0,@(4,R15)
+                          ; File 29fxxx.c  , Line 283      ; if
+    000001B8 85F2                   MOV.W       @(4,R15),R0
+    000001BA 600D                   EXTU.W      R0,R0
+    000001BC C980                   AND         #128,R0
+    000001BE 6303                   MOV         R0,R3
+    000001C0 85F3                   MOV.W       @(6,R15),R0
+    000001C2 600D                   EXTU.W      R0,R0
+    000001C4 C980                   AND         #128,R0
+    000001C6 3300                   CMP/EQ      R0,R3
+    000001C8 8903                   BT          L309
+                          ; File 29fxxx.c  , Line 284      ; block
+                          ; File 29fxxx.c  , Line 285      ; expression statement
+    000001CA E300                   MOV         #0,R3
+    000001CC 2F31                   MOV.W       R3,@R15
+    000001CE A002                   BRA         L310
+    000001D0 0009                   NOP
+    000001D2              L309:                             
+                          ; File 29fxxx.c  , Line 288      ; block
+                          ; File 29fxxx.c  , Line 289      ; expression statement
+    000001D2 E101                   MOV         #1,R1
+    000001D4 2F11                   MOV.W       R1,@R15
+    000001D6              L310:                             
+    000001D6              L308:                             
+    000001D6 A004                   BRA         L311
+    000001D8 0009                   NOP
+    000001DA              L307:                             
+                          ; File 29fxxx.c  , Line 294      ; block
+                          ; File 29fxxx.c  , Line 295      ; expression statement
+    000001DA E000                   MOV         #0,R0
+    000001DC 81F1                   MOV.W       R0,@(2,R15)
+                          ; File 29fxxx.c  , Line 296      ; expression statement
+    000001DE E301                   MOV         #1,R3
+    000001E0 2F31                   MOV.W       R3,@R15
+    000001E2              L311:                             
+    000001E2              L305:                             
+    000001E2 85F1                   MOV.W       @(2,R15),R0
+    000001E4 600D                   EXTU.W      R0,R0
+    000001E6 8801                   CMP/EQ      #1,R0
+    000001E8 89D1                   BT          L306
+                          ; File 29fxxx.c  , Line 300      ; return
+    000001EA 60F1                   MOV.W       @R15,R0
+    000001EC 7F0C                   ADD         #12,R15
+    000001EE 000B                   RTS
+    000001F0 0009                   NOP
+                          ; File 29fxxx.c  , Line 301      ; block
+    000001F2              L312:                             
+    000001F2 7F0C                   ADD         #12,R15
+    000001F4 000B                   RTS
+    000001F6 0009                   NOP
+                          ; File 29fxxx.c  , Line 304      ; block
+    000001F8              _flash_write_proc:               ; function: flash_write_proc
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    7
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+                                                           ; frame size=24
+    000001F8 4F22                   STS.L       PR,@-R15
+    000001FA 7FEC                   ADD         #-20,R15
+    000001FC 1F44                   MOV.L       R4,@(16,R15)
+    000001FE 1F53                   MOV.L       R5,@(12,R15)
+    00000200 1F62                   MOV.L       R6,@(8,R15)
+                          ; File 29fxxx.c  , Line 306      ; block
+                          ; File 29fxxx.c  , Line 312      ; expression statement
+    00000202 E001                   MOV         #1,R0
+    00000204 81F2                   MOV.W       R0,@(4,R15)
+                          ; File 29fxxx.c  , Line 314      ; if
+    00000206 53F2                   MOV.L       @(8,R15),R3
+    00000208 2338                   TST         R3,R3
+    0000020A 892A                   BT          L313
+                          ; File 29fxxx.c  , Line 315      ; block
+                          ; File 29fxxx.c  , Line 316      ; expression statement
+    0000020C 53F2                   MOV.L       @(8,R15),R3
+    0000020E 4301                   SHLR        R3
+    00000210 1F32                   MOV.L       R3,@(8,R15)
+                          ; File 29fxxx.c  , Line 318      ; while
+    00000212 A022                   BRA         L314
+    00000214 0009                   NOP
+    00000216              L315:                             
+                          ; File 29fxxx.c  , Line 319      ; block
+                          ; File 29fxxx.c  , Line 320      ; expression statement
+    00000216 50F4                   MOV.L       @(16,R15),R0
+    00000218 6001                   MOV.W       @R0,R0
+    0000021A 81F1                   MOV.W       R0,@(2,R15)
+                          ; File 29fxxx.c  , Line 322      ; expression statement
+    0000021C 85F1                   MOV.W       @(2,R15),R0
+    0000021E 6503                   MOV         R0,R5
+    00000220 54F3                   MOV.L       @(12,R15),R4
+    00000222 BF0F                   BSR         L240
+    00000224 0009                   NOP
+                          ; File 29fxxx.c  , Line 323      ; expression statement
+    00000226 85F1                   MOV.W       @(2,R15),R0
+    00000228 6503                   MOV         R0,R5
+    0000022A 54F3                   MOV.L       @(12,R15),R4
+    0000022C BFA6                   BSR         L242
+    0000022E 0009                   NOP
+    00000230 81F3                   MOV.W       R0,@(6,R15)
+                          ; File 29fxxx.c  , Line 324      ; if
+    00000232 600D                   EXTU.W      R0,R0
+    00000234 2008                   TST         R0,R0
+    00000236 8B03                   BF          L316
+                          ; File 29fxxx.c  , Line 325      ; block
+                          ; File 29fxxx.c  , Line 326      ; expression statement
+    00000238 E000                   MOV         #0,R0
+    0000023A 81F2                   MOV.W       R0,@(4,R15)
+    0000023C A00D                   BRA         L317
+    0000023E 0009                   NOP
+    00000240              L316:                             
+                          ; File 29fxxx.c  , Line 329      ; block
+                          ; File 29fxxx.c  , Line 330      ; expression statement
+    00000240 52F3                   MOV.L       @(12,R15),R2
+    00000242 7202                   ADD         #2,R2
+    00000244 1F23                   MOV.L       R2,@(12,R15)
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    8
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+                          ; File 29fxxx.c  , Line 331      ; expression statement
+    00000246 53F4                   MOV.L       @(16,R15),R3
+    00000248 7302                   ADD         #2,R3
+    0000024A 1F34                   MOV.L       R3,@(16,R15)
+                          ; File 29fxxx.c  , Line 332      ; expression statement
+    0000024C 51F2                   MOV.L       @(8,R15),R1
+    0000024E 71FF                   ADD         #-1,R1
+    00000250 1F12                   MOV.L       R1,@(8,R15)
+                          ; File 29fxxx.c  , Line 333      ; if
+    00000252 2118                   TST         R1,R1
+    00000254 8B01                   BF          L318
+                          ; File 29fxxx.c  , Line 334      ; block
+                          ; File 29fxxx.c  , Line 335      ; expression statement
+    00000256 E000                   MOV         #0,R0
+    00000258 81F2                   MOV.W       R0,@(4,R15)
+    0000025A              L318:                             
+    0000025A              L317:                             
+    0000025A              L314:                             
+    0000025A 85F2                   MOV.W       @(4,R15),R0
+    0000025C 600D                   EXTU.W      R0,R0
+    0000025E 8801                   CMP/EQ      #1,R0
+    00000260 89D9                   BT          L315
+    00000262              L313:                             
+                          ; File 29fxxx.c  , Line 341      ; return
+    00000262 85F3                   MOV.W       @(6,R15),R0
+    00000264 7F14                   ADD         #20,R15
+    00000266 4F26                   LDS.L       @R15+,PR
+    00000268 000B                   RTS
+    0000026A 0009                   NOP
+                          ; File 29fxxx.c  , Line 342      ; block
+    0000026C              L319:                             
+    0000026C 7F14                   ADD         #20,R15
+    0000026E 4F26                   LDS.L       @R15+,PR
+    00000270 000B                   RTS
+    00000272 0009                   NOP
+                          ; File 29fxxx.c  , Line 345      ; block
+    00000274              L238:                            ; function: erase_check
+                                                           ; frame size=20
+    00000274 4F22                   STS.L       PR,@-R15
+    00000276 7FF0                   ADD         #-16,R15
+    00000278 1F43                   MOV.L       R4,@(12,R15)
+                          ; File 29fxxx.c  , Line 346      ; block
+                          ; File 29fxxx.c  , Line 351      ; expression statement
+    0000027A 52F3                   MOV.L       @(12,R15),R2
+    0000027C 4208                   SHLL2       R2
+    0000027E D018                   MOV.L       L330+2,R0  ; _SectorAddress
+    00000280 032E                   MOV.L       @(R0,R2),R3
+    00000282 D218                   MOV.L       L330+6,R2  ; L237
+    00000284 6122                   MOV.L       @R2,R1
+    00000286 331C                   ADD         R1,R3
+    00000288 1F31                   MOV.L       R3,@(4,R15)
+                          ; File 29fxxx.c  , Line 352      ; for
+    0000028A 52F3                   MOV.L       @(12,R15),R2
+    0000028C 4208                   SHLL2       R2
+    0000028E D014                   MOV.L       L330+2,R0  ; _SectorAddress
+    00000290 032E                   MOV.L       @(R0,R2),R3
+    00000292 1F32                   MOV.L       R3,@(8,R15)
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    9
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000294 A014                   BRA         L320
+    00000296 0009                   NOP
+    00000298              L321:                             
+                          ; File 29fxxx.c  , Line 353      ; block
+                          ; File 29fxxx.c  , Line 354      ; expression statement
+    00000298 D513                   MOV.L       L330+10,R5 ; H'0000FFFF
+    0000029A 54F1                   MOV.L       @(4,R15),R4
+    0000029C BF6E                   BSR         L242
+    0000029E 0009                   NOP
+    000002A0 81F1                   MOV.W       R0,@(2,R15)
+                          ; File 29fxxx.c  , Line 355      ; expression statement
+    000002A2 53F1                   MOV.L       @(4,R15),R3
+    000002A4 7302                   ADD         #2,R3
+    000002A6 1F31                   MOV.L       R3,@(4,R15)
+                          ; File 29fxxx.c  , Line 356      ; if
+    000002A8 85F1                   MOV.W       @(2,R15),R0
+    000002AA 2008                   TST         R0,R0
+    000002AC 8B05                   BF          L322
+                          ; File 29fxxx.c  , Line 357      ; block
+                          ; File 29fxxx.c  , Line 358      ; expression statement
+    000002AE 51F3                   MOV.L       @(12,R15),R1
+    000002B0 7101                   ADD         #1,R1
+    000002B2 4108                   SHLL2       R1
+    000002B4 D00A                   MOV.L       L330+2,R0  ; _SectorAddress
+    000002B6 021E                   MOV.L       @(R0,R1),R2
+    000002B8 1F22                   MOV.L       R2,@(8,R15)
+    000002BA              L322:                             
+    000002BA 53F2                   MOV.L       @(8,R15),R3
+    000002BC 7302                   ADD         #2,R3
+    000002BE 1F32                   MOV.L       R3,@(8,R15)
+    000002C0              L320:                             
+    000002C0 52F3                   MOV.L       @(12,R15),R2
+    000002C2 7201                   ADD         #1,R2
+    000002C4 4208                   SHLL2       R2
+    000002C6 D006                   MOV.L       L330+2,R0  ; _SectorAddress
+    000002C8 032E                   MOV.L       @(R0,R2),R3
+    000002CA 51F2                   MOV.L       @(8,R15),R1
+    000002CC 3132                   CMP/HS      R3,R1
+    000002CE 8BE3                   BF          L321
+                          ; File 29fxxx.c  , Line 361      ; expression statement
+    000002D0 BE9E                   BSR         L239
+    000002D2 0009                   NOP
+                          ; File 29fxxx.c  , Line 362      ; return
+    000002D4 85F1                   MOV.W       @(2,R15),R0
+    000002D6 7F10                   ADD         #16,R15
+    000002D8 4F26                   LDS.L       @R15+,PR
+    000002DA 000B                   RTS
+    000002DC 0009                   NOP
+    000002DE              L330:                             
+    000002DE 00000002               .RES.W      1
+    000002E0 <00000000>             .DATA.L     _SectorAddress
+    000002E4 <00000000>             .DATA.L     L237
+    000002E8 0000FFFF               .DATA.L     H'0000FFFF
+                          ; File 29fxxx.c  , Line 363      ; block
+    000002EC              L323:                             
+    000002EC 7F10                   ADD         #16,R15
+    000002EE 4F26                   LDS.L       @R15+,PR
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE   10
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    000002F0 000B                   RTS
+    000002F2 0009                   NOP
+                          ; File 29fxxx.c  , Line 366      ; block
+    000002F4              _flash_erase_proc:               ; function: flash_erase_proc
+                                                           ; frame size=16
+    000002F4 4F22                   STS.L       PR,@-R15
+    000002F6 7FF4                   ADD         #-12,R15
+    000002F8 63F3                   MOV         R15,R3
+    000002FA 730A                   ADD         #10,R3
+    000002FC 2341                   MOV.W       R4,@R3
+                          ; File 29fxxx.c  , Line 367      ; block
+                          ; File 29fxxx.c  , Line 373      ; expression statement
+    000002FE E001                   MOV         #1,R0
+    00000300 81F4                   MOV.W       R0,@(8,R15)
+                          ; File 29fxxx.c  , Line 375      ; if
+    00000302 85F5                   MOV.W       @(10,R15),R0
+    00000304 600D                   EXTU.W      R0,R0
+    00000306 E313                   MOV         #19,R3
+    00000308 3032                   CMP/HS      R3,R0
+    0000030A 890D                   BT          L324
+                          ; File 29fxxx.c  , Line 376      ; block
+                          ; File 29fxxx.c  , Line 377      ; expression statement
+    0000030C 85F5                   MOV.W       @(10,R15),R0
+    0000030E 6403                   MOV         R0,R4
+    00000310 BEB5                   BSR         L241
+    00000312 0009                   NOP
+                          ; File 29fxxx.c  , Line 378      ; expression statement
+    00000314 85F5                   MOV.W       @(10,R15),R0
+    00000316 6403                   MOV         R0,R4
+    00000318 644D                   EXTU.W      R4,R4
+    0000031A BFAB                   BSR         L238
+    0000031C 0009                   NOP
+    0000031E 81F4                   MOV.W       R0,@(8,R15)
+                          ; File 29fxxx.c  , Line 380      ; expression statement
+    00000320 BE76                   BSR         L239
+    00000322 0009                   NOP
+    00000324 A002                   BRA         L325
+    00000326 0009                   NOP
+    00000328              L324:                             
+                          ; File 29fxxx.c  , Line 383      ; block
+                          ; File 29fxxx.c  , Line 384      ; expression statement
+    00000328 9009                   MOV.W       L331,R0    ; H'00FF
+    0000032A 81F4                   MOV.W       R0,@(8,R15)
+    0000032C              L325:                             
+                          ; File 29fxxx.c  , Line 387      ; return
+    0000032C 85F4                   MOV.W       @(8,R15),R0
+    0000032E 7F0C                   ADD         #12,R15
+    00000330 4F26                   LDS.L       @R15+,PR
+    00000332 000B                   RTS
+    00000334 0009                   NOP
+                          ; File 29fxxx.c  , Line 388      ; block
+    00000336              L326:                             
+    00000336 7F0C                   ADD         #12,R15
+    00000338 4F26                   LDS.L       @R15+,PR
+    0000033A 000B                   RTS
+    0000033C 0009                   NOP
+    0000033E              L331:                             
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE   11
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000033E 00FF                   .DATA.W     H'00FF
+C   00000000              _SectorAddress:                  ; static: SectorAddress
+    00000000 0000000000             .DATA.L     H'00000000,H'00004000,H'00006000,H'00008000,H'00010000,H'00020000,H'00030000,
+             0040000000 +                       H'00040000,H'00050000,H'00060000,H'00070000,H'00080000,H'00090000,H'000A0000,
+             6000000080 +                       H'000B0000,H'000C0000,H'000D0000,H'000E0000,H'000F0000,H'00100000
+             0000010000   
+             0002000000   
+             0300000004   
+             0000000500   
+             0000060000   
+             0007000000   
+             0800000009   
+             0000000A00   
+             00000B0000   
+             000C000000   
+             0D0000000E   
+             0000000F00   
+             0000100000   
+B   00000000              L237:                            ; static: offset_addr
+    00000000 00000004               .RES.L      1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:34  PAGE    1
+
+
+******** STATISTICS INFORMATION ********
+
+
+********** ERROR INFORMATION ***********
+
+NUMBER OF ERRORS:           0
+NUMBER OF WARNINGS:         0
+
+
+
+
+******* SOURCE LINE INFORMATION ********
+
+COMPILED SOURCE LINE:      388
+
+
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION (P):                               00000340 Byte(s)
+CONSTANT SECTION (C):                               00000050 Byte(s)
+DATA     SECTION (D):                               00000000 Byte(s)
+BSS      SECTION (B):                               00000004 Byte(s)
+
+ TOTAL PROGRAM SIZE: 00000394 Byte(s)
+
+
+
+********** LABEL INFORMATION ***********
+
+NUMBER OF EXTERNAL REFERENCE SYMBOLS:            0
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:           5
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:            40
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** COMMAND PARAMETER ***
+
+
+  /op=0 /cpu=SH3 /endian=b /define=_SHC3_ /show=ob,noso /list 29fxxx.c 
+

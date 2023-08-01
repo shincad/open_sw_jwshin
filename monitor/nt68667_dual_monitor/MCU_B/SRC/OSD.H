@@ -1,0 +1,355 @@
+#ifndef _OSD_H
+#define _OSD_H
+
+#include "Board.H"
+
+// OSD Palette Data
+#define BLACK		0x0000
+#define RED			0xf800
+#define GREEN		0x07e0
+#define BLUE		0x001F
+#define CYAN		(BLUE|GREEN)
+#define MAGENTA		(RED|BLUE)
+#define YELLOW		(RED|GREEN)
+#define WHITE		(RED|GREEN|BLUE)
+#define TBLACK		BLACK
+#define TRED		0x7800
+#define TGREEN		0x01e0
+#define TBLUE		0x000F
+#define TCYAN		0x0410//(TBLUE|TGREEN)
+#define LF_COLOR	0xdf1e//(TRED|TBLUE)
+#define TYELLOW		(TRED|TGREEN)
+#define GRAY		0xc618//(TRED|TGREEN|TBLUE)
+
+#define iBLACK		0
+#define iRED		2
+#define iGREEN		1
+#define iBLUE		3
+#define iCYAN		4
+#define iMAGENTA	5
+#define iYELLOW		6
+#define iWHITE		7
+#define iTBLACK		8
+#define iTRED		9
+#define iTGREEN		10
+#define iTBLUE		11
+#define iTCYAN		12
+#define iLF_COLOR	13
+#define iTYELLOW	14
+#define iGRAY		15
+
+
+#define MainFrameColor		(((iWHITE-1)<<8)|(iTCYAN<<4)|0x0002)
+#define TitleTextColor		(((iWHITE-1)<<8)|(iTGREEN<<4)|0x0002)
+#define SubFrameColor		(((iTGREEN-1)<<8)|(iWHITE<<4)|0x0002)
+#define MainIcon16Color1	(((0x10)<<8)|(iTCYAN<<4)|0x0c|0x0002)
+#define MainIcon16Color2	(((0x20)<<8)|(iTCYAN<<4)|0x0c|0x0002)
+#define MainIcon4Color1 	(((0x30)<<8)|(iTCYAN<<4)|0x08|0x0002)
+#define MainIcon4Color2 	(((0x34)<<8)|(iTCYAN<<4)|0x08|0x0002)
+#define MainIcon4Color3 	(((0x38)<<8)|(iTCYAN<<4)|0x08|0x0002)
+#define SliderColor			(((iMAGENTA-1)<<8)|(iLF_COLOR<<4)|0x0002)
+#define DisableColor		(((iGRAY-1)<<8)|(iWHITE<<4)|0x0002)
+#define DirectWarningColor	(((iRED-1)<<8)|(iLF_COLOR<<4))
+#define WarningColor		(((iRED-1)<<8)|(iWHITE<<4))
+#define LFDemoStrColor		(((iWHITE-1)<<8)|(iBLACK<<4))
+
+#define LeftFrameColor		(((iTBLUE-1)<<8)|(iLF_COLOR<<4)|0x0002)
+
+// FACTORY MENU
+#define FactoryColorW 		(((iWHITE-1)<<8)|(iTBLACK<<4))
+#define FactoryColorR 		(((iRED-1)<<8)|(iTBLACK<<4))
+
+
+#define AgingColor1			(((iWHITE-1)<<8)|(iBLACK<<4))
+#define AgingColor2			(((iTBLACK-1)<<8)|(iBLACK<<4))
+
+#ifdef __NVT_PWR_STR__
+#define LF_PWR_CLR1		0x6A18
+#define LF_PWR_CLR2		0x6D08
+#define LF_PWR_CLR3		0x711C
+#define LF_PWR_CLR4		0x781C
+#define LF_TM_CLR		0x4518
+#else
+#define LF_SEL_BTM		0x710C
+#define LF_UNSEL_BTM	0x6A0C
+#endif
+
+#define LF_OSD_WIDTH 18
+#define LF_OSD_HIGHT 14
+
+#define LF_CHAR_Width 12
+#define LF_CHAR_Height 18
+
+#define OSD_MAIN_WIDTH	32
+#define OSD_MAIN_HEIGHT	17//20
+
+#define OSD_FACTORY_W 24
+#define OSD_FACTORY_H 22//18
+
+#define OSD2_WIDTH	25
+#define OSD2_HIGHT	8
+
+#define OSD_SRC_W	LF_OSD_WIDTH
+#define OSD_SRC_H	12
+
+#define OSD_ZoomX 1
+#define OSD_ZoomY 1
+#define CHAR_Width 12
+#define CHAR_Height 18
+
+
+#define MaxMoveX (PanelWidth - (CHAR_Width * OSD_ZoomX * OSD2_WIDTH))//		/6
+#define MaxMoveY (PanelHeight - (CHAR_Height * OSD_ZoomY * OSD2_HIGHT))// 	/6
+
+#define MainIconWinCtrl 2
+#define MainIconWinSel 0
+#define SubIconWinCtrl 4
+#define SubIconWinSel 1
+
+enum OSDTYPE {
+	OSDOFF,				// 0 = OSD Off
+	MAIN_MENU,				// 1 = main
+	SUB_MENU,
+	SHOW_SLDR,				// 2 = ShowSliderBar/data
+	DIRECT_MENU,			// 4 = direct brightness/volume
+	
+	LF_MAIN_MENU,		// 5 = LightFrame main menu
+	
+	LFDEMO,
+	
+	LOCK_MSG,		// 6 = OSD LOCK/UNLOCK MSG
+	POWER_ON_LOGO,
+	SOURCE_MSG,
+	BEST_MSG,
+	DDCCI_MSG,
+	AUTO_SIGNAL,			// 7 = auto/No Input Signal...
+	NOSIGNAL,
+	OUT_RANGE2,		// 10 = out of range 2
+	OUT_RANGE,				// 11 = out of range 1 / disconnected
+	THEFT_OSD,
+	FACTORY				// 16 = factory menu
+};
+extern xdata enum OSDTYPE 		ucOSDType;
+
+
+enum OSDLevel_1 {
+	mLUMINANCE,
+	mPICTURE,
+	mCOLOR,
+	mOSDSETTING,
+	mSETUP
+};
+extern xdata enum OSDLevel_1	ucOSDLvl1_Cursor;
+extern xdata unsigned char	ucOSDLvl2_Cursor;
+extern xdata unsigned char	ucOSDLvl3_Cursor;
+
+enum OSD_L2_Luminance {
+	mLuminance_Brightness,
+	mLuminance_Contrast,
+	mLuminance_Saturation,
+	mLuminance_Tint,
+	mFactory
+};
+
+
+enum OSD_L2_Picture {
+	mPicture_Phase,
+	mPicture_Clock,
+	mPicture_HPos,
+	mPicture_VPos
+};
+
+enum OSD_L2_Audio {
+	mAudio_StandAlone,
+	mAudio_Mute
+};
+
+enum OSD_L2_Color {
+	mColor_Tempk,
+	mColor_User_R,
+	mColor_User_G,
+	mColor_User_B
+};
+enum OSD_L3_Color {
+	mColor_6500K,
+	mColor_7500K,
+	mColor_9300K,
+	mColor_sRGB,
+	mColor_User
+};
+
+enum OSD_L2_OSDSetting {
+	mOSDSetting_Horizontal,
+	mOSDSetting_Vertical,
+	mOSDSetting_Transparency,
+	mOSDSetting_OSDTimeout
+};
+
+enum OSD_L2_Setup {
+	mSetup_Language,
+	mSetup_AudioMute,
+	mSetup_Input,
+	mSetup_DCR,
+#ifdef DFR_MODE
+	mSetup_DFR,
+#endif
+#if _Enable_OD_ == ON
+	mSetup_OD,
+#endif
+	mSetup_Reset
+};
+
+enum OSD_L3_Language {
+	mENGLISH,
+	mSPANISH,
+	mFRENCH,	
+	mGERMAN,	
+	mITALIAN,
+	mPORTUGUESE,
+	mRUSSIAN,
+	mCHINESE_S,
+	LANG_NUM
+};
+
+enum OSD_L3_Source {
+	mSource_VGA,
+	mSource_DVI,
+	mSource_HDMI,
+	mSource_VIDEO
+};
+
+enum OSD_OnOffMenu {
+	mOff,
+	mOn
+};
+
+enum OSD_YesNoMenu {
+	mNo,
+	mYes
+};
+
+
+
+enum OSD_DirectMenu {
+	mDirect_Volume,
+	mDirect_Brightness,
+	mDirect_Source,
+	mDirect_Contrast,
+	mDirect_ColorTemp
+};
+
+
+
+
+void WriteSequenceScaler(unsigned char addr,unsigned char *p);
+void LoadFont();
+void OsdInit(unsigned char x,unsigned char y);
+void MainMenu(void);
+void SetPosition(unsigned char, unsigned char);
+void ClearOSD(void);
+void OSD_OFF(void);
+
+void SaveData(void);
+void ShowAutoAdj(void);
+void ShowNoVideo(void);
+void ShowBestResultMsg(void);
+void ShowSourceMsg(void);
+void ShowNotAvailable(void);
+void ShowOutOfRangeOver(void);
+void ShowNoSync(void);
+void ShowDisconnected(void);
+void ShowOutOfRange85Hz(void);
+void ShowOSD_Lock(void);
+void ShowDDCCiOnOff(void);
+void SetMovePosition(void);
+void ShowAging(unsigned char i);
+void OSDinLock();
+
+void WriteXY_Char(unsigned char Attr,unsigned char x,unsigned char y,unsigned char letter);
+void WriteXY_Line(unsigned char x,unsigned char y,unsigned char l,unsigned char k);
+void WriteArialFont(unsigned char *p);
+void WriteCharFont(void);
+void WriteXY_String(unsigned char Attr,unsigned char x,unsigned char y);
+void ShowNum(unsigned char Attr,unsigned char xx,unsigned char yy,unsigned char value);
+void WriteXY_StrScaler(unsigned char Attr,unsigned char x,unsigned char y,unsigned char *p);
+void ShowAudioMenu(bit);
+void ShowRed();
+void ShowGreen();
+void ShowBlue();
+
+
+
+void SubMenuSelect(unsigned char );
+void SelectLFMITM(void);
+void ShowResolution(unsigned char x,unsigned char y);
+void ShowSerialNo(unsigned char,unsigned char);
+void FillLineAttr(unsigned char x,unsigned char y,unsigned char l,unsigned short Attr);
+
+void ShowBrightness(void);
+void ShowContrast(void);
+void ShowStandAlone(void);
+void ShowTransparency();
+void ShowClock(void);
+void ShowPhase(void);
+void ShowHP(void);
+void ShowVP(void);
+
+
+void ShowSliderBar(unsigned char xx,unsigned char yy,unsigned char value);
+
+void ExitKey();
+void ItemUp(void);
+void ItemDown(void);
+
+void HotKey(void);
+void ValueDown(void);
+void MainOSD(void);
+void SetOSDAtCenter();
+void SourceMenu();
+void ShowDirectVolumeMenu(void);
+void ShowDirectContrastMenu(void);
+void ShowDirectBrightnessMenu();
+void WriteStringScaler(unsigned char Attr,unsigned char *p);
+
+
+
+void ShowTheftOSD(void);
+void SourceToAuto();
+void ChangeInputSource();
+
+void WriteColorIcon(unsigned char *p);
+void SelectMainIcon(void);
+void ShowSubMenu(void);
+void SelectSubItem(void);
+void ShowAdjustMenu(void);
+void ShowColorMenu(void);
+void SelectColorTemp(void);
+void ShowOSD_X();
+void ShowOSD_Y();
+void ShowOSD_Timer();
+void ShowLanguageMenu(void);
+void SelectLanguage(void);
+void ShowInputMenu(void);
+void SelectInput(void);
+void ShowYesNoMenu(void);
+void SelectYesNo(void);
+void ShowOnOffMenu(void);
+void ShowVolume(void);
+void CheckColorTemperature(void);
+void ShowSaturation();
+void ShowTint();
+
+void ShowOSD_Debug(unsigned char Val);			// +jwshin 110418
+void ShowMonSelMsg(unsigned char Val);
+void ShowRGBStatus(void);
+
+void MainIconWinOff(void);
+void SelectMainIconWin(void);
+void MainIconWinOn(void);
+void SubIconWinOff(void);
+void SelectSubIconWin(void);
+void SubIconWinOn(void);
+void OSD_ON(void);
+void ShowTitleGradient(void);
+
+#endif

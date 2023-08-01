@@ -1,0 +1,1424 @@
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE OSD_TAB2
+OBJECT MODULE PLACED IN .\BIN\OSD_Tab2.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\OSD_Tab2.c OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST
+                    -\OSD_Tab2.lst) OBJECT(.\BIN\OSD_Tab2.obj)
+
+stmt level    source
+
+   1          #include "MYDEF.H"
+   2          #include "OSD.H"
+   3          #include "OSD_tab.H"
+   4          //Brightness
+   5          code unsigned char ENG_BRIGHT[]={
+   6                  10,"Brightness"
+   7          };
+   8          code unsigned char FRA_BRIGHT[]={
+   9                  10,"Luminosit" 
+  10          };
+  11          code unsigned char DEU_BRIGHT[]={
+  12                  10,"Helligkeit"
+  13          };
+  14          code unsigned char ESP_BRIGHT[]={
+  15                  11,"Luminosidad"
+  16          };
+  17          code unsigned char ITA_BRIGHT[]={
+  18                  10,"Luminosit"
+  19          };
+  20          code unsigned char JAP_BRIGHT[]={
+  21                  6,_J08,_J09,_J0a,_J0b,_J0c,_J0d
+  22          };
+  23          code unsigned char CHT_BRIGHT[]={
+  24                  2,_C1c,_C1d
+  25          };
+  26          code unsigned char CHI_BRIGHT[]={
+  27                  2,_C1c,_C1d
+  28          };
+  29          code unsigned char RUS_BRIGHT[]={
+  30                  7,_P01,_p,_P00,_o,_c,_P05,_b
+  31          };
+  32          //Contrast
+  33          code unsigned char ENG_CONTRAST[]={
+  34                  8,"Contrast"
+  35          };
+  36          code unsigned char FRA_CONTRAST[]={
+  37                  9,"Contraste"
+  38          };
+  39          code unsigned char DEU_CONTRAST[]={
+  40                  8,"Kontrast"
+  41          };
+  42          code unsigned char ESP_CONTRAST[]={
+  43                  9,"Contraste"
+  44          };
+  45          code unsigned char ITA_CONTRAST[]={
+  46                  9,"Contrasto"
+  47          };
+  48          code unsigned char JAP_CONTRAST[]={
+  49                  6,_J02,_J0e,_J0b,_J09,_J0d,_J0b
+  50          };
+  51          code unsigned char CHT_CONTRAST[]={
+  52                  2,_C52,_C21
+  53          };
+  54          code unsigned char CHI_CONTRAST[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 2   
+
+  55                  2,_C20,_C21
+  56          };
+  57          code unsigned char RUS_CONTRAST[]={
+  58                  9,_P06,_P07,_e,_P05,_P04,_o,_c,_P05,_b
+  59          };
+  60          //Phase
+  61          code unsigned char ENG_PHASE[]={
+  62                  5,"Phase"
+  63          };
+  64          code unsigned char FRA_PHASE[]={
+  65                  5,"Phase"
+  66          };
+  67          code unsigned char DEU_PHASE[]={
+  68                  5,"Phase"};
+  69          code unsigned char ESP_PHASE[]={
+  70                  4,"Fase"
+  71          };
+  72          code unsigned char ITA_PHASE[]={
+  73                  5,"Phase"
+  74          };
+  75          code unsigned char JAP_PHASE[]={
+  76                  4,_J05,_J12,_J03,_J2a
+  77          };
+  78          code unsigned char RUS_PHASE[]={
+  79                  4,_P0d,_a,_3,_a
+  80          };
+  81          code unsigned char CHT_PHASE[]={
+  82                  2,_C22,_C14
+  83          };
+  84          code unsigned char CHI_PHASE[]={
+  85                  2,_C22,_C14
+  86          };
+  87          //Clock
+  88          code unsigned char ENG_CLOCK[]={
+  89                  5,"Clock"
+  90          };
+  91          code unsigned char FRA_CLOCK[]={
+  92                  7,"Horoge"
+  93          };
+  94          code unsigned char DEU_CLOCK[]={
+  95                  4,"Takt"
+  96          };
+  97          code unsigned char ESP_CLOCK[]={
+  98                  5,"Reloj"       
+  99          };
+ 100          code unsigned char ITA_CLOCK[]={
+ 101                  5,"Clock"
+ 102          };
+ 103          code unsigned char JAP_CLOCK[]={
+ 104                  4,_J0f,_J10,_J11,_J0f
+ 105          };
+ 106          code unsigned char RUS_CLOCK[]={
+ 107                  7,_P0c,_a,_c,_P05,_o,_P05,_a
+ 108          };
+ 109          code unsigned char CHT_CLOCK[]={
+ 110                  4,_C12,_C13,_C57,_C1d
+ 111          };
+ 112          code unsigned char CHI_CLOCK[]={
+ 113                  4,_C12,_C13,_C4d,_C1d
+ 114          };
+ 115          //H position
+ 116          code unsigned char ENG_HPOS[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 3   
+
+ 117                  10,"H.Position"
+ 118          };
+ 119          code unsigned char FRA_HPOS[]={
+ 120                  10,"Position-H"
+ 121          };
+ 122          code unsigned char DEU_HPOS[]={
+ 123                  10,"H-Position"
+ 124          };
+ 125          code unsigned char ESP_HPOS[]={
+ 126                  10,"Posicin-H"
+ 127          };
+ 128          code unsigned char ITA_HPOS[]={
+ 129                  11,"Posizione O"
+ 130          };
+ 131          code unsigned char JAP_HPOS[]={
+ 132                  7,_C12,_C13,_J2b,_J1b,_J11,_J2c,_J0e
+ 133          };
+ 134          code unsigned char RUS_HPOS[]={
+ 135                  12,_P1b,_o,_P19,_o,_P0e,_DOT,_P16,_o,_P0a,_o,_p,_DOT
+ 136          };
+ 137          code unsigned char CHT_HPOS[]={
+ 138                  4,_C12,_C13,_C14,_C15
+ 139          };
+ 140          code unsigned char CHI_HPOS[]={
+ 141                  4,_C12,_C13,_C14,_C15
+ 142          };
+ 143          //V position
+ 144          code unsigned char ENG_VPOS[]={
+ 145                  10,"V.Position"
+ 146          };
+ 147          code unsigned char FRA_VPOS[]={
+ 148                  10,"Position-V"
+ 149          };
+ 150          code unsigned char DEU_VPOS[]={
+ 151                  10,"V-Position"
+ 152          };
+ 153          code unsigned char ESP_VPOS[]={
+ 154                  10,"Posicin-V"
+ 155          };
+ 156          code unsigned char ITA_VPOS[]={
+ 157                  11,"Posizione V"
+ 158          };
+ 159          code unsigned char JAP_VPOS[]={
+ 160                  7,_C16,_C17,_J2b,_J1b,_J11,_J2c,_J0e
+ 161          };
+ 162          code unsigned char RUS_VPOS[]={
+ 163                  13,_P1b,_o,_P19,_o,_P0e,_DOT,_P16,_o,_P07,_e,_p,_P05,_DOT
+ 164          };
+ 165          code unsigned char CHT_VPOS[]={
+ 166                  4,_C16,_C17,_C14,_C15
+ 167          };
+ 168          code unsigned char CHI_VPOS[]={
+ 169                  4,_C16,_C17,_C14,_C15
+ 170          };
+ 171          
+ 172          //Recall
+ 173          code unsigned char ENG_RESET[]={
+ 174                  6,"Recall"
+ 175          };
+ 176          code unsigned char FRA_RESET[]={
+ 177                  6,"Rappel"
+ 178          };
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 4   
+
+ 179          code unsigned char DEU_RESET[]={
+ 180                  9,"Wiederruf"   
+ 181          };
+ 182          code unsigned char ESP_RESET[]={
+ 183                  9,"Rellamada"
+ 184          };
+ 185          code unsigned char ITA_RESET[]={
+ 186                  10,"Richiamaro"
+ 187          };
+ 188          code unsigned char JAP_RESET[]={
+ 189                  4,_J17,_J29,_J11,_J0b
+ 190          };
+ 191          code unsigned char RUS_RESET[]={
+ 192                  5,_C,_P08,_p,_o,_c
+ 193          };
+ 194          code unsigned char CHT_RESET[]={
+ 195                  2,_C28,_C15
+ 196          };
+ 197          code unsigned char CHI_RESET[]={
+ 198                  2,_C28,_C15
+ 199          };
+ 200          /*
+ 201          //Color Temperature
+ 202          code unsigned char ENG_COLOR[]={
+ 203                  17,"Color Temperature"
+ 204          };
+ 205          code unsigned char FRA_COLOR[]={
+ 206                  20,"Temperature couleurs"
+ 207          };
+ 208          code unsigned char DEU_COLOR[]={
+ 209                  14,"Farbtemperatur"
+ 210          };
+ 211          code unsigned char ESP_COLOR[]={
+ 212                  19,"Tempetatura Colores"
+ 213          };
+ 214          code unsigned char ITA_COLOR[]={
+ 215                  18,"Temperatura Colore"
+ 216          };
+ 217          code unsigned char JAP_COLOR[]={
+ 218                  3,0x81,0x82,0x86
+ 219          };
+ 220          code unsigned char CHI_COLOR[]={
+ 221                  2,0x81,0x82
+ 222          };
+ 223          code unsigned char RUS_COLOR[]={
+ 224                  18,'T','E','M',0xcf,'E','P','A',' ','T','y','P','A',' ',0xd4,'B','E','T','A'
+ 225          };
+ 226          //Language
+ 227          code unsigned char ENG_LANG[]={
+ 228                  8,"Language"
+ 229          };
+ 230          code unsigned char FRA_LANG[]={
+ 231                  6,"Langue"
+ 232          };
+ 233          code unsigned char DEU_LANG[]={
+ 234                  7,"Sprache"
+ 235          };
+ 236          code unsigned char ESP_LANG[]={
+ 237                  6,"Idioma"
+ 238          };
+ 239          code unsigned char ITA_LANG[]={
+ 240                  6,"Lingua"
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 5   
+
+ 241          };
+ 242          code unsigned char JAP_LANG[]={
+ 243                  2,0x7c,0x9a
+ 244          };
+ 245          code unsigned char CHI_LANG[]={
+ 246                  2,0x7b,0x7c
+ 247          };
+ 248          code unsigned char RUS_LANG[]={
+ 249                  4,0xc7,'3',0xc3,'K'
+ 250          };
+ 251          //Exit
+ 252          code unsigned char ENG_EXIT[]={
+ 253                  4,"Exit"
+ 254          };
+ 255          code unsigned char FRA_EXIT[]={
+ 256                  7,"Quitter"
+ 257          };
+ 258          code unsigned char DEU_EXIT[]={
+ 259                  9,"Verlassen"
+ 260          };
+ 261          code unsigned char ESP_EXIT[]={
+ 262                  5,"Salir"
+ 263          };
+ 264          code unsigned char ITA_EXIT[]={
+ 265                  6,"Uscita"
+ 266          };
+ 267          code unsigned char JAP_EXIT[]={
+ 268                  2,0xb7,0xb8
+ 269          };
+ 270          code unsigned char CHI_EXIT[]={
+ 271                  2,0x83,0x84
+ 272          };
+ 273          code unsigned char RUS_EXIT[]={
+ 274                  5,'B',0xc3,'X','O',0xd3
+ 275          };
+ 276          */
+ 277          //Sharpness
+ 278          code unsigned char ENG_SHAP[]={
+ 279                  9,"Sharpness"
+ 280          };
+ 281          code unsigned char FRA_SHAP[]={
+ 282                  7,"Nettet"
+ 283          };
+ 284          code unsigned char DEU_SHAP[]={
+ 285                  7,"Schrfe"
+ 286          };
+ 287          code unsigned char ESP_SHAP[]={
+ 288                  7,"Nitidez"
+ 289          };
+ 290          code unsigned char ITA_SHAP[]={
+ 291                  9,"Nitidezza"
+ 292          };
+ 293          code unsigned char JAP_SHAP[]={
+ 294                  6,_J06,_J07,_J03,_J08,_J0c,_J0d
+ 295          };
+ 296          code unsigned char RUS_SHAP[]={
+ 297                  8,_P,_e,_3,_P00,_o,_c,_P05,_b
+ 298          };
+ 299          code unsigned char CHT_SHAP[]={
+ 300                  3,_C2d,_C2e,_C1d
+ 301          };
+ 302          code unsigned char CHI_SHAP[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 6   
+
+ 303                  3,_C2d,_C2e,_C1d
+ 304          };
+ 305          //OSD position
+ 306          code unsigned char ENG_OSDPOS[]={
+ 307                  12,"OSD Position"
+ 308          };
+ 309          code unsigned char FRA_OSDPOS[]={
+ 310                  12,"Position OSD"
+ 311          };
+ 312          code unsigned char DEU_OSDPOS[]={
+ 313                  12,"OSD Posicion"
+ 314          };
+ 315          code unsigned char ESP_OSDPOS[]={
+ 316                  12,"Posicin OSD"
+ 317          };
+ 318          code unsigned char ITA_OSDPOS[]={
+ 319                  13,"Posizione OSD"
+ 320          };
+ 321          code unsigned char JAP_OSDPOS[]={
+ 322                  7,_O,_S,_D,_C14,_C15,_C19,_C1a
+ 323          };
+ 324          code unsigned char RUS_OSDPOS[]={
+ 325                  12,_P1b,_o,_P19,_o,_P0e,_e,_P04,_P03,_e,_Space,_P12,_M
+ 326          };
+ 327          code unsigned char CHT_OSDPOS[]={
+ 328                  4,_C0f,_C63,_C14,_C15
+ 329          };
+ 330          code unsigned char CHI_OSDPOS[]={
+ 331                  4,_C3e,_C3f,_C14,_C15
+ 332          };
+ 333          /*
+ 334          //OSD H position
+ 335          code unsigned char ENG_OSDHPOS[]={
+ 336                  12,"OSD Position"
+ 337          };
+ 338          code unsigned char FRA_OSDHPOS[]={
+ 339                  12,"Position OSD"
+ 340          };
+ 341          code unsigned char DEU_OSDHPOS[]={
+ 342                  12,"OSD Posicion"
+ 343          };
+ 344          code unsigned char ESP_OSDHPOS[]={
+ 345                  15,"Posicin de OSD"
+ 346          };
+ 347          code unsigned char ITA_OSDHPOS[]={
+ 348                  13,"Posizione OSD"
+ 349          };
+ 350          code unsigned char JAP_OSDHPOS[]={
+ 351                  7,_O,_S,_D,_C14,_C15,_C19,_C1a
+ 352          };
+ 353          code unsigned char RUS_OSDHPOS[]={
+ 354                  12,_P1b,_o,_P19,_o,_P0e,_e,_P04,_P03,_e,_Space,_P12,_M
+ 355          };
+ 356          code unsigned char CHT_OSDHPOS[]={
+ 357                  4,_C0f,_C63,_C14,_C15
+ 358          };
+ 359          code unsigned char CHI_OSDHPOS[]={
+ 360                  4,_C3e,_C3f,_C14,_C15
+ 361          };
+ 362          
+ 363          //OSD V position
+ 364          code unsigned char ENG_OSDVPOS[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 7   
+
+ 365                  21,"Vertical OSD Position"
+ 366          };
+ 367          code unsigned char FRA_OSDVPOS[]={
+ 368                  22,"Position Verticale;OSD"
+ 369          };
+ 370          code unsigned char DEU_OSDVPOS[]={
+ 371                  26,"Vertikale Position;des OSD"
+ 372          };
+ 373          code unsigned char ESP_OSDVPOS[]={
+ 374                  21,"Posicin vertical OSD"
+ 375          };
+ 376          code unsigned char ITA_OSDVPOS[]={
+ 377                  22,"Posizione verticale;OSD"
+ 378          };
+ 379          code unsigned char JAP_OSDVPOS[]={
+ 380                  7,'O','S','D',0x8d,0xa5,0x8b,0xa6
+ 381          };
+ 382          code unsigned char CHI_OSDVPOS[]={
+ 383                  7,'O','S','D',0x8d,0x8e,0x8b,0x8c
+ 384          };
+ 385          code unsigned char RUS_OSDVPOS[]={
+ 386                  29,0xcf,'O',0xd0,'O',0xce,'E','H',0xc8,'E',' ','M','E','H',0xd1,';',0xcf,'O',
+ 387                  ' ',0xcb,'O','B','E','P','T',0xc8,'K','A',0xd0,0xc8     
+ 388          };
+ 389          */
+ 390          //Auto Setting
+ 391          code unsigned char ENG_AUTOSET[]={
+ 392                  12,"Auto Setting"
+ 393          };
+ 394          code unsigned char FRA_AUTOSET[]={
+ 395                  12,"Rglage auto"
+ 396          };
+ 397          code unsigned char DEU_AUTOSET[]={
+ 398                  13,"Autom. Einst."
+ 399          };
+ 400          code unsigned char ESP_AUTOSET[]={
+ 401                  12,"Config. Auto"
+ 402          };
+ 403          code unsigned char ITA_AUTOSET[]={
+ 404                  12,"Impost. aut."
+ 405          };
+ 406          code unsigned char JAP_AUTOSET[]={
+ 407                  4,_C18,_C10,_C11,_C0e
+ 408          };
+ 409          code unsigned char RUS_AUTOSET[]={
+ 410                  13,_A,_P07,_P05,_o,_P04,_a,_c,_P05,_p,_o,_P02,_P00,_a
+ 411          };
+ 412          code unsigned char CHT_AUTOSET[]={
+ 413                  4,_C18,_C10,_C11,_C0e
+ 414          };
+ 415          code unsigned char CHI_AUTOSET[]={
+ 416                  4,_C18,_C23,_C4c,_C0e
+ 417          };
+ 418          //Transparency OSD
+ 419          code unsigned char ENG_TRANSOSD[]={
+ 420                  14,"OSD Transparen"
+ 421          };
+ 422          /*
+ 423          code unsigned char FRA_TRANSOSD[]={
+ 424                  16,"Transparence OSD"
+ 425          };
+ 426          code unsigned char DEU_TRANSOSD[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 8   
+
+ 427                  15,"OSD-Transparenz"
+ 428          };
+ 429          code unsigned char ESP_TRANSOSD[]={
+ 430                  17,"Transparencia OSD"
+ 431          };
+ 432          code unsigned char ITA_TRANSOSD[]={
+ 433                  16,"OSD Transparency"
+ 434          };
+ 435          code unsigned char JAP_TRANSOSD[]={
+ 436                  6,'O','S','D','?','?','?'
+ 437          };
+ 438          code unsigned char CHI_TRANSOSD[]={
+ 439                  6,'O','S','D','?','?','?'
+ 440          };
+ 441          code unsigned char RUS_TRANSOSD[]={
+ 442                  17,0xcf,'P','O','3','P','A',0xcd,'H','O','C','T','b',' ','M','E','H',0xd1
+ 443          };
+ 444          
+ 445          //Auto and Input select
+ 446          code unsigned char ENG_SOURSEL[]={
+ 447                  12,"Input Select"
+ 448          };
+ 449          code unsigned char FRA_SOURSEL[]={
+ 450                  21,"Select Auto et Entree"
+ 451          };
+ 452          code unsigned char DEU_SOURSEL[]={
+ 453                  24,"Auto y Entrada;Seleccion"
+ 454          };
+ 455          code unsigned char ESP_SOURSEL[]={
+ 456                  24,"Auto y Entrada;Seleccion"
+ 457          };
+ 458          code unsigned char ITA_SOURSEL[]={
+ 459                  22,"Selezione Auto e;Input"
+ 460          };
+ 461          code unsigned char JAP_SOURCE[]={
+ 462                  2,0xbb,0xbc
+ 463          };
+ 464          code unsigned char CHI_SOURCE[]={
+ 465                  2,0xbb,0xbc
+ 466          };
+ 467          code unsigned char RUS_SOURCE[]={
+ 468                  25,'A','B','T','O','M','A','T',0xc8,0xcd,'E','C','K',0xc8,0xc9,'B',';',0xc3,
+ 469                  0xca,'O','P','B','X','O',0xd3,'A'
+ 470          };
+ 471          //Text/Graph Mode
+ 472          code unsigned char ENG_TEXTMODE[]={
+ 473                  10,"Graph/Text"
+ 474          };
+ 475          code unsigned char FRA_TEXTMODE[]={
+ 476                  15,"Graphique/Texte"
+ 477          };
+ 478          code unsigned char DEU_TEXTMODE[]={
+ 479                  10,"Graph/Text"
+ 480          };
+ 481          code unsigned char ESP_TEXTMODE[]={
+ 482                  13,"Grefica/Texto"
+ 483          };
+ 484          code unsigned char ITA_TEXTMODE[]={
+ 485                  13,"Grafico/Testo"
+ 486          };
+ 487          code unsigned char JAP_TEXTMODE[]={
+ 488                  5,0x96,0x97,'/',0x7e,0x98
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 9   
+
+ 489          };
+ 490          code unsigned char CHI_TEXTMODE[]={
+ 491                  5,0x96,0x97,'/',0x7e,0x98
+ 492          };
+ 493          code unsigned char RUS_TEXTMODE[]={
+ 494                  31,0xcb,'P','A',0xcc,0xc8,0xcd,'E','C','K',0xc8,0xc9,' ','P','E',0xce,0xc8,
+ 495                  'M',';','T','E','K','C','T','O','B','O',0xc9,'P','E',0xce,0xc8,'M'      
+ 496          };
+ 497          */
+ 498          //Auto adjust
+ 499          code unsigned char ENG_AUTOADJ[]={
+ 500                  14,"Auto Adjust..."
+ 501          };
+ 502          code unsigned char FRA_AUTOADJ[]={
+ 503                  22,"Rglage automatique..."
+ 504          };
+ 505          code unsigned char DEU_AUTOADJ[]={
+ 506                  19,"Autom. Anpassung..."
+ 507          };
+ 508          code unsigned char ESP_AUTOADJ[]={
+ 509                  20,"Ajuste automtico..."
+ 510          };
+ 511          code unsigned char ITA_AUTOADJ[]={
+ 512                  22,"Regolazione automatica"
+ 513          };
+ 514          code unsigned char JAP_AUTOADJ[]={
+ 515                  7,_C18,_C23,_C19,_C1a,_DOT,_DOT,_DOT
+ 516          };
+ 517          code unsigned char CHT_AUTOADJ[]={
+ 518                  8,_C18,_C10,_C19,_C1a,_C01,_DOT,_DOT,_DOT
+ 519          };
+ 520          code unsigned char CHI_AUTOADJ[]={
+ 521                  8,_C18,_C23,_C24,_C1a,_C01,_DOT,_DOT,_DOT
+ 522          };
+ 523          code unsigned char RUS_AUTOADJ[]={
+ 524                  15,_A,_P07,_P05,_o,_P04,_a,_c,_P05,_p,_P02,_P00,_a,_DOT,_DOT,_DOT
+ 525          };
+ 526          
+ 527          // Volume
+ 528          code unsigned char ENG_VOLUME[]={
+ 529                  6,"Volume"
+ 530          };
+ 531          code unsigned char FRA_VOLUME[]={
+ 532                  6,"Volume"
+ 533          };
+ 534          code unsigned char DEU_VOLUME[]={
+ 535                  10,"Lautstrke"
+ 536          };
+ 537          code unsigned char ESP_VOLUME[]={
+ 538                  7,"Volumen"
+ 539          };
+ 540          code unsigned char ITA_VOLUME[]={
+ 541                  6,"Volume"
+ 542          };
+ 543          code unsigned char JAP_VOLUME[]={
+ 544                  4,_C0c,_C0d,_C19,_C1a
+ 545          };
+ 546          code unsigned char RUS_VOLUME[]={
+ 547                  9,_P09,_p,_o,_P17,_P00,_o,_c,_P05,_b
+ 548          };
+ 549          code unsigned char CHT_VOLUME[]={
+ 550                  4,_C0c,_C0d,_C19,_C1a
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 10  
+
+ 551          };
+ 552          code unsigned char CHI_VOLUME[]={
+ 553                  4,_C0c,_C0d,_C24,_C1a
+ 554          };
+ 555          
+ 556          // Mute
+ 557          code unsigned char ENG_MUTE[]={
+ 558                  4,"Mute"
+ 559          };
+ 560          code unsigned char FRA_MUTE[]={
+ 561                  4,"Muet"
+ 562          };
+ 563          code unsigned char DEU_MUTE[]={
+ 564                  14,"Stummschaltung"
+ 565          };
+ 566          code unsigned char ESP_MUTE[]={
+ 567                  8,"Silencio"
+ 568          };
+ 569          code unsigned char ITA_MUTE[]={
+ 570                  4,"Mute"
+ 571          };
+ 572          code unsigned char JAP_MUTE[]={
+ 573                  4,_J06,_J02,_J03,_J0b
+ 574          };
+ 575          code unsigned char RUS_MUTE[]={
+ 576                  4,_P18,_P05,_y,_P00
+ 577          };
+ 578          code unsigned char CHT_MUTE[]={
+ 579                  2,_C53,_C0c
+ 580          };
+ 581          code unsigned char CHI_MUTE[]={
+ 582                  2,_C54,_C0c
+ 583          };
+ 584          
+ 585          //OSD Time Out
+ 586          code unsigned char ENG_OSDTIME[]={
+ 587                  12,"OSD Time Out"
+ 588          };
+ 589          code unsigned char FRA_OSDTIME[]={
+ 590                  9,"Dlai OSD"
+ 591          };
+ 592          code unsigned char DEU_OSDTIME[]={
+ 593                  11,"OSD-Auszeit"
+ 594          };
+ 595          code unsigned char ESP_OSDTIME[]={
+ 596                  13,"Tiemp Esp OSD"
+ 597          };
+ 598          code unsigned char ITA_OSDTIME[]={
+ 599                  11,"Timeout OSD"
+ 600          };
+ 601          code unsigned char JAP_OSDTIME[]={
+ 602                  8,_O,_S,_D,_J00,_J01,_J03,_J04,_J05
+ 603          };
+ 604          code unsigned char RUS_OSDTIME[]={
+ 605                  10,_P1b,_p,_o,_c,_P05,_o,_P02,_Space,_P12,_M
+ 606          };
+ 607          code unsigned char CHT_OSDTIME[]={
+ 608                  6,_C0f,_C63,_C58,_C2a,_C59,_C5a
+ 609          };
+ 610          code unsigned char CHI_OSDTIME[]={
+ 611                  6,_C3e,_C3f,_C29,_C2a,_C2b,_C2c
+ 612          };
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 11  
+
+ 613          //Signal Out of Range
+ 614          code unsigned char ENG_OUT[]={
+ 615                  12,"Out of Range"
+ 616          };
+ 617          code unsigned char FRA_OUT[]={
+ 618                  16,"Hors de la plage"
+ 619          };
+ 620          code unsigned char DEU_OUT[]={
+ 621                  24,"Au|erhalb der Reichweite"
+ 622          };
+ 623          code unsigned char ESP_OUT[]={
+ 624                  14,"Fuera de Rango"
+ 625          };
+ 626          code unsigned char ITA_OUT[]={
+ 627                  13,"Fuori portata"
+ 628          };
+ 629          code unsigned char JAP_OUT[]={
+ 630                  12,"Out of Range"
+ 631          };
+ 632          code unsigned char RUS_OUT[]={
+ 633                  18,_H,_e,_P0a,_o,_P11,_y,_c,_P05,_P02,_P17,_P1a,_P02,_Space,_p,_e,_P0e,_P03,_P17
+ 634          };
+ 635          code unsigned char CHT_OUT[]={
+ 636                  6,_C38,_C39,_C3a,_C3b,_C65,_C60
+ 637          };
+ 638          code unsigned char CHI_OUT[]={
+ 639                  6,_C38,_C39,_C3a,_C3b,_C3c,_C3d
+ 640          };
+ 641          
+ 642          //No Signal
+ 643          code unsigned char ENG_NOSIGNAL[]={
+ 644                  15,"No Signal Input"
+ 645          };
+ 646          code unsigned char FRA_NOSIGNAL[]={
+ 647                  13,"Pas de signal"
+ 648          };
+ 649          code unsigned char DEU_NOSIGNAL[]={
+ 650                  18,"Kein Signaleingang"
+ 651          };
+ 652          code unsigned char ESP_NOSIGNAL[]={
+ 653                  10,"Sin senal"
+ 654          };
+ 655          code unsigned char ITA_NOSIGNAL[]={
+ 656                  15,"Selezione Input"
+ 657          };
+ 658          code unsigned char JAP_NOSIGNAL[]={
+ 659                  4,_C0a,_C0b,_J20,_J21
+ 660          };
+ 661          code unsigned char RUS_NOSIGNAL[]={
+ 662                  16,_H,_e,_P0f,_o,_P16,_y,_c,_P05,_P03,_P17,_P12,_p,_e,_P0e,_P03,_P17
+ 663          };
+ 664          code unsigned char CHT_NOSIGNAL[]={
+ 665                  6,_C35,_C36,_C5d,_C5e,_C37,_C5c
+ 666          };
+ 667          code unsigned char CHI_NOSIGNAL[]={
+ 668                  6,_C35,_C36,_C0a,_C0b,_C37,_C5c
+ 669          };
+ 670          
+ 671          //Hue
+ 672          code unsigned char ENG_HUE[]={
+ 673                  3,"Hue"
+ 674          };
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 12  
+
+ 675          
+ 676          //Saturation
+ 677          code unsigned char ENG_SATUR[]={
+ 678                  5,"Color"
+ 679          };
+ 680          //Yes No string
+ 681          code unsigned char ENG_YESNO[]={
+ 682                  17,"  Yes        No  "
+ 683          };
+ 684          code unsigned char FRA_YESNO[]={
+ 685                  17,"  Yes        No  "
+ 686          };
+ 687          
+ 688          //Auto Color
+ 689          code unsigned char ENG_AUTOCOL[]={
+ 690                  13,"White Balance"
+ 691          };
+ 692          //Auto Color
+ 693          code unsigned char ENG_EEPROMINIT[]={
+ 694                  12,"EEPROM INIT."
+ 695          };
+ 696          code unsigned char ENG_CHSEARCH[]={
+ 697                  9,"CH SEARCH "
+ 698          };
+ 699          
+ 700          code unsigned char ENG_CHEDIT[]={
+ 701                  7,"CH EDIT"
+ 702          };
+ 703          code unsigned char ENG_FINETUNE[]={
+ 704                  9,"FINE TUNE"
+ 705          };
+ 706          code unsigned char ENG_TV_INPUT[]={
+ 707                  8,"TV INPUT"
+ 708          };
+ 709          
+ 710          code unsigned char ENG_BACKLIGH[]={
+ 711                  10,"Back Light"
+ 712          };
+ 713          
+ 714          code unsigned char VOID_CHAR[]={
+ 715                  1,' '
+ 716          };
+ 717          
+ 718          code unsigned char ENG_FACTMENU[]={
+ 719                  12,"Factory Menu"
+ 720          };
+ 721          
+ 722          code unsigned char SPACE[]={
+ 723                  "                              "
+ 724          };
+ 725          //Light Contrast
+ 726          code unsigned char ENG_LIGHTCONTRAST[]={
+ 727                  14,"Light Contrast"
+ 728          };
+ 729          
+ 730          //Light Bright
+ 731          code unsigned char ENG_LIGHTBRIGHT[]={
+ 732                  12,"Light Bright"
+ 733          };
+ 734          
+ 735          //Light H start
+ 736          code unsigned char ENG_LIGHTHS[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 13  
+
+ 737                  13,"Light H Start"
+ 738          };
+ 739          
+ 740          //Light H width
+ 741          code unsigned char ENG_LIGHTHW[]={
+ 742                  13,"Light H Width"
+ 743          };
+ 744          
+ 745          //Light V start
+ 746          code unsigned char ENG_LIGHTVS[]={
+ 747                  13,"Light V Start"
+ 748          };
+ 749          
+ 750          //Light H width
+ 751          code unsigned char ENG_LIGHTVH[]={
+ 752                  13,"Light V Hight"
+ 753          };
+ 754          
+ 755          //Light Enable
+ 756          code unsigned char ENG_LIGHTEN[]={
+ 757                  12,"Light Enable"
+ 758          };
+ 759          
+ 760          //Light Enable
+ 761          code unsigned char ENG_SCALERMODE[]={
+ 762                  12,"Aspect Ratio"
+ 763          };
+ 764          //Closed Caption On/Off
+ 765          code unsigned char ENG_CAPTIONMODE[]={
+ 766                  14,"Closed Caption"
+ 767          }; 
+ 768          code unsigned char ENG_MPAARating[]={
+ 769                  11,"MPAA Rating"
+ 770          };
+ 771          code unsigned char ENG_TVRating[]={
+ 772                  9,"TV Rating"
+ 773          };
+ 774          //Treble/Bass
+ 775          code unsigned char ENG_Treble[]={
+ 776                  6,"Treble"
+ 777          };
+ 778          code unsigned char ENG_Bass[]={
+ 779                  4,"Bass"
+ 780          };
+ 781          /*
+ 782          code unsigned char LanguageDummy[]={
+ 783                  0x7c,0x7d,0x7e,0x7f,0x80,0x81,0x82,0x83,0x84,0x85,
+ 784                  0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,
+ 785                  0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,
+ 786                  0x9a,0x9b,0x9c,0x9d,0x9e,0x9f,0xa0,0xa1,0xa2,0xa3,
+ 787          };
+ 788          */
+ 789          code unsigned char *DescTab[][9]={
+ 790                  //_0 BRIGHTNESS 
+ 791                  {ENG_BRIGHT,FRA_BRIGHT,DEU_BRIGHT,ESP_BRIGHT,
+ 792                  ITA_BRIGHT,JAP_BRIGHT,RUS_BRIGHT,CHT_BRIGHT,CHI_BRIGHT},
+ 793                  //_1 CONTRAST
+ 794                  {ENG_CONTRAST,FRA_CONTRAST,DEU_CONTRAST,ESP_CONTRAST,
+ 795                  ITA_CONTRAST,JAP_CONTRAST,RUS_CONTRAST,CHT_CONTRAST,CHI_CONTRAST},
+ 796                  //_2 PHASE
+ 797                  {ENG_PHASE,FRA_PHASE,DEU_PHASE,ESP_PHASE,
+ 798                  ITA_PHASE,JAP_PHASE,RUS_PHASE,CHT_PHASE,CHI_PHASE},
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 14  
+
+ 799                  //_3 CLOCK
+ 800                  {ENG_CLOCK,FRA_CLOCK,DEU_CLOCK,ESP_CLOCK,
+ 801                  ITA_CLOCK,JAP_CLOCK,RUS_CLOCK,CHT_CLOCK,CHI_CLOCK},
+ 802                  //_4 BACKLIGHT
+ 803                  {ENG_BRIGHT,FRA_BRIGHT,DEU_BRIGHT,ESP_BRIGHT,
+ 804                  ITA_BRIGHT,JAP_BRIGHT,RUS_BRIGHT,CHT_BRIGHT,CHI_BRIGHT},
+ 805                  //{ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,
+ 806                  //ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH},
+ 807                  //_5 HPOSITION
+ 808                  {ENG_HPOS,FRA_HPOS,DEU_HPOS,ESP_HPOS,
+ 809                  ITA_HPOS,JAP_HPOS,RUS_HPOS,CHT_HPOS,CHI_HPOS},
+ 810                  //_6 VPOSITION
+ 811                  {ENG_VPOS,FRA_VPOS,DEU_VPOS,ESP_VPOS,
+ 812                  ITA_VPOS,JAP_VPOS,RUS_VPOS,CHT_VPOS,CHI_VPOS},
+ 813                  //_7 OSD POSITION
+ 814                  {ENG_OSDPOS,FRA_OSDPOS,DEU_OSDPOS,ESP_OSDPOS,
+ 815                  ITA_OSDPOS,JAP_OSDPOS,RUS_OSDPOS,CHT_OSDPOS,CHI_OSDPOS},
+ 816                  //_8 OSD V POSITION
+ 817                  {ENG_OSDPOS,FRA_OSDPOS,DEU_OSDPOS,ESP_OSDPOS,
+ 818                  ITA_OSDPOS,JAP_OSDPOS,RUS_OSDPOS,CHT_OSDPOS,CHI_OSDPOS},
+ 819                  //_9 OSD TIMER
+ 820                  {ENG_OSDTIME,FRA_OSDTIME,DEU_OSDTIME,ESP_OSDTIME,
+ 821                  ITA_OSDTIME,JAP_OSDTIME,RUS_OSDTIME,CHT_OSDTIME,CHI_OSDTIME},
+ 822                  //_10 SATURATION
+ 823                  {ENG_SATUR,ENG_SATUR,ENG_SATUR,ENG_SATUR,
+ 824                  ENG_SATUR,ENG_SATUR,ENG_SATUR,ENG_SATUR,ENG_SATUR},
+ 825                  //_11 TINT
+ 826                  {ENG_HUE,ENG_HUE,ENG_HUE,ENG_HUE,
+ 827                  ENG_HUE,ENG_HUE,ENG_HUE,ENG_HUE,ENG_HUE},
+ 828                  //_12 R GAIN
+ 829                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 830                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 831                  //_13 G GAIN
+ 832                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 833                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 834                  //_14 B GAIN
+ 835                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 836                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 837                  //_15 COLOR TEMP.
+ 838                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 839                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 840                  //{ENG_COLOR,FRA_COLOR,DEU_COLOR,ESP_COLOR,
+ 841                  //ITA_COLOR,JAP_COLOR,RUS_COLOR,CHI_COLOR,CHI_COLOR},
+ 842                  //_16 LANGUAGE
+ 843                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 844                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 845                  //_17 SHAPNESS
+ 846                  {ENG_SHAP,FRA_SHAP,DEU_SHAP,ESP_SHAP,
+ 847                  ITA_SHAP,JAP_SHAP,RUS_SHAP,CHT_SHAP,CHI_SHAP},
+ 848                  //_18 R ADC
+ 849                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 850                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 851                  //_19 G ADC
+ 852                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 853                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 854                  //_20 B ADC
+ 855                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 856                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 857                  //_21 VOLUME
+ 858                  {ENG_VOLUME,FRA_VOLUME,DEU_VOLUME,ESP_VOLUME,
+ 859                  ITA_VOLUME,JAP_VOLUME,RUS_VOLUME,CHT_VOLUME,CHI_VOLUME},
+ 860                  //_22 TRASN OSD
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 15  
+
+ 861                  {ENG_TRANSOSD,ENG_TRANSOSD,ENG_TRANSOSD,ENG_TRANSOSD,
+ 862                  ENG_TRANSOSD,ENG_TRANSOSD,ENG_TRANSOSD,ENG_TRANSOSD,ENG_TRANSOSD},
+ 863          //      {ENG_TRANSOSD,FRA_TRANSOSD,DEU_TRANSOSD,ESP_TRANSOSD,
+ 864          //      ITA_TRANSOSD,JAP_TRANSOSD,RUS_TRANSOSD,CHI_TRANSOSD,CHI_TRANSOSD},
+ 865                  //_23 VIDEO SOURCE
+ 866                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 867                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 868          //      {ENG_SOURSEL,FRA_SOURSEL,DEU_SOURSEL,ESP_SOURSEL,
+ 869          //      ITA_SOURSEL,JAP_SOURCE,RUS_SOURCE,CHI_SOURCE,CHI_SOURCE},
+ 870                  //_24 BACKLIGHT2
+ 871                  {ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,
+ 872                  ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH,ENG_BACKLIGH},
+ 873                  //_25 VCMVOL
+ 874                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 875                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 876                  //_26 pROFFSET
+ 877                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 878                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 879                  //_27 pGOFFSET
+ 880                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 881                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 882                  //_28 pBOFFSET
+ 883                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 884                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 885                  //_29 pGOFFSET
+ 886                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 887                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 888                  //_30 pGOFFSET
+ 889                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 890                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 891                  //_31 pGOFFSET
+ 892                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 893                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 894                  //_32 pGOFFSET
+ 895                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 896                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 897                  //_33 pLIGHTCONTRAST
+ 898                  {ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,
+ 899                  ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST,ENG_LIGHTCONTRAST},
+ 900                  //_34 pLIGHTBRIGHT
+ 901                  {ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,
+ 902                  ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT,ENG_LIGHTBRIGHT},
+ 903                  //_35 pLIGHTHSTART
+ 904                  {ENG_LIGHTHS,ENG_LIGHTHS,ENG_LIGHTHS,ENG_LIGHTHS,
+ 905                  ENG_LIGHTHS,ENG_LIGHTHS,ENG_LIGHTHS,ENG_LIGHTHS,ENG_LIGHTHS},
+ 906                  //_36 pLIGHTHWIDTH
+ 907                  {ENG_LIGHTHW,ENG_LIGHTHW,ENG_LIGHTHW,ENG_LIGHTHW,
+ 908                  ENG_LIGHTHW,ENG_LIGHTHW,ENG_LIGHTHW,ENG_LIGHTHW,ENG_LIGHTHW},
+ 909                  //_37 pLIGHTVSTART
+ 910                  {ENG_LIGHTVS,ENG_LIGHTVS,ENG_LIGHTVS,ENG_LIGHTVS,
+ 911                  ENG_LIGHTVS,ENG_LIGHTVS,ENG_LIGHTVS,ENG_LIGHTVS,ENG_LIGHTVS},
+ 912                  //_38 pLIGHTVHIGHT
+ 913                  {ENG_LIGHTVH,ENG_LIGHTVH,ENG_LIGHTVH,ENG_LIGHTVH,
+ 914                  ENG_LIGHTVH,ENG_LIGHTVH,ENG_LIGHTVH,ENG_LIGHTVH,ENG_LIGHTVH},
+ 915                  //_39 pCHFINETUNE // Dummy
+ 916                  {ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,
+ 917                  ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE},
+ 918                  // 40 treble
+ 919                  {ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble},
+ 920                  //41 Bass
+ 921                  {ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass},
+ 922                  //_41 FACT MENU
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 16  
+
+ 923                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 924                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 925                  //digital control
+ 926          //_FACT MENU+1 ...AUDIO MUTE
+ 927                  {ENG_MUTE,FRA_MUTE,DEU_MUTE,ESP_MUTE,
+ 928                  ITA_MUTE,JAP_MUTE,RUS_MUTE,CHT_MUTE,CHI_MUTE},
+ 929                  //_AUDIO MUTE+1 ...AUTO SETTING
+ 930                  {ENG_AUTOSET,FRA_AUTOSET,DEU_AUTOSET,ESP_AUTOSET,
+ 931                  ITA_AUTOSET,JAP_AUTOSET,RUS_AUTOSET,CHT_AUTOSET,CHI_AUTOSET},
+ 932                  //_AUTO SETTING+1 ...RESET
+ 933                  {ENG_RESET,FRA_RESET,DEU_RESET,ESP_RESET,
+ 934                  ITA_RESET,JAP_RESET,RUS_RESET,CHT_RESET,CHI_RESET},
+ 935                  //_43+1 ...AUTO COLOR
+ 936                  {ENG_AUTOCOL,ENG_AUTOCOL,ENG_AUTOCOL,ENG_AUTOCOL,
+ 937                  ENG_AUTOCOL,ENG_AUTOCOL,ENG_AUTOCOL,ENG_AUTOCOL,ENG_AUTOCOL},
+ 938                  //_AUTO COLOR+1 ...AUTO ADJUST
+ 939                  {ENG_AUTOADJ,FRA_AUTOADJ,DEU_AUTOADJ,ESP_AUTOADJ,
+ 940                  ITA_AUTOADJ,JAP_AUTOADJ,RUS_AUTOADJ,CHT_AUTOADJ,CHI_AUTOADJ},
+ 941                  //_AUTO ADJUST+1 ...TEXT MODE
+ 942                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 943                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 944                  //_TEXT MODE+1.. pLIGHTEN
+ 945                  {ENG_LIGHTEN,ENG_LIGHTEN,ENG_LIGHTEN,ENG_LIGHTEN,
+ 946                  ENG_LIGHTEN,ENG_LIGHTEN,ENG_LIGHTEN,ENG_LIGHTEN,ENG_LIGHTEN},
+ 947                  //_pLIGHTEN+1 ...pSCALERMODE
+ 948                  {ENG_SCALERMODE,ENG_SCALERMODE,ENG_SCALERMODE,ENG_SCALERMODE,
+ 949                  ENG_SCALERMODE,ENG_SCALERMODE,ENG_SCALERMODE,ENG_SCALERMODE,ENG_SCALERMODE},
+ 950                  //_pSCALERMODE+1 ...INFORMATION 
+ 951                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 952                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 953                  //_INFORMATION  +1 ...EXIT
+ 954                  {VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,
+ 955                  VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR,VOID_CHAR},
+ 956                  //{ENG_EXIT,FRA_EXIT,DEU_EXIT,ESP_EXIT,
+ 957                  //ITA_EXIT,JAP_EXIT,RUS_EXIT,CHI_EXIT,CHI_EXIT},
+ 958                  //_EXIT+1 ...OUT OF RANGE
+ 959                  {ENG_OUT,FRA_OUT,DEU_OUT,ESP_OUT,
+ 960                  ITA_OUT,ENG_OUT,ENG_OUT,ENG_OUT,ENG_OUT},
+ 961                  //_OUT OF RANGE +1...NO SIGNAL
+ 962                  {ENG_NOSIGNAL,FRA_NOSIGNAL,DEU_NOSIGNAL,ESP_NOSIGNAL,
+ 963                  ITA_NOSIGNAL,JAP_NOSIGNAL,RUS_NOSIGNAL,CHT_NOSIGNAL,CHI_NOSIGNAL},
+ 964                  //_NO SIGNAL+1 ...pEEPROMINIT
+ 965                  {ENG_EEPROMINIT,ENG_EEPROMINIT,ENG_EEPROMINIT,ENG_EEPROMINIT,
+ 966                  ENG_EEPROMINIT,ENG_EEPROMINIT,ENG_EEPROMINIT,ENG_EEPROMINIT,ENG_EEPROMINIT},
+ 967                  //_pEEPROMINIT+1 ...pCHSEARCH
+ 968                  {ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,
+ 969                  ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH},
+ 970                  //_pCHSEARCH+1... pCHEDIT
+ 971                  {ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,
+ 972                  ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT},
+ 973                  //_pCHEDIT+1 ...pCHFINETUNE
+ 974                  {ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,
+ 975                  ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE},
+ 976                  //_pCHFINETUNE+1 ...pTVINPUT
+ 977                  {ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,
+ 978                  ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT},
+ 979                  //pTVINPUT+1 ...pCAPTION
+ 980                  {ENG_CAPTIONMODE,ENG_CAPTIONMODE,ENG_CAPTIONMODE,
+ 981                  ENG_CAPTIONMODE,ENG_CAPTIONMODE,ENG_CAPTIONMODE,
+ 982                  ENG_CAPTIONMODE,ENG_CAPTIONMODE,ENG_CAPTIONMODE},
+ 983                  
+ 984          };
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 17  
+
+ 985          code unsigned char *DescTab_TV[][9]={
+ 986                  //_53 pCHSEARCH
+ 987                  {ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,
+ 988                  ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH,ENG_CHSEARCH},
+ 989                  //_54 pCHEDIT
+ 990                  {ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,
+ 991                  ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT,ENG_CHEDIT},
+ 992                  //_55 pCHFINETUNE
+ 993                  {ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,
+ 994                  ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE,ENG_FINETUNE},
+ 995                  //_56 pTVINPUT
+ 996                  {ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,
+ 997                  ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT,ENG_TV_INPUT},
+ 998          };
+ 999          
+1000          code unsigned char *DescTab_Sound[][9]={
+1001                  //_21 VOLUME
+1002                  {ENG_VOLUME,FRA_VOLUME,DEU_VOLUME,ESP_VOLUME,
+1003                  ITA_VOLUME,JAP_VOLUME,RUS_VOLUME,CHT_VOLUME,CHI_VOLUME},
+1004                  //_40+1 AUDIO MUTE
+1005                  {ENG_MUTE,FRA_MUTE,DEU_MUTE,ESP_MUTE,
+1006                  ITA_MUTE,JAP_MUTE,RUS_MUTE,CHT_MUTE,CHI_MUTE},
+1007                  // 65 Treble
+1008                  {ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble,ENG_Treble},
+1009                  // 66 Bass
+1010                  {ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass,ENG_Bass},
+1011          };
+1012          
+1013          code unsigned char StrUser10[]={
+1014                  4,"User"
+1015          };
+1016          code unsigned char StrUser11[]={
+1017                  13,"Uinitialiser"
+1018          };
+1019          code unsigned char StrUser12[]={
+1020                  8,"Bentzer"
+1021          };
+1022          code unsigned char StrUser13[]={
+1023                  7,"Usuario"
+1024          };
+1025          code unsigned char StrUser14[]={
+1026                  6,"Utente"
+1027          };
+1028          code unsigned char StrUser15[]={
+1029                  4,_J02,_J03,_J28,_J03
+1030          };
+1031          code unsigned char StrUser16[]={
+1032                  12,_P1b,_o,_P19,_b,_3,_o,_P07,_a,_P05,_e,_P19,_b
+1033          };
+1034          code unsigned char StrUser17[]={
+1035                  5,_C42,_C43,_C44,_C18,_C0e
+1036          };
+1037          code unsigned char StrUser18[]={
+1038                  5,_C42,_C43,_C44,_C18,_C0e
+1039          };
+1040          code unsigned char Str93K[]={
+1041                  5,"9300$"
+1042          };
+1043          code unsigned char Str75K[]={
+1044                  5,"7500$"
+1045          };
+1046          code unsigned char Str65K[]={
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 18  
+
+1047                  5,"6500$"
+1048          };
+1049          code unsigned char StrSRGB[]={
+1050                  5,"sRGB$"
+1051          };
+1052          code unsigned char *Tab_Color[]={
+1053                  Str93K,Str75K,Str65K,StrSRGB,StrUser10,
+1054                  Str93K,Str75K,Str65K,StrSRGB,StrUser11,
+1055                  Str93K,Str75K,Str65K,StrSRGB,StrUser12,
+1056                  Str93K,Str75K,Str65K,StrSRGB,StrUser13,
+1057                  Str93K,Str75K,Str65K,StrSRGB,StrUser14,
+1058                  Str93K,Str75K,Str65K,StrSRGB,StrUser15,
+1059                  Str93K,Str75K,Str65K,StrSRGB,StrUser16,
+1060                  Str93K,Str75K,Str65K,StrSRGB,StrUser17,
+1061                  Str93K,Str75K,Str65K,StrSRGB,StrUser18
+1062          };
+1063          
+1064          code unsigned char StrR10[]={
+1065                  3,"Red"
+1066          };
+1067          code unsigned char StrR11[]={
+1068                  5,"Rouge"
+1069          };
+1070          code unsigned char StrR12[]={
+1071                  3,"Rot"
+1072          };
+1073          code unsigned char StrR13[]={
+1074                  4,"Rojo"
+1075          };
+1076          code unsigned char StrR14[]={
+1077                  5,"Rosso"
+1078          };
+1079          code unsigned char StrR15[]={
+1080                  1,_J32
+1081          };
+1082          code unsigned char StrR16[]={
+1083                  5,_K,_p,_a,_c,_P04
+1084          };
+1085          code unsigned char StrR17[]={
+1086                  2,_C50,_C1b
+1087          };
+1088          code unsigned char StrR18[]={
+1089                  2,_C46,_C1b
+1090          };
+1091          code unsigned char StrG10[]={
+1092                  5,"Green"
+1093          };
+1094          code unsigned char StrG11[]={
+1095                  4,"Vert"
+1096          };
+1097          code unsigned char StrG12[]={
+1098                  4,"Grn"
+1099          };
+1100          code unsigned char StrG13[]={
+1101                  5,"Verde"
+1102          };
+1103          code unsigned char StrG14[]={
+1104                  5,"Verde"
+1105          };
+1106          code unsigned char StrG15[]={
+1107                  1,_J36
+1108          };
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 19  
+
+1109          code unsigned char StrG16[]={
+1110                  5,_P18,_e,_P19,_e,_P04
+1111          };
+1112          code unsigned char StrG17[]={
+1113                  2,_C4f,_C1b
+1114          };
+1115          code unsigned char StrG18[]={
+1116                  2,_C47,_C1b
+1117          };
+1118          code unsigned char StrB10[]={
+1119                  4,"Blue"
+1120          };
+1121          code unsigned char StrB11[]={
+1122                  4,"Bleu"
+1123          };
+1124          code unsigned char StrB12[]={
+1125                  4,"Blau"
+1126          };
+1127          code unsigned char StrB13[]={
+1128                  4,"Azul"
+1129          };
+1130          code unsigned char StrB14[]={
+1131                  3,"Blu"
+1132          };
+1133          code unsigned char StrB15[]={
+1134                  1,_J33
+1135          };
+1136          code unsigned char StrB16[]={
+1137                  6,_C,_P03,_P04,_e,_P0a,_o
+1138          };
+1139          code unsigned char StrB17[]={
+1140                  2,_C51,_C1b
+1141          };
+1142          code unsigned char StrB18[]={
+1143                  2,_C48,_C1b
+1144          };
+1145          code unsigned char *Tab_RGB[]={
+1146                  StrR10,StrG10,StrB10,
+1147                  StrR11,StrG11,StrB11,
+1148                  StrR12,StrG12,StrB12,
+1149                  StrR13,StrG13,StrB13,
+1150                  StrR14,StrG14,StrB14,
+1151                  StrR15,StrG15,StrB15,
+1152                  StrR16,StrG16,StrB16,
+1153                  StrR17,StrG17,StrB17,
+1154                  StrR18,StrG18,StrB17
+1155          };
+1156          
+1157          code Byte ENG_USER[]={4,"User"};
+1158          code Byte FRA_USER[]={11,"Utilisateur"};
+1159          code Byte DEU_USER[]={8,"Bentzer"};
+1160          code Byte ESP_USER[]={7,"Usuario"};
+1161          code Byte ITA_USER[]={6,"Utente"};
+1162          code Byte JAP_USER[]={4,_J02,_J03,_J28,_J03};
+1163          code Byte CHI_USER[]={5,_C42,_C43,_C44,_C18,_C0e};
+1164          code Byte CHT_USER[]={5,_C42,_C43,_C44,_C18,_C0e};
+1165          code Byte RUS_USER[]={12,_P1b,_o,_P19,_b,_3,_o,_B,_a,_P05,_e,_P19,_b};
+1166          code Byte *UserTab[9]={ENG_USER,FRA_USER,DEU_USER,ESP_USER,ITA_USER,
+1167                                                          JAP_USER,RUS_USER,CHT_USER,CHI_USER};
+1168          
+1169          code Byte ENG_ENTER[]={5,"Enter"};
+1170          code Byte FRA_ENTER[]={6,"Entree"};
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 20  
+
+1171          code Byte DEU_ENTER[]={7,"Eingabe"};
+1172          code Byte ESP_ENTER[]={5,"Intro"};
+1173          code Byte ITA_ENTER[]={5,"Enter"};
+1174          code Byte JAP_ENTER[]={2,_C5c,_J1d};
+1175          code Byte CHI_ENTER[]={2,_C42,_C43};
+1176          code Byte CHT_ENTER[]={2,_C42,_C43};
+1177          code Byte RUS_ENTER[]={4,_B,_P07,_o,_P13};
+1178          
+1179          code Byte ENG_SELECT[]={6,"Select"};
+1180          code Byte FRA_SELECT[]={11,'S',0x97,0x98,0x99,0x9a,0x9b,'o','n','n','e','r'};
+1181          code Byte DEU_SELECT[]={6,"Whlen"};
+1182          code Byte ESP_SELECT[]={6,"Selec."};
+1183          code Byte ITA_SELECT[]={9,"Selezione"};
+1184          code Byte JAP_SELECT[]={2,_C0f,_J35};
+1185          code Byte CHI_SELECT[]={2,_C30,_C31};
+1186          code Byte CHT_SELECT[]={2,_C0f,_C64};
+1187          code Byte RUS_SELECT[]={5,_B,_P00,_P08,_o,_p};
+1188          
+1189          code Byte ENG_ADJUST[]={6,"Adjust"};
+1190          code Byte FRA_ADJUST[]={7,"Ajuster"};
+1191          code Byte DEU_ADJUST[]={10,"Einstellen"};
+1192          code Byte ESP_ADJUST[]={7,"Ajustar"};
+1193          code Byte ITA_ADJUST[]={11,"Regolazione"};
+1194          code Byte JAP_ADJUST[]={2,_C19,_C1a};
+1195          code Byte CHI_ADJUST[]={2,_C24,_C1a};
+1196          code Byte CHT_ADJUST[]={2,_C19,_C1a};
+1197          code Byte RUS_ADJUST[]={9,_H,_a,_c,_P05,_p,_o,_P02,_k,_a};
+1198          
+1199          code unsigned char *KeyStrTab[]={
+1200                  ENG_ENTER,ENG_SELECT,ENG_ADJUST,
+1201                  FRA_ENTER,FRA_SELECT,FRA_ADJUST,
+1202                  DEU_ENTER,DEU_SELECT,DEU_ADJUST,
+1203                  ESP_ENTER,ESP_SELECT,ESP_ADJUST,
+1204                  ITA_ENTER,ITA_SELECT,ITA_ADJUST,
+1205                  JAP_ENTER,JAP_SELECT,JAP_ADJUST,
+1206                  RUS_ENTER,RUS_SELECT,RUS_ADJUST,
+1207                  CHT_ENTER,CHT_SELECT,CHT_ADJUST,
+1208                  CHI_ENTER,CHI_SELECT,CHI_ADJUST,
+1209          };
+1210          
+1211          code Byte ENG_PICTURE[]={12,"Picture Mode"};
+1212          code Byte FRA_PICTURE[]={12,"Mode Picture"};
+1213          code Byte DEU_PICTURE[]={12,"Picutre Mode"};
+1214          code Byte ESP_PICTURE[]={13,"Modo Pelicula"};
+1215          code Byte ITA_PICTURE[]={16,"Modalit Picture"};
+1216          code Byte JAP_PICTURE[]={12,"Picture Mode"};
+1217          code Byte CHI_PICTURE[]={12,"Picture Mode"};
+1218          code Byte CHT_PICTURE[]={12,"Picture Mode"};
+1219          code Byte RUS_PICTURE[]={12,"Picture Mode"};
+1220          
+1221          code Byte ENG_TEXT[]={9,"Text Mode"};
+1222          code Byte FRA_TEXT[]={10,"Mode Texte"};
+1223          code Byte DEU_TEXT[]={22,"Darstellung von Texten"};
+1224          code Byte ESP_TEXT[]={10,"Mode texto"};
+1225          code Byte ITA_TEXT[]={13,"Modalit Text"};
+1226          code Byte JAP_TEXT[]={9,"Text Mode"};
+1227          code Byte CHI_TEXT[]={9,"Text Mode"};
+1228          code Byte CHT_TEXT[]={9,"Text Mode"};
+1229          code Byte RUS_TEXT[]={9,"Text Mode"};
+1230          
+1231          code Byte ENG_ECONOMY[]={7,"Economy"};
+1232          code Byte FRA_ECONOMY[]={8,"Economie"};
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 21  
+
+1233          code Byte DEU_ECONOMY[]={11,"Sparsamkeit"};
+1234          code Byte ESP_ECONOMY[]={8,"economia"};
+1235          code Byte ITA_ECONOMY[]={7,"Economy"};
+1236          code Byte JAP_ECONOMY[]={7,"Economy"};
+1237          code Byte CHI_ECONOMY[]={7,"Economy"};
+1238          code Byte CHT_ECONOMY[]={7,"Economy"};
+1239          code Byte RUS_ECONOMY[]={7,"Economy"};
+1240          
+1241          code unsigned char *TurboStrTab[]={
+1242                  ENG_PICTURE,ENG_TEXT,ENG_ECONOMY,
+1243                  FRA_PICTURE,FRA_TEXT,FRA_ECONOMY,
+1244                  DEU_PICTURE,DEU_TEXT,DEU_ECONOMY,
+1245                  ESP_PICTURE,ESP_TEXT,ESP_ECONOMY,
+1246                  ITA_PICTURE,ITA_TEXT,ITA_ECONOMY,
+1247                  JAP_PICTURE,JAP_TEXT,JAP_ECONOMY,
+1248                  RUS_PICTURE,RUS_TEXT,RUS_ECONOMY,
+1249                  CHT_PICTURE,CHT_TEXT,CHT_ECONOMY,
+1250                  CHI_PICTURE,CHI_TEXT,CHI_ECONOMY,
+1251          };
+1252          
+1253          //Fact
+1254          code unsigned char FactAutoColor[]={
+1255                  10,"Auto Color"
+1256          };
+1257          code unsigned char FactEepromInit[]={
+1258                  11,"EEpromInit."
+1259          };
+1260          code unsigned char FactVcmVol[]={
+1261                  4,"Vcom"
+1262          };
+1263          code unsigned char FactBlackLevel[]={
+1264                  11,"Black Level"
+1265          };
+1266          code unsigned char FactR[]={
+1267                  1,"R"
+1268          };
+1269          code unsigned char FactG[]={
+1270                  1,"G"
+1271          };
+1272          code unsigned char FactB[]={
+1273                  1,"B"
+1274          };
+1275          code unsigned char FactNow[]={
+1276                  3,"Now"
+1277          };
+1278          code unsigned char FactMax[]={
+1279                  3,"Max"
+1280          };
+1281          code unsigned char FactMin[]={
+1282                  3,"Min"
+1283          };
+1284          code unsigned char FactAuto[]={
+1285                  9,"Auto Tune"
+1286          };
+1287          
+1288          code ICONDEF MenuItem[7]={
+1289                  //function,position,icon index---For one bit icon
+1290                  //{pBRIGHTNESS  ,ROW1+2         ,0,6},          ///0
+1291                  //{pCONTRAST            ,ROW1+6         ,0,1},          ///1
+1292                  //{pHPOSITION           ,ROW1+10        ,0,2},          ///2
+1293                  //{pVPOSITION           ,ROW1+14        ,0,0},          ///3
+1294                  //{pSHARPNESS           ,ROW1+18        ,0,4},          ///4
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 22  
+
+1295                  //{pTRANSOSD            ,ROW1+22        ,0,3},      ///5
+1296                  //function,position,icon index---For two bit icon
+1297                  {pBRIGHTNESS    ,ROW1+2         ,0,0},          ///0
+1298                  {pCONTRAST              ,ROW1+6         ,0,1},          ///1
+1299                  {pHPOSITION     ,ROW1+10        ,0,2},          ///2
+1300                  {pVPOSITION     ,ROW1+14        ,0,3},          ///3
+1301                  {pSHARPNESS     ,ROW1+18        ,0,4},          ///4
+1302                  {pTRANSOSD              ,ROW1+22        ,0,5},          ///5
+1303                  {pTRANSOSD              ,ROW1+26        ,0,6},          ///5
+1304                  };
+1305          Byte code RGBmenuItem[3]={pRCOLOR,pGCOLOR,pBCOLOR};     //level 1
+1306          //Byte code FactmenuItem[26]={pAUTOCOLOR,pEEPROMINIT,pVCMVOL,pBRIGHTNESS,pROFFSET,pGOFFSET,pBOFFSET,pRADC,
+             -pGADC,pBADC,
+1307          //                                                      pRCOLOR,pGCOLOR,pBCOLOR,pRCOLOR,pGCOLOR,pBCOLOR,pRCOLOR,pGCOLOR,pBCOLOR,
+1308          //                                                      pCONTRAST,pContMax,pContMin,pBACKLIGHT,pBrigMax,pBrigMin,pAUTOADJUST};
+1309          //------------------------------ pBACKLIGHT¸¦ pBRIGHTNESS·Î º¯°æ... +jwshin 061009
+1310          Byte code Page0Item[7]={pBRIGHTNESS,pCONTRAST,pCLOCK,pPHASE,pHPOSITION,pVPOSITION,pSHARPNESS};
+1311          Byte code Page0ItemD[3]={pBRIGHTNESS,pCONTRAST,pSHARPNESS};
+1312          Byte code Page0ItemY[5]={pBRIGHTNESS,pCONTRAST,pTINT,pSATURATION,pSHARPNESS};
+1313          Byte code Page0ItemV[5]={pBRIGHTNESS,pCONTRAST,pTINT,pSATURATION,pSHARPNESS};
+1314          Byte code Page1Item[4]={pVOLUME,pMUTE,pTreble,pBass};
+1315          //Byte code Page1Item[2]={pVOLUME,pMUTE};
+1316          Byte code Page2Item[7]={pCOLORTEMP,pCOLORTEMP,pCOLORTEMP,pCOLORTEMP,pRCOLOR,pGCOLOR,pBCOLOR};
+1317          Byte code Page3Item[9]={pLANGUAGE,pLANGUAGE,pLANGUAGE,pLANGUAGE,pLANGUAGE,pLANGUAGE,pLANGUAGE,pLANGUAGE,pL
+             -ANGUAGE};
+1318          Byte code Page4Item[6]={pOSDTIMER,pOSDHPOSITION,pTRANSOSD,pAUTOSETTING,pRECALL,pSCALERMODE};
+1319          Byte code Page4ItemTV[7]={pOSDTIMER,pOSDHPOSITION,pTRANSOSD,pAUTOSETTING,pRECALL,pSCALERMODE,pCAPTION};
+1320          Byte code Page5Item[6]={pVIDEOSOURCE,pVIDEOSOURCE,pVIDEOSOURCE,pVIDEOSOURCE,pVIDEOSOURCE,pVIDEOSOURCE};
+1321          Byte code Page6Item[7]={pLIGHTEN,pLIGHTCONTRAST,pLIGHTBRIGHT,pLIGHTHSTART,pLIGHTHWIDTH,pLIGHTVSTART,pLIGHT
+             -VHIGHT};
+1322          Byte code Page7Item[4]={pCHSEARCH,pCHEDIT,pCHFINETUNE,pINPUT};
+1323          
+1324          code FACTDEF FactItem[26]={
+1325                  //function,position,icon index
+1326                  {pAUTOCOLOR             ,ROW2+1         ,ROW2+1         ,FactAutoColor  },              // 0
+1327                  {pAUTOADJUST    ,ROW2+14        ,ROW2+14        ,FactAuto               },              // 1
+1328                  {pEEPROMINIT    ,ROW3+1         ,ROW3+1         ,FactEepromInit },              // 2
+1329                  {pVCMVOL                ,ROW4+1         ,ROW4+9         ,FactVcmVol             },              // 3
+1330                  {pBRIGHTNESS    ,ROW4+14        ,ROW4+26        ,FactBlackLevel },              // 4
+1331                  {pROFFSET               ,ROW5+9         ,ROW5+12        ,FactR                  },              // 5
+1332                  {pGOFFSET               ,ROW5+16        ,ROW5+19        ,FactG                  },              // 6
+1333                  {pBOFFSET               ,ROW5+23        ,ROW5+26        ,FactB                  },              // 7
+1334                  {pRADC                  ,ROW6+9         ,ROW6+12        ,FactR                  },              // 8
+1335                  {pGADC                  ,ROW6+16        ,ROW6+19        ,FactG                  },              // 9
+1336                  {pBADC                  ,ROW6+23        ,ROW6+26        ,FactB                  },              // 10
+1337                  {pRCOLOR                ,ROW7+9         ,ROW7+12        ,FactR                  },              // 11
+1338                  {pGCOLOR                ,ROW7+16        ,ROW7+19        ,FactG                  },              // 12
+1339                  {pBCOLOR                ,ROW7+23        ,ROW7+26        ,FactB                  },              // 13
+1340                  {pRCOLOR                ,ROW8+9         ,ROW8+12        ,FactR                  },              // 14
+1341                  {pGCOLOR                ,ROW8+16        ,ROW8+19        ,FactG                  },              // 15
+1342                  {pBCOLOR                ,ROW8+23        ,ROW8+26        ,FactB                  },              // 16
+1343                  {pRCOLOR                ,ROW9+9         ,ROW9+12        ,FactR                  },              // 17
+1344                  {pGCOLOR                ,ROW9+16        ,ROW9+19        ,FactG                  },              // 18
+1345                  {pBCOLOR                ,ROW9+23        ,ROW9+26        ,FactB                  },              // 19
+1346                  {pCONTRAST              ,ROW10+9        ,ROW10+12       ,FactNow                },              // 20
+1347                  {pContMax               ,ROW10+16       ,ROW10+19       ,FactMax                },              // 21
+1348                  {pContMin               ,ROW10+23       ,ROW10+26       ,FactMin                },              // 22
+1349                  {pBACKLIGHT             ,ROW11+9        ,ROW11+12       ,FactNow                },              // 23
+1350                  {pBrigMax               ,ROW11+16       ,ROW11+19       ,FactMax                },              // 24
+1351                  {pBrigMin               ,ROW11+23       ,ROW11+26       ,FactMin                },              // 25
+1352          };
+1353          
+C51 COMPILER V7.03   OSD_TAB2                                                              12/21/2006 16:55:08 PAGE 23  
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   5293    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

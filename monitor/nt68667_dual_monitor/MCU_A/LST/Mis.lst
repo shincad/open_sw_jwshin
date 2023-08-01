@@ -1,0 +1,623 @@
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE MIS
+OBJECT MODULE PLACED IN .\BIN\Mis.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\Mis.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\Mis.lst) OBJECT(.\BIN\Mis.obj)
+
+line level    source
+
+   1          #include "MCU.H"
+   2          #include "8051.H"
+   3          #include "RAM.H"
+   4          #include "NVRAM.H"
+   5          #include "sRGB.H"
+   6          #include "NT686xx_MCU_REG.H"
+   7          #include "Scaler.H"
+   8          #include "OSD.H"
+   9          #include "NT686xx_SC_REG.H"
+  10          #include "Board.H"
+  11          #include "Mis.H"
+  12          #include "stdio.H"
+  13          #include "Factory.H"
+  14          #include "OSD_TAB.H"
+  15          #include "Rom_map.H"
+  16          #include "ModeHandle.H"
+  17          #include "BFControl.H"
+  18          #include "OSD_LF.H"
+  19          
+  20          void CheckPowerStatus()
+  21          {
+  22   1              ADC_CON = DEFAULT_ADC_CON;              //Channel;  // Start AD Convert
+  23   1              if((ucPowerStatus & SoftPowerOnFlag)== 0){
+  24   2                      PowerSaving();          //power saving befor power off
+  25   2                      LED_RedOff();
+  26   2                      LED_GrnOff();
+  27   2      //              printf("PowerOff\r\n");
+  28   2              }
+  29   1              else{
+  30   2      
+  31   2                      LED_GrnOn();
+  32   2                      
+  33   2      //              printf("PowerOn\r\n");
+  34   2              }
+  35   1      }
+  36          
+  37          void CheckTimer()
+  38          {
+  39   1              //printf(" %d \r\n", (unsigned short)ucOSDType);                        // +jwshin 120302
+  40   1              if((ucOSDType <= LF_MAIN_MENU)&&(ucOSDType > OSDOFF) || (ucOSDType==SOURCE_MSG)||                                                       // +jwshin 120224
+             - 
+  41   1              (ucOSDType==LOCK_MSG)|| (ucOSDType==BEST_MSG) || (ucOSDType==DDCCI_MSG) ){                      
+  42   2      
+  43   2                      if(Get_usOSDTimer_10ms() == 0){
+  44   3                              if(ucOSDType == DIRECT_MENU && ucOSDLvl1_Cursor == mDirect_Source){
+  45   4                                      if((ucPowerStatus & ~SoftPowerOnFlag) != ucSource){
+  46   5                                              ChangeInputSource();
+  47   5                                              return;
+  48   5                                      }
+  49   4                              }       
+  50   3                              
+  51   3                              OSD_OFF();
+  52   3                              
+  53   3                              if(bOutOfLimit){        //SHOW OUTOFRANGE AFTER SOURCE MENU TIMEOUT
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 2   
+
+  54   4                                      bShowOutRange = FALSE;
+  55   4                                      Set_usPoSvTimer(500);
+  56   4                              }
+  57   3                              else if(usVSync > V_UPPER_BOUND){       //BACK TO OUTOFRANGE85HZ AFTER SOURCE MENU TIMEOUT
+  58   4                                      ucOSDType = OUT_RANGE2;
+  59   4                              }
+  60   3                              
+  61   3                      }
+  62   2                      
+  63   2                              
+  64   2              }
+  65   1              //-------------- +jwshin 120302
+  66   1              else if(ucOSDType == POWER_ON_LOGO) {
+  67   2                      if(bInSync == FALSE) {
+  68   3                              //------------------ +jwshin POWER_ON_LOGO를 위한 Mode
+  69   3                              if((Get_usOSD2Timer_10ms() == 0)) {
+  70   4                                      OSD_OFF();
+  71   4              
+  72   4                                      PowerSaving();
+  73   4                                      bForceToSleep= TRUE;
+  74   4                              }
+  75   3                              //----------------------------------
+  76   3                      }
+  77   2                      else if((bInSync==TRUE) && (Get_usOSD2Timer_10ms() == 0)) {                                     // +jwshin 120302   신호가 있고, OSD2Tim
+             -er가 0일 경우에는 OSD를 Off..~!
+  78   3                              OSD_OFF();
+  79   3                      }
+  80   2                              
+  81   2              }
+  82   1              else if(ucOSDType == OUT_RANGE2){
+  83   2                      if(Get_usOSDTimer_10ms() == 0){                 // show out 5 seconds
+  84   3                              bShowOutRange85 = FALSE;
+  85   3                              WriteIIC560(OSD_CTRL1,0x00);
+  86   3      
+  87   3                              if(ucOutOfRangeTimer == 0){             // last time, show NoSync and going to PowerSaving 2005-11-30 V019b1
+  88   4                                      bIsFRCMode = TRUE;
+  89   4                                      ShowNoSync();
+  90   4                                      bShowNoSync = TRUE;
+  91   4                                      ucOSDType = OUT_RANGE;
+  92   4                                      Set_usWarningMsgTimer_1s(10);                           
+  93   4              
+  94   4                              }
+  95   3                      }
+  96   2                      if(Get_usWarningMsgTimer_1s() == 0){            // disappear for 60 seconds
+  97   3                              ucOutOfRangeTimer--;
+  98   3                              ShowOutOfRange85Hz();
+  99   3                              Set_usWarningMsgTimer_1s(60);
+ 100   3                      }
+ 101   2              }
+ 102   1              else if(ucOSDType == OUT_RANGE){                        
+ 103   2      
+ 104   2                              //if ( Get_usWarningMsgTimer_1s()%60==0)
+ 105   2                              //printf("usWarningMsgTimer_1s = %d\r\n",(unsigned short)usWarningMsgTimer_1s);
+ 106   2      
+ 107   2                      if(Get_usWarningMsgTimer_1s() == 0){
+ 108   3                              //      DVI disable interrupt
+ 109   3                              if(ucSignalType == sigDVI){
+ 110   4                                      WriteIIC560(SYNC_INT_EN1,0x00); //disable IRQ interrupt
+ 111   4                                      WriteIIC560(SYNC_INT_EN2,0x00);
+ 112   4                                      ucCurrentDVIClk = ReadIIC560(DVI_PIXELCLK);
+ 113   4                                      //printf("ucCurrentDVIClk = %d\r\n",(unsigned short)ucCurrentDVIClk);
+ 114   4                              }
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 3   
+
+ 115   3                              OSD_OFF();
+ 116   3      
+ 117   3                              PowerSaving();
+ 118   3      //                      ClearNewModeLED();
+ 119   3      //                      LED_GrnOff();                                           // -jwshin 111213
+ 120   3      //                      LED_RedOn();
+ 121   3                              bForceToSleep= TRUE;
+ 122   3                      }
+ 123   2              }
+ 124   1              else if(ucIsLFDemoMode == TRUE){
+ 125   2                      if(ucOSDType == OSDOFF)
+ 126   2                              ShowLFDemoOSD();
+ 127   2                      else if(ucOSDType == LFDEMO){
+ 128   3                              
+ 129   3      #ifdef BF_MOVING_WINDOW
+ 130   3      
+ 131   3                              BF_MovingWindow();
+ 132   3      
+ 133   3      #else
+                                      MoveLFDemoOSD();
+              #endif
+ 136   3                      }
+ 137   2              }
+ 138   1      
+ 139   1      
+ 140   1      //      if((bPOTUpdate == TRUE) && (bFactoryMode==FALSE)){
+ 141   1              if(bPOTUpdate == TRUE){
+ 142   2                      Write24C16(EPADDR_POT_BYTE0,(unsigned char)ulPOTTimerH);//0x1a = POT byte 0
+ 143   2                      Write24C16(EPADDR_POT_BYTE1,(unsigned char)(ulPOTTimerH >> 8));//0x1b = POT byte 1
+ 144   2                      Write24C16(EPADDR_POT_15M, ucPOTTimerM_4);      //0x2d = POT_15M
+ 145   2                      bPOTUpdate = FALSE;
+ 146   2              }
+ 147   1      
+ 148   1      
+ 149   1              if(ucTime2Backlight == 1){      // 1: Turn ON 0: Do nothing
+ 150   2                      if(!IsBackLightOn()){
+ 151   3                      BackLightOn();
+ 152   3                      }
+ 153   2      #if 0
+                      if(ucDynBKMode && (IsBackLightOn()) && (bVideoMuted == FALSE) && !bDDCCmdUpdate){
+              
+                                      if(Get_usBFTimer_10ms() == 0){
+                                              if(ucBF_Status == 0){
+                                                      ucBF_Status = 1;
+                                                      BF_UpdateHistogram();
+                                                      Set_usBFTimer_10ms(BF_DYNAMIC_ACC_TIME);
+                                              }
+                                              else if(ucBF_Status == 1){
+                                                      ucBF_Status = 2;
+                                                      BF_GetHistogram();
+                                                      Set_usBFTimer_10ms(BF_DYNAMIC_ACC_TIME);
+                                              }
+                                              else{
+                                                      ucBF_Status = 0;
+              #ifdef BF_DYNAMIC_BACKLIGHT
+                                                              BF_SetDymBacklight();
+              #endif
+                                                      if(ucBFMode == BF_ACC_AUTO){
+                                                              unsigned char tmpReg1;
+                                                              tmpReg1 = ReadIIC560(0x130);
+                                                              if((tmpReg1 & BIT_1) != 0){     // WINDOW1
+                                                                      BF_SetDymACEMode(0);
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 4   
+
+                                                              }
+                                                      }
+                                                      Set_usBFTimer_10ms(BF_DYNAMIC_ACC_TIME);
+                                              }
+                                      }
+              
+                              }       
+              #else
+ 185   2      
+ 186   2              if(ucDynBKMode && (IsBackLightOn()) && (bVideoMuted == FALSE) && !bDDCCmdUpdate){
+ 187   3                              if(Get_usBFTimer_10ms() > 2) BF_UpdateHistogram();
+ 188   3                              if((Get_usBFTimer_10ms() == 0) && !bDDCCmdUpdate)
+ 189   3                              //if(Get_usBFTimer_10ms() < 2)
+ 190   3                              {
+ 191   4                                      BF_GetHistogram();
+ 192   4                              }
+ 193   3      
+ 194   3      #ifdef BF_DYNAMIC_BACKLIGHT
+ 195   3                              if((ucDynBKMode == ON) && !bDDCCmdUpdate){
+ 196   4                                      BF_SetDymBacklight();
+ 197   4                              }
+ 198   3      #endif
+ 199   3                              if((Get_usBFTimer_10ms() == 0) && !bDDCCmdUpdate){
+ 200   4                                      if(ucBFMode == BF_ACC_AUTO){
+ 201   5                                              unsigned char tmpReg1;
+ 202   5                                              tmpReg1 = ReadIIC560(0x130);
+ 203   5                                              if((tmpReg1 & BIT_1) != 0)      // WINDOW1
+ 204   5                                              {
+ 205   6                                                      BF_SetDymACEMode(0);
+ 206   6                                              }
+ 207   5                                      }
+ 208   4                              }
+ 209   3      
+ 210   3                              if((Get_usBFTimer_10ms() == 0) && !bDDCCmdUpdate)
+ 211   3                              {
+ 212   4                                      BF_UpdateHistogram(); 
+ 213   4                                      BF_GetHistogram();
+ 214   4                                      Set_usBFTimer_10ms(BF_DYNAMIC_ACC_TIME);
+ 215   4                              }
+ 216   3      
+ 217   3                      }       
+ 218   2      #endif
+ 219   2              }
+ 220   1      
+ 221   1      
+ 222   1      
+ 223   1      #ifdef ENABLE_TD_               //      THEFT DETERRENCE
+              //      printf("ucTD_Timeout=%d\r\n",(unsigned short)ucTD_Timeout);
+                      if(((ucTD_State == TD_POSSIBLE_THEFT && ucTD_Timeout == 0) || (ucTD_State == TD_THEFT )|| (ucTD_State == 
+             -TD_LOG_TIMEOUT )) && 
+                              (ucOSDType != POWER_ON_LOGO) ) {
+              
+                              if(ucTD_State == TD_POSSIBLE_THEFT){
+                                      ucTD_State = TD_THEFT;
+                                      //ucTD_State = TD_LOG_TIMEOUT;
+                                      Write24C16(EPADDR_TD_STATE, ucTD_State);
+                              }
+              
+                              if(!bForceToSleep && IsBackLightOn() && (bVideoMuted == FALSE)){
+              //                      printf("usPoSvTimer=%d\r\n",(unsigned short)usPoSvTimer);
+                                      
+                                      if(!bShowTheftOSD){
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 5   
+
+              //                              ucBrightness = MIN_BRIGHTNESS;  //DIFFERENT BANK, CAN NOT USE MCU_DataMap[EPADDR_MIN_BRIGHT];   //0x08 
+             -= brightness
+                                              ucBrightness = 0;       //DIFFERENT BANK, CAN NOT USE MCU_DataMap[EPADDR_MIN_BRIGHT];   //0x08 = brightness
+                                              //ucSavePointer = svBRIGHTNESS;
+                                              //SaveData();
+              //                              ucContrast = MIN_CONTRAST;      //DIFFERENT BANK, CAN NOT USE MCU_DataMap[EPADDR_MIN_CONTRAST];         //0x09 =
+             - contrast
+                                              ucContrast = 0; //DIFFERENT BANK, CAN NOT USE MCU_DataMap[EPADDR_MIN_CONTRAST];         //0x09 = contrast
+                                              //ucSavePointer = svCONTRAST;
+                                              //SaveData();
+                                              SetBrightness();
+                                              ucColorTemperature = COLOR_USER;
+                                              ucR_Gain= ucR_GainUser = 0;
+                                              ucG_Gain= ucG_GainUser = 0;
+                                              ucB_Gain= ucB_GainUser = 0;
+                                              SetContrastRGB();
+              
+                                              ucLFMode = LF_MODE_OFF;
+                                              ucDynBKMode = 0;
+                                              //ucSavePointer = svDYBK;
+                                              //SaveData();
+                                              //LFEnableSettings();
+                                      }
+              
+                                      if(ucOSDType == OSDOFF || Get_usPoSvTimer() == 0)
+                                              ShowTheftOSD();
+                              }
+                      }
+              #endif
+ 265   1      
+ 266   1      
+ 267   1      }
+ 268          
+ 269          
+ 270          void LEDFlash()
+ 271          {
+ 272   1              if(bIsLEDFlashing== TRUE){      //new mode
+ 273   2                      if ( bGLEDState == FALSE ) {
+ 274   3                              LED_GrnOn();
+ 275   3                      }
+ 276   2                      else{
+ 277   3                              LED_GrnOff();
+ 278   3                      }
+ 279   2                      bIsLEDFlashing = FALSE;
+ 280   2              }
+ 281   1              
+ 282   1      /*
+ 283   1              if(bIsLFLEDFlashing == TRUE){   //LF demo mode
+ 284   1                      if ( bLFLEDState == FALSE ) {
+ 285   1                              LED_LF_On();
+ 286   1                      }
+ 287   1                      else{
+ 288   1                              LED_LF_Off();
+ 289   1                      }
+ 290   1                      bIsLFLEDFlashing = FALSE;
+ 291   1              }
+ 292   1      */
+ 293   1      }
+ 294          
+ 295          //---------------------- +jwshin 111213
+ 296          //------------- LED Flicking Routine
+ 297          void GrnLEDFlick()
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 6   
+
+ 298          {
+ 299   1              if(ucNoSigTimer==0) {   
+ 300   2                              if(NoSigTogg) {
+ 301   3                                      LED_GrnOn();
+ 302   3                              }
+ 303   2                              else {
+ 304   3                                      LED_GrnOff();
+ 305   3                              }
+ 306   2                              NoSigTogg ^= 1;
+ 307   2                              ucNoSigTimer = 100;
+ 308   2              }
+ 309   1              
+ 310   1      }
+ 311                  
+ 312          
+ 313          
+ 314          void Sleep(unsigned short time)
+ 315          {
+ 316   1              Set_usTimer1_1ms(time);
+ 317   1              while(Get_usTimer1_1ms() != 0){};
+ 318   1      }
+ 319          
+ 320          void Set_usTimer1_1ms(unsigned short time)
+ 321          {
+ 322   1              usTimer1_1ms = time;                    // timeout n ms
+ 323   1              usTimer1_1ms = time;                    // timeout n ms
+ 324   1      }
+ 325          
+ 326          unsigned short Get_usTimer1_1ms(void)
+ 327          {
+ 328   1      unsigned short temp1,temp2;
+ 329   1              do{
+ 330   2                      temp1 = usTimer1_1ms;
+ 331   2                      temp2 = usTimer1_1ms;
+ 332   2              }
+ 333   1              while(temp1 != temp2);
+ 334   1              return temp1;
+ 335   1      }
+ 336          
+ 337          void Set_usPoSvTimer(unsigned short time)
+ 338          {
+ 339   1              usPoSvTimer = time;                     // timeout n ms
+ 340   1              usPoSvTimer = time;                     // timeout n ms
+ 341   1      }
+ 342          
+ 343          unsigned short Get_usPoSvTimer(void)
+ 344          {
+ 345   1      unsigned short temp1,temp2;
+ 346   1              do{
+ 347   2                      temp1 = usPoSvTimer;
+ 348   2                      temp2 = usPoSvTimer;
+ 349   2              }
+ 350   1              while(temp1 != temp2);
+ 351   1              return temp1;
+ 352   1      }
+ 353          
+ 354          void Set_usWarningMsgTimer_1s(unsigned short time)
+ 355          {
+ 356   1              usWarningMsgTimer_1s = time;                    // timeout n ms
+ 357   1              usWarningMsgTimer_1s = time;                    // timeout n ms
+ 358   1      }
+ 359          
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 7   
+
+ 360          unsigned short Get_usWarningMsgTimer_1s(void)
+ 361          {
+ 362   1      unsigned short temp1,temp2;
+ 363   1              do{
+ 364   2                      temp1 = usWarningMsgTimer_1s;
+ 365   2                      temp2 = usWarningMsgTimer_1s;
+ 366   2              }
+ 367   1              while(temp1 != temp2);
+ 368   1              return temp1;
+ 369   1      }
+ 370          
+ 371          void Set_usOSDTimer_10ms(unsigned short time)
+ 372          {
+ 373   1              usOSDTimer_10ms = time;                 // timeout n ms
+ 374   1              usOSDTimer_10ms = time;                 // timeout n ms
+ 375   1      }
+ 376          
+ 377          unsigned short Get_usOSDTimer_10ms(void)
+ 378          {
+ 379   1      unsigned short temp1,temp2;
+ 380   1              do{
+ 381   2                      temp1 = usOSDTimer_10ms;
+ 382   2                      temp2 = usOSDTimer_10ms;
+ 383   2              }
+ 384   1              while(temp1 != temp2);
+ 385   1              return temp1;
+ 386   1      }
+ 387          
+ 388          //-------------------- +jwshin 120302
+ 389          void Set_usOSD2Timer_10ms(unsigned short time)
+ 390          {
+ 391   1              usOSDTimer_10ms = time;                 // timeout n ms
+ 392   1              usOSDTimer_10ms = time;                 // timeout n ms
+ 393   1      }
+ 394          
+ 395          unsigned short Get_usOSD2Timer_10ms(void)
+ 396          {
+ 397   1      unsigned short temp1,temp2;
+ 398   1              do{
+ 399   2                      temp1 = usOSDTimer_10ms;
+ 400   2                      temp2 = usOSDTimer_10ms;
+ 401   2              }
+ 402   1              while(temp1 != temp2);
+ 403   1              return temp1;
+ 404   1      }
+ 405          //-----------------------------------
+ 406          
+ 407          
+ 408          void Set_ulPOTTimerH(unsigned long time)
+ 409          {
+ 410   1              ulPOTTimerH = time;                     // timeout n ms
+ 411   1              ulPOTTimerH = time;                     // timeout n ms
+ 412   1      }
+ 413          
+ 414          unsigned long Get_ulPOTTimerH(void)
+ 415          {
+ 416   1      unsigned long temp1,temp2;
+ 417   1              do{
+ 418   2                      temp1 = ulPOTTimerH;
+ 419   2                      temp2 = ulPOTTimerH;
+ 420   2              }
+ 421   1              while(temp1 != temp2);
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 8   
+
+ 422   1              return temp1;
+ 423   1      }
+ 424          
+ 425          void Set_usBFTimer_10ms(unsigned short time)
+ 426          {
+ 427   1              usBFTimer_10ms = time;                  // timeout n ms
+ 428   1              usBFTimer_10ms = time;                  // timeout n ms
+ 429   1      }
+ 430          
+ 431          unsigned short Get_usBFTimer_10ms(void)
+ 432          {
+ 433   1      unsigned short temp1,temp2;
+ 434   1              do{
+ 435   2                      temp1 = usBFTimer_10ms;
+ 436   2                      temp2 = usBFTimer_10ms;
+ 437   2              }
+ 438   1              while(temp1 != temp2);
+ 439   1              return temp1;
+ 440   1      }
+ 441          
+ 442          
+ 443          
+ 444          
+ 445          
+ 446          
+ 447          
+ 448          
+ 449          
+ 450          
+ 451          
+ 452          
+ 453          /*
+ 454          void WriteFixString( unsigned char x, unsigned char y, unsigned char *str)
+ 455          {
+ 456                  xdata unsigned char buff[20];   
+ 457                  unsigned char i;
+ 458                  
+ 459          #ifdef NO_PRINT_LIB
+ 460                  buff[0]='n'; buff[1]='\0';
+ 461                  StrCat(buff,str,20);
+ 462          #else
+ 463                  sprintf( buff, "n%s", str);
+ 464          #endif
+ 465          
+ 466                  for ( i=0;  buff[i] != '\r' && buff[i] != '\0' && buff[i]<0x80; i++);
+ 467          //      for ( i=0;  buff[i] != '\r' && buff[i] != '\0'; i++)
+ 468          
+ 469                  buff[0] = i - 1;
+ 470          //      for ( j = i; j< 20; j++ ) buff[j] = 0;  fill 0's in remaining
+ 471          
+ 472                  ucStrAlignment = 0;
+ 473                  ucStrWidth = 1;
+ 474          
+ 475                  WriteArialFont(buff);   
+ 476                  WriteXY_String(1, x, y);
+ 477                  
+ 478          }
+ 479          */
+ 480          
+ 481          #ifdef NO_PRINT_LIB
+              void UShortToStr(unsigned short us_value, unsigned char *str, unsigned int digit)
+              {
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 9   
+
+              // us_value -> str
+              // if digit = 3:   us_value = 12  then str="012"
+              // if digit = 0:   us_value = 12 then str="12"
+               //unsigned short rev_value =0;
+               unsigned int doffset,total_len=0;
+               unsigned short ustmp=us_value;
+              
+               
+                      if (digit==0)
+                      {
+                              do {
+                                      total_len++;
+                              }while ( (ustmp/=10)>0 );       
+                      }
+                      else
+                      {
+                              total_len = digit;
+                      }
+               
+                      doffset = total_len;
+                      do {
+                              doffset--;
+                              *(str+doffset) = (us_value%10) +'0';
+                      }while ( (us_value/=10)>0 );
+                      
+                      while (doffset>0) *(str+(--doffset)) = ' ';
+                      *(str+total_len)='\0';
+                      
+               /*
+               do
+                      { 
+                              *str++ = (us_value%10) +'0';
+                      }
+                      while ( (us_value/=10)>0 );
+                      *str = '\0';
+                      
+                      return (str= pStart);
+              */      
+                      
+               /* 
+                      do
+                      {
+                              rev_value = rev_value*10 + us_value%10;
+                              d++;
+               printf("d=%d, rev_value=%d\r\n",(unsigned short)d, (unsigned short)rev_value);
+                      }
+                      while ( (us_value/=10)>0 );
+              
+                      if ( digit != 0 )
+                      {
+                              d = digit -d;
+                              while ( d--> 0 ) *str++ = ' ';
+                      }
+              
+                      do
+                      { 
+                              *str++ = (rev_value%10) +'0';
+                              printf("rev_value=%d\r\n", rev_value);
+                      }
+                      while ( (rev_value/=10)>0 );
+                      *str = '\0';
+                
+C51 COMPILER V8.12   MIS                                                                   11/09/2015 19:43:39 PAGE 10  
+
+                      return (str = pStart);
+              */
+              }
+              
+              void StrCat(unsigned char *p_str1,unsigned char *p_str2, unsigned int str1_len)
+              {
+                      unsigned char *ptmp1 = p_str1;
+                      unsigned char *ptmp2 = p_str2;
+                      unsigned int len = 0;
+              
+                      while ( *ptmp1++ != '\0' ) len++;
+                      while ( *ptmp2++ != '\0' ) len++;
+                      if ( len >str1_len-1 ) return;
+              
+                      ptmp1--;
+                      ptmp2 = p_str2;
+                      while ( (*ptmp1++ = *ptmp2++) != '\0' ) {}
+              
+              }
+              
+              /*
+              unsigned char *StrCopy(char *p_to, unsigned char *p_from)
+              {
+                      unsigned char *pStart = p_to;
+                               
+                      while((*p_to++ = *p_from++ ) != '\0' ) {}
+                               
+                      return (p_to=pStart);
+              }
+              */
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    770    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      13
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

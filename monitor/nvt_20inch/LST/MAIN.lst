@@ -1,0 +1,303 @@
+C51 COMPILER V7.03   MAIN                                                                  12/21/2006 16:55:05 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\BIN\MAIN.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\MAIN.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\MAI
+                    -N.lst) OBJECT(.\BIN\MAIN.obj)
+
+stmt level    source
+
+   1          #include "8051.H"
+   2          #include "stdio.h"
+   3          #include "MyDef.H"
+   4          #include "F63XREG.H"
+   5          #include "F63XDEF.H"
+   6          #include "MCU.H"
+   7          #include "RAM.H"
+   8          #include "IIC.H"
+   9          #include "UserAdj.H"
+  10          #include "ModeHandle.H"
+  11          #include "Scaler.H"
+  12          #include "OSD.H"
+  13          #include "sRGB.H"
+  14          #include "ROM_MAP.H"
+  15          #include "TW990x.H"
+  16          #include "Z86229.h"
+  17          #include "AutoAdj.H"
+  18          //#include "dvKeypad.h"
+  19          
+  20          extern WarmUp();
+  21          
+  22          void main(void) using 0
+  23          {
+  24   1      //   Byte value;
+  25   1              EA = 0;
+  26   1              InitMCU();
+  27   1              BackLightTimerEn = 0;
+  28   1      //      #if PRINT_MESSAGE
+  29   1      //              printf("Start Program\n");
+  30   1      //      #endif
+  31   1              AUDIO_MUTE();
+  32   1              CheckIIC();
+  33   1      //      DDC2();         // -jwshin 050729
+  34   1              CLRWDT = 0x55;
+  35   1              flag1 = 0;
+  36   1              flag2 = 0;
+  37   1              KeyBuffer = 0 ;
+  38   1              ChangeMode = 1;
+  39   1              VideoMute = 1;
+  40   1              H_SYNC = 0x5555;
+  41   1              V_SYNC = 0x5555;
+  42   1              SavePointer = 0xff;
+  43   1              RegPage = 0x55;
+  44   1              TvMode = 0;
+  45   1              FastMuteEnable = 0;
+  46   1              BypassSOG = 0;
+  47   1              BurnInPattern = 0;
+  48   1              LoadDDCData();
+  49   1              LocalTimer = 10;
+  50   1              VPXinit = 0;
+  51   1              OSDZoomFlag = 0;
+  52   1      
+  53   1      /*
+  54   1              while(LocalTimer != 0)
+C51 COMPILER V7.03   MAIN                                                                  12/21/2006 16:55:05 PAGE 2   
+
+  55   1                      {
+  56   1                      MiscProcess(0);
+  57   1                      ADC_CON = (STRT_ADC | EN_ADC0);         //Channel;  // Start AD Convert
+  58   1                      while(!(ADC3_REG & CMP_ADC));
+  59   1                      if((ADC0_REG & 0x7f) < 0x40)
+  60   1                              LocalTimer = 25;
+  61   1                      }
+  62   1      */
+  63   1              #if PRINT_MESSAGE
+  64   1                      printf("Main power OK.\n");
+  65   1              #endif
+  66   1              ResetOn();      //reset scaler
+  67   1      //      Sleep(50);      // -jwshin 050729
+  68   1              ResetOff();
+  69   1      //      Sleep(50);      // -jwshin 050729
+  70   1      //------------------------------ +jwshin 060905
+  71   1              MonTogg = 1;
+  72   1              RGB_SW1_RGB1();
+  73   1              Button_En1_Act();
+  74   1              Button_En2_InAct();
+  75   1      //------------------------------
+  76   1              
+  77   1              CheckDevice();
+  78   1              FuncBuf[pBass]= Read24C16(ep_Bass);                     //0xe4= Bass
+  79   1              FuncBuf[pTreble] = Read24C16(ep_Treble);                //0xe5 = Treble
+  80   1              FuncBuf[pVCMVOL] = Read24C16(ep_VCMVol);        // Volume
+  81   1      
+  82   1      //      printf("pTreble=%d\r\n",(unsigned short)FuncBuf[pTreble]);
+  83   1      //      printf("pBass=%d\r\n",(unsigned short)FuncBuf[pBass]);
+  84   1      
+  85   1      //      Bass = Read24C16(ep_Bass);                      //0xe4= Bass
+  86   1      //      Treble = Read24C16(ep_Treble);          //0xe5 = Treble
+  87   1      //      if((FuncBuf[pBass] !=0)||(FuncBuf[pTreble]  !=0)){
+  88   1      //      Write24C16(ep_Treble,0);// 0x247....Treble
+  89   1      //      Write24C16(ep_Bass,0);// bass
+  90   1      //              }
+  91   1      // inital TDA7440
+  92   1              WriteIIC(TDA7440D_Addr,A_InputGain,0x00);//0dB 0dB ~ +30dB
+  93   1              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+  94   1              WriteIIC(TDA7440D_Addr,A_Bass,TDA7440D_Tab[FuncBuf[pBass]]);//0dB -14dB~+14dB
+  95   1              WriteIIC(TDA7440D_Addr,A_Treble,TDA7440D_Tab[FuncBuf[pTreble]]);//0dB -14dB~+14dB
+  96   1              WriteIIC(TDA7440D_Addr,A_AttR,0x00);//0dB  0dB~ -72dB
+  97   1              WriteIIC(TDA7440D_Addr,A_AttL,0x00);//0dB  0dB~ -72dB
+  98   1      
+  99   1      //      WriteIIC563(0x101, 0x20);
+ 100   1      //      Sleep(12);
+ 101   1      //      WriteIIC563(0x101, 0x0f);
+ 102   1              ScanKeyPad();
+ 103   1      //                      printf("ScanKeyPad\r\n");
+ 104   1      //KeyScan();
+ 105   1      //      if(KeyBuffer == (vkMENU|vkVADOWN|vkPOWER))
+ 106   1      //      if(KeyBuffer == (vkAUTO|vkVALUP))
+ 107   1      //              InitEEPROM();
+ 108   1              //              printf("InitEEPROM\r\n");
+ 109   1              CheckVersion();
+ 110   1              //Read the scaler version
+ 111   1      
+ 112   1      //      Write24C16(ep_Sync_Source,0);
+ 113   1      
+ 114   1              SCRev = (ReadIIC563(0x100) >> 4);
+ 115   1      //printf("SCRev\r\n");
+ 116   1              UserModePtr = Read24C16(ep_User_Ptr);
+C51 COMPILER V7.03   MAIN                                                                  12/21/2006 16:55:05 PAGE 3   
+
+ 117   1      //printf("UserModePtr\r\n");
+ 118   1              StatusFlag = Read24C16(ep_Status);
+ 119   1              BurnInMode = 0;                         // +jwshin 050805
+ 120   1              FuncBuf[pVIDEOSOURCE] = Read24C16(ep_Sync_Source);   
+ 121   1      //      FuncBuf[pVIDEOSOURCE] = cSVIDEO;                // +jwshin 강제 DVI 진입...
+ 122   1      //      PowerStatus = 1;        
+ 123   1              if(!PowerStatus){                               
+ 124   2      //                      printf("PowerOffProcess\r\n");
+ 125   2                      PowerOffProcess();
+ 126   2      
+ 127   2              }
+ 128   1              if(FuncBuf[pVIDEOSOURCE] == cDVI)       //DVI
+ 129   1                      SyncMode = 3;
+ 130   1              else if(FuncBuf[pVIDEOSOURCE] == cYPbPr)        //YPbPr
+ 131   1                      SyncMode = 4;                   // +jwshin 060926
+ 132   1              else
+ 133   1                      SyncMode = 0;
+ 134   1              if(KeyBuffer == vkMENU)         // +jwshin 061009
+ 135   1                      {
+ 136   2                      FactMode = 1;
+ 137   2                      Write24C16(ep_Status,StatusFlag);
+ 138   2                      }
+ 139   1              if(FactMode)
+ 140   1                      {       //factory mode befor power off
+ 141   2                      FuncBuf[pCOLORTEMP] = 2;        
+ 142   2                      FuncBuf[pLANGUAGE] = 0;
+ 143   2                      Write24C16(ep_Color_Ptr,2);
+ 144   2                      #if PRINT_MESSAGE
+ 145   2                              printf("Factory mode\n");
+ 146   2                      #endif
+ 147   2                      }
+ 148   1              LED_GrnOn();    // +jwshin 060908
+ 149   1      //                      printf("LED_GrnOn\r\n");
+ 150   1              LoadModeIndependentSettings();
+ 151   1              PanelPowerOn();
+ 152   1              //XAO_On();
+ 153   1              InitScaler();
+ 154   1      //                      printf("InitScaler\r\n");
+ 155   1              OsdInit();
+ 156   1      //                      printf("OsdInit\r\n");
+ 157   1      #if PRINT_MESSAGE
+ 158   1                      printf("Test for debug.\n");
+ 159   1      #endif
+ 160   1              SetInverter();
+ 161   1              LoadADC_Gain();
+ 162   1      //      Z86229_Init();  // test         // -jwshin 050729
+ 163   1              PowerTimer = POWER_TIME-100;    //search sync start
+ 164   1      //      CheckSaa7114();
+ 165   1                                      // ---- -jwshin 060929
+ 166   1              if(BurnInMode)
+ 167   1                      FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 168   1              if(DecoderICEn && FuncBuf[pVIDEOSOURCE] >= cYPbPr)      // +jwshin 060929
+ 169   1                      SourceSelect();
+ 170   1              else
+ 171   1                      {
+ 172   2                      if(!DecoderICEn && FuncBuf[pVIDEOSOURCE] > cYPbPr)
+ 173   2                              {
+ 174   3                              FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 175   3                              Write24C16(ep_Sync_Source,0);
+ 176   3                              }
+ 177   2                      SetBrightness();
+ 178   2                      SetContrast();
+C51 COMPILER V7.03   MAIN                                                                  12/21/2006 16:55:05 PAGE 4   
+
+ 179   2                      }
+ 180   1      
+ 181   1      //      FuncBuf[pVOLUME] = 100;
+ 182   1      //      SetAudioVolume();
+ 183   1              //SetAudioMute();
+ 184   1              SetVCM_Vol();
+ 185   1              FuncBuf[pVOLUME] = Read24C16(ep_Volume);//Jason Choi
+ 186   1      //      printf("FuncBuf[pVolume]=%x\n",FuncBuf[pVOLUME]);
+ 187   1                      AudioMute=0; //Jason Choi 다시켤 檍ㅉ때 mute풀림 
+ 188   1              SetAudioVolume();
+ 189   1      //      AUDIO_On();
+ 190   1              SetLightBrightness();
+ 191   1              SetLightContrast();
+ 192   1              SetLightHS();
+ 193   1              SetLightHW();
+ 194   1              SetLightVS();
+ 195   1              SetLightVH();
+ 196   1      
+ 197   1              CaptionFlag= Read24C16(0x7f0);
+ 198   1              GetRating(); //Get Raing from V-chip
+ 199   1      
+ 200   1      //      WriteIIC563(0x001,0x45);
+ 201   1      //      value = ReadIIC563(0x001);
+ 202   1      //      printf("value=%x\r\n",(unsigned short)value);
+ 203   1      #if ContrastBlock == BackEndGain
+                      sRGB(50,128,128,128);
+              #endif
+ 206   1              if(BurnInMode)
+ 207   1                      ShowBurnInPattern(1);
+ 208   1                      
+ 209   1                      
+ 210   1              while(1)
+ 211   1              {
+ 212   2      
+ 213   2                      if(DecoderICEn &&( FuncBuf[pVIDEOSOURCE] > cYPbPr)){
+ 214   3                              if(VideoTest == 1){
+ 215   4                                      CheckVideoSignal();
+ 216   4                                      VideoCheck = 0;
+ 217   4                                      if(VideoCheck){
+ 218   5      //                                      if(Read24C16(0x7F3) == 1){
+ 219   5                                                      if(VideoMute == 0){
+ 220   6                                                              if(VChip_Timer>20){
+ 221   7                                                                      if(VideoCheck == 1)Check_VChip();
+ 222   7                                                                      VChip_Timer=0;
+ 223   7                                                              }
+ 224   6                                                      }
+ 225   5      //                                      }
+ 226   5                                      }
+ 227   4                              }
+ 228   3                      }
+ 229   2                      else{
+ 230   3                                      if(NoSyncFlag==0) {             // +jwshin 060908
+ 231   4                                              LED_GrnOn();
+ 232   4                                      }
+ 233   3                                      CheckFreq();
+ 234   3                                      //if(!FactMode)
+ 235   3                                              PowerSaveingProcess();
+ 236   3                                      SyncSource(0);
+ 237   3                      }
+ 238   2                      //KeyScan();
+ 239   2                      //if(KeyBuffer & 0x80){
+ 240   2                      //KeyBuffer &= 0x7F;
+C51 COMPILER V7.03   MAIN                                                                  12/21/2006 16:55:05 PAGE 5   
+
+ 241   2                      KeyProcess();
+ 242   2                      AdjustProcess();
+ 243   2                      OsdProcess();
+ 244   2                      //      }
+ 245   2                      MiscProcess(1);
+ 246   2                      LocalTimer = 10;
+ 247   2      //              printf("MiscProcess\n");
+ 248   2      //              while(LocalTimer != 0)
+ 249   2      //              {
+ 250   2      //                      ADC_CON = (STRT_ADC | EN_ADC3);         //Channel;  // Start AD Convert
+ 251   2      //                      while(!(ADC3_REG & CMP_ADC));
+ 252   2      //                      if((ADC3_REG & 0x7f) < 0x40){
+ 253   2      //                              LocalTimer = 25;
+ 254   2      //                              WarmUp();
+ 255   2      //                      }
+ 256   2      //              }
+ 257   2      
+ 258   2      
+ 259   2                      //if(FactMode && (MenuPtr.Menu == 2))
+ 260   2                      //{
+ 261   2                      //      ShowBackLightTime();
+ 262   2                      //}
+ 263   2                      CheckRCV(); //Jason Choi                // -jwshin 050722
+ 264   2              //      CheckDDC2Bi();
+ 265   2              
+ 266   2              } 
+ 267   1              
+ 268   1                      
+ 269   1                      
+ 270   1      }
+ 271          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    646    ----
+   CONSTANT SIZE    =     47    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

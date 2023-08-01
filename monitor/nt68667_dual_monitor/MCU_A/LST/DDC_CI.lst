@@ -1,0 +1,1429 @@
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE DDC_CI
+OBJECT MODULE PLACED IN .\BIN\DDC_CI.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\DDC_CI.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mode
+                    -lName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\DDC_CI.lst) OBJECT(.\BIN\DDC_CI.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          #include "NT686xx_MCU_REG.H"
+   3          #include "MyDef.H"
+   4          #include "NVRAM.H"
+   5          #include "UserAdj.H"
+   6          #include "ModeHandle.H"
+   7          #include "Scaler.H"
+   8          #include "AutoAdj.H"
+   9          #include "sRGB.H"
+  10          #include "DDC_Ci.H"
+  11          #include "MCU.h"
+  12          #include "OSD.h"
+  13          #include "stdio.h"
+  14          #include "ROM_MAP.H"
+  15          #include "8051.H"
+  16          #include "Board.H"
+  17          #include "NT686xx_SC_REG.h"
+  18          #include "Panel.H"
+  19          #include "OSD_Tab.H"
+  20          #include "NVTDebug.h"
+  21          #include "factory.H"
+  22          #include "FactoryAlignment.h"
+  23          #include "BFControl.H"
+  24          //#ifdef NOVATEK_HDCP_WRITER
+  25          #include "HDCP.h"
+  26          //#endif
+  27          #include "Mis.h"
+  28          
+  29          
+  30          #ifdef BenQ_FACTORY
+              code unsigned char ColorTab3[]={        //factory
+                      1,2,4,0,3
+              };
+              
+              #endif
+  36          
+  37          static unsigned char ucClearOSDFlag;
+  38          
+  39          void CheckDDC2Bi(void)
+  40          {
+  41   1      unsigned char cmd;
+  42   1              if(bDDCCmdUpdate == TRUE){
+  43   2                      while(bDDCCmdUpdate){
+  44   3                              bDDCCmdUpdate = FALSE;
+  45   3              //Wait stop
+  46   3                              ucLoopTimer_10ms = 100;
+  47   3                              while(ucLoopTimer_10ms != 0){
+  48   4                                      if((bDDC_Ci_Channel == 0)&&((IIC0_STATUS & BUS_STOP) != 0)){
+  49   5                                              break;
+  50   5                                      }
+  51   4                                      else if((bDDC_Ci_Channel == 1)&&((IIC1_STATUS & BUS_STOP) != 0)){
+  52   5                                              break;
+  53   5                                      }
+  54   4                              }
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 2   
+
+  55   3                              if((ucLoopTimer_10ms != 0)&&(ucDDCCiRxIn != 0)){        //receive                                               
+  56   4                                      if((bFactoryMode == FALSE) || (bFactoryModeType == FACTORY_DDCCI)){
+  57   5                                              ucDDCCiRxChecksum = 0;
+  58   5                                              ucDDCCiRxOut = 0;
+  59   5                                              cmd = (ucDDCCiRxBuffer[1] & 0x7f) + 3; 
+  60   5      //                                      printf("%bx ",cmd);
+  61   5                                              if(ucDDCCiRxIn > cmd)
+  62   5                                                      ucDDCCiRxIn = cmd;
+  63   5                                              while(ucDDCCiRxIn != ucDDCCiRxOut){
+  64   6                                                      cmd = ucDDCCiRxBuffer[ucDDCCiRxOut++];
+  65   6                                                      ucDDCCiRxChecksum ^= cmd;
+  66   6                                                      if(ucDDCCiRxOut > DDCCi_BUFFER_SIZE-1)
+  67   6                                                              ucDDCCiRxOut = 2;
+  68   6      //                                              printf("%bx ",cmd);
+  69   6                                              }
+  70   5      //                                      printf(":%bx ",ucDDCCiTxIn);
+  71   5      //                                      printf("\r\n");
+  72   5                                              ucDDCCiRxIn = 0;
+  73   5                                              //ucDDCCiRxOut = 0;
+  74   5                                              Check2BiCmd();
+  75   5                              
+  76   5                                      }
+  77   4                                      else if(bFactoryModeType == FACTORY_4BYTE){     //Factory Alignment
+  78   5      //                              else{   //Factory Alignment
+  79   5                                              BenQ_FactoryAlignment();
+  80   5                                      }
+  81   4                              }
+  82   3                      }
+  83   2              }
+  84   1      }
+  85          
+  86          code unsigned char ColorTab1[]={        //ddc/ci
+  87                  0x05,0x01,0x0b,0x02
+  88          };
+  89          code unsigned char ColorTab2[]={
+  90                  0x04,0x05,0x06,0x07,0x08,0x0a
+  91          };
+  92          //code unsigned char ColorTab2[]={      //ddc/ci
+  93          //      4,3,0,4,4,2,4,4,1,4,4,4,4,4,4,4,4
+  94          //};
+  95          
+  96          void Check2BiCmd(void)
+  97          {
+  98   1       unsigned char TempCK;
+  99   1              TempCK = ucDDCCiRxChecksum;
+ 100   1      //      printf("CK = %bx\r\n",TempCK);
+ 101   1      
+ 102   1              if((TempCK == DDCCI_ADDR)||(TempCK == DDCCI_ADDR+1)){
+ 103   2                      ucClearOSDFlag = TRUE;
+ 104   2                      SendNullCmd(DDCCI_ADDR);
+ 105   2              //check sum ok. DDCi
+ 106   2      //printf("DDCBuf0=%02x,%02x,%02x",(unsigned short)ucDDCCiRxBuffer[6],(unsigned short)ucDDCCiRxBuffer[7],(u
+             -nsigned short)ucDDCCiRxBuffer[8]);
+ 107   2      //printf(",%02x,%02x,%02x\r\n",(unsigned short)ucDDCCiRxBuffer[9],(unsigned short)ucDDCCiRxBuffer[10],(uns
+             -igned short)ucDDCCiRxBuffer[11]);
+ 108   2                      switch(ucDDCCiRxBuffer[2]){
+ 109   3                      case CMDOP_GET_VCP:     //GetVCP_Feature
+ 110   3                              GetVCP_Feature();
+ 111   3                              break;
+ 112   3                      case CMDOP_SET_VCP:     //SetVCP_Feature
+ 113   3      #ifdef ENABLE_TD_       
+              //printf("%d,%d,%d\r\n",(unsigned short)ucTD_ACMode,(unsigned short)ucTD_State,(unsigned short)ucDDCCiRxBu
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 3   
+
+             -ffer[3]);
+                                      if(ucTD_ACMode != TD_NORMAL && ucTD_State == TD_THEFT  && (ucDDCCiRxBuffer[3]!=VCPOP_TD_PIN_L&&ucDDCCiR
+             -xBuffer[3]!=VCPOP_TD_PIN_H) ) break;
+              #endif
+ 117   3                              SetVCP_Feature();
+ 118   3                              break;
+ 119   3                      case CMDOP_GET_TIMING:  //GetTiming
+ 120   3                              GetTiming();
+ 121   3                              break;
+ 122   3                      case CMDOP_SAVE:        //SaveCurrentSetting
+ 123   3                              SaveCurrentSetting();
+ 124   3                              break;
+ 125   3                      case CMDOP_SET_CAP:     //VCPcapability
+ 126   3                              SetVCP_Capabilities();
+ 127   3                              break;
+ 128   3                      default:
+ 129   3      //                      SendACKCmd();
+ 130   3      //                      printf("test\r\n");
+ 131   3                              return; // DO NOT GO TO OSD_OFF()
+ 132   3                              break;
+ 133   3                      }
+ 134   2      
+ 135   2      #ifdef ENABLE_TD_       
+                              if (( ucTD_ACMode == TD_NORMAL || ucTD_State != TD_THEFT ) && ucClearOSDFlag)
+              #endif
+ 138   2                              OSD_OFF();
+ 139   2              }
+ 140   1              
+ 141   1      }
+ 142          
+ 143          void SendNullCmd(unsigned char SlaveAddr)
+ 144          {
+ 145   1              ucDDCCiTxBuffer[0] = SlaveAddr;
+ 146   1              ucDDCCiTxBuffer[1] = 0x80;
+ 147   1              ucDDCCiTxChecksum = 0x50;
+ 148   1              ucDDCCiTxOut = 0;
+ 149   1              ucDDCCiTxIn = 2;
+ 150   1      }
+ 151          
+ 152          /*
+ 153          void SendACKCmd(void)
+ 154          {
+ 155                  if(IIC0_ADDR == DDCCI_ADDR)
+ 156                          ucDDCCiTxBuffer[0] = 0x6e;
+ 157                  else
+ 158                          ucDDCCiTxBuffer[0] = 0x58;
+ 159                  ucDDCCiTxBuffer[1] = 0x81;
+ 160                  ucDDCCiTxBuffer[2] = 0x0c;
+ 161                  ucDDCCiTxChecksum = 0x50;
+ 162                  ucDDCCiTxOut = 0;
+ 163                  ucDDCCiTxIn = 3;
+ 164          }
+ 165          
+ 166          void SendNACKCmd(void)
+ 167          {
+ 168                  if(IIC0_ADDR == DDCCI_ADDR)
+ 169                          ucDDCCiTxBuffer[0] = 0x6e;
+ 170                  else
+ 171                          ucDDCCiTxBuffer[0] = 0x58;
+ 172                  ucDDCCiTxBuffer[1] = 0x81;
+ 173                  ucDDCCiTxBuffer[2] = 0x0b;
+ 174                  ucDDCCiTxChecksum = 0x50;
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 4   
+
+ 175                  ucDDCCiTxOut = 0;
+ 176                  ucDDCCiTxIn = 3;
+ 177          }
+ 178          */
+ 179          
+ 180          
+ 181          void ReplyNA()
+ 182          {
+ 183   1              ucDDCCiTxBuffer[3] = 0x01;              //result code = unsupported
+ 184   1              ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 185   1              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 186   1              ucDDCCiTxBuffer[8] = 0x00;              //
+ 187   1              ucDDCCiTxBuffer[9] = 0x00;              //
+ 188   1      }
+ 189          
+ 190          void GetVCP_Feature(void)
+ 191          {
+ 192   1       unsigned short temp;
+ 193   1      #ifdef NVT_HW_DEBUG
+ 194   1      //      if ( bFactoryMode && ucDDCCiRxBuffer[3] == VCPOP_AOC_CMD )              //AOC Factory command: READ
+ 195   1              if(ucDDCCiRxBuffer[3] == VCPOP_AOC_CMD )                //AOC Factory command: READ
+ 196   1              {
+ 197   2                      
+ 198   2                      WaitDDCTxOut();
+ 199   2                      
+ 200   2                      if(NVTHWDebug(ucDDCCiRxBuffer, ucDDCCiTxBuffer)){
+ 201   3                              // NVT DEBUG HERE
+ 202   3                              ucDDCCiTxChecksum = 0x50;
+ 203   3                              ucDDCCiTxOut = 0;
+ 204   3                              ucDDCCiTxIn = 10;
+ 205   3                              return;
+ 206   3                      }
+ 207   2                      for(temp=0; temp<8; temp++){
+ 208   3                              ucUARTRxBuffer[temp] = ucDDCCiRxBuffer[4+temp]; //command
+ 209   3                      }
+ 210   2      
+ 211   2                      ucUARTRxOut = 0;
+ 212   2                      ucUARTRxIn = 8;
+ 213   2                      return;
+ 214   2              }
+ 215   1      #endif  
+ 216   1              WaitDDCTxOut();
+ 217   1              
+ 218   1              ucDDCCiTxBuffer[0] = ACCESSBUS_ADDR;
+ 219   1              ucDDCCiTxBuffer[1] = 0x88;
+ 220   1              ucDDCCiTxBuffer[2] = CMDOP_VCP_RPL;
+ 221   1              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+ 222   1              ucDDCCiTxBuffer[4] = ucDDCCiRxBuffer[3];
+ 223   1              ucDDCCiTxBuffer[5] = 0x00;              //vcp type = set parameter
+ 224   1              ucDDCCiTxChecksum = 0x50;
+ 225   1              ucDDCCiTxOut = 0;
+ 226   1              ucDDCCiTxIn = 10;
+ 227   1      
+ 228   1              switch(ucDDCCiRxBuffer[3]){
+ 229   2              case VCPOP_NEW_CTRL:    //0x02
+ 230   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 231   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 232   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 233   2                      ucDDCCiTxBuffer[9] = ucNewControlValue;         //0xff no user control are present
+ 234   2                      break;
+ 235   2              case VCPOP_COLOR_INC:   //0x0B
+ 236   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 5   
+
+ 237   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 238   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 239   2                      ucDDCCiTxBuffer[9] = 50;                //each step = 50
+ 240   2                      break;
+ 241   2              case VCPOP_COLOR_REQ:   //0x0C
+ 242   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 243   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 244   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 245   2                      if(ucColorTemperature==COLOR_5000 )
+ 246   2                              ucDDCCiTxBuffer[9] = 40;
+ 247   2                      else if(ucColorTemperature==COLOR_6500 )
+ 248   2                              ucDDCCiTxBuffer[9] = 70;
+ 249   2                      else if(ucColorTemperature==COLOR_7500 )
+ 250   2                              ucDDCCiTxBuffer[9] = 90;
+ 251   2                      else if(ucColorTemperature==COLOR_8200 )
+ 252   2                              ucDDCCiTxBuffer[9] = 104;
+ 253   2                      else if(ucColorTemperature==COLOR_9300 )
+ 254   2                              ucDDCCiTxBuffer[9] = 126;
+ 255   2                      else if(ucColorTemperature==COLOR_11500 )
+ 256   2                              ucDDCCiTxBuffer[9] = 170;
+ 257   2                      else
+ 258   2                              ucDDCCiTxBuffer[9] = 70;
+ 259   2                      break;
+ 260   2              case VCPOP_CLOCK:       //clock
+ 261   2                      if (ucSignalType == sigDVI){
+ 262   3                              ReplyNA();
+ 263   3                      }
+ 264   2                      else{
+ 265   3                              ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 266   3                              ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 267   3                              ucDDCCiTxBuffer[8] = 0x00;              //clockHi
+ 268   3                              ucDDCCiTxBuffer[9] = usHTotal-usMinClk;         //clockLo
+ 269   3                      }
+ 270   2                      break;
+ 271   2              case VCPOP_BRIGHT:      //brightness
+ 272   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 273   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 274   2                      ucDDCCiTxBuffer[8] = 0x00;              //brightnessHi
+ 275   2                      ucDDCCiTxBuffer[9] = ucBrightness;      //brightnessLo
+ 276   2                      break;
+ 277   2              case VCPOP_CONTRAST:    //contrast
+ 278   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 279   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 280   2                      ucDDCCiTxBuffer[8] = 0x00;              //contrastHi
+ 281   2                      ucDDCCiTxBuffer[9] = ucContrast;        //contrastLo
+ 282   2                      break;
+ 283   2              case VCPOP_SEL_COLOR:   //select color preset
+ 284   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 285   2                      ucDDCCiTxBuffer[7] = 0x0b;              //maximumLo
+ 286   2                      ucDDCCiTxBuffer[8] = 0x00;              //colorinputHi
+ 287   2                      ucDDCCiTxBuffer[9] = ColorTab2[ucColorTemperature];
+ 288   2                      break;
+ 289   2              case VCPOP_RGAIN:       //Red gain
+ 290   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 291   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 292   2                      ucDDCCiTxBuffer[8] = 0x00;              //R_GainHi
+ 293   2                      ucDDCCiTxBuffer[9] = ((unsigned short)ucR_GainUser * 100 + 128) / 255;  //R_GainLo      2006-11-28 VISTA
+ 294   2                      break;
+ 295   2              case VCPOP_GGAIN:       //Green gain
+ 296   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 297   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 298   2                      ucDDCCiTxBuffer[8] = 0x00;              //G_GainHi
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 6   
+
+ 299   2                      ucDDCCiTxBuffer[9] = ((unsigned short)ucG_GainUser * 100 + 128) / 255;  //G_GainLo      2006-11-28 VISTA
+ 300   2                      break;
+ 301   2              case VCPOP_BGAIN:       //Blue gain
+ 302   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 303   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 304   2                      ucDDCCiTxBuffer[8] = 0x00;              //B_GainHi
+ 305   2                      ucDDCCiTxBuffer[9] = ((unsigned short)ucB_GainUser * 100 + 128) / 255;  //B_GainLo      2006-11-28 VISTA
+ 306   2                      break;
+ 307   2              case VCPOP_AUTO_COLOR:                  
+ 308   2              case VCPOP_AUTO_SET:    //autoaetup
+ 309   2                      if(ucSignalType != sigDVI){
+ 310   3                              ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 311   3                              ucDDCCiTxBuffer[7] = 0x01;              //maximumLo
+ 312   3                              ucDDCCiTxBuffer[8] = 0x00;              //autoaetupHi
+ 313   3                              ucDDCCiTxBuffer[9] = 0x00;              //autoaetupLo
+ 314   3                      }
+ 315   2                      else{
+ 316   3                              ReplyNA();
+ 317   3                      }
+ 318   2                      break;
+ 319   2              case VCPOP_RECALL:      //factory reset         //2004-01-27 add facrory reset
+ 320   2              case VCPOP_RECALL_BC:
+ 321   2              case VCPOP_RECALL_COLOR:
+ 322   2              case VCPOP_RECALL_HV_POS:
+ 323   2              case VCPOP_END:
+ 324   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 325   2                      ucDDCCiTxBuffer[7] = 0x01;              //maximumLo
+ 326   2                      ucDDCCiTxBuffer[8] = 0x00;              //autoaetupHi
+ 327   2                      ucDDCCiTxBuffer[9] = 0x00;              //autoaetupLo
+ 328   2                      break;
+ 329   2              case VCPOP_H_POS:       //horizontal position
+ 330   2                      if (ucSignalType == sigDVI){
+ 331   3                              ReplyNA();
+ 332   3                      }
+ 333   2                      else{
+ 334   3                              temp = usMaxHP - ucMinHP;
+ 335   3                              ucDDCCiTxBuffer[6] = (unsigned char)(temp >> 8);        //maximumHi
+ 336   3                              ucDDCCiTxBuffer[7] = (unsigned char)temp;               //maximumLo
+ 337   3                              temp = usMaxHP - usHPStart;
+ 338   3                              ucDDCCiTxBuffer[8] = (unsigned char)(temp >> 8);        //HpHi
+ 339   3                              ucDDCCiTxBuffer[9] = (unsigned char)temp;               //HpLo
+ 340   3                      }
+ 341   2                      break;
+ 342   2              case VCPOP_V_POS:       //vertical position
+ 343   2                      if (ucSignalType == sigDVI){
+ 344   3                              ReplyNA();
+ 345   3                      }
+ 346   2                      else{
+ 347   3                              temp = ucMaxVP - ucMinVP;
+ 348   3                              ucDDCCiTxBuffer[6] = (unsigned char)(temp >> 8);        //maximumHi
+ 349   3                              ucDDCCiTxBuffer[7] = (unsigned char)temp;               //maximumLo
+ 350   3                              temp = usVPStart - ucMinVP;
+ 351   3                              ucDDCCiTxBuffer[8] = (unsigned char)(temp >> 8);        //VpHi
+ 352   3                              ucDDCCiTxBuffer[9] = (unsigned char)temp;               //VpLo
+ 353   3                      }
+ 354   2                      break;
+ 355   2              case VCPOP_H_PHASE:     //phase
+ 356   2                      if (ucSignalType == sigDVI){
+ 357   3                              ReplyNA();
+ 358   3                      }
+ 359   2                      else{
+ 360   3                              ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 7   
+
+ 361   3                              ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 362   3                              ucDDCCiTxBuffer[8] = 0x00;              //phaseHi
+ 363   3                              ucDDCCiTxBuffer[9] = ucADCCPhase100Pa;  //((unsigned short)ucADCPhase * 100) / 63;              //phaseLo
+ 364   3                      }
+ 365   2                      break;
+ 366   2              case VCPOP_INPUT:               //0x60
+ 367   2      //#if DualMode==ON      
+ 368   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 369   2                      ucDDCCiTxBuffer[7] = 0x03;              //maximumLo
+ 370   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 371   2                      if(ucSignalType == sigDVI)
+ 372   2                              ucDDCCiTxBuffer[9] = 0x03;              //digital
+ 373   2                      else
+ 374   2                              ucDDCCiTxBuffer[9] = 0x01;              //analog
+ 375   2                      break;
+ 376   2      /*#else
+ 377   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 378   2                      ucDDCCiTxBuffer[7] = 0x01;              //maximumLo
+ 379   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 380   2                      ucDDCCiTxBuffer[9] = 0x01;              //analog
+ 381   2                      break;
+ 382   2      #endif*/
+ 383   2      case VCPOP_ROFFSET:             //0x6C
+ 384   2                      WriteIIC560(SRGB_CTRL, 0x21);
+ 385   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 386   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 387   2                      ucDDCCiTxBuffer[8] = 0x00;              //B_GainHi
+ 388   2                      ucDDCCiTxBuffer[9] = ucBkOffset[0];
+ 389   2                      break;
+ 390   2              case VCPOP_GOFFSET:             //0x6E
+ 391   2                      WriteIIC560(SRGB_CTRL, 0x23);
+ 392   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 393   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 394   2                      ucDDCCiTxBuffer[8] = 0x00;              //B_GainHi
+ 395   2                      ucDDCCiTxBuffer[9] = ucBkOffset[1];
+ 396   2                      break;
+ 397   2              case VCPOP_BOFFSET:             //0x70
+ 398   2                      WriteIIC560(SRGB_CTRL, 0x25);
+ 399   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 400   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 401   2                      ucDDCCiTxBuffer[8] = 0x00;              //B_GainHi
+ 402   2                      ucDDCCiTxBuffer[9] = ucBkOffset[2];
+ 403   2                      break;
+ 404   2              case VCPOP_H_FREQ:
+ 405   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 406   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 407   2                      temp = (unsigned short)(ulDispHfreq>>1);                                //Hz
+ 408   2                      ucDDCCiTxBuffer[8] = (unsigned char)(temp>>8);  //H_Sync Hi
+ 409   2                      ucDDCCiTxBuffer[9] = (unsigned char)temp;               //H_Sync Lo
+ 410   2                      break;
+ 411   2              case VCPOP_V_FREQ:
+ 412   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 413   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 414   2                      temp = usVSync * 10;                    //0.01Hz
+ 415   2                      ucDDCCiTxBuffer[8] = (unsigned char)(temp>>8);  //V_Sync Hi
+ 416   2                      ucDDCCiTxBuffer[9] = (unsigned char)temp;               //V_Sync Lo
+ 417   2                      break;
+ 418   2              case VCPOP_DISP_TYPE:   //0xB6
+ 419   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 420   2                      ucDDCCiTxBuffer[7] = 0x04;              //maximumLo
+ 421   2                      ucDDCCiTxBuffer[8] = 0x00;              //displaytypeHi
+ 422   2                      ucDDCCiTxBuffer[9] = 0x03;              //displaytypeLo
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 8   
+
+ 423   2                      break;
+ 424   2              case VCPOP_AUDIO:       //volume
+ 425   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 426   2                      ucDDCCiTxBuffer[7] = 100;               //maximumLo
+ 427   2                      ucDDCCiTxBuffer[8] = 0x00;              //VolumeHi
+ 428   2                      ucDDCCiTxBuffer[9] = ucVolume;  //VolumeLo
+ 429   2                      break;
+ 430   2              case VCPOP_MUTE:        //volume
+ 431   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 432   2                      ucDDCCiTxBuffer[7] = 0x02;              //maximumLo
+ 433   2                      ucDDCCiTxBuffer[8] = 0x00;              //VolumeHi
+ 434   2                      ucDDCCiTxBuffer[9] = 2-(unsigned char)bMute;    //VolumeLo
+ 435   2                      break;
+ 436   2              case VCPOP_USE_TIME:    //usage time
+ 437   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 438   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 439   2                      temp = Get_ulPOTTimerH();
+ 440   2                      ucDDCCiTxBuffer[8] = (unsigned char)(temp >> 8);                //displaytimeHi
+ 441   2                      ucDDCCiTxBuffer[9] = (unsigned char)temp;               //displaytimeLo
+ 442   2                      break;
+ 443   2              case VCPOP_APP_KEY:     //Application enable key
+ 444   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 445   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 446   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 447   2                      ucDDCCiTxBuffer[9] = 0x6F;              //Philips Application enable key = 0x6f
+ 448   2                      break;
+ 449   2              case VCPOP_CTRL_TYPE:   //0xC8
+ 450   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 451   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 452   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 453   2                      ucDDCCiTxBuffer[9] = 0x12;              //DEFINE FOR PHILIPS BY PORTRAIT
+ 454   2                      break;
+ 455   2              case VCPOP_FW_LEVEL:    //0xC9F/W level
+ 456   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 457   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 458   2                      ucDDCCiTxBuffer[8] = 0x00;              //level 3
+ 459   2                      ucDDCCiTxBuffer[9] = 0x03;              //level 3
+ 460   2                      break;
+ 461   2              case VCPOP_OSD_LOCK:
+ 462   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 463   2                      ucDDCCiTxBuffer[7] = 0x02;              //maximumLo
+ 464   2                      ucDDCCiTxBuffer[8] = 0x00;              //level 3
+ 465   2                      ucDDCCiTxBuffer[9] = 2-(unsigned char)bIsOSDLocked;
+ 466   2                      break;
+ 467   2              case VCPOP_LANGUAGE:
+ 468   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 469   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 470   2                      ucDDCCiTxBuffer[8] = 0x00;              //level 3
+ 471   2                      if ( ucLanguage == mENGLISH)            ucDDCCiTxBuffer[9] = 0x02;
+ 472   2                      else if (ucLanguage == mFRENCH)         ucDDCCiTxBuffer[9] = 0x03;
+ 473   2                      else if (ucLanguage == mGERMAN)         ucDDCCiTxBuffer[9] = 0x04;
+ 474   2                      else if (ucLanguage == mITALIAN)                ucDDCCiTxBuffer[9] = 0x05;
+ 475   2                      else if (ucLanguage == mPORTUGUESE)     ucDDCCiTxBuffer[9] = 0x08;
+ 476   2                      else if (ucLanguage == mRUSSIAN)                ucDDCCiTxBuffer[9] = 0x09;
+ 477   2                      else if (ucLanguage == mSPANISH)                ucDDCCiTxBuffer[9] = 0x0A;      
+ 478   2                      else if (ucLanguage == mCHINESE_S)              ucDDCCiTxBuffer[9] = 0x0d;
+ 479   2                      break;
+ 480   2              case VCPOP_POWER_MODE:
+ 481   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 482   2                      ucDDCCiTxBuffer[7] = 0x04;              //maximumLo
+ 483   2                      ucDDCCiTxBuffer[8] = 0x00;              //
+ 484   2                      if(ucPowerStatus < 0x80)
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 9   
+
+ 485   2                              ucDDCCiTxBuffer[9] = 0x04;              //power status off
+ 486   2                      else if(IsPanelPowerOn() == 0)
+ 487   2                              ucDDCCiTxBuffer[9] = 0x02;              //power status standby
+ 488   2                      else
+ 489   2                              ucDDCCiTxBuffer[9] = 0x01;              //power status on
+ 490   2                      break;
+ 491   2              case VCPOP_SMARTIMAGE:
+ 492   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 493   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 494   2                      ucDDCCiTxBuffer[8] = 0x00;              //level 3
+ 495   2                      if ( ucLFMode == LF_MODE_OFFICE_WORK)           ucDDCCiTxBuffer[9] = 0x01;
+ 496   2                      else if (ucLFMode == LF_MODE_ImageViewing)      ucDDCCiTxBuffer[9] = 0x02;
+ 497   2                      else if (ucLFMode == LF_MODE_Entertainment)     ucDDCCiTxBuffer[9] = 0x03;
+ 498   2                      else if (ucLFMode == LF_MODE_Economic)          ucDDCCiTxBuffer[9] = 0x08;
+ 499   2                      else                            ucDDCCiTxBuffer[9] = 0x00;
+ 500   2                      break;
+ 501   2              case VCPOP_MCC20:       //0xDF
+ 502   2                      ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+ 503   2                      ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+ 504   2                      ucDDCCiTxBuffer[8] = 0x02;              //Version 2
+ 505   2                      ucDDCCiTxBuffer[9] = 0x00;              //reversion 0
+ 506   2                      break;
+ 507   2              case VCPOP_PHP_RESOLU:
+ 508   2                      ucDDCCiTxBuffer[6] = 0x00;              //maximumHi
+ 509   2                      ucDDCCiTxBuffer[7] = 0x02;              //maximumLo
+ 510   2                      ucDDCCiTxBuffer[8] = 0x00;              //Version 2
+ 511   2                      if ( bResolutionNot )
+ 512   2                              ucDDCCiTxBuffer[9] = 0x02;              //reversion 0
+ 513   2                      else
+ 514   2                              ucDDCCiTxBuffer[9] = 0x00;              //reversion 0
+ 515   2                      break;
+ 516   2      #ifdef ENABLE_TD_               //      THEFT DETERRENCE
+                      case VCPOP_TD_ACCESSMODE:
+                              ucClearOSDFlag = FALSE;
+                              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+                              ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+                              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+                              ucDDCCiTxBuffer[8] = 0x00;      
+                              ucDDCCiTxBuffer[9] = ucTD_ACMode;
+                              //printf("Read VCPOP_TD_ACCESSMODE=%d\r\n",(unsigned short)ucTD_ACMode);        
+                              break;
+                      case VCPOP_TD_TIMEOUT:
+                              ucClearOSDFlag = FALSE;
+                              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+                              ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+                              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+                              ucDDCCiTxBuffer[8] = 0x00;      
+                              ucDDCCiTxBuffer[9] = ucTD_Timeout;
+                              //printf("Read VCPOP_TD_TIMEOUT=%d\r\n",(unsigned short)ucTD_Timeout);  
+                              break;
+              #if 0
+                      case VCPOP_TD_PIN_L:
+                              ucClearOSDFlag = FALSE;
+                              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+                              ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+                              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+                              ucDDCCiTxBuffer[8] = usTD_PinCodeL>>8;
+                              ucDDCCiTxBuffer[9] = usTD_PinCodeL;
+                              break;
+                      case VCPOP_TD_PIN_H:
+                              ucClearOSDFlag = FALSE;
+                              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 10  
+
+                              ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+                              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+                              ucDDCCiTxBuffer[8] = usTD_PinCodeH>>8;
+                              ucDDCCiTxBuffer[9] = usTD_PinCodeH;
+                              break;
+              #endif
+              
+                      case VCPOP_TD_STATE:
+                              ucClearOSDFlag = FALSE;
+                              ucDDCCiTxBuffer[3] = 0x00;              //result code = no error
+                              ucDDCCiTxBuffer[6] = 0xff;              //maximumHi
+                              ucDDCCiTxBuffer[7] = 0xff;              //maximumLo
+                              ucDDCCiTxBuffer[8] = 0x00;      
+                              ucDDCCiTxBuffer[9] = ucTD_State;
+                              //printf("Read VCPOP_TD_STATE=%d\r\n",(unsigned short)ucTD_State);      
+                              break;
+              #endif
+ 564   2              default:
+ 565   2                      ReplyNA();
+ 566   2                      break;
+ 567   2              }
+ 568   1      
+ 569   1      }
+ 570          
+ 571          void SetVCP_Feature(void)
+ 572          {
+ 573   1       unsigned short k;
+ 574   1      //      SendNACKCmd();
+ 575   1              switch(ucDDCCiRxBuffer[3]){
+ 576   2              case VCPOP_NEW_CTRL:
+ 577   2                      if(ucDDCCiRxBuffer[4] == 0){
+ 578   3                              if ( ucDDCCiRxBuffer[5]==1 || ucDDCCiRxBuffer[5]==2 || ucDDCCiRxBuffer[5]==0xff )
+ 579   3                                      ucNewControlValue = ucDDCCiRxBuffer[5];
+ 580   3                      }
+ 581   2                      break;
+ 582   2              case VCPOP_RECALL:      //recall
+ 583   2                      RecallsRGBOffset();
+ 584   2                      Recall();
+ 585   2                      //OSD_OFF();
+ 586   2                      //FactoryReset();       // 2006-01-11
+ 587   2                      break;
+ 588   2              case VCPOP_RECALL_BC:   //recall brightness/contrast
+ 589   2                              ucBrightness = MCU_DataMap[EPADDR_BRIGHT];//0x08 = brightness
+ 590   2                              //Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+ 591   2                              ucSavePointer = svBRIGHTNESS;
+ 592   2                              SaveData();
+ 593   2                              ucContrast = MCU_DataMap[EPADDR_CONTRAST];//0x09 = contrast
+ 594   2                              //Write24C16(EPADDR_CONTRAST,ucContrast);//0x09 = contrast
+ 595   2                              ucSavePointer = svCONTRAST;
+ 596   2                              SaveData();
+ 597   2                              SetContrastRGB();
+ 598   2                              SetBrightness();
+ 599   2      //#if _SmartBright_ == ON
+ 600   2      //                      SetBrightOffset();
+ 601   2      //#endif
+ 602   2                      break;
+ 603   2              case VCPOP_RECALL_HV_POS:
+ 604   2      /*
+ 605   2                      if((ucModeNumber < NUMBER_OF_USER_MODE)&&(ucSignalType != sigDVI)){
+ 606   2                              //InitModeData(ucModeNumber);
+ 607   2                              LoadModeDependentSettings();
+ 608   2                              SetADC_PLL();
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 11  
+
+ 609   2                              SetHP();
+ 610   2                              SetVP();
+ 611   2      
+ 612   2                      }
+ 613   2      */
+ 614   2                      if(ucSignalType != sigDVI) AutoPosition();
+ 615   2                      break;
+ 616   2              case VCPOP_RECALL_COLOR:        //0x08
+ 617   2              
+ 618   2                      RecallsRGBOffset();
+ 619   2      
+ 620   2                      ucBrightness = MCU_DataMap[EPADDR_BRIGHT];//0x08 = brightness
+ 621   2                      //Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+ 622   2                      ucSavePointer = svBRIGHTNESS;
+ 623   2                      SaveData();
+ 624   2                      ucContrast = MCU_DataMap[EPADDR_CONTRAST];//0x09 = contrast
+ 625   2                      //Write24C16(EPADDR_CONTRAST,ucContrast);//0x09 = contrast
+ 626   2                      ucSavePointer = svCONTRAST;
+ 627   2                      SaveData();
+ 628   2                      
+ 629   2                      ucR_GainUser = MCU_DataMap[EPADDR_RGAIN_USER];
+ 630   2                      ucG_GainUser = MCU_DataMap[EPADDR_GGAIN_USER];
+ 631   2                      ucB_GainUser = MCU_DataMap[EPADDR_BGAIN_USER];
+ 632   2                      Write24C16(EPADDR_RGAIN_USER, ucR_GainUser);
+ 633   2                      Write24C16(EPADDR_GGAIN_USER, ucG_GainUser);
+ 634   2                      Write24C16(EPADDR_BGAIN_USER, ucB_GainUser);
+ 635   2                      
+ 636   2                      //Recall6500(1);
+ 637   2                      ucColorTemperature = COLOR_6500;
+ 638   2                      Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 639   2                      SetColorTemp(ucColorTemperature);
+ 640   2              
+ 641   2                      break;
+ 642   2              case VCPOP_COLOR_REQ:   //0x0C
+ 643   2                      k = 3000 + (unsigned short)ucDDCCiRxBuffer[5] * 50;
+ 644   2                      if(ucDDCCiRxBuffer[4] != 0)
+ 645   2                              k = 0xffff;
+ 646   2                      if ( k < 5750 )
+ 647   2                              ucColorTemperature = COLOR_5000;
+ 648   2                      else if ( k < 7000 )
+ 649   2                              ucColorTemperature = COLOR_6500;
+ 650   2                      else if ( k < 7850 )
+ 651   2                              ucColorTemperature = COLOR_7500;
+ 652   2                      else if ( k < 8750 )
+ 653   2                              ucColorTemperature = COLOR_8200;
+ 654   2                      else if ( k < 10400 )
+ 655   2                              ucColorTemperature = COLOR_9300;
+ 656   2                      else
+ 657   2                              ucColorTemperature = COLOR_11500;
+ 658   2                      SetColorTemp(ucColorTemperature);
+ 659   2                      Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 660   2                      break;
+ 661   2              case VCPOP_CLOCK:       //clock
+ 662   2                      if(ucDDCCiRxBuffer[5] > 100)
+ 663   2                              ucDDCCiRxBuffer[5] = 100;
+ 664   2                      usHTotal = usMinClk + ucDDCCiRxBuffer[5] ;              //clockLo
+ 665   2                      SetADC_PLL();
+ 666   2      //              ucSavePointer = svCLOCK;
+ 667   2      //              SaveData();
+ 668   2                      break;
+ 669   2              case VCPOP_BRIGHT:      //brightness
+ 670   2                      if(ucColorTemperature == COLOR_SRGB){   //sRGB
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 12  
+
+ 671   3                              ucColorTemperature = COLOR_6500;
+ 672   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);//0x19 = color temperature select
+ 673   3                              SetColorTemp(ucColorTemperature);
+ 674   3                      }
+ 675   2                      ucBrightness = ucDDCCiRxBuffer[5];              //brightnessLo
+ 676   2                      if(ucBrightness > ucMaxBrightness)                              ucBrightness = ucMaxBrightness;
+ 677   2                      else if(ucBrightness < ucMinBrightness)                 ucBrightness = ucMinBrightness;
+ 678   2                      SetBrightness();
+ 679   2      //#if _SmartBright_ == ON
+ 680   2      //              SetBrightOffset();
+ 681   2      //#endif
+ 682   2                      ucSavePointer = svBRIGHTNESS;
+ 683   2                      SaveData();
+ 684   2                      break;
+ 685   2              case VCPOP_CONTRAST:    //contrast
+ 686   2                      if(ucColorTemperature == COLOR_SRGB){   //sRGB
+ 687   3                              ucColorTemperature = COLOR_6500;
+ 688   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);//0x19 = color temperature select
+ 689   3                              SetColorTemp(ucColorTemperature);
+ 690   3                      }
+ 691   2                      ucContrast = ucDDCCiRxBuffer[5];//contrastLo
+ 692   2                      if(ucContrast > ucMaxContrast)                          ucContrast = ucMaxContrast;
+ 693   2                      else if(ucContrast < ucMinContrast)                     ucContrast = ucMinContrast;
+ 694   2                      SetContrastRGB();
+ 695   2                      ucSavePointer = svCONTRAST;
+ 696   2                      SaveData();
+ 697   2                      break;
+ 698   2              case VCPOP_SEL_COLOR:   //color input
+ 699   2      /*
+ 700   2      01 : sRGB, 02 : Display native, 03 : 4000 K, 04 : 5000 K, 05 : 6500 K, 06 : 7500 K, 07 : 8200 K,
+ 701   2      08 : 9300 K, 09 : 10000 K, 0A : 11500 K, 0B : User 1, 0C : User 2, 0D : User 3
+ 702   2      */
+ 703   2                      switch(ucDDCCiRxBuffer[5]){
+ 704   3                      case 0x01:
+ 705   3                              k = COLOR_SRGB;
+ 706   3                              break;
+ 707   3      //              case 0x02:
+ 708   3      //                      k = COLOR_ORIGIN;
+ 709   3      //                      break;
+ 710   3                      case 0x04:
+ 711   3                              k = COLOR_5000;
+ 712   3                              break;
+ 713   3                      case 0x05:
+ 714   3                              k = COLOR_6500;
+ 715   3                              break;
+ 716   3                      case 0x06:
+ 717   3                              k = COLOR_7500;
+ 718   3                              break;
+ 719   3                      case 0x07:
+ 720   3                              k = COLOR_8200;
+ 721   3                              break;
+ 722   3                      case 0x08:
+ 723   3                              k = COLOR_9300;
+ 724   3                              break;
+ 725   3                      case 0x0a:
+ 726   3                              k = COLOR_11500;
+ 727   3                              break;
+ 728   3                      case 0x0b:
+ 729   3                              k = COLOR_USER;
+ 730   3                              break;
+ 731   3                      default:
+ 732   3                              k = ucColorTemperature;
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 13  
+
+ 733   3                              break;
+ 734   3                      }
+ 735   2                      if(ucColorTemperature != k){
+ 736   3                              ucColorTemperature = k;
+ 737   3                              SetColorTemp(ucColorTemperature);
+ 738   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 739   3      //                      printf("%d\r\n",(unsigned short)ucColorTemperature);
+ 740   3                      }
+ 741   2                      break;
+ 742   2              case VCPOP_RGAIN:       //red
+ 743   2                      /*
+ 744   2                      if(ucColorTemperature == COLOR_USER){   //user
+ 745   2                              ucR_Gain = ((unsigned short)ucDDCCiRxBuffer[5] * 255 + 50) / 100;               //R_GainLo
+ 746   2                              ucR_GainUser = ucR_Gain;
+ 747   2                              SetContrastRGB();
+ 748   2                              ucSavePointer = svRED;
+ 749   2                              SaveData();
+ 750   2                      }
+ 751   2                      break;
+ 752   2                      */
+ 753   2                      if(ucColorTemperature != COLOR_USER){
+ 754   3                              ucColorTemperature = COLOR_USER;
+ 755   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 756   3                      }
+ 757   2              
+ 758   2                      if(ucDDCCiRxBuffer[5] > 100)
+ 759   2                              ucDDCCiRxBuffer[5] = 100;
+ 760   2                      ucR_GainUser = ((unsigned short)ucDDCCiRxBuffer[5]* 255) / 100;
+ 761   2                      //printf("Set ucR_GainUser=%d\r\n", (unsigned short)ucR_GainUser);
+ 762   2                      Write24C16(EPADDR_RGAIN_USER, ucR_GainUser);
+ 763   2                      SetColorTemp(ucColorTemperature);
+ 764   2                      break;
+ 765   2              case VCPOP_GGAIN:       //green
+ 766   2                      /*
+ 767   2                      if(ucColorTemperature == COLOR_USER){   //user
+ 768   2                              ucG_Gain = ((unsigned short)ucDDCCiRxBuffer[5] * 255 + 50) / 100;               //G_GainLo
+ 769   2                              ucG_GainUser = ucG_Gain;
+ 770   2                              SetContrastRGB();
+ 771   2                              ucSavePointer = svGREEN;
+ 772   2                              SaveData();
+ 773   2                      }
+ 774   2                      break;
+ 775   2                      */
+ 776   2                      if(ucColorTemperature != COLOR_USER){
+ 777   3                              ucColorTemperature = COLOR_USER;
+ 778   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 779   3                      }
+ 780   2              
+ 781   2                      if(ucDDCCiRxBuffer[5] > 100)
+ 782   2                              ucDDCCiRxBuffer[5] = 100;
+ 783   2                      ucG_GainUser = ((unsigned short)ucDDCCiRxBuffer[5]* 255 + 50) / 100;
+ 784   2                      Write24C16(EPADDR_GGAIN_USER, ucG_GainUser);
+ 785   2                      SetColorTemp(ucColorTemperature);
+ 786   2                      break;
+ 787   2              case VCPOP_BGAIN:       //blue
+ 788   2                      /*
+ 789   2                      if(ucColorTemperature == COLOR_USER){   //user
+ 790   2                              ucB_Gain = ((unsigned short)ucDDCCiRxBuffer[5] * 255 + 50) / 100;               //B_GainLo
+ 791   2                              ucB_GainUser = ucB_Gain;
+ 792   2                              SetContrastRGB();
+ 793   2                              ucSavePointer = svBLUE;
+ 794   2                              SaveData();
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 14  
+
+ 795   2                      }
+ 796   2                      break;
+ 797   2                      */
+ 798   2                      if(ucColorTemperature != COLOR_USER){
+ 799   3                              ucColorTemperature = COLOR_USER;
+ 800   3                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 801   3                      }
+ 802   2              
+ 803   2                      if(ucDDCCiRxBuffer[5] > 100)
+ 804   2                              ucDDCCiRxBuffer[5] = 100;
+ 805   2                      ucB_GainUser = ((unsigned short)ucDDCCiRxBuffer[5]* 255 + 50) / 100;
+ 806   2                      Write24C16(EPADDR_BGAIN_USER, ucB_GainUser);
+ 807   2                      SetColorTemp(ucColorTemperature);
+ 808   2                      break;
+ 809   2              case VCPOP_AUTO_SET:    //autosetup
+ 810   2                      if(ucSignalType != sigDVI){
+ 811   3                              //ShowAutoAdj();
+ 812   3                              AutoTune();
+ 813   3                              //bOSDReady = FALSE;                    
+ 814   3                              //MainOSD();    //  OSD in advance
+ 815   3                              //OSD_OFF();
+ 816   3                      }
+ 817   2                      break;
+ 818   2              case VCPOP_AUTO_COLOR:  // auto color
+ 819   2                      //if(ucSignalType != sigDVI &&(bFactoryMode) ){
+ 820   2                      if(ucSignalType != sigDVI){     // For passing Portrait verification // Jude 07/25/2006
+ 821   3                              OSD_OFF();
+ 822   3                              AutoColor();
+ 823   3                      }
+ 824   2                      break;
+ 825   2              case VCPOP_H_POS:       //horizontal position
+ 826   2                      k = usMaxHP - ucMinHP;
+ 827   2                      usHPStart = ucDDCCiRxBuffer[4];         //HpHi
+ 828   2                      usHPStart <<= 8;
+ 829   2                      usHPStart |= ucDDCCiRxBuffer[5];                //HpLo
+ 830   2                      if(usHPStart > k)
+ 831   2                              usHPStart = k;
+ 832   2                      usHPStart = usMaxHP - usHPStart;
+ 833   2                      SetHP();
+ 834   2      //              ucSavePointer = svHPOS;
+ 835   2      //              SaveData();
+ 836   2                      break;
+ 837   2              case VCPOP_V_POS:       //vertical position     //2005-01-24 mingyu
+ 838   2                      k = ucDDCCiRxBuffer[4];         //VpHi
+ 839   2                      k <<= 8;
+ 840   2                      k |= ucDDCCiRxBuffer[5];        //VpLo
+ 841   2                      if(k > ucMaxVP)
+ 842   2                              k = ucMaxVP;
+ 843   2                      if(k > usVPStart){
+ 844   3                              do{
+ 845   4                                      usVPStart++;
+ 846   4                                      WaitVsync();
+ 847   4                                      SetVP();
+ 848   4                              }while(usVPStart != k);
+ 849   3                      }
+ 850   2                      else if((k < usVPStart)&&(usVPStart != 0)){
+ 851   3                              do{
+ 852   4                                      usVPStart--;
+ 853   4                                      WaitVsync();
+ 854   4                                      SetVP();
+ 855   4                              }while(usVPStart != k);
+ 856   3                      }
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 15  
+
+ 857   2      //              ucSavePointer = svVPOS;
+ 858   2      //              SaveData();
+ 859   2                      break;
+ 860   2              case VCPOP_H_PHASE:     //phase
+ 861   2                      if(ucDDCCiRxBuffer[5] > 100)
+ 862   2                              ucDDCCiRxBuffer[5] = 100;
+ 863   2                      ucADCPhase = (((unsigned short)ucDDCCiRxBuffer[5] * 63) + 50) / 100;    //phaseLo
+ 864   2                      SetADC_Phase();
+ 865   2                      ucADCCPhase100Pa = ucDDCCiRxBuffer[5];
+ 866   2      //              ucSavePointer = svPHASE;
+ 867   2      //              SaveData();
+ 868   2                      break;
+ 869   2              case VCPOP_INPUT:       // Jude 07/25/2006
+ 870   2                      //ucPowerStatus_old = ucPowerStatus;
+ 871   2      //              ucPowerStatus^= InputSourceDVI;
+ 872   2                      if(ucDDCCiRxBuffer[5] == 0x03)
+ 873   2                              ucPowerStatus |= InputSourceDVI;
+ 874   2                      else
+ 875   2                              ucPowerStatus &= ~InputSourceDVI;
+ 876   2                      InputSourceSelect();
+ 877   2                      break;
+ 878   2              case VCPOP_ROFFSET:
+ 879   2      //              WriteIIC560(SRGB_CTRL, 0x21);
+ 880   2      //              WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucDDCCiRxBuffer[5]*RGB_OFFSET_SCOPE+128)/255+RGB_OFFSET
+             -_MIN);
+ 881   2                      ucBkOffset[0] = ucDDCCiRxBuffer[5];
+ 882   2                      Write24C16(EPADDR_RBKOFFSET, ucBkOffset[0]);
+ 883   2                      SetContrastRGB();
+ 884   2                      break;
+ 885   2              case VCPOP_GOFFSET:
+ 886   2                      //WriteIIC560(SRGB_CTRL, 0x23);
+ 887   2                      //WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucDDCCiRxBuffer[5]*RGB_OFFSET_SCOPE+128)/255+RGB_OFFSET
+             -_MIN);
+ 888   2                      ucBkOffset[1] = ucDDCCiRxBuffer[5];
+ 889   2                      Write24C16(EPADDR_GBKOFFSET, ucBkOffset[1]);
+ 890   2                      SetContrastRGB();
+ 891   2                      break;
+ 892   2              case VCPOP_BOFFSET:
+ 893   2                      //WriteIIC560(SRGB_CTRL, 0x25);
+ 894   2                      //WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucDDCCiRxBuffer[5]*RGB_OFFSET_SCOPE+128)/255+RGB_OFFSET
+             -_MIN);
+ 895   2                      ucBkOffset[2] = ucDDCCiRxBuffer[5];
+ 896   2                      Write24C16(EPADDR_BBKOFFSET, ucBkOffset[2]);
+ 897   2                      SetContrastRGB();
+ 898   2                      break;
+ 899   2              case VCPOP_OSD_LOCK:    //0xCA
+ 900   2                              if ( ucDDCCiRxBuffer[5]==1 )
+ 901   2                              {
+ 902   3                                bIsOSDLocked = 1;
+ 903   3                              }
+ 904   2                              else if ( ucDDCCiRxBuffer[5]==2 )
+ 905   2                              {
+ 906   3                                      bIsOSDLocked = 0;
+ 907   3                              }
+ 908   2                              Write24C16(EPADDR_OSDLOCK, bIsOSDLocked);//0x05 = osd loc
+ 909   2      
+ 910   2                      break;
+ 911   2              case VCPOP_LANGUAGE:
+ 912   2                      if ( ucDDCCiRxBuffer[5] == 0x02 )                       ucLanguage = mENGLISH;
+ 913   2                      else if ( ucDDCCiRxBuffer[5] == 0x03 )          ucLanguage = mFRENCH;
+ 914   2                      else if ( ucDDCCiRxBuffer[5] == 0x04 )          ucLanguage = mGERMAN;
+ 915   2                      else if ( ucDDCCiRxBuffer[5] == 0x05 )          ucLanguage = mITALIAN;
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 16  
+
+ 916   2                      else if ( ucDDCCiRxBuffer[5] == 0x08 )          ucLanguage = mPORTUGUESE;
+ 917   2                      else if ( ucDDCCiRxBuffer[5] == 0x09 )          ucLanguage = mRUSSIAN;
+ 918   2                      else if ( ucDDCCiRxBuffer[5] == 0x0A )          ucLanguage = mSPANISH;
+ 919   2                      else if ( ucDDCCiRxBuffer[5] == 0x0D )          ucLanguage = mCHINESE_S;
+ 920   2      
+ 921   2                      Write24C16(EPADDR_OSDLANG, ucLanguage);
+ 922   2                      break;
+ 923   2              case VCPOP_POWER_MODE:          //0xD6
+ 924   2                      if(ucDDCCiRxBuffer[5] == 1){            //power status on
+ 925   3                              if(ucPowerStatus < 0x80)
+ 926   3                                      ucCurKey = POWER_KEY;
+ 927   3                      }
+ 928   2                      else if(ucDDCCiRxBuffer[5] == 2){       //power status standby
+ 929   3                              if(ucPowerStatus > 0x7f){
+ 930   4                                      OSD_OFF();
+ 931   4                                      PowerSaving();
+ 932   4      //                              LED_GrnOff();                                           // -jwshin 111213
+ 933   4      //                              LED_RedOn();
+ 934   4                                      bForceToSleep = TRUE;
+ 935   4                              }
+ 936   3                      }
+ 937   2                      else if(ucDDCCiRxBuffer[5] == 4){       //power status off
+ 938   3                              if(ucPowerStatus > 0x7f)
+ 939   3                                      ucCurKey = POWER_KEY;
+ 940   3                      }
+ 941   2                      break;
+ 942   2              case VCPOP_SMARTIMAGE:
+ 943   2                      if ( ucDDCCiRxBuffer[5]==0x00 )
+ 944   2                              ucLFMode = LF_MODE_OFF;
+ 945   2                      else if ( ucDDCCiRxBuffer[5]==0x01 )
+ 946   2                              ucLFMode = LF_MODE_OFFICE_WORK;
+ 947   2                      else if ( ucDDCCiRxBuffer[5]==0x02 )
+ 948   2                              ucLFMode = LF_MODE_ImageViewing;
+ 949   2                      else if ( ucDDCCiRxBuffer[5]==0x03 )
+ 950   2                              ucLFMode = LF_MODE_Entertainment;
+ 951   2                      else if ( ucDDCCiRxBuffer[5]==0x08 )
+ 952   2                              ucLFMode = LF_MODE_Economic;
+ 953   2                      else break;
+ 954   2                      LFEnableSettings();             
+ 955   2                      break;
+ 956   2              case VCPOP_PHP_RESOLU:
+ 957   2                      if(ucDDCCiRxBuffer[5] == 2){
+ 958   3                              bResolutionNot = 1;
+ 959   3                      }
+ 960   2                      else if(ucDDCCiRxBuffer[5] == 0){
+ 961   3                              bResolutionNot = 0;
+ 962   3                      }
+ 963   2                      Write24C16(EPADDR_RSO_NOTF, bResolutionNot);
+ 964   2                      break;
+ 965   2              case VCPOP_AUDIO:       //volume
+ 966   2                      ucVolume = ucDDCCiRxBuffer[5];  //volumeLo
+ 967   2                      //Write24C16(EPADDR_VOLUME, ucVolume);  //0x0c = volume
+ 968   2                      ucSavePointer = svVOLUME;       // volume
+ 969   2                      SaveData();
+ 970   2                      if ( bMute )
+ 971   2                      {
+ 972   3                              bMute = FALSE;
+ 973   3                              ucSavePointer = svMUTE;
+ 974   3                              SaveData();
+ 975   3                      }
+ 976   2                      SetVolume();
+ 977   2                      break;
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 17  
+
+ 978   2              case VCPOP_MUTE:
+ 979   2                      if(ucDDCCiRxBuffer[5]==1){
+ 980   3                                bMute = 1;
+ 981   3                      }
+ 982   2                      else if(ucDDCCiRxBuffer[5]==2){
+ 983   3                                      bMute = 0;
+ 984   3                      }
+ 985   2                      Write24C16(EPADDR_MUTE, bMute);//0x05 = osd loc
+ 986   2                      SetVolume();
+ 987   2                      break;
+ 988   2              case VCPOP_AOC_CMD:     //AOC Factory command
+ 989   2      
+ 990   2      #ifdef NVT_HW_DEBUG
+ 991   2                      if (!NVTHWDebug(ucDDCCiRxBuffer, NULL)) {
+ 992   3      // RETURN 0, AOC FACTORY COMMAND GO INSIDE
+ 993   3      #endif
+ 994   3                              for(k=0; k<8; k++){
+ 995   4                                      ucUARTRxBuffer[k] = ucDDCCiRxBuffer[4+k];       //command
+ 996   4                              }
+ 997   3              
+ 998   3                              ucUARTRxOut = 0;
+ 999   3                              ucUARTRxIn = 8;
+1000   3      #ifdef NVT_HW_DEBUG
+1001   3                      }
+1002   2      #endif
+1003   2                      break;
+1004   2      
+1005   2      #ifdef NOVATEK_HDCP_WRITER
+1006   2              case VCPOP_NVT_HDCP_START:
+1007   2                      StartHDCPStoring();
+1008   2                      break;
+1009   2              case VCPOP_NVT_HDCP_WRITE:
+1010   2                      StoreHDCP(ucDDCCiRxBuffer+4, (ucDDCCiRxBuffer[1]&0x7f) - 2);
+1011   2                      break;
+1012   2              case VCPOP_NVT_HDCP_CHKSUM:
+1013   2                      ucDDCCiTxBuffer[0] = ACCESSBUS_ADDR;
+1014   2                      ucDDCCiTxBuffer[1] = 0x82;
+1015   2                      ucDDCCiTxBuffer[2] = CMDOP_SET_VCP;
+1016   2                      if(CheckHDCPChkSum() != 0)
+1017   2                              ucDDCCiTxBuffer[3] = 0xef;
+1018   2                      else
+1019   2                              ucDDCCiTxBuffer[3] = 0xff;
+1020   2                      ucDDCCiTxChecksum = 0x50;
+1021   2                      ucDDCCiTxOut = 0;
+1022   2                      ucDDCCiTxIn  = 4;
+1023   2      
+1024   2                      break;
+1025   2      #endif
+1026   2      #ifdef BenQ_FACTORY                     
+                      case VCPOP_BENQ_FACTORY:        //BenQ Entry factory mode
+                              if((ucDDCCiRxBuffer[4] == 0x00)&&(ucDDCCiRxBuffer[5] == 0x00)){
+                                      FactoryEnterMode();
+                                      BenQ_EnterFactoryMode();
+                              }
+                              break;
+              #endif                  
+1034   2                      
+1035   2      
+1036   2      #ifdef ENABLE_TD_               //      THEFT DETERRENCE
+                      case VCPOP_TD_ACCESSMODE:
+                              ucClearOSDFlag = FALSE;
+                              if( ucTD_State == TD_NORMAL && ucTD_PinFailedCount==0) {
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 18  
+
+                                      ucTD_ACMode = ucDDCCiRxBuffer[5];
+                                      Write24C16(EPADDR_TD_ACMODE, ucTD_ACMode);
+                                      ucTD_State = TD_NORMAL;
+                                      Write24C16(EPADDR_TD_STATE, ucTD_State);
+                              }
+              //              printf("ucTD_ACMode=%d(ucTD_State=%d)\r\n",(unsigned short)ucTD_ACMode,(unsigned short)ucTD_State);
+                              break;
+                      case VCPOP_TD_TIMEOUT:
+                              ucClearOSDFlag = FALSE;
+                              if(ucTD_ACMode == 0){
+                                      
+                                      if(ucDDCCiRxBuffer[5]==0) break;                
+                                      
+                                      ucTD_Timeout = ucDDCCiRxBuffer[5];
+                                      Write24C16(EPADDR_TD_TIMEOUT, ucTD_Timeout);
+                              }
+              //              printf("VCPOP_TD_TIMEOUT=%d,%d\r\n",(unsigned short)ucTD_ACMode,(unsigned short)ucTD_Timeout);
+                              break;
+                      case VCPOP_TD_PIN_L:
+                              ucClearOSDFlag = FALSE;
+                              if(ucTD_ACMode == 0){
+                                      Write24C16(EPADDR_TD_PINCODEL1, ucDDCCiRxBuffer[4]);
+                                      Write24C16(EPADDR_TD_PINCODEL2, ucDDCCiRxBuffer[5]);
+                              }
+                              else{
+                                      usTD_PinCodeL = ucDDCCiRxBuffer[4];             //HpHi
+                                      usTD_PinCodeL <<= 8;
+                                      usTD_PinCodeL |= ucDDCCiRxBuffer[5];            //HpLo
+                              }
+                              break;
+                      case VCPOP_TD_PIN_H:
+                              ucClearOSDFlag = FALSE;
+                              if(ucTD_ACMode == 0){
+                                      Write24C16(EPADDR_TD_PINCODEH1, ucDDCCiRxBuffer[4]);
+                                      Write24C16(EPADDR_TD_PINCODEH2, ucDDCCiRxBuffer[5]);
+                                      ucTD_State = TD_NORMAL;
+                                      Write24C16(EPADDR_TD_STATE, ucTD_State);
+                              }
+                              else if(ucTD_State != TD_LOG_TIMEOUT){
+                                      if(ucTD_PinFailedTimer != 0){ 
+                                              break;
+                                      }
+                                      usTD_PinCodeH = ucDDCCiRxBuffer[4];             //HpHi
+                                      usTD_PinCodeH <<= 8;
+                                      usTD_PinCodeH |= ucDDCCiRxBuffer[5];            //HpLo
+              
+              //                      printf("TD_PinCode=%x %x\r\n",usTD_PinCodeH,usTD_PinCodeL);
+              
+                                      if((usTD_PinCodeH == 0)&&(usTD_PinCodeL == 1711)){
+                                              k = usTD_PinCodeL;
+                                      }
+                                      else{
+                                              k = 0x0000;
+                                      }
+                                      if((((unsigned char)(usTD_PinCodeH>>8)) != Read24C16(EPADDR_TD_PINCODEH1) ||
+                                      ((unsigned char)usTD_PinCodeH) != Read24C16(EPADDR_TD_PINCODEH2) ||
+                                      ((unsigned char)(usTD_PinCodeL>>8)) != Read24C16(EPADDR_TD_PINCODEL1) ||
+                                      ((unsigned char)usTD_PinCodeL) != Read24C16(EPADDR_TD_PINCODEL2)) && (k == 0))
+                                      {
+                                              if(ucTD_PinFailedCount++ < 3){
+                                                      ucTD_PinFailedTimer = 2;
+                                              }
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 19  
+
+                                              else{
+                                                      ucTD_PinFailedCount = 3;
+                                                      ucTD_PinFailedTimer = 30;
+                                              }       
+                                      }
+                                      else {
+                                                      //printf("VCPOP_TD_TIMEOUT=%d,%d\r\n",(unsigned short)ucTD_ACMode,(unsigned short)ucTD_Timeout);
+                                              ucTD_State = TD_NORMAL;
+                                              Write24C16(EPADDR_TD_STATE, ucTD_State);
+                                              if (bShowTheftOSD)
+                                              {
+                                                      bShowTheftOSD = FALSE;
+                                                      OSD_OFF();
+                                              }
+                                              ucTD_PinFailedCount = 0;
+                                              
+                                              ucBrightness = Read24C16(EPADDR_BRIGHT);
+                                              ucBrightnessUser = ucBrightness;
+                                              //Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+                                              //Write24C16(EPADDR_BRIGHT_USER, ucBrightnessUser);
+                                              ucContrast = Read24C16(EPADDR_CONTRAST);
+                                              ucContrastUser = ucContrast;
+                                              //Write24C16(EPADDR_CONTRAST,ucContrast);//0x09 = contrast
+                                              //Write24C16(EPADDR_CONTRAST_USER,ucContrastUser);
+                                              //printf("ddc:ucBrightness=%d,%d\r\n",(unsigned short)ucBrightness,(unsigned short)ucBrightnessUser);
+              //                              SetContrastRGB();
+                                              ucColorTemperature = Read24C16(EPADDR_COLOR_TEMP);
+                                              SetColorTemp(ucColorTemperature);
+                                              SetBrightness();
+                                      }
+                                      //printf("VCPOP_TD_PIN_H=%04x, %04x\r\n",(unsigned short)usTD_PinCodeH,(unsigned short)usTD_PinCodeL);
+                              }
+                              break;
+              #if 0
+                      case VCPOP_TD_STATE:
+                              //printf("VCPOP_TD_STATE=%d\r\n",(unsigned short)ucTD_State);
+                              break;
+              #endif          
+              #endif
+1141   2      //      default:
+1142   2      //              SendNACKCmd();
+1143   2      //              break;
+1144   2              }
+1145   1      }
+1146                  //2005-01-24 mingyu
+1147          
+1148          void WaitVsync(void)
+1149          {
+1150   1      #if NT68665
+                      Set_usTimer1_1ms(40);
+                      while(Get_usTimer1_1ms() != 0){
+                              if(GetVsyncLevel == LOW)
+                                      break;
+                      }
+              #else
+1157   1      unsigned char value;
+1158   1      unsigned char volatile *pBus;
+1159   1              SC_RegPage = 0x01;
+1160   1              pBus = &SC_SYNC_INT_FLAG1;
+1161   1              *pBus = BIT_1;
+1162   1              Set_usTimer1_1ms(40);
+1163   1              while(Get_usTimer1_1ms() != 0){
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 20  
+
+1164   2                      value = *pBus;
+1165   2                      if((value & BIT_1) != 0)
+1166   2                              break;
+1167   2              }
+1168   1      #endif
+1169   1      }
+1170          
+1171          void WaitDDCTxOut()
+1172          {
+1173   1              Set_usTimer1_1ms(100);
+1174   1              while(ucDDCCiTxOut != 0){
+1175   2                      if(Get_usTimer1_1ms() == 0)
+1176   2                              break;
+1177   2              }
+1178   1      }
+1179          
+1180          //      THEFT DETERRENCE        2007-06-06
+1181          void SetVCP_Capabilities(void)
+1182          {
+1183   1      code unsigned char VCP_CapTab_Analog[]={
+1184   1              "(prot(monitor)"
+1185   1              "type(lcd)"
+1186   1              "model(Philips 190B)"
+1187   1              "cmds(01 02 03 07 0C 4E F3 E3)"
+1188   1              "vcp(02 04 05 06 08 0B 0C 0E 10 12 14(01 04 05 06 07 08 0A 0B) 16 18 1A 1E 20 30 3E 6C 6E 70 "
+1189   1              "AC AE B6 C0 C6 C8 C9 CA CC( 00 02 03 04 05 08 09 0A 0D) D6(01 04) DC(00 01 02 03 08) DF E9(00 02) "
+1190   1              "60(01 03) "
+1191   1              "62 8D "
+1192   1              "FA(00 01 02) FB FC FD FE(00 01 02 04) FF)"
+1193   1              "mswhql(1)mccs_ver(2.0)asset_eep(32)mpu_ver(01)"
+1194   1              "SmartManage(1.0))"
+1195   1      };
+1196   1      code unsigned char VCP_CapTab_DVI[]={
+1197   1              "(prot(monitor)"
+1198   1              "type(lcd)"
+1199   1      
+1200   1              "model(Philips 190B)"
+1201   1              "cmds(01 02 03 07 0C 4E F3 E3)"
+1202   1              "vcp(02 04 05 08 0B 0C 10 12 14(01 04 05 06 07 08 0A 0B) 16 18 1A 6C 6E 70 "
+1203   1              "AC AE B6 C0 C6 C8 C9 CA CC( 00 02 03 04 05 08 09 0A 0D) D6(01 04) DC(00 01 02 03 08) DF E9(00 02) "
+1204   1              "60(01 03) "
+1205   1              "62 8D "
+1206   1              "FA(00 01 02) FB FC FD FE(00 01 02 04) FF)"
+1207   1              "mswhql(1)mccs_ver(2.0)asset_eep(32)mpu_ver(01)"
+1208   1              "SmartManage(1.0))"
+1209   1      };
+1210   1       unsigned char i;
+1211   1       unsigned short l,offset;
+1212   1       
+1213   1              WaitDDCTxOut();
+1214   1              
+1215   1              if (ucSignalType == sigDVI)
+1216   1                      l = sizeof(VCP_CapTab_DVI)-1;
+1217   1              else
+1218   1                      l = sizeof(VCP_CapTab_Analog)-1;
+1219   1              offset = ucDDCCiRxBuffer[3];
+1220   1              offset <<= 8;
+1221   1              offset |= ucDDCCiRxBuffer[4];
+1222   1              ucDDCCiTxBuffer[0] = ACCESSBUS_ADDR;
+1223   1              ucDDCCiTxBuffer[2] = 0xe3;
+1224   1              ucDDCCiTxBuffer[3] = ucDDCCiRxBuffer[3];
+1225   1              ucDDCCiTxBuffer[4] = ucDDCCiRxBuffer[4];
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 21  
+
+1226   1              ucDDCCiTxChecksum = 0x50;
+1227   1              ucDDCCiTxOut = 0;
+1228   1              if(offset > l){         //end of data
+1229   2                      l = 32;
+1230   2                      ucDDCCiTxBuffer[1] = 0xa3;
+1231   2                      ucDDCCiTxIn = 37;
+1232   2                      for(i=0; i<l; i++){
+1233   3                              ucDDCCiTxBuffer[5+i] = 0x20;
+1234   3                      }
+1235   2              }
+1236   1              else{
+1237   2                      l = l - offset;
+1238   2                      if(l > 32){     //max.
+1239   3                              l = 32;
+1240   3                              ucDDCCiTxBuffer[1] = 0xa3;
+1241   3                              ucDDCCiTxIn = 37;
+1242   3                      }
+1243   2                      else{
+1244   3                              ucDDCCiTxBuffer[1] = 0x83 + l;
+1245   3                              ucDDCCiTxIn = l + 5;
+1246   3                      }
+1247   2                      
+1248   2                      if (ucSignalType == sigDVI)
+1249   2                      {
+1250   3                              for(i=0; i<l; i++){
+1251   4                                      ucDDCCiTxBuffer[5+i] = VCP_CapTab_DVI[offset+i];
+1252   4                              }
+1253   3                      }
+1254   2                      else
+1255   2                      {
+1256   3                              for(i=0; i<l; i++){
+1257   4                                      ucDDCCiTxBuffer[5+i] = VCP_CapTab_Analog[offset+i];
+1258   4                              }
+1259   3                      }
+1260   2              
+1261   2              }
+1262   1      
+1263   1      }
+1264          
+1265          void SaveCurrentSetting(void)
+1266          {
+1267   1              Write24C16(EPADDR_BRIGHT, ucBrightness);//0x08 = brightness
+1268   1              Write24C16(EPADDR_CONTRAST, ucContrast);//0x09 = contrast
+1269   1              SaveModeDependentSettings();
+1270   1              if(ucColorTemperature == COLOR_USER){   //user
+1271   2                      Write24C16(EPADDR_RGAIN_USER, ucR_Gain);//0x3e = r gain user
+1272   2                      Write24C16(EPADDR_GGAIN_USER, ucG_Gain);//0x3f = g gain user
+1273   2                      Write24C16(EPADDR_BGAIN_USER, ucB_Gain);//0x40 = b gain user
+1274   2              }
+1275   1      }
+1276          
+1277          void GetTiming(void)
+1278          {
+1279   1      unsigned short Temp;
+1280   1              ucDDCCiTxBuffer[0] = ACCESSBUS_ADDR;
+1281   1              ucDDCCiTxBuffer[1] = 0x06;
+1282   1              ucDDCCiTxBuffer[2] = 0x4e;
+1283   1      
+1284   1              if ( bOutOfLimit == FALSE ) {
+1285   2                      ucDDCCiTxBuffer[3] = ucHVPolarity;
+1286   2              }
+1287   1              else{
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 22  
+
+1288   2                      ucDDCCiTxBuffer[3] = ucHVPolarity | BIT_7;
+1289   2              }
+1290   1              
+1291   1              Temp = usHSync * 10;
+1292   1              ucDDCCiTxBuffer[4] = (unsigned char)(Temp >> 8);
+1293   1              ucDDCCiTxBuffer[5] = (unsigned char)Temp;
+1294   1              Temp = usVSync * 10;
+1295   1              ucDDCCiTxBuffer[6] = (unsigned char)(Temp >> 8);
+1296   1              ucDDCCiTxBuffer[7] = (unsigned char)Temp;
+1297   1              ucDDCCiTxChecksum = 0x50;
+1298   1              ucDDCCiTxOut = 0;
+1299   1              ucDDCCiTxIn = 8;
+1300   1      }
+1301          
+1302          
+1303          void ReleaseFactoryMode(void)
+1304          {
+1305   1              bFactoryMode = FALSE;
+1306   1              
+1307   1                      ucOSDXPos = Read24C16(EPADDR_OSDX);             //0x15 = OSD position x
+1308   1                      ucOSDYPos = Read24C16(EPADDR_OSDY);             //0x16 = OSD position y
+1309   1      
+1310   1      #ifdef BenQ_FACTORY
+              //      EDIDa_WP_ON();
+              //      EDIDb_WP_ON();
+              ////////////////////////////////////////////////////////////
+                      IIC0_ADDR = DDCCI_ADDR;
+                      IIC0_ADDR = DDCCI_ADDR | ENIIC;
+                      IIC0INT_CLR = 0xff;
+                      IIC0_INT_EN = 0xf8;
+                      IIC1_ADDR = DDCCI_ADDR;
+                      IIC1_ADDR = DDCCI_ADDR | ENIIC;
+                      IIC1INT_CLR = 0xff;
+                      IIC1_INT_EN = 0xf8;
+                      SendNullCmd(DDCCI_ADDR);
+              /////////////////////////////////////////////////////////////
+              //      printf("EntryFactoryMode %x\r\n",(unsigned short)IIC0_ADDR);
+              #endif
+1326   1      }
+1327          
+1328          #ifdef ENABLE_TD_       //      THEFT DETERRENCE
+              void TD_Init()
+              {
+              //      Write24C16(EPADDR_TD_ACMODE,0x01);
+              //      Write24C16(EPADDR_TD_TIMEOUT,1);
+                      ucTD_ACMode = Read24C16(EPADDR_TD_ACMODE);
+              
+                      if(ucTD_ACMode != 0){
+                              ucTD_State = TD_POSSIBLE_THEFT;
+                              Write24C16(EPADDR_TD_STATE, ucTD_State);
+                              ucTD_TimeoutS = 0;
+                              ucTD_Timeout = Read24C16(EPADDR_TD_TIMEOUT);
+              //              printf("TD_POSSIBLE_THEFT=%d\r\n",(unsigned short)ucTD_Timeout);
+                              ucTD_PinFailedCount = 0;
+                              ucTD_PinFailedTimer = 0;
+                      }
+                      else{
+                              ucTD_State = TD_NORMAL;
+                              Write24C16(EPADDR_TD_STATE, ucTD_State);
+                              ucTD_PinFailedCount = 0;
+                              ucTD_PinFailedTimer = 0;
+                      }
+C51 COMPILER V8.12   DDC_CI                                                                11/09/2015 19:43:38 PAGE 23  
+
+                      
+                      usTD_PinCodeL = 0;
+                      usTD_PinCodeH = 0;
+              }
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3803    ----
+   CONSTANT SIZE    =    756    ----
+   XDATA SIZE       =      1      10
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

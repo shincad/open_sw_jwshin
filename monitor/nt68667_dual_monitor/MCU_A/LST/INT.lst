@@ -1,0 +1,402 @@
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE INT
+OBJECT MODULE PLACED IN .\BIN\INT.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\INT.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\INT.lst) OBJECT(.\BIN\INT.obj)
+
+line level    source
+
+   1          #include "8051.H"
+   2          #include "RAM.H"
+   3          //#include "MyDef.H"
+   4          #include "NT686xx_MCU_REG.H"
+   5          #include "INT.H"
+   6          #include "Board.H"      // INIT_CLRWDT
+   7          #include "Ddc_ci.H"
+   8          #include "OSD_TAB.H"
+   9          #include "BFControl.H"
+  10          
+  11          void Timer0(void) interrupt 1 using 2
+  12          {
+  13   1      
+  14   1              TR0 = 0;                        //Timer 0 run control. Starts timer when set to 1.
+  15   1      #if NT68167
+                      TL0 = (65536-T0_Speed)%256;
+                      TH0 = (65536-T0_Speed)/256;
+              #else
+  19   1      #if CoreSpeed == 0x36
+                      TL0 = (65536-3000)%256;                 //1mS for (36MHz) CPU
+                      TH0 = (65536-3000)/256;
+              #else
+  23   1              TL0 = (65536-2000)%256;                 //1mS for (24MHz) CPU
+  24   1              TH0 = (65536-2000)/256;
+  25   1      #endif
+  26   1      #endif
+  27   1      
+  28   1              TR0 = 1;                        //Timer 0 run control. Starts timer when set to 1.
+  29   1              if(usTimer1_1ms != 0)                   // 1ms
+  30   1                      usTimer1_1ms--;
+  31   1              if(ucTime2Backlight > 1)        // 1: Turn ON 0: Do nothing
+  32   1                      ucTime2Backlight--;
+  33   1              if(++ucTimer10ms >= 10){        // 10ms
+  34   2                      CLRWDT = DEFAULT_CLRWDT;
+  35   2                      ucTimer10ms = 0;
+  36   2                      if(ucSyncSourceTimer != 0)
+  37   2                              ucSyncSourceTimer--;
+  38   2                      if(usOSDTimer_10ms != 0)
+  39   2                              usOSDTimer_10ms--;
+  40   2                      //--------------------- +jwshin 120302   NoSignal에서의 Mode 전환 화면을 위한 Timer ~!.
+  41   2                      if(usOSD2Timer_10ms != 0)
+  42   2                              usOSD2Timer_10ms--;
+  43   2                      //------------------------------------------            
+  44   2                      if(ucLoopTimer_10ms != 0)
+  45   2                              ucLoopTimer_10ms--;
+  46   2                      if(ucSyncStableTimer_10ms != 0)
+  47   2                              ucSyncStableTimer_10ms--;
+  48   2                      if(ucTime2RepeatKey != 0)
+  49   2                              ucTime2RepeatKey--;
+  50   2                      if(usPoSvTimer != 0)
+  51   2                              usPoSvTimer--;
+  52   2                      //----------------- +jwshin 111213
+  53   2                      if(ucNoSigTimer != 0) 
+  54   2                              ucNoSigTimer--;
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 2   
+
+  55   2                      //------------------------------------  
+  56   2      #ifndef BF_MOVING_WINDOW
+                              if(ucLFDemoTimer != 0)
+                                      ucLFDemoTimer--;
+              #endif
+  60   2      #ifdef BF_MOVING_WINDOW
+  61   2                      ucBFMovingTimer = 1;
+  62   2      #endif
+  63   2                      }
+  64   1              else if(ucTimer10ms == 5){
+  65   2      #if FE2P_LIB==ON
+                              if(feSave_Timer != 0)   //Fe2p timer 2006/10/31 Alvin
+                                      feSave_Timer--;
+              #endif
+  69   2                      if(usBFTimer_10ms != 0)
+  70   2                              usBFTimer_10ms--;
+  71   2                              
+  72   2                      if(++ucLEDTimer_10ms == 25){    //10ms * 25 = 250ms
+  73   3                              ucLEDTimer_10ms = 0;
+  74   3                              if(bStatusReport !=0 )  //#ifdef TC_ENABLE_TRUECOLOR
+  75   3                                      bIsLEDFlashing = TRUE;
+  76   3                              if(ucBestMesgTimer != 0)
+  77   3                                      ucBestMesgTimer--;
+  78   3                              if(++ucTimer1000ms >= 4){       // 250ms * 4 = 1000ms
+  79   4                                      ucTimer1000ms = 0;
+  80   4                                      if(usWarningMsgTimer_1s != 0)
+  81   4                                              usWarningMsgTimer_1s--;
+  82   4      #ifdef ENABLE_TD_                       //      THEFT DETERRENCE                                        
+                                              if(ucTD_State == TD_POSSIBLE_THEFT && ucTD_Timeout != 0){
+                                                      if(++ucTD_TimeoutS >= 60){
+                                                              ucTD_TimeoutS = 0;
+                                                              ucTD_Timeout--;
+                                                      }
+                                              }
+                                              if(ucTD_PinFailedTimer != 0 )
+                                                      ucTD_PinFailedTimer--;
+              #endif
+  92   4                                      if(ucPowerStatus > 0x7f){
+  93   5                                              if(++usPOTTimerS_900 >= 900){
+  94   6                                                      usPOTTimerS_900 = 0;
+  95   6                                                      bPOTUpdate = TRUE;
+  96   6                                                      if(++ucPOTTimerM_4 >= 4){
+  97   7                                                              ucPOTTimerM_4 = 0;
+  98   7                                                              if(++ulPOTTimerH > 0x0ffff)
+  99   7                                                                      ulPOTTimerH = 0x0ffff;
+ 100   7                                                              //else
+ 101   7                                                              //      bPOTUpdate = TRUE;
+ 102   7                                                      }
+ 103   6                                              }
+ 104   5                                      }
+ 105   4                              }
+ 106   3                      }
+ 107   2              }
+ 108   1      
+ 109   1      }
+ 110          
+ 111          void IntGroup0(void) interrupt 0 using 1
+ 112          {
+ 113   1      unsigned short loop;
+ 114   1      unsigned char i;
+ 115   1              if((INT_SRC & INTIIC0_IRQ) != 0){
+ 116   2                      i = IIC0INT_FLG;
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 3   
+
+ 117   2                      bDDC_Ci_Channel = 0;
+ 118   2                      if(i & INTA){
+ 119   3                              IIC0INT_CLR = INTA;
+ 120   3                              if(IIC0_STATUS & DOWRITE){  // Slave Addr || 0x01 ==> Read
+ 121   4                                      IIC0_INT_EN = (INTA | INTTX);
+ 122   4                                      ucDDCCiTxOut = 0;
+ 123   4                                      ucDDCCiTxChecksum = 0x50;
+ 124   4                              }
+ 125   3                              else{  // Slave Addr ==> Write
+ 126   4                                      IIC0_INT_EN = (INTA | INTRX);
+ 127   4                                      IIC0_CFG |= SEND_ACK;
+ 128   4                                      ucDDCCiRxIn = 0;
+ 129   4                                      bDDCCmdUpdate = TRUE;
+ 130   4                              }
+ 131   3                      }
+ 132   2                      else if(i & INTTX){
+ 133   3                              if(bFactoryMode == FALSE){
+ 134   4                                      if(ucDDCCiTxOut != ucDDCCiTxIn){
+ 135   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 136   5                                              ucDDCCiTxChecksum ^= i;
+ 137   5                                              IIC0_TXDATA = i;
+ 138   5                                              IIC0INT_CLR = INTTX;
+ 139   5                                      }
+ 140   4                                      else{
+ 141   5                                              IIC0_TXDATA = ucDDCCiTxChecksum;
+ 142   5                                              IIC0INT_CLR = INTTX;
+ 143   5                                              ucDDCCiTxOut = 0;
+ 144   5                                              loop = 10000;
+ 145   5                                              while((IIC0_STATUS & TX_NULL) == 0){
+ 146   6                                                      if(--loop == 0)
+ 147   6                                                              break;
+ 148   6                                              }
+ 149   5                                              IIC0INT_CLR = (INTTX | SET_NO_DATA_IN);
+ 150   5                                      }
+ 151   4                              }
+ 152   3                              else{   //BenQ factory
+ 153   4                                      if(ucDDCCiTxOut != ucDDCCiTxIn){
+ 154   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 155   5      //                                      ucDDCCiTxChecksum += i;
+ 156   5                                              IIC0_TXDATA = i;
+ 157   5                                              IIC0INT_CLR = INTTX;
+ 158   5                                      }
+ 159   4                                      else{
+ 160   5      //                                      IIC0_TXDATA = ucDDCCiTxChecksum;
+ 161   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 162   5                                              IIC0_TXDATA = i;
+ 163   5                                              IIC0INT_CLR = INTTX;
+ 164   5                                              ucDDCCiTxOut = 0;
+ 165   5                                              loop = 10000;
+ 166   5                                              while((IIC0_STATUS & TX_NULL) == 0){
+ 167   6                                                      if(--loop == 0)
+ 168   6                                                              break;
+ 169   6                                              }
+ 170   5                                              IIC0INT_CLR = (INTTX | SET_NO_DATA_IN);
+ 171   5                                      }
+ 172   4                              }
+ 173   3                      }
+ 174   2                      else if(i & INTRX){
+ 175   3                              i = IIC0_RXDATA;
+ 176   3                              ucDDCCiRxBuffer[ucDDCCiRxIn++] = i;
+ 177   3                              IIC0INT_CLR = INTRX;
+ 178   3                              if(ucDDCCiRxIn > DDCCi_BUFFER_SIZE-1)
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 4   
+
+ 179   3                                      ucDDCCiRxIn = 2;
+ 180   3                      } 
+ 181   2                      else if(i & INTNAK){
+ 182   3                              IIC0INT_CLR = INTNAK;
+ 183   3                      }
+ 184   2                      else if(i & INTLOST){
+ 185   3                              IIC0INT_CLR = INTLOST;
+ 186   3                      }
+ 187   2              }
+ 188   1      #if (NT68670 || NT68670B || NT68667)
+ 189   1              if(INT_SRC & INT_SC){
+ 190   2                      MCU_INT_DISABLE();
+ 191   2                      BLFastOff();
+ 192   2                      ucTime2Backlight = 0;
+ 193   2                      bOptAbort = TRUE;
+ 194   2                      usTmpHSync = 0xffff;
+ 195   2              }
+ 196   1      #endif
+ 197   1      
+ 198   1      #if (NT68167)
+                      if((INT_SRC & INT_SC)){
+                              MCU_INT_DISABLE();
+                              BLFastOff();
+                              ucTime2Backlight = 0;
+                              bOptAbort = TRUE;
+                              usTmpHSync = 0xffff;
+                      }
+              #endif  
+ 207   1      
+ 208   1      }
+ 209          
+ 210          #if (!NT68167)
+ 211          void IntGroup1(void) interrupt 2 using 3
+ 212          {
+ 213   1      unsigned char i;
+ 214   1      unsigned short loop;
+ 215   1      //unsigned char port;
+ 216   1              if((INT_SRC & INTIIC1_IRQ) != 0){
+ 217   2                      i = IIC1INT_FLG;
+ 218   2                      bDDC_Ci_Channel = 1;
+ 219   2                      if(i & INTA){
+ 220   3                              IIC1INT_CLR = INTA;
+ 221   3                              if(IIC1_STATUS & DOWRITE){  // Slave Addr || 0x01 ==> Read
+ 222   4                                      IIC1_INT_EN = (INTA | INTTX);
+ 223   4                                      ucDDCCiTxOut = 0;
+ 224   4                                      ucDDCCiTxChecksum = 0x50;
+ 225   4                              }
+ 226   3                              else{  // Slave Addr ==> Write
+ 227   4                                      IIC1_INT_EN = (INTA | INTRX);
+ 228   4                                      IIC1_CFG |= SEND_ACK;
+ 229   4                                      ucDDCCiRxIn = 0;
+ 230   4                                      bDDCCmdUpdate = TRUE;
+ 231   4                              }
+ 232   3                      }
+ 233   2                      else if(i & INTTX){
+ 234   3                              if(bFactoryMode == FALSE){
+ 235   4                                      if(ucDDCCiTxOut != ucDDCCiTxIn){
+ 236   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 237   5                                              ucDDCCiTxChecksum ^= i;
+ 238   5                                              IIC1_TXDATA = i;
+ 239   5                                              IIC1INT_CLR = INTTX;
+ 240   5                                      }
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 5   
+
+ 241   4                                      else{
+ 242   5                                              IIC1_TXDATA = ucDDCCiTxChecksum;
+ 243   5                                              IIC1INT_CLR = INTTX;
+ 244   5                                              ucDDCCiTxOut = 0;
+ 245   5                                              loop = 10000;
+ 246   5                                              while((IIC1_STATUS & TX_NULL) == 0){
+ 247   6                                                      if(--loop == 0)
+ 248   6                                                              break;
+ 249   6                                              }
+ 250   5                                              IIC1INT_CLR = (INTTX | SET_NO_DATA_IN);
+ 251   5                                      }
+ 252   4                              }
+ 253   3                              else{   //BenQ factory
+ 254   4                                      if(ucDDCCiTxOut != ucDDCCiTxIn){
+ 255   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 256   5      //                                      ucDDCCiTxChecksum += i;
+ 257   5                                              IIC1_TXDATA = i;
+ 258   5                                              IIC1INT_CLR = INTTX;
+ 259   5                                      }
+ 260   4                                      else{
+ 261   5      //                                      IIC1_TXDATA = ucDDCCiTxChecksum;
+ 262   5                                              i = ucDDCCiTxBuffer[ucDDCCiTxOut++];
+ 263   5                                              IIC1_TXDATA = i;
+ 264   5                                              IIC1INT_CLR = INTTX;
+ 265   5                                              ucDDCCiTxOut = 0;
+ 266   5                                              loop = 10000;
+ 267   5                                              while((IIC1_STATUS & TX_NULL) == 0){
+ 268   6                                                      if(--loop == 0)
+ 269   6                                                              break;
+ 270   6                                              }
+ 271   5                                              IIC1INT_CLR = (INTTX | SET_NO_DATA_IN);
+ 272   5                                      }
+ 273   4                              }
+ 274   3                      }
+ 275   2                      else if(i & INTRX){
+ 276   3                              i = IIC1_RXDATA;
+ 277   3                              ucDDCCiRxBuffer[ucDDCCiRxIn++] = i;
+ 278   3                              IIC1INT_CLR = INTRX;
+ 279   3                              if(ucDDCCiRxIn > DDCCi_BUFFER_SIZE-1)
+ 280   3                                      ucDDCCiRxIn = 2;
+ 281   3                      } 
+ 282   2                      else if(i & INTNAK){
+ 283   3                              IIC1INT_CLR = INTNAK;
+ 284   3                      }
+ 285   2                      else if(i & INTLOST){
+ 286   3                              IIC1INT_CLR = INTLOST;
+ 287   3                      }
+ 288   2              }
+ 289   1      
+ 290   1              
+ 291   1      #if NT68665
+                      if((INT_SRC & INTEXT_IRQ) != 0){
+                              if((INTEXT_FLG & INTE0) != 0){
+                                      INTEXT_FLG = INTE0;
+                                      MCU_INT_DISABLE();
+              ///////////////////////////////////////////
+                                      BLFastOff();
+              //////////////////////////////////////////
+                                      ucTime2Backlight = 0;
+                                      bOptAbort = TRUE;
+                                      usTmpHSync = 0xffff;
+              //                      usTmpVSync = 0x55aa;
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 6   
+
+                              }
+                      }
+                      #endif
+ 306   1      }
+ 307          #endif
+ 308          
+ 309          void IntUART(void) interrupt 4 using 1
+ 310          {
+ 311   1      unsigned char i;
+ 312   1              if(RI == 1){
+ 313   2                      RI=0;
+ 314   2                      i = SBUF;
+ 315   2                      ucUARTRxBuffer[ucUARTRxIn] = i;
+ 316   2                      if(++ucUARTRxIn > UART_RX_BUFFER_SIZE-1)
+ 317   2                              ucUARTRxIn = 0;
+ 318   2              }
+ 319   1      
+ 320   1              if(TI == 1){
+ 321   2                      TI = 0;
+ 322   2                      if(ucUARTTxIn != ucUARTTxOut){
+ 323   3                              SBUF = ucUARTTxBuffer[ucUARTTxOut];
+ 324   3                              if(++ucUARTTxOut > UART_TX_BUFFER_SIZE-1)
+ 325   3                                      ucUARTTxOut = 0;
+ 326   3                      }
+ 327   2                      else{
+ 328   3                              ucIsTransDisabled = 1;
+ 329   3                      }
+ 330   2              }
+ 331   1      
+ 332   1      }
+ 333          
+ 334          #ifndef NO_PRINT_LIB
+ 335          char UART_Putchar(unsigned char c)
+ 336          {
+ 337   1              //If the buffer is full, return an error value.
+ 338   1              if(((ucUARTTxIn+1)%UART_TX_BUFFER_SIZE) == ucUARTTxOut) return -1;
+ 339   1      
+ 340   1              EA = 0;
+ 341   1              
+ 342   1              ucUARTTxBuffer[ucUARTTxIn] = c;
+ 343   1              if(++ucUARTTxIn > UART_TX_BUFFER_SIZE-1)
+ 344   1                      ucUARTTxIn = 0;
+ 345   1      
+ 346   1              if(ucIsTransDisabled){
+ 347   2                      ucIsTransDisabled = 0;
+ 348   2                      TI = 1;
+ 349   2              }
+ 350   1              
+ 351   1              EA = 1;
+ 352   1              
+ 353   1              return 0;
+ 354   1      }
+ 355          
+ 356          char putchar(char c)
+ 357          {
+ 358   1      //      volatile unsigned int i;
+ 359   1      unsigned short i;
+ 360   1              while(UART_Putchar(c) != 0){
+ 361   2                      for(i=0; i<1000; i++){}
+ 362   2              }
+ 363   1              return (c);
+ 364   1      }
+C51 COMPILER V8.12   INT                                                                   11/09/2015 19:43:35 PAGE 7   
+
+ 365          #endif
+ 366          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1090    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

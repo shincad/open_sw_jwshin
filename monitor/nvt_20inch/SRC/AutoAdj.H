@@ -1,0 +1,22 @@
+#ifndef _AutoAdj_H_
+#define _AutoAdj_H_
+
+void AutoTune(void);
+void AutoPosition(void);
+void AutoClock(void);
+//unsigned char AutoPhase();
+void AutoPhaseFineTune(unsigned char);
+void SetADC_Offset(unsigned char OffSet);
+void SetADC_Gain(unsigned char OffSet);
+//void SetADC_Gain(void);
+void WriteADC_Offset(unsigned char r,unsigned char g,unsigned char b);
+void AutoColor(void);
+void TunePositionOnly();
+void AutoClockByPhase(bit h);
+unsigned long CheckPhaseData();
+void AutoPhaseByClock();
+void CheckRCV(void);
+void CheckCmd(unsigned char i);
+void RcvError(void);
+
+#endif

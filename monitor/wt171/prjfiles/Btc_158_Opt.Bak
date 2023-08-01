@@ -1,0 +1,67 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.a*; *.src)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (Target 1), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(Source Group 1),1,0,0
+GRPOPT 2,(Header Files),1,0,0
+GRPOPT 3,(History),0,0,0
+GRPOPT 4,(M51 file),1,0,0
+
+OPTFFF 1,1,1,0,0,0,0,0,<..\EEPROMVal.c><EEPROMVal.c> 
+OPTFFF 1,2,1,0,0,0,0,0,<..\GeneralRam.c><GeneralRam.c> 
+OPTFFF 1,3,1,0,0,0,0,0,<..\Inputdetect.c><Inputdetect.c> 
+OPTFFF 1,4,1,0,0,0,0,0,<..\Keydetect.c><Keydetect.c> 
+OPTFFF 1,5,1,0,0,0,0,0,<..\main.c><main.c> 
+OPTFFF 1,6,1,0,0,0,0,0,<..\PeriDevice_set.c><PeriDevice_set.c> 
+OPTFFF 1,7,1,0,0,0,0,0,<..\power.c><power.c> 
+OPTFFF 1,8,1,0,0,0,0,0,<..\modetable.c><modetable.c> 
+OPTFFF 1,9,1,0,0,0,0,0,<..\scaler_set.c><scaler_set.c> 
+OPTFFF 1,10,1,0,0,0,0,0,<..\SCALERVal.c><SCALERVal.c> 
+OPTFFF 1,11,1,0,0,0,0,0,<..\MTV230_interrupt.c><MTV230_interrupt.c> 
+OPTFFF 1,12,1,0,0,0,0,0,<..\MTV230_I2C.c><MTV230_I2C.c> 
+OPTFFF 1,13,1,0,0,0,0,0,<..\AD9883.c><AD9883.c> 
+OPTFFF 1,14,1,0,0,0,0,0,<..\MTV230OSD.c><MTV230OSD.c> 
+OPTFFF 1,15,1,0,0,0,0,0,<..\remocon.c><remocon.c> 
+OPTFFF 1,16,1,0,0,0,0,0,<..\InternalOSD.c><InternalOSD.c> 
+OPTFFF 1,17,1,0,0,0,0,0,<..\MTV230xfr.C><MTV230xfr.C> 
+OPTFFF 1,18,1,0,0,0,0,0,<..\Keymenu.c><Keymenu.c> 
+OPTFFF 1,19,1,687865858,0,5412,5441,0,<..\BTC_OSDMENU.c><BTC_OSDMENU.c> { 44,0,0,0,2,0,0,0,3,0,0,0,255,255,255,255,255,255,255,255,252,255,255,255,226,255,255,255,0,0,0,0,0,0,0,0,10,4,0,0,4,2,0,0 }
+OPTFFF 1,20,1,0,0,0,0,0,<..\AutoDisplayadjust.c><AutoDisplayadjust.c> 
+OPTFFF 1,21,1,0,0,0,0,0,<..\INT_EXTOSD.c><INT_EXTOSD.c> 
+OPTFFF 1,22,1,0,0,0,0,0,<..\TW990x.C><TW990x.C> 
+OPTFFF 1,23,1,0,0,0,0,0,<..\Tuner.c><Tuner.c> 
+OPTFFF 1,24,1,0,0,0,0,0,<..\Tools.c><Tools.c> 
+OPTFFF 1,25,1,83886080,0,0,0,0,<..\SProcessor.c><SProcessor.c> 
+OPTFFF 2,26,5,0,0,0,0,0,<..\TopHeader.h><TopHeader.h> 
+OPTFFF 3,27,5,0,0,0,0,0,<..\..\history.txt><history.txt> 
+
+
+TARGOPT 1, (Target 1)
+ CLK51=12000000
+  OPTTT 1,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<..\lstfiles\>
+  OPTOX 16
+  OPTLT 0,0,1,0,1,1,0,1,0,0,0,0
+  OPTXL 1,0,1,1,0,1,1,1,0
+  OPTFL 1,0,1
+  OPTBL 0,(Datasheet)<DATASHTS\Myson\mtv230m.PDF>
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p52)(S8051.DLL)()(TP51.DLL)(-p52)
+  OPTDBG 509,-1,()()()()()()()()()() ()()()()
+  OPTKEY 0,(MON51)(-S1 -B9600 -O15)
+  OPTBB 0,0,2934,1,0,0,0,0,0,0,<TUNER.C>()()
+  OPTBB 1,0,203,1,0,0,0,0,0,0,<MAIN.C>()()
+  OPTDF 0x0
+  OPTLE <>
+  OPTLC <>
+EndOpt
+

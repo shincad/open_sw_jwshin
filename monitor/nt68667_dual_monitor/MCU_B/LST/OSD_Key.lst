@@ -1,0 +1,649 @@
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OSD_KEY
+OBJECT MODULE PLACED IN .\BIN\OSD_Key.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\OSD_Key.c LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mod
+                    -elName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\OSD_Key.lst) OBJECT(.\BIN\OSD_Key.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          #include "OSD.H"
+   3          #include "NT686xx_MCU_REG.H"
+   4          #include "NT686xx_SC_REG.H"
+   5          #include "Scaler.H"
+   6          #include "UserAdj.H"
+   7          #include "OSD_TAB.H"
+   8          #include "factory.H"
+   9          #include "nvram.H"
+  10          #include "rom_map.H"
+  11          #include "Mis.H"
+  12          #include "BFControl.H"
+  13          #include "smartbright.H"
+  14          #if _Enable_OD_ == ON
+              #include "OD.H"
+              #endif
+  17          
+  18          code unsigned char SubItemTab[]={
+  19                  mLuminance_Tint ,mPicture_VPos, mColor_User_B, mOSDSetting_OSDTimeout, mSetup_Reset
+  20          };
+  21          
+  22          void ItemUp(void)
+  23          {
+  24   1      unsigned char i;
+  25   1              if(ucOSDType == MAIN_MENU){
+  26   2                      if(++ucOSDLvl1_Cursor > mSETUP){
+  27   3                              ucOSDLvl1_Cursor = mLUMINANCE;
+  28   3                      }
+  29   2                      if(((ucSource == mSource_DVI)||(ucSource == mSource_HDMI))&&(ucOSDLvl1_Cursor == mPICTURE))
+  30   2                              ucOSDLvl1_Cursor++;
+  31   2                      SelectMainIcon();
+  32   2              }
+  33   1              else if(ucOSDType == SUB_MENU){
+  34   2                      i = SubItemTab[ucOSDLvl1_Cursor];
+  35   2                      if((bFactoryMode == TRUE)&&(ucOSDLvl1_Cursor == mLUMINANCE)){
+  36   3                              i++;
+  37   3                      }
+  38   2                      else if((ucColorTemperature != COLOR_USER)&&(ucOSDLvl1_Cursor == mCOLOR)){
+  39   3                              i = 0;
+  40   3                      }
+  41   2                      if(++ucOSDLvl2_Cursor > i){
+  42   3                              ucOSDLvl2_Cursor = 0;
+  43   3                      }
+  44   2                      if((ucOSDLvl1_Cursor == mLUMINANCE)&&(ucSource < mSource_VIDEO)){
+  45   3                              if(ucOSDLvl2_Cursor == mLuminance_Saturation){
+  46   4                                      if(bFactoryMode == TRUE){
+  47   5                                              ucOSDLvl2_Cursor = mFactory;
+  48   5                                      }
+  49   4                                      else{
+  50   5                                              ucOSDLvl2_Cursor = mLuminance_Brightness;
+  51   5                                      }
+  52   4                              }
+  53   3                      }
+  54   2                      SelectSubItem();
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 2   
+
+  55   2              }
+  56   1              else if(ucOSDType == SHOW_SLDR){
+  57   2                      switch(ucOSDLvl1_Cursor){
+  58   3                      case mLUMINANCE:
+  59   3                              switch(ucOSDLvl2_Cursor){
+  60   4                              case mLuminance_Brightness:
+  61   4                                      BrightnessUp();
+  62   4                                      break;
+  63   4                              case mLuminance_Contrast:
+  64   4                                      ContrastUp();
+  65   4                                      break;
+  66   4                              case mLuminance_Saturation:
+  67   4                                      SaturationUp();
+  68   4                                      break;
+  69   4                              case mLuminance_Tint:
+  70   4                                      TintUp();
+  71   4                                      break;
+  72   4                              }
+  73   3                              break;
+  74   3                      case mPICTURE:
+  75   3                              switch(ucOSDLvl2_Cursor){
+  76   4                              case mPicture_Phase:
+  77   4                                      PhaseUp();
+  78   4                                      break;
+  79   4                              case mPicture_Clock:
+  80   4                                      ClockUp();
+  81   4                                      break;
+  82   4                              case mPicture_HPos:
+  83   4                                      HP_Up();
+  84   4                                      break;
+  85   4                              case mPicture_VPos:
+  86   4                                      VP_Up();
+  87   4                                      break;
+  88   4                              }
+  89   3                              break;
+  90   3                      case mCOLOR:
+  91   3                              switch(ucOSDLvl2_Cursor){
+  92   4                              case mColor_Tempk:
+  93   4                                      ColorTempUp();
+  94   4                                      break;
+  95   4                              case mColor_User_R:
+  96   4                                      ColorRedUp();
+  97   4                                      break;
+  98   4                              case mColor_User_G:
+  99   4                                      ColorGreenUp();
+ 100   4                                      break;
+ 101   4                              case mColor_User_B:
+ 102   4                                      ColorBlueUp();
+ 103   4                                      break;
+ 104   4                              }
+ 105   3                              break;
+ 106   3                      case mOSDSETTING:
+ 107   3                              switch(ucOSDLvl2_Cursor){
+ 108   4                              case mOSDSetting_Horizontal:
+ 109   4                                      OSD_X_Up();
+ 110   4                                      break;
+ 111   4                              case mOSDSetting_Vertical:
+ 112   4                                      OSD_Y_Up();
+ 113   4                                      break;
+ 114   4                              case mOSDSetting_Transparency:
+ 115   4                                      TransparencyUp();
+ 116   4                                      break;
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 3   
+
+ 117   4                              case mOSDSetting_OSDTimeout:
+ 118   4                                      OSD_TimerUp();
+ 119   4                                      break;
+ 120   4                              }
+ 121   3                              break;
+ 122   3                      case mSETUP:
+ 123   3                              switch(ucOSDLvl2_Cursor){
+ 124   4                              case mSetup_Language:
+ 125   4                                      //LanguageUp();
+ 126   4                                      //---- -jwshin 111214   
+ 127   4                                      break;
+ 128   4                              case mSetup_AudioMute:
+ 129   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 130   4                                      SelectYesNo();
+ 131   4                                      bMute = (bit)ucOSDLvl3_Cursor;
+ 132   4                                      if(bMute){
+ 133   5                                              AUDIO_MUTE();
+ 134   5                                              AMP_STBY();
+ 135   5                                              printf("SetVolume=MUTE\r\n");
+ 136   5                                      }
+ 137   4                                      else {
+ 138   5                                              AMP_On();
+ 139   5                                              AUDIO_On();
+ 140   5                                              printf("SetVolume=MUTE Off\r\n");
+ 141   5                                      }                               
+ 142   4                                      ucSavePointer = svMUTE;
+ 143   4                                      break;
+ 144   4                              case mSetup_Input:
+ 145   4                                      InputSourceUp();
+ 146   4                                      break;
+ 147   4                              case mSetup_DCR:
+ 148   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 149   4                                      SelectYesNo();
+ 150   4                                      ucDynBKMode = ucOSDLvl3_Cursor;
+ 151   4                                      ucSavePointer = svDYBK;
+ 152   4                                      //LFEnableSettings();
+ 153   4                                      if((ucLFMode != LF_MODE_OFF || ucDynBKMode)){
+ 154   5                                              BF_DisableWindow(BF_WINDOW_2);
+ 155   5                                              BF_EnableWindow(BF_WINDOW_1);
+ 156   5                                              BF_SetActiveWindow(BF_WINDOW_1);
+ 157   5                                      }
+ 158   4                                      if(ucDynBKMode == 0){
+ 159   5                                              SetBrightness();
+ 160   5                                              iCurDynBk = ucBrightness;
+ 161   5                                      }
+ 162   4                                      break;
+ 163   4      #if _Enable_OD_ == ON
+                                      case mSetup_OD:
+                                              bSmartResponse ^= BIT_0;
+                                              ucOSDLvl3_Cursor = bSmartResponse;
+                                              SelectYesNo();
+                                              Write24C16(EPADDR_OD_ONOFF, ucOSDLvl3_Cursor);
+                                              if(ucOSDLvl3_Cursor == 0)
+                                                      DisableOD();
+                                              else
+                                                      EnableOD();
+                                              break;
+              #endif
+ 175   4                              case mSetup_Reset:
+ 176   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 177   4                                      SelectYesNo();
+ 178   4                                      break;
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 4   
+
+ 179   4                              }
+ 180   3                              break;
+ 181   3                      }
+ 182   2              }
+ 183   1              else if(ucOSDType == LF_MAIN_MENU){
+ 184   2                      LFMenuControl(LFUp);
+ 185   2              }
+ 186   1              // ---- -jwshin 120224 B Scaler ¿¡¼­´Â Volume Á¦¾î ¾ÈÇÔ..
+ 187   1              /*
+ 188   1              else if(ucOSDType == OSDOFF){
+ 189   1                      ShowDirectVolumeMenu();                         // +jwshin 120224
+ 190   1                      
+ 191   1              }
+ 192   1              */
+ 193   1              else if(ucOSDType == DIRECT_MENU){
+ 194   2                      if(ucOSDLvl1_Cursor == mDirect_Source){
+ 195   3                              if(--ucOSDLvl2_Cursor > mSource_VIDEO)
+ 196   3                                      ucOSDLvl2_Cursor = mSource_VIDEO;
+ 197   3                              SelectLFMITM();
+ 198   3                      }
+ 199   2                      else if(ucOSDLvl1_Cursor == mDirect_Volume){
+ 200   3                              DirectVolumeUp();
+ 201   3                      }
+ 202   2                      else if(ucOSDLvl1_Cursor == mDirect_Brightness){
+ 203   3                              DirectBrightnessUp();
+ 204   3                      }
+ 205   2              }
+ 206   1              else if(ucOSDType == FACTORY){
+ 207   2                      FactoryItemUp();
+ 208   2              }
+ 209   1              
+ 210   1      
+ 211   1              if((ucOSDType == LF_MAIN_MENU)||(ucOSDType == DIRECT_MENU) || (ucOSDType == SOURCE_MSG))                        // +jwshin 120
+             -313
+ 212   1              {
+ 213   2                      if(bInSync == FALSE) 
+ 214   2                      {
+ 215   3                              Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 216   3                      }
+ 217   2                      else
+ 218   2                      {
+ 219   3                              Set_usOSDTimer_10ms(300);
+ 220   3                      }
+ 221   2              }
+ 222   1              else
+ 223   1              {
+ 224   2                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 225   2              }
+ 226   1      
+ 227   1      }
+ 228          
+ 229          void ItemDown(void)
+ 230          {
+ 231   1      unsigned char i;
+ 232   1              if(ucOSDType == MAIN_MENU){
+ 233   2                      if(--ucOSDLvl1_Cursor > mSETUP){
+ 234   3                              ucOSDLvl1_Cursor = mSETUP;
+ 235   3                      }
+ 236   2                      if(((ucSource == mSource_DVI)||(ucSource == mSource_HDMI))&&(ucOSDLvl1_Cursor == mPICTURE))
+ 237   2                              ucOSDLvl1_Cursor--;
+ 238   2                      SelectMainIcon();
+ 239   2              }
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 5   
+
+ 240   1              else if(ucOSDType == SUB_MENU){
+ 241   2                      i = SubItemTab[ucOSDLvl1_Cursor];
+ 242   2                      if((bFactoryMode == TRUE)&&(ucOSDLvl1_Cursor == mLUMINANCE)){
+ 243   3                              i++;
+ 244   3                      }
+ 245   2                      else if((ucColorTemperature != COLOR_USER)&&(ucOSDLvl1_Cursor == mCOLOR)){
+ 246   3                              i = 0;
+ 247   3                      }
+ 248   2                      if(--ucOSDLvl2_Cursor > i){
+ 249   3                              ucOSDLvl2_Cursor = i;
+ 250   3                      }
+ 251   2                      if((ucOSDLvl1_Cursor == mLUMINANCE)&&(ucSource < mSource_VIDEO)){
+ 252   3                              if(ucOSDLvl2_Cursor == mLuminance_Tint){
+ 253   4                                      ucOSDLvl2_Cursor = mLuminance_Contrast;
+ 254   4                              }
+ 255   3                      }
+ 256   2                      SelectSubItem();
+ 257   2              }
+ 258   1              else if(ucOSDType == SHOW_SLDR){
+ 259   2                      switch(ucOSDLvl1_Cursor){
+ 260   3                      case mLUMINANCE:
+ 261   3                              switch(ucOSDLvl2_Cursor){
+ 262   4                              case mLuminance_Brightness:
+ 263   4                                      BrightnessDown();
+ 264   4                                      break;
+ 265   4                              case mLuminance_Contrast:
+ 266   4                                      ContrastDown();
+ 267   4                                      break;
+ 268   4                              case mLuminance_Saturation:
+ 269   4                                      SaturationDown();
+ 270   4                                      break;
+ 271   4                              case mLuminance_Tint:
+ 272   4                                      TintDown();
+ 273   4                                      break;
+ 274   4                              }
+ 275   3                              break;
+ 276   3                      case mPICTURE:
+ 277   3                              switch(ucOSDLvl2_Cursor){
+ 278   4                              case mPicture_Phase:
+ 279   4                                      PhaseDown();
+ 280   4                                      break;
+ 281   4                              case mPicture_Clock:
+ 282   4                                      ClockDown();
+ 283   4                                      break;
+ 284   4                              case mPicture_HPos:
+ 285   4                                      HP_Down();
+ 286   4                                      break;
+ 287   4                              case mPicture_VPos:
+ 288   4                                      VP_Down();
+ 289   4                                      break;
+ 290   4                              }
+ 291   3                              break;
+ 292   3                      case mCOLOR:
+ 293   3                              switch(ucOSDLvl2_Cursor){
+ 294   4                              case mColor_Tempk:
+ 295   4                                      ColorTempDown();
+ 296   4                                      break;
+ 297   4                              case mColor_User_R:
+ 298   4                                      ColorRedDown();
+ 299   4                                      break;
+ 300   4                              case mColor_User_G:
+ 301   4                                      ColorGreenDown();
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 6   
+
+ 302   4                                      break;
+ 303   4                              case mColor_User_B:
+ 304   4                                      ColorBlueDown();
+ 305   4                                      break;
+ 306   4                              }
+ 307   3                              break;
+ 308   3                      case mOSDSETTING:
+ 309   3                              switch(ucOSDLvl2_Cursor){
+ 310   4                              case mOSDSetting_Horizontal:
+ 311   4                                      OSD_X_Down();
+ 312   4                                      break;
+ 313   4                              case mOSDSetting_Vertical:
+ 314   4                                      OSD_Y_Down();
+ 315   4                                      break;
+ 316   4                              case mOSDSetting_Transparency:
+ 317   4                                      TransparencyDown();
+ 318   4                                      break;
+ 319   4                              case mOSDSetting_OSDTimeout:
+ 320   4                                      OSD_TimerDown();
+ 321   4                                      break;
+ 322   4                              }
+ 323   3                              break;
+ 324   3                      case mSETUP:
+ 325   3                              switch(ucOSDLvl2_Cursor){
+ 326   4                              case mSetup_Language:
+ 327   4                                      //LanguageDown();
+ 328   4                                      //---- -jwshin 111214
+ 329   4                                      break;
+ 330   4                              case mSetup_AudioMute:
+ 331   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 332   4                                      SelectYesNo();
+ 333   4                                      bMute = (bit)ucOSDLvl3_Cursor;
+ 334   4                                      if(bMute){
+ 335   5                                              AUDIO_MUTE();
+ 336   5                                              AMP_STBY();
+ 337   5                                      printf("SetVolume=MUTE\r\n");
+ 338   5                                      }
+ 339   4                                      else {
+ 340   5                                              AMP_On();
+ 341   5                                              AUDIO_On();
+ 342   5                                              printf("SetVolume=MUTE Off\r\n");
+ 343   5                                      }
+ 344   4                                      ucSavePointer = svMUTE;
+ 345   4                                      break;
+ 346   4                              case mSetup_Input:
+ 347   4                                      InputSourceDown();
+ 348   4                                      break;
+ 349   4                              case mSetup_DCR:
+ 350   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 351   4                                      SelectYesNo();
+ 352   4                                      ucDynBKMode = ucOSDLvl3_Cursor;
+ 353   4                                      ucSavePointer = svDYBK;
+ 354   4                                      //LFEnableSettings();
+ 355   4                                      if((ucLFMode != LF_MODE_OFF || ucDynBKMode)){
+ 356   5                                              BF_DisableWindow(BF_WINDOW_2);
+ 357   5                                              BF_EnableWindow(BF_WINDOW_1);
+ 358   5                                              BF_SetActiveWindow(BF_WINDOW_1);
+ 359   5                                      }
+ 360   4                                      if(ucDynBKMode == 0){
+ 361   5                                              SetBrightness();
+ 362   5                                              iCurDynBk = ucBrightness;
+ 363   5                                      }
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 7   
+
+ 364   4                                      break;
+ 365   4      #if _Enable_OD_ == ON
+                                      case mSetup_OD:
+                                              bSmartResponse ^= BIT_0;
+                                              ucOSDLvl3_Cursor = bSmartResponse;
+                                              SelectYesNo();
+                                              Write24C16(EPADDR_OD_ONOFF, ucOSDLvl3_Cursor);
+                                              if(ucOSDLvl3_Cursor == 0)
+                                                      DisableOD();
+                                              else
+                                                      EnableOD();
+                                              break;
+              #endif
+ 377   4                              case mSetup_Reset:
+ 378   4                                      ucOSDLvl3_Cursor ^= BIT_0;
+ 379   4                                      SelectYesNo();
+ 380   4                                      break;
+ 381   4                              }
+ 382   3                              break;
+ 383   3                      }
+ 384   2              }
+ 385   1              else if(ucOSDType == LF_MAIN_MENU){
+ 386   2                      LFMenuControl(LFDown);
+ 387   2              }
+ 388   1      /*      else if(ucOSDType == OSDOFF){
+ 389   1                      ShowDirectVolumeMenu();
+ 390   1              } */
+ 391   1              else if(ucOSDType == DIRECT_MENU){
+ 392   2                      if(ucOSDLvl1_Cursor == mDirect_Source){
+ 393   3                              if(++ucOSDLvl2_Cursor > mSource_VIDEO)
+ 394   3                                      ucOSDLvl2_Cursor = mSource_VGA;
+ 395   3                              SelectLFMITM();
+ 396   3                      }
+ 397   2                      else if(ucOSDLvl1_Cursor == mDirect_Volume){
+ 398   3                              DirectVolumeDown();
+ 399   3                      }
+ 400   2                      else if(ucOSDLvl1_Cursor == mDirect_Brightness){
+ 401   3                              DirectBrightnessDown();
+ 402   3                      }
+ 403   2              }
+ 404   1              //--------------- RGB Signal Switching À» À§ÇÑ Routine... +jwshin 120224                                B Scaler¿¡¼­´Â OSDOFF Mode¿¡¼
+             -­ SwitchingÇÔ..
+ 405   1              else if((ucOSDType == OSDOFF)||(ucOSDType == OUT_RANGE)){
+ 406   2                      OSD_OFF();
+ 407   2                      if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 0)) {
+ 408   3                              bB_Screen_ReverseFlag = 1;
+ 409   3                              Write24C16(EPADDR_B_SCREEN_REV,bB_Screen_ReverseFlag);
+ 410   3                              bRGB_SW_Flag = 1;
+ 411   3                              Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 412   3                              RGB_SW1_RGB1();
+ 413   3                      }
+ 414   2                      else if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 1)) {
+ 415   3                              bB_Screen_ReverseFlag = 1;
+ 416   3                              Write24C16(EPADDR_B_SCREEN_REV,bB_Screen_ReverseFlag);
+ 417   3                              bRGB_SW_Flag = 0;
+ 418   3                              Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 419   3                              RGB_SW1_RGB2(); 
+ 420   3                      }
+ 421   2                      else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 1)) {
+ 422   3                              bB_Screen_ReverseFlag = 0;
+ 423   3                              Write24C16(EPADDR_B_SCREEN_REV,bB_Screen_ReverseFlag);
+ 424   3                              bRGB_SW_Flag = 0;
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 8   
+
+ 425   3                              Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 426   3                              RGB_SW1_RGB2(); 
+ 427   3                      }
+ 428   2                      else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 0)) {
+ 429   3                              bB_Screen_ReverseFlag = 0;
+ 430   3                              Write24C16(EPADDR_B_SCREEN_REV,bB_Screen_ReverseFlag);
+ 431   3                              bRGB_SW_Flag = 1;
+ 432   3                              Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 433   3                              RGB_SW1_RGB1(); 
+ 434   3                      }
+ 435   2                      else
+ 436   2                      {}
+ 437   2                      
+ 438   2                      ShowSourceMsg();                                // +jwshin 120227 Mode ÀüÈ¯ ½Ã È­¸é »óÅÂ¸¦ DisplayÇØ ÁÖ±â À§ÇØ... »ðÀÔ...
+ 439   2                      
+ 440   2                      if(bInSync == FALSE) {
+ 441   3                              ucOSDType = OUT_RANGE;                                          // +jwshin 120313    ½ÅÈ£°¡ ¾øÀ» °æ¿ì~!
+ 442   3                              Set_usOSD2Timer_10ms((unsigned short)ucOSDTimer*100);                           // +jwshin 120302
+ 443   3                      }
+ 444   2                      else {
+ 445   3                              Set_usOSD2Timer_10ms(300);                              // +jwshin 120302
+ 446   3                      }
+ 447   2                      //ucOSDType = OSDOFF;
+ 448   2              }       
+ 449   1              //----------------------------------------------
+ 450   1              
+ 451   1              else if(ucOSDType == FACTORY){
+ 452   2                      FactoryItemDown();
+ 453   2              }
+ 454   1      
+ 455   1              if((ucOSDType == LF_MAIN_MENU)||(ucOSDType == DIRECT_MENU)||(ucOSDType == SOURCE_MSG))                          // +jwshin 1203
+             -13
+ 456   1              {
+ 457   2                      if(bInSync == FALSE) 
+ 458   2                      {
+ 459   3                              Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 460   3                      }
+ 461   2                      else
+ 462   2                      {
+ 463   3                              Set_usOSDTimer_10ms(300);
+ 464   3                      }
+ 465   2              }
+ 466   1              else
+ 467   1                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 468   1      
+ 469   1      }
+ 470          
+ 471          
+ 472          void MainMenu(void)
+ 473          {
+ 474   1      //unsigned char i;
+ 475   1              switch(ucOSDType){
+ 476   2              case OSDOFF: 
+ 477   2                      ucOSDType = MAIN_MENU;
+ 478   2                      ucOSDLvl1_Cursor = 0;
+ 479   2                      
+ 480   2                      MainOSD();
+ 481   2                      OSD_ON();
+ 482   2      
+ 483   2                      break;
+ 484   2              case MAIN_MENU:
+ 485   2                      ucOSDType = SUB_MENU;
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 9   
+
+ 486   2                      SelectSubItem();
+ 487   2      
+ 488   2              
+ 489   2                      break;
+ 490   2              case SUB_MENU:
+ 491   2                      if(ucOSDLvl1_Cursor == mLUMINANCE && ucOSDLvl2_Cursor == mFactory){
+ 492   3                              SubIconWinOff();
+ 493   3                              MainIconWinOff();
+ 494   3                              FactoryShowMenu();
+ 495   3                              break;
+ 496   3                      }
+ 497   2                      else{
+ 498   3                              ucOSDType = SHOW_SLDR;
+ 499   3                              ShowAdjustMenu();
+ 500   3                      }
+ 501   2                      break;
+ 502   2              case SHOW_SLDR:
+ 503   2                      SaveData();
+ 504   2                      ucOSDType = SUB_MENU;
+ 505   2                      if(((ucOSDLvl1_Cursor == mCOLOR)&&(ucOSDLvl2_Cursor == mColor_Tempk))||(ucOSDLvl1_Cursor == mSETUP))
+ 506   2                              SubIconWinOff();
+ 507   2                      if(ucOSDLvl1_Cursor == mSETUP){
+ 508   3                              if(ucOSDLvl2_Cursor == mSetup_Input){
+ 509   4                                      if(ucSource != (ucPowerStatus & ~SoftPowerOnFlag)){
+ 510   5                                              ucPowerStatus = ucSource | SoftPowerOnFlag;
+ 511   5                                              InputSourceSelect();
+ 512   5                                      }
+ 513   4                              }
+ 514   3                              else if(ucOSDLvl2_Cursor == mSetup_Reset){
+ 515   4                                      if(ucOSDLvl3_Cursor != mNo){
+ 516   5                                              Recall();
+ 517   5                                      }
+ 518   4                              }
+ 519   3                      }
+ 520   2                      ShowSubMenu();
+ 521   2                      SelectSubItem();
+ 522   2                      break;
+ 523   2              case DIRECT_MENU:
+ 524   2                      if(ucOSDLvl1_Cursor == mDirect_Source){
+ 525   3                              if((ucPowerStatus & ~SoftPowerOnFlag) != ucSource){
+ 526   4                                      ChangeInputSource();
+ 527   4                              }
+ 528   3                              else{
+ 529   4                                      ucSource = ucOSDLvl2_Cursor;
+ 530   4                                      ucSavePointer = svSOURCE;
+ 531   4                                      OSD_OFF();
+ 532   4                                      
+ 533   4                                      if(usVSync > V_UPPER_BOUND){    //BACK TO OUTOFRANGE85HZ AFTER SOURCE MENU TIMEOUT
+ 534   5                                              ucOSDType = OUT_RANGE2;
+ 535   5                                      }
+ 536   4                                      else if(bOutOfLimit){   //SHOW OUTOFRANGE AFTER SOURCE MENU TIMEOUT
+ 537   5                                              bShowOutRange = FALSE;
+ 538   5                                              Set_usPoSvTimer(500);
+ 539   5                                      }
+ 540   4                              }
+ 541   3                      }
+ 542   2                      else
+ 543   2                              OSD_OFF();
+ 544   2                      break;
+ 545   2              case DDCCI_MSG:
+ 546   2              case LOCK_MSG:
+ 547   2              case LF_MAIN_MENU:
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 10  
+
+ 548   2                      OSD_OFF();
+ 549   2                      break;
+ 550   2              case FACTORY:
+ 551   2                      FactoryEnter();
+ 552   2                      break;
+ 553   2                      
+ 554   2              }
+ 555   1              ucCurKey = IGNORE_KEY;
+ 556   1      }
+ 557          
+ 558          
+ 559          void ExitKey()
+ 560          {
+ 561   1              switch(ucOSDType){
+ 562   2              case MAIN_MENU: 
+ 563   2                      OSD_OFF();
+ 564   2                      ucOSDLvl1_Cursor = 0;
+ 565   2                      break;
+ 566   2              case SUB_MENU:
+ 567   2                      SubIconWinOff();
+ 568   2                      ucOSDType = MAIN_MENU;
+ 569   2                      ucOSDLvl2_Cursor = 0;
+ 570   2                      break;
+ 571   2              case SHOW_SLDR:
+ 572   2                      SaveData();
+ 573   2                      ucOSDType = SUB_MENU;
+ 574   2                      ShowSubMenu();
+ 575   2                      SelectSubItem();
+ 576   2                      ucOSDLvl3_Cursor = 0;
+ 577   2                      break;
+ 578   2              }
+ 579   1              
+ 580   1              ucCurKey = IGNORE_KEY;
+ 581   1                      
+ 582   1      }
+ 583          
+ 584          
+ 585          
+ 586          
+ 587          
+ 588          
+ 589                  
+ 590          
+ 591          
+ 592          
+ 593          
+ 594          
+ 595          
+ 596          
+ 597          
+ 598          
+ 599          
+ 600                          
+ 601                          
+ 602          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1768    ----
+   CONSTANT SIZE    =     43    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V8.12   OSD_KEY                                                               04/16/2014 18:12:28 PAGE 11  
+
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

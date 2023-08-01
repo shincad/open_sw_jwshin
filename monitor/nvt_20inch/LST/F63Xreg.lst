@@ -1,0 +1,120 @@
+C51 COMPILER V7.03   F63XREG                                                               12/21/2006 16:55:06 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE F63XREG
+OBJECT MODULE PLACED IN .\BIN\F63Xreg.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\F63Xreg.c OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\
+                    -F63Xreg.lst) OBJECT(.\BIN\F63Xreg.obj)
+
+stmt level    source
+
+   1          /***********************************************************************/
+   2          /*             Novatek MicroElectronics Corp.                          */
+   3          /*    2F, No. 3,Innovation Road 1, Science-Based Industrial Park,      */
+   4          /*    HsinChu 300,Taiwn, R.O.C.                                        */
+   5          /*    TEL:886-3-567-0889       FAX:886-3-577-0132                      */
+   6          /*    All Rights Reserved                                              */
+   7          /***********************************************************************/
+   8          /***********************************************************************/
+   9          /*    F63XDEF.h                                                        */
+  10          /*    Release Date:2000/12/17      Last Maintenance:2003/05/06         */
+  11          /*    Original Version:1.0.00      Last Version:1.2.00                 */
+  12          /*    Coding By:Alvin Lin          Maintenance By:Alvin Lin            */
+  13          /***********************************************************************/
+  14          //#ifndef _F63XREG_H
+  15          //#define _F63XREG_H
+  16          #include "MyDef.h"
+  17          //IO PORT
+  18          Byte volatile xdata PTA_REG      _at_ 0xf000;       // R/W
+  19          Byte volatile xdata PTB_REG      _at_ 0xf001;       // R/W
+  20          Byte volatile xdata PTC_REG      _at_ 0xf002;       // R/W
+  21          Byte volatile xdata PTD_REG      _at_ 0xf003;       // R/W
+  22          Byte volatile xdata PTE_REG              _at_ 0xf004;       // R/W
+  23          Byte volatile xdata RDPA_REG     _at_ 0xf005;       // R/W
+  24          Byte volatile xdata RDPB_REG     _at_ 0xf006;       // R/W
+  25          Byte volatile xdata RDPC_REG     _at_ 0xf007;       // R/W
+  26          Byte volatile xdata RDPD_REG     _at_ 0xf008;       // R/W
+  27          Byte volatile xdata RDPE_REG     _at_ 0xf009;       // R/W
+  28          
+  29          //WATCHDOG TIMER
+  30          Byte volatile xdata CLRWDT       _at_ 0xf00a;       // W
+  31          
+  32          //AD CONVERTER
+  33          Byte volatile xdata ADC_CON      _at_ 0xf00b;       // W
+  34          Byte volatile xdata ADC0_REG     _at_ 0xf00c;       // R
+  35          Byte volatile xdata ADC1_REG     _at_ 0xf00d;       // R
+  36          Byte volatile xdata ADC2_REG     _at_ 0xf00e;       // R
+  37          Byte volatile xdata ADC3_REG     _at_ 0xf00f;       // R
+  38          
+  39          //PWM
+  40          Byte volatile xdata ENPWM_LB     _at_ 0xf010;       // W
+  41          Byte volatile xdata ENPWM_HB     _at_ 0xf011;       // W
+  42          Byte volatile xdata PWM0_REG     _at_ 0xf012;       // R/W
+  43          Byte volatile xdata PWM1_REG     _at_ 0xf013;       // R/W
+  44          Byte volatile xdata PWM2_REG     _at_ 0xf014;       // R/W
+  45          Byte volatile xdata PWM3_REG     _at_ 0xf015;       // R/W
+  46          Byte volatile xdata PWM4_REG     _at_ 0xf016;       // R/W
+  47          Byte volatile xdata PWM5_REG     _at_ 0xf017;       // R/W
+  48          Byte volatile xdata PWM6_REG     _at_ 0xf018;       // R/W
+  49          Byte volatile xdata PWM7_REG     _at_ 0xf019;       // R/W 
+  50          Byte volatile xdata PWM8_REG     _at_ 0xf01a;       // R/W 
+  51          Byte volatile xdata PWM9_REG     _at_ 0xf01b;       // R/W
+  52           
+  53          //DDC0
+  54          Byte volatile xdata DDC_CTL0     _at_ 0xf01C;       // W
+C51 COMPILER V7.03   F63XREG                                                               12/21/2006 16:55:06 PAGE 2   
+
+  55          Byte volatile xdata DDC_ADDR0    _at_ 0xf01d;       // W
+  56          
+  57          //DDC1
+  58          Byte volatile xdata DDC_CTL1     _at_ 0xf01e;       // W
+  59          Byte volatile xdata DDC_ADDR1    _at_ 0xf01f;       // W
+  60          
+  61          //IIC0
+  62          Byte volatile xdata IIC0_CFG     _at_ 0xf039;       // R
+  63          Byte volatile xdata IIC0_STATUS  _at_ 0xf03A;       // W
+  64          Byte volatile xdata INTIIC0_EN   _at_ 0xf03B;       // W
+  65          Byte volatile xdata INTIIC0_FLG  _at_ 0xf03C;       // W
+  66          Byte volatile xdata INTIIC0_CLR  _at_ 0xf03D;       // R/W
+  67          Byte volatile xdata IIC0_TXDATA  _at_ 0xf03E;       // W
+  68          Byte volatile xdata IIC0_RXDATA  _at_ 0xf03F;       // W
+  69          Byte volatile xdata IIC0_ADDR    _at_ 0xf040;       // W
+  70          
+  71          //IIC1
+  72          Byte volatile xdata IIC1_CFG     _at_ 0xf041;       // R
+  73          Byte volatile xdata IIC1_STATUS  _at_ 0xf042;       // W
+  74          Byte volatile xdata INTIIC1_EN   _at_ 0xf043;       // W
+  75          Byte volatile xdata INTIIC1_FLG  _at_ 0xf044;       // W
+  76          Byte volatile xdata INTIIC1_CLR  _at_ 0xf045;       // R/W
+  77          Byte volatile xdata IIC1_TXDATA  _at_ 0xf046;       // W
+  78          Byte volatile xdata IIC1_RXDATA  _at_ 0xf047;       // W
+  79          Byte volatile xdata IIC1_ADDR    _at_ 0xf048;       // W
+  80          
+  81          //INT
+  82          Byte volatile xdata INT_SRC      _at_ 0xf020;       // R
+  83          Byte volatile xdata INTEXT_FLG   _at_ 0xf021;       // R
+  84          Byte volatile xdata INTEXT_EN    _at_ 0xf022;       // R/W
+  85          
+  86          //FLASH MEMORY reserved 
+  87          Byte volatile xdata ISP_REG      _at_ 0xf049;       // R/W
+  88          Byte volatile xdata FLASH_BUF    _at_ 0xf04A;       // R/W
+  89          
+  90          //Extended Control function
+  91          Byte volatile xdata EXT_FLG             _at_ 0xf04F;       // R
+  92          
+  93          //#endif
+  94          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1466 @@
+#include "TUNER.H"
+#include "IIC.H"
+#include "8051.H"
+#include <stdio.h>
+#include "MyDef.H"
+#include "MCU.H"
+#include "RAM.H"
+#include "OSD.H"
+#include "TW990x.H"
+#include "F63xREG.H"
+#include "Scaler.h"
+#include "UserAdj.h"
+#include "Rom_map.h"
+#include "Tuner_tab.h"
+/*
+//US181
+code unsigned short CatvTabUSA[125]={
+ //stepcode 50khz
+	0x094c,0x07e4,0x085c,0x08d4,0x099c,0x0a14,0x1144,0x11bc,0x1234,0x12ac,
+	0x1324,0x139c,0x1414,0x0d0c,0x0d84,0x0dfc,0x0e74,0x0eec,0x0f64,0x0fdc,
+	0x1054,0x10cc,0x148c,0x1504,0x157c,0x15f4,0x166c,0x16e4,0x175c,0x17d4,
+	0x184c,0x18c4,0x193c,0x19b4,0x1a2c,0x1aa4,0x1b1c,0x1b94,0x1c0c,0x1c84,
+	0x1cfc,0x1d74,0x1dec,0x1e64,0x1edc,0x1f54,0x1fcc,0x2044,0x20bc,0x2134,
+	0x21ac,0x2224,0x229c,0x2314,0x238c,0x2404,0x247c,0x24f4,0x256c,0x25e4,
+	0x265c,0x26d4,0x274c,0x27c4,0x283c,0x28b4,0x292c,0x29a4,0x2a1c,0x2a94,
+	0x2b0c,0x2b84,0x2bfc,0x2c74,0x2cec,0x2d64,0x2ddc,0x2e54,0x2ecc,0x2f44,
+	0x2fbc,0x3034,0x30ac,0x3124,0x319c,0x3214,0x328c,0x3304,0x337c,0x33f4,
+	0x346c,0x34e4,0x355c,0x35d4,0x0ab4,0x0b2c,0x0ba4,0x0c1c,0x0c94,0x364c,
+	0x36c4,0x373c,0x37b4,0x382c,0x38a4,0x391c,0x3994,0x3a0c,0x3a84,0x3afc,
+	0x3b74,0x3bec,0x3c64,0x3cdc,0x3d54,0x3dcc,0x3e44,0x3ebc,0x3f34,0x3fac,
+	0x4024,0x409c,0x4114,0x418c,0x4204
+};
+
+code unsigned short AirtvTabUSA[68]={
+	0x07e4,0x085c,0x08d4,0x099c,0x0a14,0x1144,0x11bc,0x1234,0x12ac,0x1324,
+	0x139c,0x1414,0x2864,0x28dc,0x2954,0x29cc,0x2a44,0x2abc,0x2b34,0x2bac,
+	0x2c24,0x2c9c,0x2d14,0x2d8c,0x2e04,0x2e7c,0x2ef4,0x2f6c,0x2fe4,0x305c,
+	0x30d4,0x314c,0x31c4,0x323c,0x32b4,0x332c,0x33a4,0x341c,0x3494,0x350c,
+	0x3584,0x35fc,0x3674,0x36ec,0x3764,0x37dc,0x3854,0x38cc,0x3944,0x39bc,
+	0x3a34,0x3aac,0x3b24,0x3b9c,0x3c14,0x3c8c,0x3d04,0x3d7c,0x3df4,0x3e6c,
+	0x3ee4,0x3f5c,0x3fd4,0x404c,0x40c4,0x413c,0x41b4,0x422c
+};
+
+//JAPAN
+code unsigned int CatvTabJPN[63] = {
+	//PIF:58.75
+	0x0BB8,0x0C30,0x0CA8,0x11F8,0x1270,0x12E8,0x1360,0x13B0,0x1428,0x14A0,
+	0x1518,0x1590,0x0D20,0x0D98,0x0E10,0x0E88,0x0F00,0x0F78,0x0FF0,0x1068,
+	0x10E0,0x1180,0x1608,0x16A8,0x1720,0x1798,0x1810,0x1860,0x18D8,0x1950,
+	0x19C8,0x1A40,0x1AB8,0x1B30,0x1BA8,0x1C20,0x1C98,0x1D10,0x1D88,0x1E00,
+	0x1E78,0x1EF0,0x1F68,0x1FE0,0x2058,0x20D0,0x2148,0x21C0,0x2238,0x22B0,
+	0x2328,0x23A0,0x2418,0x2490,0x2508,0x2580,0x25F8,0x2670,0x26E8,0x2760,
+	0x27D8,0x2850,0x28C8
+};
+
+code unsigned int AirtvTabJPN[62]={
+	//PIF:58.75
+	0x0BB8,0x0C30,0x0CA8,0x11F8,0x1270,0x12E8,0x1360,0x13B0,0x1428,0x14A0,
+	0x1518,0x1590,0x2968,0x29E0,0x2A58,0x2AD0,0x2B48,0x2BC0,0x2C38,0x2CB0,
+	0x2D28,0x2DA0,0x2E18,0x2E90,0x2F08,0x2F80,0x2FF8,0x3070,0x30E8,0x3160,
+	0x31D8,0x3250,0x32C8,0x3340,0x33B8,0x3430,0x34A8,0x3520,0x3598,0x3610,
+	0x3688,0x3700,0x3778,0x37F0,0x3868,0x38E0,0x3958,0x39D0,0x3A48,0x3AC0,
+	0x3B38,0x3BB0,0x3C28,0x3CA0,0x3D18,0x3D90,0x3E08,0x3E80,0x3EF8,0x3F70,
+	0x3FE8,0x4060
+};
+//CCIR
+code unsigned short CatvTabCCIR[106]={
+	0x06cf,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0a17,0x0aa3,0x0b43,0x0bcf,
+	0x0c5b,0x0ce7,0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,
+	0x11d3,0x125f,0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,
+	0x174b,0x17d7,0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,
+	0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,
+	0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,0x273b,0x27db,0x287b,0x291b,
+	0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,0x2e1b,0x2ebb,0x2f5b,
+	0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,0x345b,0x34fb,0x359b,
+	0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,0x3a9b,0x3b3b,0x3bdb,
+	0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,0x40db,0x417b,0x421b,
+	0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+};
+code unsigned short AirtvTabCCIR[68]={
+	0x06cf,0x075b,0x07e7,0x10bb,0x1147,0x11d3,0x125f,0x12eb,0x1377,0x1403,
+	0x148f,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x27db,
+	0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,0x2e1b,
+	0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,0x345b,
+	0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,0x3a9b,
+	0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,0x40db,
+	0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+};
+
+//SECAM L FRANCE  from micro
+code unsigned short CatvTabFRA[41]={	//030424
+	0x0c29,0x0d19,0x0e09,0x0ef9,0x0fe9,0x10d9,0x11c9,0x12b9,0x13a9,0x1499,
+	0x1589,0x1679,0x1769,0x1859,0x1949,0x1a39,0x0000,0x0000,0x0000,0x0000,
+	0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,
+	0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,
+	0x273b,
+};
+code unsigned short AirtvTabFRA[70]={		
+	0x0000,0x0701,0x0760,0x07a1,0x10ca,0x116a,0x120a,0x12aa,0x134a,0x13ea,
+	0x11d3,0x1147,0x125f,0x1377,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+	0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+	0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+	0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+	0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+	0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db,0x467b,
+};
+
+//PAL B/G  Italy
+code unsigned short CatvTabITA[55]={	//
+	0x06CF,0x075B,0x07E7,0x0873,0x08FF,0x098B,0x0B43,0x0BCF,0x0C5B,0x0CE7,
+	//48.25,
+	0x0D73,0x0DFF,0x0E8B,0x0F17,0x0FA3,0x102F,0x10BB,0x1147,0x11D3,0x125F,
+	0x12EB,0x1377,0x1402,0x148E,0x151A,0x15A6,0x1632,0x16BE,0x174A,0x17D6,
+	0x1862,0x18EE,0x197A,0x1A06,0x1ABA,0x1B5A,0x1BFA,0x1C9A,0x1D3A,0x1DDA,
+	0x1E7A,0x1F1A,0x1FBA,0x205A,0x20FA,0x219A,0x223A,0x22DA,0x237A,0x241A,
+	0x24BA,0x255A,0x25FA,0x269A,0x273A
+};
+
+
+code unsigned short AirtvTabITA[69]={	
+	0x073D,0x07E7,0x0977,0x10BB,0x1165,0x1273,0x12C3,0x1377,0x1402,0x148E,
+	//53.75
+	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+	0x27DA,0x287A,0x291A,0x29BA,0x2A5A,0x2AFA,0x2B9A,0x2C3A,0x2CDA,0x2D7A,
+	0x2E1A,0x2EBA,0x2F5A,0x2FFA,0x309A,0x313A,0x31DA,0x327A,0x331A,0x33BA,
+	0x345A,0x34FA,0x359A,0x363A,0x36DA,0x377A,0x381A,0x38BA,0x395A,0x39FA,
+	0x3A9A,0x3B3A,0x3BDA,0x3C7A,0x3D1A,0x3DBA,0x3E5A,0x3EFA,0x3F9A,0x403B,
+	0x40DB,0x417B,0x421B,0x42BB,0x435B,0x43FB,0x449B,0x453B,0x45DB
+	//791.25
+};
+//PAL B/G Australia
+code unsigned short CatvTabAUS[67]={	//
+	0x06cf,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0b43,0x0bcf,0x0c5b,0x0ce7,
+	//48.25
+	0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,0x11d3,0x125f,
+	0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,0x174b,0x17d7,
+	0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,
+	0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,
+	0x24bb,0x255b,0x25fb,0x269b,0x273b,0x0a17,0x0aa3,0x06a7,0x0783,0x080f,
+	0x09c7,0x0a7b,0x0b07,0x0dd7,0x1363,0x13ef,0x147b 
+};
+
+code unsigned short AirtvTabAUS[75]={	
+	0x0783,0x080f,0x09c7,0x0a7b,0x0b07,0x10bb,0x1147,0x11c3,0x125f,0x1363,
+	//57.25
+	0x13ef,0x147b,0x06a7,0x0dd7,0x25bf,0x0000,0x0000,0x0000,0x0000,0x27db,
+	0x2867,0x28f3,0x297f,0x2a0b,0x2a97,0x2b23,0x2baf,0x2c3b,0x2cc7,0x2d53,
+	0x2ddf,0x2e6b,0x2ef7,0x2f83,0x300f,0x309b,0x3127,0x31b3,0x323f,0x32cb,
+	0x3357,0x33e3,0x346f,0x34fb,0x3587,0x3613,0x369f,0x372b,0x37b7,0x3843,
+	0x38cf,0x395b,0x39e7,0x3a73,0x3aff,0x3b8b,0x3c17,0x3ca3,0x3d2f,0x3dbb,
+	0x3e47,0x3ed3,0x3f5f,0x3feb,0x4077,0x4103,0x418f,0x421b,0x42a7,0x287b,
+	0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b
+};
+//UK  PAL I //
+code unsigned short CatvTabGBR[55]={
+	0x06CF,0x075B,0x07E7,0x0873,0x08FF,0x098B,0x0B43,0x0BCF,0x0C5B,0x0CE7,
+	//48.25,55.25
+	0x0D73,0x0DFF,0x0E8B,0x0F17,0x0FA3,0x102F,0x10BB,0x1147,0x11D3,0x125F,
+	0x12EB,0x1377,0x1402,0x148E,0x151A,0x15A6,0x1632,0x16BE,0x174A,0x17D6,
+	0x1862,0x18EE,0x197A,0x1A06,0x1ABA,0x1B5A,0x1BFA,0x1C9A,0x1D3A,0x1DDA,
+	0x1E7A,0x1F1A,0x1FBA,0x205A,0x20FA,0x219A,0x223A,0x22DA,0x237A,0x241A,
+	0x24BA,0x255A,0x25FA,0x269A,0x273A,
+	//431.2,
+};
+code unsigned short AirtvTabGBR[68]={
+	0x06CF,0x075B,0x07E7,0x10BB,0x1147,0x11D3,0x125F,0x12EB,0x1377,0x1402,
+	//48.25, 55.25,  62.25, 175.25
+	0x148E,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x27DA,
+	0x287A,0x291A,0x29BA,0x2A5A,0x2AFA,0x2B9A,0x2C3A,0x2CDA,0x2D7A,0x2E1A,
+	0x2EBA,0x2F5A,0x2FFA,0x309A,0x313A,0x31DA,0x327A,0x331A,0x33BA,0x345A,
+	0x34FA,0x359A,0x363A,0x36DA,0x377A,0x381A,0x38BA,0x395A,0x39FA,0x3A9A,
+	0x3B3A,0x3BDA,0x3C7A,0x3D1A,0x3DBA,0x3E5A,0x3EFA,0x3F9A,0x403B,0x40DB,
+	0x417B,0x421B,0x42BB,0x435B,0x43FB,0x449B,0x453B,0x45DB,
+	//838.25,
+};
+
+//RUSSIA SECAM D/K from micro
+code unsigned short CatvTabRUS[41]={
+	0x0b1b,0x0bbb,0x0c5b,0x0cfb,0x0d9b,0x0e3b,0x0edb,0x0f7b,0x101b,0x151b,
+	0x15bb,0x165b,0x16ce,0x179b,0x183b,0x18db,0x197b,0x1a1b,0x1abb,0x0000,
+	0x0000,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,
+	0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,
+	0x273b
+};
+code unsigned short AirtvTabRUS[69]={
+	0x06ed,0x07ab,0x0913,0x09b3,0x0a53,0x10bb,0x115b,0x11fb,0x129b,0x133b,
+	0x13db,0x147b,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+	0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+	0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+	0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+	0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+	0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+};
+//NEW ZEALAND PAL B/G  
+code unsigned short AirtvTabNZL[73]={
+0x0693,0x075b,0x07e7,0x10bb,0x1147,0x11d3,0x125f,0x12eb,0x1377,0x1403,
+0x148f,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db,0x0873,
+0x08ff,0x098b,0x06cf
+};
+
+code unsigned short CatvTabNZL[58]={
+	0x0693,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0b43,0x0bcf,0x0c5b,0x0ce7,
+	0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,0x11d3,0x125f,
+	0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,0x174b,0x17d7,
+	0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,
+	0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,
+	0x24bb,0x255b,0x25fb,0x269b,0x273b,0x0a17,0x0aa3,0x06cf
+};
+
+//US181,Japan,CCIR,CCET,UK,CHINA
+code unsigned short *CATV_TAB[]={
+	CatvTabCCIR,CatvTabFRA,CatvTabITA,CatvTabGBR,CatvTabAUS,CatvTabNZL,CatvTabRUS,CatvTabUSA,CatvTabJPN
+};
+code unsigned short *AIR_TAB[]={
+	AirtvTabCCIR,AirtvTabFRA,AirtvTabITA,AirtvTabGBR,AirtvTabAUS,AirtvTabNZL,AirtvTabRUS,AirtvTabUSA,AirtvTabJPN
+};
+*/
+code unsigned char ChannelLimitTab[]={
+//TV_Min,TV_Max,TV_Total,CATV_Min,CATV_Max,CATV_Total
+	2,69,68,2,107,106,	//CCIR PAL B/G from current
+	1,70,70,1,41,41,	//FRANCE SECAM L/L' from micro
+	1,69,69,1,55,55,	//ITALY PAL B/G
+	1,68,68,1,55,55,	//UK PAL I from btc
+	1,75,75,1,67,67,	//AUSTRALIA PAL B/G
+	1,73,73,1,58,58,	//NEW ZEALAND PAL B/G 
+	1,69,69,1,41,41,	//RUSSIA SECAM D/K from micro
+	2,69,68,1,125,125,	//US181 from current
+	1,62,62,1,63,63,	//Japan from current
+//	2,69,68,78,128,51,	//CCET
+//	1,67,67,1,96,96,	//China
+};
+
+code unsigned char MaskTab1[8]={
+	0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80
+};
+
+code unsigned char MaskTab2[8]={
+	0xfe,0xfd,0xfb,0xf7,0xef,0xdf,0xbf,0x7f
+};
+
+void ChannelUp(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0,0,0);
+	AUDIO_MUTE();
+	if((Read24C16(ep_Input_CH_Sys) & 0x80)== 0){
+		i = Read24C16(0x209);
+		for(j=0; j<TV_Total; j++){
+			if(++i > TV_Max)
+				i = TV_Min;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x280+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	else{
+		i = Read24C16(0x209);
+		for(j=0; j<CATV_Total; j++){
+			if(++i > CATV_Max)
+				i = CATV_Min;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x290+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	ChBuffer = i;
+	WriteWordIIC563(0x0cc,ChannelColor);
+//	ShowSource_Video();
+//	ShowValue(1,ChBuffer);
+	ChannelSel(ChBuffer);
+	Write24C16(0x209,ChBuffer);
+	DisplaySource(cTV);
+	OsdTimer = 3 * 100;
+	SetDisplayNormal_Video();
+//	if(AudioMute == 0){
+//		AUDIO_On();
+//	}
+}
+
+void ChannelDown(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0,0,0);
+	AUDIO_MUTE();
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		i = Read24C16(0x209);
+		for(j=0; j<TV_Total; j++){
+			if(--i < TV_Min)
+				i = TV_Max;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x280+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0x209,i);
+	}
+	else{
+		i = Read24C16(0x209);
+		for(j=0; j<CATV_Total; j++){
+			if(--i < CATV_Min)
+				i = CATV_Max;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x290+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0x209,i);
+	}
+	ChBuffer = i;
+	WriteWordIIC563(0x0cc,ChannelColor);
+//	ShowSource_Video();
+//	ShowValue(1,ChBuffer);
+	ChannelSel(ChBuffer);
+	Write24C16(0x209,ChBuffer);
+	DisplaySource(cTV);
+	OsdTimer = 3 * 100;
+	SetDisplayNormal_Video();
+//	if(AudioMute == 0){
+//		AUDIO_On();
+//	}	
+}
+
+/*
+void ManualChannelUp(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0);
+	AUDIO_MUTE();
+	if(Read24C16(0xe3) == 0){
+		i = Read24C16(0x209);
+		for(j=0; j<TV_Total; j++){
+			if(++i > TV_Max)
+				i = TV_Min;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x380+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0x209,i);
+	}
+	else{
+		i = Read24C16(0x209);
+		for(j=0; j<CATV_Total; j++){
+			if(++i > CATV_Max)
+				i = CATV_Min;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x390+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0x209,i);
+	}
+	ChBuffer = i;
+	ManualChannelSel(ChBuffer);
+	Write24C16(0x209,ChBuffer);
+	Timer2 = 500;
+	SetDisplayNormal();
+	//if((flag3 & BIT_4) == 0){
+		//AUDIO_On();
+	//}
+}
+*/
+/*
+void ManualChannelDown(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0);
+	AUDIO_MUTE();
+	if(Read24C16(0xe3) == 0){
+		i = Read24C16(0xdf);
+		for(j=0; j<TV_Total; j++){
+			if(--i < TV_Min)
+				i = TV_Max;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x380+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	else{
+		i = Read24C16(0xdf);
+		for(j=0; j<CATV_Total; j++){
+			if(--i < CATV_Min)
+				i = CATV_Max;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x390+k);
+			if((m & MaskTab1[l]) != 0){
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	ChBuffer = i;
+	ManualChannelSel(ChBuffer);
+	Write24C16(0xdf,ChBuffer);
+	Timer2 = 500;
+	SetDisplayNormal();
+}
+*/
+
+void ProgUp(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0,0,0);
+	AUDIO_MUTE();
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		i = Read24C16(0x207);// current PR. NO.
+		for(j=0; j<128; j++){
+			if(++i > 128)
+				i = 1;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x280+k);
+			if((m & MaskTab1[l]) != 0){
+				PR_ChBuffer = Read24C16(0x100+(i - 1));
+				break;
+			}
+		}
+		//Write24C16(0x209,i);
+	}
+	else{
+		i = Read24C16(0x207);// current PR. NO.
+		for(j=0; j<128; j++){
+			if(++i > 128)
+				i = 1;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x290+k);
+			if((m & MaskTab1[l]) != 0){
+				PR_ChBuffer = Read24C16(0x180+(i - 1));
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	PRBuffer = i;
+	WriteWordIIC563(0x0cc,ChannelColor);
+//	ShowValue(1,PRBuffer);
+//	ChannelSel(PR_ChBuffer);
+	Write24C16(0x207,PRBuffer);
+//	Timer2 = 500;
+	SetDisplayNormal_Video();
+//	if(AudioMute == 0){
+//		AUDIO_On();
+//	}
+}
+
+
+void ProgDown(void)
+{
+unsigned char i,j,k,l,m;
+	ForceToBackground(0,0,0);
+	AUDIO_MUTE();
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		i = Read24C16(0x207);// current PR. NO.
+		for(j=0; j<128; j++){
+			if(--i < 1)
+				i = 128;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x280+k);
+			if((m & MaskTab1[l]) != 0){
+				PR_ChBuffer = Read24C16(0x100+(i - 1));
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	else{
+		i = Read24C16(0x207);// current PR. NO.
+		for(j=0; j<128; j++){
+			if(--i < 1)
+				i = 128;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x290+k);
+			if((m & MaskTab1[l]) != 0){
+				PR_ChBuffer = Read24C16(0x180+(i - 1));
+				break;
+			}
+		}
+		//Write24C16(0xdf,i);
+	}
+	PRBuffer = i;
+	WriteWordIIC563(0x0cc,ChannelColor);
+//	ShowValue(1,PRBuffer);
+//	ChannelSel(PR_ChBuffer);
+	Write24C16(0x207,PRBuffer);
+//	Timer2 = 500;
+	SetDisplayNormal_Video();
+//	if(AudioMute == 0){
+//		AUDIO_On();
+//	}	
+}
+
+
+unsigned char CheckChMask(void)
+{
+unsigned char k,l,m;
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		k = (ChBuffer - TV_Min) / 8;
+		l = (ChBuffer - TV_Min) % 8;
+		m = Read24C16(0x280+k);
+		if((m & MaskTab1[l]) != 0){
+			return 1;
+		}
+		else{
+			return 0;
+		}
+	}
+	else{
+		k = (ChBuffer - CATV_Min) / 8;
+		l = (ChBuffer - CATV_Min) % 8;
+		m = Read24C16(0x290+k);
+		if((m & MaskTab1[l]) != 0){
+			return 1;
+		}
+		else{
+			return 0;
+		}
+	}
+}
+
+void ChannelMask(unsigned char value)
+{
+unsigned char k,l,m;
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		k = (ChBuffer - TV_Min) / 8;
+		l = (ChBuffer - TV_Min) % 8;
+		m = Read24C16(0x280+k);
+		if(value == 0){
+			m &= MaskTab2[l];
+			Write24C16(0x280+k,m);
+		}
+		else{
+			m |= MaskTab1[l];
+			Write24C16(0x280+k,m);
+		}
+	}
+	else{
+		k = (ChBuffer - CATV_Min) / 8;
+		l = (ChBuffer - CATV_Min) % 8;
+		m = Read24C16(0x290+k);
+		if(value == 0){
+			m &= MaskTab2[l];
+			Write24C16(0x290+k,m);
+		}
+		else{
+			m |= MaskTab1[l];
+			Write24C16(0x290+k,m);
+		}
+	}
+
+
+
+}
+void ChannelSel(unsigned char ch)
+{
+unsigned short *p,Ch_Status,PR_Status;
+//	printf("ChannelSel=%d\r\n",(unsigned short)ch);
+	ChSystem = Read24C16(ep_Input_CH_Sys) & 0x7F;
+	if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+		Ch_Status = Read24C16(0x245);
+
+		if(Ch_Status == ch)
+			;
+		else
+			Write24C16(0x245, Ch_Status);
+	
+	}else{
+		PR_Status = Read24C16(0x245);
+		if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0)
+			ChBuffer = Read24C16(0x100+(PR_Status - 1));
+		else		ChBuffer = Read24C16(0x180+(PR_Status - 1));
+		if(ChBuffer == ch)
+			;
+		else
+			Write24C16(0x245, PR_Status);	
+	}
+//		printf("ChBuffer1=0x%x\r\n",(Word)ChBuffer);
+
+	if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+		if(ch < TV_Min){
+			ch = TV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > TV_Max){
+			ch = TV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - TV_Min;
+		p = AIR_TAB[ChSystem] + ch;
+		DevNum = *p;
+		FuncBuf[pCHFINETUNE] = Read24C16(0x100+ch);
+//		printf("FuncBuf[pCHFINETUNE]5=0x%x\r\n",(Word)FuncBuf[pCHFINETUNE]);
+//		printf("TV_Min=0x%x\r\n",(Word)TV_Min);
+//		printf("TV_Max=0x%x\r\n",(Word)TV_Max);
+//		printf("Read24C16(0x100+ch)=0x%x\r\n",(Word)(0x100+ch));
+		DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+	}
+	else{
+		if(ch < CATV_Min){
+			ch = CATV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > CATV_Max){
+			ch = CATV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - CATV_Min;
+		p = CATV_TAB[ChSystem] + ch;
+		DevNum = *p;
+//		printf("FuncBuf[pCHFINETUNE]6=0x%x\r\n",(Word)FuncBuf[pCHFINETUNE]);
+		FuncBuf[pCHFINETUNE] = Read24C16(0x180+ch);
+		DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+	}
+//	if((flag3 & BIT_0) == 0x01){
+//		printf("PreSet No Video\r\n");
+//	}
+//	printf("Before SetTuner\r\n");
+	SetTuner();
+//	printf("After SetTuner\r\n");
+	Sleep(200);//500
+//	printf("Select channel\r\n");
+//	Sleep(500);
+}
+/*
+void ManualChannelSel(unsigned char ch)
+{
+unsigned short *p;
+	if(Read24C16(0xe3) == 0){
+		if(ch < TV_Min){
+			ch = TV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > TV_Max){
+			ch = TV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - TV_Min;
+		p = AIR_TAB[ChSystem] + ch;
+		DevNum = *p;
+		FineTune = Read24C16(0x400+ch);
+		DevNum = DevNum + FineTune - 50;
+	}
+	else{
+		if(ch < CATV_Min){
+			ch = CATV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > CATV_Max){
+			ch = CATV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - CATV_Min;
+		p = CATV_TAB[ChSystem] + ch;
+		DevNum = *p;
+		FineTune = Read24C16(0x480+ch);
+		DevNum = DevNum + FineTune - 50;
+	}
+	//if((flag3 & BIT_0) == 0x01){
+	//	printf("PreSet No Video\r\n");
+	//}
+	SetTuner();
+	Sleep(200);//500
+//	Sleep(500);
+}
+*/
+void SetTuner(void)
+{
+unsigned char i,j,k;
+	i = (unsigned char)(DevNum >> 8);
+	j = (unsigned char)DevNum;
+	if(TunerBrand == 0){	//Philips
+			if(DevNum < VHF_NT){ //Low
+				k=0x01; 
+			}
+			else{
+				if(DevNum < UHF_NT) //High
+					k=0x02;
+				else 				//UHF
+					k=0x08;
+			}
+
+
+	}
+	
+	else{					//LG
+/*		if(DevNum < VHF_PAL){
+			k=0x01;
+		}
+		else{
+			if(DevNum < UHF_PAL)
+				k=0x02;
+			else
+				k=0x08;
+		}
+*/
+		ChSystem = CH_USA;
+
+		if(ChSystem==CH_USA)
+		{
+//		printf("Tunerbrand =>1\r\n");
+			if(DevNum < VHF_NT){
+				k=0xa0; 
+			}
+			else{
+				if(DevNum < UHF_NT)
+					k=0x90;
+				else
+					k=0x30;
+			}
+		}
+		if(ChSystem==CH_JPN)
+		{
+			if(DevNum < VHF_NT_JAP){
+				//k=0xa0; 
+				k=0x01; 
+			}
+			else{
+				if(DevNum < UHF_NT_JAP)
+					//k=0x90;
+					k=0x02;
+				else
+					//k=0x30;
+					k=0x08;
+			}
+		}
+
+		if((ChSystem==CH_CCIR)||(ChSystem==CH_ITA)||(ChSystem==CH_GBR)||(ChSystem==CH_AUS)||(ChSystem==CH_NZL)||(ChSystem==CH_RUS))//PAL 
+		{
+			if(DevNum < VHF_PAL){
+				k=0xa1; 
+			}
+			else{
+				if(DevNum < UHF_PAL)
+					k=0x91;
+				else
+					k=0x31;
+			}
+		}
+		if(ChSystem==CH_FRA)//SECAM L
+		{
+			if(DevNum < 0x08be)//SECAM L' under 73Mhz
+				k=0xa2; 
+			else{
+				if(DevNum < VHF_PAL){
+					k=0xa3; 
+				}
+				else{
+					if(DevNum < UHF_PAL)
+						k=0x93;
+					else
+						k=0x33;
+				}
+			}
+		}
+	}
+	WriteTuner(i,j,k);
+	j = 0;
+	for(k=0; k<0xff; k++){
+		i = ReadTuner();
+		if((i & BIT_6) != 0){  //When loop is phase locked
+			if(++j > 0x10){
+				break;
+			}
+		}
+		else{
+			j = 0;
+		}
+	}
+
+}
+
+
+
+void WriteTuner(unsigned char DivH,unsigned char DivL,unsigned char Band)
+{
+	IIC_Stop();
+	IIC_Delay();
+	
+	IIC_Start();
+	WriteByte(TunerAddr);
+	IIC_ACK();
+	WriteByte(DivH);
+//	printf("DivH=%x\r\n",(unsigned short)DivH);
+	IIC_ACK();
+	WriteByte(DivL);
+//	printf("DivL=%x\r\n",(unsigned short)DivL);
+	IIC_ACK();
+	WriteByte(StepCode);
+//	printf("StepCode=%x\r\n",(unsigned short)StepCode);
+	IIC_ACK();
+	WriteByte(Band);
+//	printf("Band=%x\r\n",(unsigned short)Band);
+	MasterNACK();
+	IIC_Stop();
+	
+}
+unsigned char ReadTuner(void)
+{
+
+unsigned char value;
+	IIC_Stop();
+	IIC_Delay();
+
+	IIC_Start();
+/* transmit data */
+	WriteByte(TunerAddr+1);
+	IIC_ACK();
+	value=ReadByte();
+/* no ack */
+	ISDA = 1;		/* SDA=1 */
+	SetISCL();		/* SCL=1 */
+	IIC_Delay();
+	ISCL = 0;		/* SCL=0 */
+	IIC_Delay();
+/* stop bit */
+	IIC_Stop();
+	return(value);
+}
+
+
+void ScanChannel(void)
+{
+	unsigned char i,k,l,m,/*percent,*/AFTOK_Flag,SyncCheckOk,FineTuneValue,RoutineExit,KeyPadBuffer;
+	unsigned short value,*p;
+	unsigned char PrNo,PrQuo,PrRes,PrSta;//Program Number, Quotient,Residue,Status
+
+	ChSystem = Read24C16(0x208) & 0x7F;
+//	printf("ChSystem=%d\r\n",(unsigned short)ChSystem);
+	//if((ChSystem==5)||(ChSystem==6))
+	if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+		ScanChannelNtsc();
+//	printf("ScanChannelNtsc\r\n");
+	}
+	else{
+
+	PrNo = 0;
+//	WriteWordIIC563(0x0cc,TextColor);
+	if((Read24C16(0x208) & 0x80) == 0){
+//		printf("TV_Min=0x%x,TV_Max=0x%x\r\n",(unsigned short)TV_Min,(unsigned short)TV_Max);
+		for(i=TV_Min; i<TV_Max+1; i++){
+//			printf("for i=0x%x\r\n",(unsigned short)i);
+			Write24C16(0x100+i-TV_Min,50);//for CH Edit reset
+//			ShowValue(1,i);
+//			ShowSliderBar(6,8, i);
+			p = AIR_TAB[ChSystem] + i-TV_Min;
+			if(*p == 0){		//check dummy data
+				k = (i - TV_Min) / 8;
+				l = (i - TV_Min) % 8;
+				m = Read24C16(0x280+k);
+				m = m & MaskTab2[l];	//no sync
+				Write24C16(0x280+k,m);	//save no sync status in eeprom
+				continue;	// skip for dummy
+			}
+			else ;
+			ChannelSel(i);
+			Timer3 = 20;//20*10ms = 200ms
+			while(Timer3 != 0){
+		
+				if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){	//IR POWER    
+					RoutineExit = 1;
+					Osd_Off();                                                 
+					PowerStatus = 0;	//power off
+					Write24C16(ep_Status,StatusFlag);
+//					if((flag3 & BIT_0) != 0){                                  
+//						Write24C16(0xcd,0x00);	//disable burn in mode         
+//						flag3 &= ~BIT_0;                                       
+//					}                                                          
+					PowerSaving();                                             
+//					LED_RedOff();                                              // -jwshin 051101
+					LED_GrnOff();                                              
+					break;                                                     
+				}								
+			}
+			if(Timer3 != 0){
+				if(FuncBuf[pVIDEOSOURCE]> cTV){			
+					PRBuffer = Read24C16(0x207);
+//					ShowValue(1,PRBuffer);
+//					ShowSliderBar(6,8,PRBuffer);
+					ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+					ChannelSel(ChBuffer);
+					Write24C16(0x207,PRBuffer);
+				}
+				break;
+			}
+			value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x280+k);
+
+			if((value & 0x48) != 0x48){
+//no sync
+				SyncCheckOk = 0;
+			}
+			else{
+//sync ok
+				SyncCheckOk = 1;
+
+			}
+			if(SyncCheckOk==0){	// no sync
+				FineTuneValue = 0;
+				while(SyncCheckOk==0){
+
+					//check low range under/upper 2.5MHz
+					Write24C16(0x100+i-TV_Min,FineTuneValue);
+					ChannelSel(i);
+					value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+				// for exit or pwr-key
+					Timer3 = 20;//20*10ms = 200ms
+					while(Timer3 != 0){
+						
+						if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){	//IR POWER                             
+							RoutineExit = 1;
+							Osd_Off();                                                 
+							PowerStatus = 0;	//power off
+							Write24C16(ep_Status,StatusFlag);
+	//						if((flag3 & BIT_0) != 0){                                  
+	//							Write24C16(0xcd,0x00);	//disable burn in mode         
+	//							flag3 &= ~BIT_0;                                       
+	//						}                                                          
+							PowerSaving();                                             
+//							LED_RedOff();                                              // -jwshin 051101
+							LED_GrnOff();                                              
+							break;                                                     
+						}								
+					}
+					if(Timer3 != 0){
+						if(FuncBuf[pVIDEOSOURCE] > cTV){				
+							PRBuffer = Read24C16(0x207);
+//							ShowValue(1,PRBuffer);
+//							ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+							ChannelSel(ChBuffer);
+							Write24C16(0x207,PRBuffer);
+						}
+						break;
+					}				
+					if((value & 0x48) != 0x48)
+						FineTuneValue+=10;
+					else		SyncCheckOk = 1;
+					if(FineTuneValue>80){
+						m = m & MaskTab2[l];	//no sync
+						break;	// exit while	
+					}
+				}
+				if(SyncCheckOk==1){	// sync ok
+					SyncCheckOk = 0;
+					AFTOK_Flag = AFT(i);
+					if(AFTOK_Flag){
+						m = m | MaskTab1[l];
+						ChBuffer = i;
+						//Program base
+						if(++PrNo > 128)
+							PrNo = 1;
+						PRBuffer = PrNo;
+						PrQuo = (PrNo - 1) / 8;
+						PrRes = (PrNo - 1) % 8;
+						PrSta = Read24C16(0x280+PrQuo);
+						PrSta = PrSta | MaskTab1[PrRes];
+						Write24C16(0x280+PrQuo,PrSta);//PR mask
+						Write24C16(0x207,PRBuffer);
+						Write24C16(0x100+(PRBuffer - 1),ChBuffer);//PR ch memory
+					}
+					else
+						m = m & MaskTab2[l];
+				}
+			}
+			else{
+				AFTOK_Flag = AFT(i);
+				if(AFTOK_Flag){
+					m = m | MaskTab1[l];
+					ChBuffer = i;
+					//Program base
+					if(++PrNo > 128)
+						PrNo = 1;
+					PRBuffer = PrNo;
+					PrQuo = (PrNo - 1) / 8;
+					PrRes = (PrNo - 1) % 8;
+					PrSta = Read24C16(0x280+PrQuo);
+					PrSta = PrSta | MaskTab1[PrRes];
+					Write24C16(0x280+PrQuo,PrSta);//PR mask
+					Write24C16(0x100+(PRBuffer - 1),ChBuffer);//PR ch memory
+				}
+				else
+					m = m & MaskTab2[l];					
+			}
+			Write24C16(0x280+k,m);
+
+			if(RoutineExit == 1) return;
+
+		}//end for
+		if(FuncBuf[pVIDEOSOURCE]> cTV){		
+			PRBuffer = Read24C16(0x207);
+//			ShowValue(1,PRBuffer);
+//			ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+			ChannelSel(ChBuffer);
+			Write24C16(0x207,PRBuffer);
+		}else	;			
+	}
+	else{
+		for(i=CATV_Min; i<CATV_Max+1; i++){
+			Write24C16(0x280+i-CATV_Min,50);//happyks 030110 for CH Edit reset
+			p = CATV_TAB[ChSystem] + i-CATV_Min;
+		if(*p == 0){ 		//heck dummy data
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x290+k);
+			m = m & MaskTab2[l];			
+			Write24C16(0x290+k,m);			
+			continue;	// skip for dummy
+			}
+		else 
+			;			
+			ChannelSel(i);
+			Timer3 = 20;//20*10ms = 200ms
+			while(Timer3 != 0){
+				
+				if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){	//IR POWER                             
+					RoutineExit = 1;
+					Osd_Off();                                                 
+					PowerStatus = 0;	//power off
+					Write24C16(ep_Status,StatusFlag);
+//					if((flag3 & BIT_0) != 0){                                  
+//						Write24C16(0xcd,0x00);	//disable burn in mode         
+//						flag3 &= ~BIT_0;                                       
+//					}                                                          
+					PowerSaving();                                             
+//					LED_RedOff();                                              // -jwshin 051101
+					LED_GrnOff();                                              
+					break;                                                     
+				}								
+			}
+			if(Timer3 != 0){
+				if(FuncBuf[pVIDEOSOURCE] > cTV){								
+					PRBuffer = Read24C16(0x207);
+//					ShowValue(1,PRBuffer);
+//					ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+					ChannelSel(ChBuffer);
+					Write24C16(0x207,PRBuffer);
+				}					
+				break;
+			}
+
+			value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x290+k);
+			if((value & 0x48) != 0x48){
+//no sync
+				SyncCheckOk = 0;
+			}
+			else{
+//sync ok
+				SyncCheckOk = 1;
+			}
+			if(SyncCheckOk==0){	// no sync
+				FineTuneValue = 0;
+				while(SyncCheckOk==0){
+					//check low range under/upper 2.5MHz
+					Write24C16(0x180+i-CATV_Min,FineTuneValue);
+					ChannelSel(i);
+					value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+			///////////////////////////////////////////////////////////
+			
+			Timer3 = 20;//20*10ms = 200ms
+			while(Timer3 != 0){
+				
+				if((KeyBuffer == 0x90) || (KeyPadBuffer == vkPOWER)){	//IR POWER                             
+					RoutineExit = 1;
+					Osd_Off();                                                 
+					PowerStatus = 0;	//power off
+					Write24C16(ep_Status,StatusFlag);
+//					if((flag3 & BIT_0) != 0){                                  
+//						Write24C16(0xcd,0x00);	//disable burn in mode         
+//						flag3 &= ~BIT_0;                                       
+//					}                                                          
+					PowerSaving();                                             
+//					LED_RedOff();                                              // -jwshin 051101
+					LED_GrnOff();                                              
+					break;                                                     
+				}								
+			}
+			if(Timer3 != 0){
+				if(FuncBuf[pVIDEOSOURCE] > cTV){				
+					PRBuffer = Read24C16(0x207);
+//					ShowValue(1,PRBuffer);
+					ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+					ChannelSel(ChBuffer);
+					Write24C16(0x207,PRBuffer);
+				}
+				break;
+			}				
+					if((value & 0x48) != 0x48)
+						FineTuneValue+=10;
+					else		SyncCheckOk = 1;
+					if(FineTuneValue>80){
+						m = m & MaskTab2[l];	//no sync
+						break;	// exit while	
+					}
+				}
+				if(SyncCheckOk==1){	// sync ok
+					SyncCheckOk = 0;
+					AFTOK_Flag = AFT(i);
+					if(AFTOK_Flag){
+						m = m | MaskTab1[l];
+						ChBuffer = i;
+						//Program base
+						if(++PrNo > 128)
+							PrNo = 1;
+						PRBuffer = PrNo;
+						PrQuo = (PrNo - 1) / 8;
+						PrRes = (PrNo - 1) % 8;
+						PrSta = Read24C16(0x290+PrQuo);
+						PrSta = PrSta | MaskTab1[PrRes];
+						Write24C16(0x290+PrQuo,PrSta);//PR mask
+						Write24C16(0x180+(PRBuffer - 1),ChBuffer);//PR ch memory
+					}
+					else
+						m = m & MaskTab2[l];
+				}
+			}
+			else{
+				AFTOK_Flag = AFT(i);
+				if(AFTOK_Flag){
+					m = m | MaskTab1[l];
+					ChBuffer = i;
+				}
+				else
+					m = m & MaskTab2[l];					
+			}			
+			Write24C16(0x290+k,m);
+			if(RoutineExit == 1) return;
+		}
+		if(FuncBuf[pVIDEOSOURCE] > cTV){				
+			PRBuffer = Read24C16(0x207);
+//			ShowValue(1,PRBuffer);
+			ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+			ChannelSel(ChBuffer);
+			Write24C16(0x207,PRBuffer);
+		}
+		else ;
+	}
+	}
+}
+
+void ScanChannelNtsc(void)
+{
+unsigned char i,k,l,m,percent,RoutineExit;//,KeyPadBuffer;
+//,AFTOK_Flag;
+unsigned short value;
+//	printf("OSD_Type=%d\r\n",(unsigned short)OSD_Type);
+	WriteWordIIC563(0x0cc,TextColor);
+	if((Read24C16(0x208) & 0x80) == 0){  // Air TV
+//	printf("TV_Min=%d,TV_Max=%d\r\n",(unsigned short)TV_Min,(unsigned short)TV_Max);
+		for(i=TV_Min; i<TV_Max+1; i++){
+			Write24C16(0x100+i-TV_Min,50);//
+			ChannelSel(i);
+			percent = (unsigned short)i * 100/ TV_Max;
+			FuncMax =100;
+			FuncMin = 0;
+			ShowValue(MAINMENU_BAR_ADDR+9,BAR_COLOR,percent);
+			ShowBar(MAINMENU_BAR_ADDR, BAR_COLOR, TV_Min, TV_Max,i);
+//			ShowSliderBar(6,8,percent);
+//			ShowValue(1,percent);
+
+			Timer3 = 20;//20*10ms = 200ms
+			while(Timer3 != 0){
+				
+				if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){	//IR POWER                             
+					RoutineExit = 1;
+					Osd_Off();                                                 
+					PowerStatus = 0;	//power off
+					Write24C16(ep_Status,StatusFlag);
+//					if((flag3 & BIT_0) != 0){                                  
+//						Write24C16(0xcd,0x00);	//disable burn in mode         
+//						flag3 &= ~BIT_0;                                       
+//					}                                                          
+					PowerSaving();                                             
+//					LED_RedOff();                                              // -jwshin 051101
+					LED_GrnOff();                                              
+					break;                                                     
+				}								
+			}
+			if(Timer3 != 0){
+				if(FuncBuf[pVIDEOSOURCE] > cTV){
+//					ShowSource();
+					ChannelSel(ChBuffer);
+					Write24C16(0x209,ChBuffer);
+				}
+				break;
+			}
+			value =ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+			k = (i - TV_Min) / 8;
+			l = (i - TV_Min) % 8;
+			m = Read24C16(0x280+k);
+
+			if((value & 0x48) != 0x48){
+//no sync
+				m = m & MaskTab2[l];
+			}
+			else{
+//sync ok
+					m = m | MaskTab1[l];
+					ChBuffer = i;
+			}
+			Write24C16(0x280+k,m);
+			if(RoutineExit == 1) return; 
+			
+		}
+		if(FuncBuf[pVIDEOSOURCE] > cTV){
+			ChannelSel(ChBuffer);
+			Write24C16(0x209,ChBuffer);
+		}else	;
+	}
+	else{   // CATV case
+//	printf("i=CATV_Min; i<CATV_Max\r\n");
+		for(i=CATV_Min; i<CATV_Max+1; i++){
+			Write24C16(0x180+i-CATV_Min,50);//happyks 030110 for CH Edit reset
+			ChannelSel(i);
+			percent = (unsigned short)i * 100/ CATV_Max;
+			FuncMax =100;
+			FuncMin = 0;
+			ShowValue(MAINMENU_BAR_ADDR+9,BAR_COLOR,percent);
+			ShowBar(MAINMENU_BAR_ADDR, BAR_COLOR, CATV_Min, CATV_Max,i);
+//			ShowSliderBar(6,8,percent);
+//			ShowValue(1,percent);
+			Timer3 = 20;//20*10ms = 200ms
+			while(Timer3 != 0){
+				
+				if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){	//IR POWER                             
+					RoutineExit = 1;
+					Osd_Off();                                                 
+					PowerStatus = 0;	//power off
+					Write24C16(ep_Status,StatusFlag);
+//					if((flag3 & BIT_0) != 0){                                  
+//						Write24C16(0xcd,0x00);	//disable burn in mode         
+//						flag3 &= ~BIT_0;                                       
+//					}                                                          
+					PowerSaving();                                             
+//					LED_RedOff();                                              // -jwshin 051101
+					LED_GrnOff();                                              
+					break;                                                     
+				}								
+			}
+			if(Timer3 != 0){
+				if(FuncBuf[pVIDEOSOURCE] > cTV){				
+//					ShowSource();
+					ChannelSel(ChBuffer);
+					Write24C16(0x209,ChBuffer);
+				}
+				break;
+			}
+
+			value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+			k = (i - CATV_Min) / 8;
+			l = (i - CATV_Min) % 8;
+			m = Read24C16(0x290+k);
+			if((value & 0x48) != 0x48){
+//no sync
+				m = m & MaskTab2[l];
+			}
+			else{
+//sync ok
+					m = m | MaskTab1[l];
+					ChBuffer = i;
+			}
+			Write24C16(0x290+k,m);
+			if(RoutineExit == 1) return; 
+		}
+		if(FuncBuf[pVIDEOSOURCE] > cTV){		
+//			ShowSource();
+			ChannelSel(ChBuffer);
+			Write24C16(0x209,ChBuffer);
+		}else	;			
+	}
+}
+
+unsigned char AFT(unsigned char ch)
+{
+unsigned char i,j,AFTOK_Flag,TestFlag;
+unsigned short *p;
+
+	AFTOK_Flag=0x00; 
+	i=0x00; 
+	TestFlag=0x00;
+	TestFlag |= BIT_0;	// just 1 test
+	
+	if((Read24C16(0x208) & 0x80) == 0){
+		if(ch < TV_Min){
+			ch = TV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > TV_Max){
+			ch = TV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - TV_Min;
+		p = AIR_TAB[ChSystem] + ch;
+		DevNum = *p;
+		FuncBuf[pCHFINETUNE] = Read24C16(0x100+ch);
+		DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+	}
+	else{
+		if(ch < CATV_Min){
+			ch = CATV_Min;
+			ChBuffer = ch;
+		}
+		else if(ch > CATV_Max){
+			ch = CATV_Max;
+			ChBuffer = ch;
+		}
+		ch = ch - CATV_Min;
+		p = CATV_TAB[ChSystem] + ch;
+		DevNum = *p;
+		FuncBuf[pCHFINETUNE] = Read24C16(0x180+ch);
+		DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+	}
+	while(AFTOK_Flag==0x00){
+		SetTuner();//오직 DevNum만을 받아서  pll setting처리한다.
+		Sleep(100);//500
+		i = ReadTuner();
+		if( TestFlag == BIT_0 ) { 	// just 1 test
+			if ( (i&0x07) != 0x02 ){
+				TestFlag = 0x01&(~0x01);
+				SetTuner();
+				i=ReadTuner();	
+			}
+		}
+		switch( (i&0x07) ){
+			case AFT_LOW:	// need + over 3step
+				if(FuncBuf[pCHFINETUNE]<97) {FuncBuf[pCHFINETUNE]+=4;DevNum +=4;}
+				break;
+			case AFT_LNEAR:	// near but need +
+				if(FuncBuf[pCHFINETUNE]<100) {FuncBuf[pCHFINETUNE]+=1;DevNum +=1;}	
+				break;			
+			case AFT_OK:	// FINE TUNE OK 
+				AFTOK_Flag=0x01;
+				break;			
+			case AFT_HNEAR:	// near but need -				
+				if(FuncBuf[pCHFINETUNE]!=0) {FuncBuf[pCHFINETUNE]-=1;DevNum -=1;}
+				break;			
+			case AFT_HIGH:	// need - over 3step				
+				if(FuncBuf[pCHFINETUNE]>4) {FuncBuf[pCHFINETUNE]-=4;DevNum -=4;}
+			default:
+				break;
+		}
+		if((++j > 14)||(AFTOK_Flag==0x01))
+			 break;	
+	}
+	if((Read24C16(0x208) & 0x80) == 0){
+		if(AFTOK_Flag==0x01){ // AFT OK 
+			Write24C16(0x100+ch,FuncBuf[pCHFINETUNE]);
+			return AFTOK_Flag;	
+		}
+		else{ 		// AFT Fail 
+			Write24C16(0x100+ch,50);
+			return AFTOK_Flag;
+		}
+	}
+	else{		
+		if(AFTOK_Flag==0x01){ // AFT OK 
+			Write24C16(0x180+ch,FuncBuf[pCHFINETUNE]);//happyks
+			return AFTOK_Flag;	
+		}
+		else{ 		// AFT Fail 
+			Write24C16(0x180+ch,50);//happyks
+			return AFTOK_Flag;
+		}	
+	}
+}
+
+void LoadChLimit(void)
+{
+unsigned char i;
+	ChSystem = Read24C16(ep_Input_CH_Sys) & 0x7F;
+	i = ChSystem * 6;
+	ChBuffer = Read24C16(0x209);
+	TV_Min = ChannelLimitTab[i];
+	TV_Max = ChannelLimitTab[i+1];
+	TV_Total = ChannelLimitTab[i+2];
+	CATV_Min = ChannelLimitTab[i+3];
+	CATV_Max = ChannelLimitTab[i+4];
+	CATV_Total = ChannelLimitTab[i+5];
+	if((Read24C16(ep_Input_CH_Sys) & 0x80)==0){
+		if(ChBuffer < TV_Min){
+			ChBuffer = TV_Min;
+			//Write24C16(0xdf,ChBuffer);
+		}
+		if(ChBuffer > TV_Max){
+			ChBuffer = TV_Max;
+			//Write24C16(0xdf,ChBuffer);
+		}
+	}
+	else{
+		if(ChBuffer < CATV_Min){
+			ChBuffer = CATV_Min;
+			//Write24C16(0xdf,ChBuffer);
+		}
+		if(ChBuffer > CATV_Max){
+			ChBuffer = CATV_Max;
+			//Write24C16(0xdf,ChBuffer);
+		}
+	}
+}
+/*
+void LoadPRLimit(void)
+{
+//PR_TV_Max = 100;
+unsigned char i,j,k,l,m;
+	if(Read24C16(0xe3) == 0){
+		i = 1;
+		for(j=0; j<127; j++){
+			if(++i > 128)
+				i = 1;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x500+k);
+			if((m & MaskTab1[l]) != 0){
+				PR_TV_Max = i;//(i - 1);
+				//break;
+			}
+		}
+	}
+	else{
+		i = 1;
+		for(j=0; j<127; j++){
+			if(++i > 128)
+				i = 1;
+			k = (i - 1) / 8;
+			l = (i - 1) % 8;
+			m = Read24C16(0x510+k);
+			if((m & MaskTab1[l]) == 1){
+				PR_CATV_Max = i;//(i - 1);
+				//break;
+			}
+		}
+	}
+
+}
+*/

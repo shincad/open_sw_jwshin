@@ -1,0 +1,2665 @@
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OSD
+OBJECT MODULE PLACED IN .\BIN\OSD.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\OSD.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\OSD.lst) OBJECT(.\BIN\OSD.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          #include "board.H"
+   3          #include "OSD.H"
+   4          #include "Scaler.H"
+   5          #include "IIC.H"
+   6          #include "UserAdj.H"
+   7          #include "AutoAdj.H"
+   8          #include "PANEL.H"
+   9          #include "NT686xx_MCU_REG.H"
+  10          #include "MCU.H"
+  11          #include "OSD_TAB.H"
+  12          #include "ModeHandle.H"
+  13          #include "sRGB.H"
+  14          //#include "stdio.H"
+  15          #include "ctype.H"
+  16          #include "NT686xx_SC_REG.H"
+  17          #include "NVRAM.H"
+  18          #include "Mis.H"
+  19          #include "ROM_Map.H"
+  20          #include "Factory.H"
+  21          #include "BFControl.H"
+  22          #include "smartbright.H"
+  23          
+  24          
+  25          xdata enum OSDTYPE              ucOSDType;
+  26          xdata enum OSDLevel_1   ucOSDLvl1_Cursor;
+  27          xdata unsigned char     ucOSDLvl2_Cursor;
+  28          xdata unsigned char     ucOSDLvl3_Cursor;
+  29          
+  30          xdata unsigned char glob_buff[20];
+  31          
+  32          void LoadFont(void)
+  33          {
+  34   1      code unsigned char PaletteTab[]={
+  35   1              (unsigned char)(60*2+3), (unsigned char)((60*2+3)>>8),0xd0,0x00,0x00,
+  36   1      //
+  37   1              (unsigned char)BLACK,(unsigned char)(BLACK>>8),
+  38   1              (unsigned char)GREEN,(unsigned char)(GREEN>>8),
+  39   1              (unsigned char)RED,(unsigned char)(RED>>8),
+  40   1              (unsigned char)BLUE,(unsigned char)(BLUE>>8),
+  41   1              (unsigned char)CYAN,(unsigned char)(CYAN>>8),
+  42   1              (unsigned char)MAGENTA,(unsigned char)(MAGENTA>>8),
+  43   1              (unsigned char)YELLOW,(unsigned char)(YELLOW>>8),
+  44   1              (unsigned char)WHITE,(unsigned char)(WHITE>>8),
+  45   1              (unsigned char)TBLACK,(unsigned char)(TBLACK>>8),
+  46   1              (unsigned char)TRED, (unsigned char)(TRED>>8),
+  47   1              (unsigned char)TGREEN,(unsigned char)(TGREEN>>8),
+  48   1              (unsigned char)TBLUE,(unsigned char)(TBLUE>>8),
+  49   1              (unsigned char)TCYAN,(unsigned char)(TCYAN>>8),
+  50   1              (unsigned char)LF_COLOR,(unsigned char)(LF_COLOR>>8),
+  51   1              (unsigned char)TYELLOW,(unsigned char)(TYELLOW>>8),
+  52   1              (unsigned char)GRAY,(unsigned char)(GRAY>>8),
+  53   1      
+  54   1      
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 2   
+
+  55   1      ////////////////////////////////////////////Four Bit Palette////////////////////////////////////////////
+  56   1      //[0]//0x10
+  57   1      (unsigned char)0x0410, (unsigned char)(0x0410>>8),
+  58   1      (unsigned char)0xFFFF, (unsigned char)(0xFFFF>>8),
+  59   1      (unsigned char)0x001F, (unsigned char)(0x001F>>8),
+  60   1      (unsigned char)0xFFE0, (unsigned char)(0xFFE0>>8),
+  61   1      (unsigned char)0x0000, (unsigned char)(0x0000>>8),
+  62   1      (unsigned char)0xC5F8, (unsigned char)(0xC5F8>>8),
+  63   1      (unsigned char)0x0010, (unsigned char)(0x0010>>8),
+  64   1      (unsigned char)0x07FF, (unsigned char)(0x07FF>>8),
+  65   1      (unsigned char)0x07E0, (unsigned char)(0x07E0>>8),
+  66   1      (unsigned char)0xF81F, (unsigned char)(0xF81F>>8),
+  67   1      (unsigned char)0xF800, (unsigned char)(0xF800>>8),
+  68   1      (unsigned char)0xFFF0, (unsigned char)(0xFFF0>>8),
+  69   1      (unsigned char)0xC618, (unsigned char)(0xC618>>8),
+  70   1      (unsigned char)0x8400, (unsigned char)(0x8400>>8),
+  71   1      (unsigned char)0x8410, (unsigned char)(0x8410>>8),
+  72   1      (unsigned char)0x8010, (unsigned char)(0x8010>>8),
+  73   1      
+  74   1      //[0]//0x20
+  75   1      (unsigned char)0x0410, (unsigned char)(0x0410>>8),
+  76   1      (unsigned char)0xC618, (unsigned char)(0xC618>>8),
+  77   1      (unsigned char)0xdf1e, (unsigned char)(0xdf1e>>8),
+  78   1      (unsigned char)0xFFE0, (unsigned char)(0xFFE0>>8),
+  79   1      (unsigned char)0x0000, (unsigned char)(0x0000>>8),
+  80   1      (unsigned char)0xC5F8, (unsigned char)(0xC5F8>>8),
+  81   1      (unsigned char)0x0010, (unsigned char)(0x0010>>8),
+  82   1      (unsigned char)0x07FF, (unsigned char)(0x07FF>>8),
+  83   1      (unsigned char)0x07E0, (unsigned char)(0x07E0>>8),
+  84   1      (unsigned char)0xF81F, (unsigned char)(0xF81F>>8),
+  85   1      (unsigned char)0xF800, (unsigned char)(0xF800>>8),
+  86   1      (unsigned char)0xFFF0, (unsigned char)(0xFFF0>>8),
+  87   1      (unsigned char)0xC618, (unsigned char)(0xC618>>8),
+  88   1      (unsigned char)0x8400, (unsigned char)(0x8400>>8),
+  89   1      (unsigned char)0x8410, (unsigned char)(0x8410>>8),
+  90   1      (unsigned char)0x8010, (unsigned char)(0x8010>>8),
+  91   1      
+  92   1      ////////////////////////////////////////////Two Bit Palette////////////////////////////////////////////
+  93   1      //[0]//0x30
+  94   1      (unsigned char)0x0410, (unsigned char)(0x0410>>8),
+  95   1      (unsigned char)0xFFFF, (unsigned char)(0xFFFF>>8),
+  96   1      (unsigned char)0x001F, (unsigned char)(0x001F>>8),
+  97   1      (unsigned char)0xFFE0, (unsigned char)(0xFFE0>>8),
+  98   1      
+  99   1      //[1]//0x34
+ 100   1      (unsigned char)0x0410, (unsigned char)(0x0410>>8),
+ 101   1      (unsigned char)0xFFFF, (unsigned char)(0xFFFF>>8),
+ 102   1      (unsigned char)0x001F, (unsigned char)(0x001F>>8),
+ 103   1      (unsigned char)0x0000, (unsigned char)(0x0000>>8),
+ 104   1      
+ 105   1      //[1]//0x34
+ 106   1      (unsigned char)0x0410, (unsigned char)(0x0410>>8),
+ 107   1      (unsigned char)0xC618, (unsigned char)(0xC618>>8),
+ 108   1      (unsigned char)0xdf1e, (unsigned char)(0xdf1e>>8),
+ 109   1      (unsigned char)0x0000, (unsigned char)(0x0000>>8),
+ 110   1      
+ 111   1      };
+ 112   1      //frame size = 32x17 = 544
+ 113   1      //one bit size = (188)x18/2 = 1692
+ 114   1      //two bit size = 8*18 = 144
+ 115   1      //four bit size= 22*18*2=792
+ 116   1              WriteWordIIC560(OSD_FONT1B_ADDR_LI,544);        //one bit start addr
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 3   
+
+ 117   1              WriteWordIIC560(OSD_FONT2B_ADDR_LI,544+1264);           //two bit start addr
+ 118   1              WriteWordIIC560(OSD_FONT4B_ADDR_LI,544+1264+144);       //four bit start addr
+ 119   1              
+ 120   1              WriteSequenceScaler(0xe0,PaletteTab);
+ 121   1              WriteSequenceScaler(0xe0,oneBitFont);
+ 122   1      
+ 123   1              
+ 124   1      
+ 125   1              WriteSequenceScaler(0xe0,MainIconTowBitFont);
+ 126   1              WriteSequenceScaler(0xe0,MainIconFourBitFont);
+ 127   1      }
+ 128          
+ 129          void OsdInit(unsigned char w,unsigned char h)
+ 130          {
+ 131   1      unsigned char tempHP,tempVP;
+ 132   1              WriteIIC560(OSD_CTRL1,0x00);
+ 133   1              WriteIIC560(WIN_SEL,0x00);
+ 134   1              ucOSDWidth = w;
+ 135   1              ucOSDHeight = h;
+ 136   1      
+ 137   1              if(bFactoryMode && (ucOSDType == MAIN_MENU ||ucOSDType == FACTORY)){
+ 138   2                      tempHP = 0;
+ 139   2                      tempVP = 100;
+ 140   2              }
+ 141   1              else if(ucOSDType < DIRECT_MENU){
+ 142   2                      tempHP = ucOSDXPos;
+ 143   2                      tempVP = ucOSDYPos;
+ 144   2              }
+ 145   1              else if(ucOSDType == LF_MAIN_MENU){
+ 146   2                      tempHP = 50;
+ 147   2                      tempVP = 0;
+ 148   2              }
+ 149   1              else{
+ 150   2                      tempHP = 50;
+ 151   2                      tempVP = 50;
+ 152   2              }
+ 153   1      
+ 154   1              SetPosition(tempHP,tempVP);
+ 155   1      
+ 156   1              //2004-01-10 for power sequence
+ 157   1              if(bBGMode == FALSE)
+ 158   1                      WaitSetup(4);
+ 159   1              else
+ 160   1                      Sleep(40);
+ 161   1      
+ 162   1              if(ucOSDType == FACTORY){
+ 163   2                      WriteWordIIC560(OSD_FC_ATTR_LSB, FactoryColorW);
+ 164   2              }
+ 165   1              else if(ucOSDType==MAIN_MENU){
+ 166   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,MainFrameColor);
+ 167   2              }
+ 168   1              else{
+ 169   2                      WriteWordIIC560(OSD_FC_ATTR_LSB, LeftFrameColor);
+ 170   2              }
+ 171   1              
+ 172   1              ClearOSD();
+ 173   1      
+ 174   1              if(((ucOSDType >= LOCK_MSG) && (ucOSDType <= OUT_RANGE)) && (ucOSDType != AUTO_SIGNAL)){
+ 175   2                      ShowTitleGradient();
+ 176   2      
+ 177   2                      usFontIndex = 32;
+ 178   2                      ucStrAlignment = 2;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 4   
+
+ 179   2                      ucStrWidth = ucOSDWidth;
+ 180   2                      //---------------- +jwshin 120224
+ 181   2                      if(ucOSDType == POWER_ON_LOGO)
+ 182   2                      {
+ 183   3                              WriteArialFont(MonSel_MainTab[0]);
+ 184   3                      }
+ 185   2                      //-----------------------------------------
+ 186   2                      else
+ 187   2                      {       
+ 188   3                              WriteArialFont(AttentionStrTab[ucLanguage]);
+ 189   3                      }
+ 190   2                      WriteXY_String(0,0,1);
+ 191   2              }
+ 192   1      }
+ 193          
+ 194          void ShowTitleGradient(void)
+ 195          {
+ 196   1      unsigned char i;
+ 197   1              for(i=0; i<3; i++){
+ 198   2                      FillLineAttr(0,i,ucOSDWidth, TitleTextColor);
+ 199   2              }
+ 200   1              WriteIIC560(WIN_SEL,0x07);
+ 201   1              WriteIIC560(WIN_HS,0);
+ 202   1              WriteIIC560(WIN_HE,ucOSDWidth-1);
+ 203   1              WriteIIC560(WIN_VS,0);
+ 204   1              WriteIIC560(WIN_VE,2);
+ 205   1              WriteIIC560(WIN_SDCL,iTGREEN);
+ 206   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL1,0x0e);
+ 207   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL2,0x11);
+ 208   1              WriteIIC560(WIN_SEL,0x80);
+ 209   1      }
+ 210          
+ 211          void SourceMenu(void)
+ 212          {
+ 213   1              ucOSDType = DIRECT_MENU;
+ 214   1              ucOSDLvl1_Cursor = mDirect_Source;
+ 215   1              
+ 216   1              OsdInit(OSD_SRC_W,OSD_SRC_H);
+ 217   1      
+ 218   1              ShowTitleGradient();
+ 219   1              usFontIndex = 32;
+ 220   1              ucStrAlignment = 2;
+ 221   1              ucStrWidth = ucOSDWidth;
+ 222   1      
+ 223   1              WriteArialFont(InputStrTab[ucLanguage]);
+ 224   1              WriteXY_String(0,0,1);
+ 225   1              
+ 226   1              WriteArialFont(VGA_StrTab[ucLanguage]);
+ 227   1              WriteXY_String(1,0,4);
+ 228   1              
+ 229   1              WriteArialFont(DVI_StrTab[ucLanguage]);
+ 230   1              WriteXY_String(1,0,6);
+ 231   1      
+ 232   1              WriteArialFont(HDMI_StrTab[ucLanguage]);
+ 233   1              WriteXY_String(1,0,8);
+ 234   1      
+ 235   1              WriteArialFont(VIDEO_StrTab[ucLanguage]);
+ 236   1              WriteXY_String(1,0,10);
+ 237   1      
+ 238   1              ucOSDLvl2_Cursor = ucPowerStatus & ~SoftPowerOnFlag;
+ 239   1              SelectLFMITM();
+ 240   1      
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 5   
+
+ 241   1              OSD_ON();
+ 242   1      }
+ 243          
+ 244          void ShowDirectVolumeMenu(void)
+ 245          {
+ 246   1              ucOSDType = DIRECT_MENU;
+ 247   1              ucOSDLvl1_Cursor = mDirect_Volume;
+ 248   1      
+ 249   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+ 250   1              
+ 251   1              ShowTitleGradient();
+ 252   1              usFontIndex = 32;
+ 253   1              ucStrWidth = ucOSDWidth;
+ 254   1              ucStrAlignment = 2;
+ 255   1              WriteArialFont(VolumeStrTab[ucLanguage]);
+ 256   1              WriteXY_String(0,0,1);
+ 257   1              
+ 258   1              if(bMute){
+ 259   2                      ucStrAlignment = 0;
+ 260   2                      ucStrWidth = 4;
+ 261   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,DirectWarningColor);
+ 262   2                      WriteArialFont(MuteTab[ucLanguage]);
+ 263   2                      WriteXY_String(1,11,3);
+ 264   2              }
+ 265   1              
+ 266   1              ShowVolume();
+ 267   1              OSD_ON();
+ 268   1      }
+ 269          
+ 270          void ShowVolume(void)
+ 271          {
+ 272   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+ 273   1              ShowSliderBar(5,5, ucVolume);
+ 274   1              ShowNum(0,11,6, ucVolume);
+ 275   1      }
+ 276          
+ 277          void ShowDirectBrightnessMenu(void)
+ 278          {
+ 279   1              ucOSDType = DIRECT_MENU;
+ 280   1              ucOSDLvl1_Cursor = mDirect_Brightness;
+ 281   1      
+ 282   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+ 283   1      
+ 284   1              ShowTitleGradient();
+ 285   1      
+ 286   1              usFontIndex = 32;
+ 287   1              ucStrWidth = ucOSDWidth;
+ 288   1              ucStrAlignment = 2;
+ 289   1              WriteArialFont(BrightnessStrTab[ucLanguage]);
+ 290   1              WriteXY_String(0,0,1);
+ 291   1              
+ 292   1              ShowBrightness();
+ 293   1              if(ucColorTemperature == COLOR_SRGB){
+ 294   2                      ucStrAlignment = 0;
+ 295   2                      ucStrWidth = 1;
+ 296   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,DirectWarningColor);
+ 297   2                      WriteArialFont(sRGBWarningStrTab[ucLanguage]);
+ 298   2                      WriteXY_String(1,5,6);
+ 299   2                      WriteArialFont(sRGBWarningStrTab[LANG_NUM+ucLanguage]);
+ 300   2                      WriteXY_String(1,5,7);
+ 301   2              }
+ 302   1              
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 6   
+
+ 303   1              OSD_ON();
+ 304   1      }
+ 305          
+ 306          void MainOSD(void)
+ 307          {
+ 308   1      code unsigned char MainIcon[10][12]={
+ 309   1              11,1,1,
+ 310   1              0x00,(unsigned char)MainIcon4Color1,(unsigned char)(MainIcon4Color1>>8),
+ 311   1              0x01,(unsigned char)MainIcon4Color1,(unsigned char)(MainIcon4Color1>>8),
+ 312   1              0x02,(unsigned char)MainIcon4Color1,(unsigned char)(MainIcon4Color1>>8),
+ 313   1              11,1,2,
+ 314   1              0x03,(unsigned char)MainIcon4Color1,(unsigned char)(MainIcon4Color1>>8),
+ 315   1              0x00,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 316   1              0x04,(unsigned char)MainIcon4Color1,(unsigned char)(MainIcon4Color1>>8),
+ 317   1              11,1,4,
+ 318   1              0x05,(unsigned char)MainIcon4Color2,(unsigned char)(MainIcon4Color2>>8),
+ 319   1              0x01,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 320   1              0x06,(unsigned char)MainIcon4Color2,(unsigned char)(MainIcon4Color2>>8),
+ 321   1              11,1,5,
+ 322   1              0x02,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 323   1              0x03,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 324   1              0x04,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 325   1              11,1,7,
+ 326   1              0x05,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 327   1              0x06,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 328   1              0x07,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 329   1              11,1,8,
+ 330   1              0x08,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 331   1              0x09,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 332   1              0x0A,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 333   1              11,1,10,
+ 334   1              0x07,(unsigned char)MainIcon4Color2,(unsigned char)(MainIcon4Color2>>8),
+ 335   1              0x0B,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 336   1              0x0C,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 337   1              11,1,11,
+ 338   1              0x0D,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 339   1              0x0E,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 340   1              0x0F,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 341   1              11,1,13,
+ 342   1              0x10,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 343   1              0x11,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 344   1              0x12,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 345   1              11,1,14,
+ 346   1              0x13,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 347   1              0x14,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 348   1              0x15,(unsigned char)MainIcon16Color1,(unsigned char)(MainIcon16Color1>>8),
+ 349   1      };
+ 350   1      code unsigned char MainIconDisable[2][12]={
+ 351   1              11,1,4,
+ 352   1              0x05,(unsigned char)MainIcon4Color3,(unsigned char)(MainIcon4Color3>>8),
+ 353   1              0x01,(unsigned char)MainIcon16Color2,(unsigned char)(MainIcon16Color2>>8),
+ 354   1              0x06,(unsigned char)MainIcon4Color3,(unsigned char)(MainIcon4Color3>>8),
+ 355   1              11,1,5,
+ 356   1              0x02,(unsigned char)MainIcon16Color2,(unsigned char)(MainIcon16Color2>>8),
+ 357   1              0x03,(unsigned char)MainIcon16Color2,(unsigned char)(MainIcon16Color2>>8),
+ 358   1              0x04,(unsigned char)MainIcon16Color2,(unsigned char)(MainIcon16Color2>>8),
+ 359   1      };
+ 360   1      unsigned char i;
+ 361   1              ucOSDLvl1_Cursor = 0;
+ 362   1              ucOSDLvl2_Cursor = 0;
+ 363   1      
+ 364   1              OsdInit(OSD_MAIN_WIDTH,OSD_MAIN_HEIGHT);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 7   
+
+ 365   1      
+ 366   1              for(i=0; i<3; i++){
+ 367   2                      FillLineAttr(5,2+i,25, TitleTextColor);
+ 368   2              }
+ 369   1              for(i=0; i<8; i++){
+ 370   2                      FillLineAttr(5,5+i,25, SubFrameColor);
+ 371   2              }
+ 372   1      
+ 373   1              WriteIIC560(WIN_SEL,0x07);
+ 374   1              WriteIIC560(WIN_HS,0);
+ 375   1              WriteIIC560(WIN_HE,31);
+ 376   1              WriteIIC560(WIN_VS,0);
+ 377   1              WriteIIC560(WIN_VE,16);
+ 378   1              WriteIIC560(WIN_SDCL,iTCYAN);
+ 379   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL1,0x1e);
+ 380   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL2,0x11);
+ 381   1      
+ 382   1              WriteIIC560(WIN_SEL,0x06);
+ 383   1              WriteIIC560(WIN_HS,5);
+ 384   1              WriteIIC560(WIN_HE,29);
+ 385   1              WriteIIC560(WIN_VS,2);
+ 386   1              WriteIIC560(WIN_VE,4);
+ 387   1              WriteIIC560(WIN_SDCL,iTGREEN);
+ 388   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL1,0x0e);
+ 389   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL2,0x11);
+ 390   1      
+ 391   1              WriteIIC560(WIN_SEL,0x05);
+ 392   1              WriteIIC560(WIN_HS,5);
+ 393   1              WriteIIC560(WIN_HE,29);
+ 394   1              WriteIIC560(WIN_VS,5);
+ 395   1              WriteIIC560(WIN_VE,12);
+ 396   1              WriteIIC560(WIN_SDCL,iWHITE);
+ 397   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL1,0xee);
+ 398   1              WriteIIC560(OSD_WIN_GRADIENT_CTRL2,0x22);
+ 399   1              WriteIIC560(WIN_SEL,0xe0);
+ 400   1      
+ 401   1              for(i=0; i<10; i++){
+ 402   2                      if(((i == 2)||(i == 3))&&((ucSource == mSource_DVI)||(ucSource == mSource_HDMI)))
+ 403   2                              WriteColorIcon(MainIconDisable[i-2]);
+ 404   2                      else
+ 405   2                              WriteColorIcon(MainIcon[i]);
+ 406   2              }
+ 407   1      
+ 408   1              SelectMainIcon();
+ 409   1              usFontIndex = 100;
+ 410   1              ShowResolution(15,14);
+ 411   1              ShowSerialNo(15,15);                                    // +jwshin 111208               
+ 412   1              SetTransparency();
+ 413   1      
+ 414   1      }
+ 415          
+ 416          void WriteColorIcon(unsigned char *p)
+ 417          {
+ 418   1      #if NT68665
+              unsigned char ch,i,l;
+              unsigned short m;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 8   
+
+                      WriteByte(0x80);
+                      m = p[2] * ucOSDWidth + p[1];
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                      l = p[0] + 1;
+                      for(i=3; i<l; i++){
+                              ch = p[i];
+                              WriteByte(ch);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+ 441   1      unsigned char volatile *pBus;
+ 442   1      unsigned char i,l;
+ 443   1      unsigned short m;
+ 444   1              SC_RegPage = 0x00;
+ 445   1              pBus = &SC_INDEX_CTRL;
+ 446   1              *pBus = 0x80;
+ 447   1              pBus++;
+ 448   1              m = p[2] * ucOSDWidth + p[1];
+ 449   1              *pBus = (unsigned char)m;
+ 450   1              pBus++;
+ 451   1              *pBus = (unsigned char)(m >> 8);
+ 452   1              pBus++;
+ 453   1              l = p[0] + 1;
+ 454   1              for(i=3; i<l; i++){
+ 455   2                      *pBus = p[i];
+ 456   2              }
+ 457   1      
+ 458   1      #endif
+ 459   1      }
+ 460          
+ 461          void MainIconWinOff(void)
+ 462          {
+ 463   1              unsigned char WinControl;
+ 464   1              WinControl = ReadIIC560(OSD_CTRL1) & ~MainIconWinCtrl;
+ 465   1              WriteIIC560(OSD_CTRL1,WinControl);
+ 466   1      }
+ 467          
+ 468          void SelectMainIconWin(void)
+ 469          {
+ 470   1              unsigned char WinSelect;
+ 471   1              WinSelect = ReadIIC560(WIN_SEL) & 0xf8;
+ 472   1              WriteIIC560(WIN_SEL,WinSelect | MainIconWinSel);        //windows 8 control
+ 473   1      }
+ 474          
+ 475          void MainIconWinOn(void)
+ 476          {
+ 477   1              unsigned char WinControl;
+ 478   1              WinControl = ReadIIC560(OSD_CTRL1) | MainIconWinCtrl;
+ 479   1              WriteIIC560(OSD_CTRL1,WinControl);
+ 480   1      }
+ 481          
+ 482          void SubIconWinOff(void)
+ 483          {
+ 484   1              unsigned char WinControl;
+ 485   1              WinControl = ReadIIC560(OSD_CTRL1) & ~SubIconWinCtrl;
+ 486   1              WriteIIC560(OSD_CTRL1,WinControl);
+ 487   1      }
+ 488          
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 9   
+
+ 489          void SelectSubIconWin(void)
+ 490          {
+ 491   1              unsigned char WinSelect;
+ 492   1              WinSelect = ReadIIC560(WIN_SEL) & 0xf8;
+ 493   1              WriteIIC560(WIN_SEL,WinSelect | SubIconWinSel); //windows 8 control
+ 494   1      }
+ 495          
+ 496          void SubIconWinOn(void)
+ 497          {
+ 498   1              unsigned char WinControl;
+ 499   1              WinControl = ReadIIC560(OSD_CTRL1) | SubIconWinCtrl;
+ 500   1              WriteIIC560(OSD_CTRL1,WinControl);
+ 501   1      }
+ 502          
+ 503          void OSD_ON(void)
+ 504          {
+ 505   1              unsigned char WinControl;
+ 506   1              WinControl = ReadIIC560(OSD_CTRL1) | BIT_0;
+ 507   1              WriteIIC560(OSD_CTRL1,WinControl);
+ 508   1      }
+ 509          
+ 510          void SelectMainIcon(void)
+ 511          {
+ 512   1              MainIconWinOff();
+ 513   1              SelectMainIconWin();
+ 514   1              WriteIIC560(WIN_HS,1);
+ 515   1              WriteIIC560(WIN_HE,3);
+ 516   1              WriteIIC560(WIN_VS,ucOSDLvl1_Cursor*3+0x01);
+ 517   1              WriteIIC560(WIN_VE,ucOSDLvl1_Cursor*3+0x02);
+ 518   1              WriteIIC560(WIN_CL,iTCYAN);
+ 519   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 520   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 521   1              WriteIIC560(WIN_BL_RCL,iRED);
+ 522   1              WriteIIC560(WIN_BL_LCL,iRED);
+ 523   1              MainIconWinOn();
+ 524   1      
+ 525   1      
+ 526   1              usFontIndex = 32;
+ 527   1              ucStrAlignment = 2;
+ 528   1              ucStrWidth = ucOSDWidth - 7;
+ 529   1              WriteWordIIC560(OSD_FC_ATTR_LSB,TitleTextColor);
+ 530   1              WriteXY_Line(5, 3, ucStrWidth, 0x00);
+ 531   1              WriteArialFont(MainMenuStrTab[ucOSDLvl1_Cursor*LANG_NUM+ucLanguage]);
+ 532   1              WriteXY_String(0, 5, 3);
+ 533   1      
+ 534   1              ShowSubMenu();
+ 535   1      }
+ 536          
+ 537          void ShowSubMenu(void)
+ 538          {
+ 539   1      code unsigned char FactoryStr[]={7,"Factory"};
+ 540   1      unsigned char i;
+ 541   1              usFontIndex = 48;
+ 542   1              ucStrAlignment = 2;
+ 543   1              ucStrWidth = ucOSDWidth - 7;
+ 544   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SubFrameColor);
+ 545   1              for(i=5; i<13; i++)
+ 546   1                      WriteXY_Line(5, i, ucStrWidth, 0x00);
+ 547   1              WriteWordIIC560(OSD_FC_ATTR_LSB,MainFrameColor);
+ 548   1              WriteXY_Line(5, 13, ucStrWidth, 0x00);
+ 549   1              switch(ucOSDLvl1_Cursor){
+ 550   2              case mLUMINANCE:
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 10  
+
+ 551   2                      WriteArialFont(BrightnessStrTab[ucLanguage]);
+ 552   2                      WriteXY_String(0, 5, 6);
+ 553   2                      WriteArialFont(ContrastStrTab[ucLanguage]);
+ 554   2                      WriteXY_String(0, 5, 8);
+ 555   2                      if(ucSource > mSource_HDMI){
+ 556   3                              WriteArialFont(SaturationStrTab[ucLanguage]);
+ 557   3                              WriteXY_String(0, 5, 10);
+ 558   3                              WriteArialFont(TintStrTab[ucLanguage]);
+ 559   3                              WriteXY_String(0, 5, 12);
+ 560   3                      }
+ 561   2                      if(bFactoryMode == TRUE){
+ 562   3                              WriteArialFont(FactoryStr);
+ 563   3                              WriteXY_String(0,5,13);
+ 564   3                      }
+ 565   2                      break;
+ 566   2              case mPICTURE:
+ 567   2                      WriteArialFont(PhaseStrTab[ucLanguage]);
+ 568   2                      WriteXY_String(0, 5, 6);
+ 569   2                      WriteArialFont(ClockStrTab[ucLanguage]);
+ 570   2                      WriteXY_String(0, 5, 8);
+ 571   2                      WriteArialFont(HPosStrTab[ucLanguage]);
+ 572   2                      WriteXY_String(0, 5, 10);
+ 573   2                      WriteArialFont(VPosStrTab[ucLanguage]);
+ 574   2                      WriteXY_String(0, 5, 12);
+ 575   2                      break;
+ 576   2              case mCOLOR:
+ 577   2                      WriteArialFont(ColorTempStrTab[ucLanguage]);
+ 578   2                      WriteXY_String(0, 5, 6);
+ 579   2                      if(ucColorTemperature == COLOR_USER){
+ 580   3                              WriteWordIIC560(OSD_FC_ATTR_LSB,SubFrameColor);
+ 581   3                      }
+ 582   2                      else{
+ 583   3                              WriteWordIIC560(OSD_FC_ATTR_LSB,DisableColor);
+ 584   3                      }
+ 585   2                      WriteArialFont(RedStrTab[ucLanguage]);
+ 586   2                      WriteXY_String(1, 5, 8);
+ 587   2                      WriteArialFont(GreenStrTab[ucLanguage]);
+ 588   2                      WriteXY_String(1, 5, 10);
+ 589   2                      WriteArialFont(BlueStrTab[ucLanguage]);
+ 590   2                      WriteXY_String(1, 5, 12);
+ 591   2                      break;
+ 592   2              case mOSDSETTING:
+ 593   2                      WriteArialFont(HorizontalStrTab[ucLanguage]);
+ 594   2                      WriteXY_String(0, 5, 6);
+ 595   2                      WriteArialFont(VerticalStrTab[ucLanguage]);
+ 596   2                      WriteXY_String(0, 5, 8);
+ 597   2                      WriteArialFont(TransparencyStrTab[ucLanguage]);
+ 598   2                      WriteXY_String(0, 5, 10);
+ 599   2                      WriteArialFont(OSDTimeStrTab[ucLanguage]);
+ 600   2                      WriteXY_String(0, 5, 12);
+ 601   2                      break;
+ 602   2              case mSETUP:
+ 603   2                      WriteArialFont(LanguageStrTab[ucLanguage]);
+ 604   2                      WriteXY_String(0, 5, 6);
+ 605   2                      WriteArialFont(MuteTab[ucLanguage]);
+ 606   2                      WriteXY_String(0, 5, 7);
+ 607   2                      WriteArialFont(InputStrTab[ucLanguage]);
+ 608   2                      WriteXY_String(0, 5,8);
+ 609   2                      WriteArialFont(DCR_StrTab[ucLanguage]);
+ 610   2                      WriteXY_String(0, 5,9);
+ 611   2                      i = 10;
+ 612   2      #if _Enable_OD_ == ON
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 11  
+
+                              WriteArialFont(OverDriverTab[ucLanguage]);
+                              WriteXY_String(0, 5, i);
+                              i++;
+              #endif
+ 617   2                      WriteArialFont(ResetStrTab[ucLanguage]);
+ 618   2                      WriteXY_String(0, 5, i);
+ 619   2                      break;
+ 620   2              }
+ 621   1      }
+ 622          
+ 623          void SelectSubItem(void)
+ 624          {
+ 625   1              SubIconWinOff();
+ 626   1              SelectSubIconWin();
+ 627   1              WriteIIC560(WIN_HS,5);
+ 628   1              WriteIIC560(WIN_HE,29);
+ 629   1              if((ucOSDLvl2_Cursor == mFactory)&&(ucOSDLvl1_Cursor == mLUMINANCE)){
+ 630   2                      WriteIIC560(WIN_VS,13);
+ 631   2                      WriteIIC560(WIN_VE,13);
+ 632   2                      WriteIIC560(WIN_CL,iTCYAN);
+ 633   2              }
+ 634   1              else{
+ 635   2                      if(ucOSDLvl1_Cursor == mSETUP){
+ 636   3                              WriteIIC560(WIN_VS,ucOSDLvl2_Cursor+0x06);
+ 637   3                              WriteIIC560(WIN_VE,ucOSDLvl2_Cursor+0x06);
+ 638   3                      }
+ 639   2                      else{
+ 640   3                              WriteIIC560(WIN_VS,ucOSDLvl2_Cursor*2+0x06);
+ 641   3                              WriteIIC560(WIN_VE,ucOSDLvl2_Cursor*2+0x06);
+ 642   3                      }
+ 643   2                      WriteIIC560(WIN_CL,iWHITE);
+ 644   2              }
+ 645   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 646   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 647   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+ 648   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+ 649   1              SubIconWinOn();
+ 650   1      }
+ 651          
+ 652          void ShowAdjustMenu(void)
+ 653          {
+ 654   1      unsigned char i;
+ 655   1              usFontIndex = 48;
+ 656   1              ucStrAlignment = 0;
+ 657   1              ucStrWidth = ucOSDWidth - 7;
+ 658   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SubFrameColor);
+ 659   1              for(i=5; i<13; i++)
+ 660   1                      WriteXY_Line(5, i, ucStrWidth, 0x00);
+ 661   1              SubIconWinOff();
+ 662   1              switch(ucOSDLvl1_Cursor){
+ 663   2              case mLUMINANCE:
+ 664   2                      switch(ucOSDLvl2_Cursor){
+ 665   3                      case mLuminance_Brightness:
+ 666   3                              WriteArialFont(BrightnessStrTab[ucLanguage]);
+ 667   3                              WriteXY_String(0, 5, 6);
+ 668   3                              ShowBrightness();
+ 669   3                              if(ucColorTemperature == COLOR_SRGB){
+ 670   4                                      ucStrAlignment = 0;
+ 671   4                                      ucStrWidth = 1;
+ 672   4                                      WriteWordIIC560(OSD_FC_ATTR_LSB,WarningColor);
+ 673   4                                      WriteArialFont(sRGBWarningStrTab[ucLanguage]);
+ 674   4                                      WriteXY_String(1,5,11);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 12  
+
+ 675   4                                      WriteArialFont(sRGBWarningStrTab[LANG_NUM+ucLanguage]);
+ 676   4                                      WriteXY_String(1,5,12);
+ 677   4                              }
+ 678   3                              break;
+ 679   3                      case mLuminance_Contrast:
+ 680   3                              WriteArialFont(ContrastStrTab[ucLanguage]);
+ 681   3                              WriteXY_String(0, 5, 6);
+ 682   3                              ShowContrast();
+ 683   3                              break;
+ 684   3                      case mLuminance_Saturation:
+ 685   3                              WriteArialFont(SaturationStrTab[ucLanguage]);
+ 686   3                              WriteXY_String(0, 5, 6);
+ 687   3                              ShowSaturation();
+ 688   3                              break;
+ 689   3                      case mLuminance_Tint:
+ 690   3                              WriteArialFont(TintStrTab[ucLanguage]);
+ 691   3                              WriteXY_String(0, 5, 6);
+ 692   3                              ShowTint();
+ 693   3                              break;
+ 694   3                      }
+ 695   2                      break;
+ 696   2              case mPICTURE:
+ 697   2                      switch(ucOSDLvl2_Cursor){
+ 698   3                      case mPicture_Phase:
+ 699   3                              WriteArialFont(PhaseStrTab[ucLanguage]);
+ 700   3                              WriteXY_String(0, 5, 6);
+ 701   3                              ShowPhase();
+ 702   3                              break;
+ 703   3                      case mPicture_Clock:
+ 704   3                              WriteArialFont(ClockStrTab[ucLanguage]);
+ 705   3                              WriteXY_String(0, 5, 6);
+ 706   3                              ShowClock();
+ 707   3                              break;
+ 708   3                      case mPicture_HPos:
+ 709   3                              WriteArialFont(HPosStrTab[ucLanguage]);
+ 710   3                              WriteXY_String(0, 5, 6);
+ 711   3                              ShowHP();
+ 712   3                              break;
+ 713   3                      case mPicture_VPos:
+ 714   3                              WriteArialFont(VPosStrTab[ucLanguage]);
+ 715   3                              WriteXY_String(0, 5, 6);
+ 716   3                              ShowVP();
+ 717   3                              break;
+ 718   3                      }
+ 719   2                      break;
+ 720   2              case mCOLOR:
+ 721   2                      switch(ucOSDLvl2_Cursor){
+ 722   3                      case mColor_Tempk:
+ 723   3                              WriteArialFont(ColorTempStrTab[ucLanguage]);
+ 724   3                              WriteXY_String(0, 5, 6);
+ 725   3                              ShowColorMenu();
+ 726   3                              break;
+ 727   3                      case mColor_User_R:
+ 728   3                              WriteArialFont(RedStrTab[ucLanguage]);
+ 729   3                              WriteXY_String(0, 5, 6);
+ 730   3                              ShowRed();
+ 731   3                              break;
+ 732   3                      case mColor_User_G:
+ 733   3                              WriteArialFont(GreenStrTab[ucLanguage]);
+ 734   3                              WriteXY_String(0, 5, 6);
+ 735   3                              ShowGreen();
+ 736   3                              break;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 13  
+
+ 737   3                      case mColor_User_B:
+ 738   3                              WriteArialFont(BlueStrTab[ucLanguage]);
+ 739   3                              WriteXY_String(0, 5, 6);
+ 740   3                              ShowBlue();
+ 741   3                              break;
+ 742   3                      }
+ 743   2                      break;
+ 744   2              case mOSDSETTING:
+ 745   2                      switch(ucOSDLvl2_Cursor){
+ 746   3                      case mOSDSetting_Horizontal:
+ 747   3                              WriteArialFont(HorizontalStrTab[ucLanguage]);
+ 748   3                              WriteXY_String(0, 5, 6);
+ 749   3                              ShowOSD_X();
+ 750   3                              break;
+ 751   3                      case mOSDSetting_Vertical:
+ 752   3                              WriteArialFont(VerticalStrTab[ucLanguage]);
+ 753   3                              WriteXY_String(0, 5, 6);
+ 754   3                              ShowOSD_Y();
+ 755   3                              break;
+ 756   3                      case mOSDSetting_Transparency:
+ 757   3                              WriteArialFont(TransparencyStrTab[ucLanguage]);
+ 758   3                              WriteXY_String(0, 5, 6);
+ 759   3                              ShowTransparency();
+ 760   3                              break;
+ 761   3                      case mOSDSetting_OSDTimeout:
+ 762   3                              WriteArialFont(OSDTimeStrTab[ucLanguage]);
+ 763   3                              WriteXY_String(0, 5, 6);
+ 764   3                              ShowOSD_Timer();
+ 765   3                              break;
+ 766   3                      }
+ 767   2                      break;
+ 768   2              case mSETUP:
+ 769   2                      switch(ucOSDLvl2_Cursor){
+ 770   3                      case mSetup_Language:
+ 771   3                              WriteArialFont(LanguageStrTab[ucLanguage]);
+ 772   3                              WriteXY_String(0, 5, 6);
+ 773   3                              ShowLanguageMenu();
+ 774   3                              break;
+ 775   3                      case mSetup_AudioMute:
+ 776   3                              WriteArialFont(MuteTab[ucLanguage]);
+ 777   3                              WriteXY_String(0, 5, 6);
+ 778   3                              ShowOnOffMenu();
+ 779   3                              break;
+ 780   3                      case mSetup_Input:
+ 781   3                              WriteArialFont(InputStrTab[ucLanguage]);
+ 782   3                              WriteXY_String(0, 5, 6);
+ 783   3                              ShowInputMenu();
+ 784   3                              break;
+ 785   3                      case mSetup_DCR:
+ 786   3                              WriteArialFont(DCR_StrTab[ucLanguage]);
+ 787   3                              WriteXY_String(0, 5, 6);
+ 788   3                              ucOSDLvl3_Cursor = ucDynBKMode;
+ 789   3                              ShowOnOffMenu();
+ 790   3                              break;
+ 791   3      #if _Enable_OD_ == ON
+                              case mSetup_OD:
+                                      WriteArialFont(OverDriverTab[ucLanguage]);
+                                      WriteXY_String(0, 5, 6);
+                                      ucOSDLvl3_Cursor = Read24C16(EPADDR_OD_ONOFF);
+                                      ShowOnOffMenu();
+                                      break;
+              #endif
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 14  
+
+ 799   3                      case mSetup_Reset:
+ 800   3                              WriteArialFont(ResetStrTab[ucLanguage]);
+ 801   3                              WriteXY_String(0, 5, 6);
+ 802   3                              ShowYesNoMenu();
+ 803   3                              break;
+ 804   3                      }
+ 805   2                      break;
+ 806   2              }
+ 807   1      }
+ 808          
+ 809          void ShowColorMenu(void)
+ 810          {
+ 811   1      unsigned char i,k;
+ 812   1              usFontIndex = 64;
+ 813   1              ucStrAlignment = 2;
+ 814   1              if(ucColorTemperature > 4){
+ 815   2                      k = ucColorTemperature - 4;
+ 816   2              }
+ 817   1              else{
+ 818   2                      k = 0;
+ 819   2              }
+ 820   1              for(i=0; i<5; i++){
+ 821   2                      WriteArialFont(ColorTemp_StrTab[(i+k) * LANG_NUM + ucLanguage]);
+ 822   2                      WriteXY_String(0, 5, i+8);
+ 823   2              }
+ 824   1      /*
+ 825   1              WriteArialFont(StrTab6500K);
+ 826   1              WriteXY_String(0, 5, 8);
+ 827   1              WriteArialFont(StrTab7500K);
+ 828   1              WriteXY_String(0, 5, 9);
+ 829   1              WriteArialFont(StrTab9300K);
+ 830   1              WriteXY_String(0, 5, 10);
+ 831   1              WriteArialFont(sRGB_StrTab[ucLanguage]);
+ 832   1              WriteXY_String(0, 5, 11);
+ 833   1              WriteArialFont(UserDefineStrTab[ucLanguage]);
+ 834   1              WriteXY_String(0, 5, 12);*/
+ 835   1              SelectColorTemp();
+ 836   1      }
+ 837          
+ 838          void SelectColorTemp(void)
+ 839          {
+ 840   1      unsigned char k;
+ 841   1              if(ucColorTemperature > 4){
+ 842   2                      k = 4;
+ 843   2              }
+ 844   1              else{
+ 845   2                      k = ucColorTemperature;
+ 846   2              }
+ 847   1              SubIconWinOff();
+ 848   1              SelectSubIconWin();
+ 849   1              WriteIIC560(WIN_HS,5);
+ 850   1              WriteIIC560(WIN_HE,29);
+ 851   1              WriteIIC560(WIN_VS,k+0x08);
+ 852   1              WriteIIC560(WIN_VE,k+0x08);
+ 853   1              WriteIIC560(WIN_CL,iWHITE);
+ 854   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 855   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 856   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+ 857   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+ 858   1              SubIconWinOn();
+ 859   1      }
+ 860          
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 15  
+
+ 861          void ShowLanguageMenu(void)
+ 862          {
+ 863   1      /*      
+ 864   1      unsigned char i;
+ 865   1              ucStrAlignment = 2;
+ 866   1              ucStrWidth = (ucOSDWidth - 7) / 2;
+ 867   1              for(i=0; i<4; i++){
+ 868   1                      WriteArialFont(CountryStrTab[i*2]);
+ 869   1                      WriteXY_String(0, 5, i+8);
+ 870   1                      WriteArialFont(CountryStrTab[i*2+1]);
+ 871   1                      WriteXY_String(0, 17, i+8);
+ 872   1              }
+ 873   1      
+ 874   1              SelectLanguage();
+ 875   1              */                              // -jwshin 111214
+ 876   1              //--------------- Language 부분은 사용하지 않기 때문에.. Remark..
+ 877   1      }
+ 878          
+ 879          void SelectLanguage(void)
+ 880          {
+ 881   1      unsigned char i;
+ 882   1              i = ucLanguage >> 1;
+ 883   1              SubIconWinOff();
+ 884   1              SelectSubIconWin();
+ 885   1              if((ucLanguage & BIT_0) == 0){
+ 886   2                      WriteIIC560(WIN_HS,5);
+ 887   2                      WriteIIC560(WIN_HE,16);
+ 888   2              }
+ 889   1              else{
+ 890   2                      WriteIIC560(WIN_HS,17);
+ 891   2                      WriteIIC560(WIN_HE,29);
+ 892   2              }
+ 893   1              WriteIIC560(WIN_VS,i+0x08);
+ 894   1              WriteIIC560(WIN_VE,i+0x08);
+ 895   1              WriteIIC560(WIN_CL,iWHITE);
+ 896   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 897   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 898   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+ 899   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+ 900   1              SubIconWinOn();
+ 901   1      }
+ 902          
+ 903          void ShowInputMenu(void)
+ 904          {
+ 905   1              ucStrAlignment = 2;
+ 906   1              WriteArialFont(VGA_StrTab[ucLanguage]);
+ 907   1              WriteXY_String(0, 5, 8);
+ 908   1              WriteArialFont(DVI_StrTab[ucLanguage]);
+ 909   1              WriteXY_String(0, 5, 9);
+ 910   1              WriteArialFont(HDMI_StrTab[ucLanguage]);
+ 911   1              WriteXY_String(0, 5, 10);
+ 912   1              WriteArialFont(VIDEO_StrTab[ucLanguage]);
+ 913   1              WriteXY_String(0, 5, 11);
+ 914   1              ucSource = ucPowerStatus & ~SoftPowerOnFlag;
+ 915   1              SelectInput();
+ 916   1      }
+ 917          
+ 918          void SelectInput(void)
+ 919          {
+ 920   1              SubIconWinOff();
+ 921   1              SelectSubIconWin();
+ 922   1              WriteIIC560(WIN_HS,5);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 16  
+
+ 923   1              WriteIIC560(WIN_HE,29);
+ 924   1              WriteIIC560(WIN_VS,ucSource+0x08);
+ 925   1              WriteIIC560(WIN_VE,ucSource+0x08);
+ 926   1              WriteIIC560(WIN_CL,iWHITE);
+ 927   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 928   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 929   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+ 930   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+ 931   1              SubIconWinOn();
+ 932   1      }
+ 933          
+ 934          void ShowYesNoMenu(void)
+ 935          {
+ 936   1              ucStrAlignment = 2;
+ 937   1              WriteArialFont(NoStrTab[ucLanguage]);
+ 938   1              WriteXY_String(0, 5, 8);
+ 939   1              WriteArialFont(YesStrTab[ucLanguage]);
+ 940   1              WriteXY_String(0, 5,10);
+ 941   1              ucOSDLvl3_Cursor = 0;
+ 942   1              SelectYesNo();
+ 943   1      }
+ 944          
+ 945          void SelectYesNo(void)
+ 946          {
+ 947   1              SubIconWinOff();
+ 948   1              SelectSubIconWin();
+ 949   1              WriteIIC560(WIN_HS,5);
+ 950   1              WriteIIC560(WIN_HE,29);
+ 951   1              WriteIIC560(WIN_VS,ucOSDLvl3_Cursor*2+0x08);
+ 952   1              WriteIIC560(WIN_VE,ucOSDLvl3_Cursor*2+0x08);
+ 953   1              WriteIIC560(WIN_CL,iWHITE);
+ 954   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+ 955   1              WriteIIC560(WIN_BL_HWID,0x01);
+ 956   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+ 957   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+ 958   1              SubIconWinOn();
+ 959   1      }
+ 960          
+ 961          void ShowOnOffMenu(void)
+ 962          {
+ 963   1              ucStrAlignment = 2;
+ 964   1              WriteArialFont(OffTab[ucLanguage]);
+ 965   1              WriteXY_String(0, 5, 8);
+ 966   1              WriteArialFont(OnTab[ucLanguage]);
+ 967   1              WriteXY_String(0, 5,10);
+ 968   1              SelectYesNo();
+ 969   1      }
+ 970          
+ 971          
+ 972          void SetOSDAtCenter()
+ 973          {
+ 974   1      //      ucOSDXPos = MCU_DataMap[EPADDR_OSDX];
+ 975   1      //      ucOSDYPos = MCU_DataMap[EPADDR_OSDY];
+ 976   1              ucOSDXPos = 50;
+ 977   1              ucOSDYPos = 50;
+ 978   1              SetPosition(ucOSDXPos,ucOSDYPos);
+ 979   1              Write24C16(EPADDR_OSDX, ucOSDXPos);//0x15 = OSD position x
+ 980   1              Write24C16(EPADDR_OSDY, ucOSDYPos);//0x15 = OSD position x
+ 981   1      }
+ 982          
+ 983          void SetPosition(unsigned char x, unsigned char y)
+ 984          {
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 17  
+
+ 985   1      #define OSDxy_RBx(w1)   (PanelWidth - (CHAR_Width * (w1)))
+ 986   1      #define OSDxy_RBy(h1)   (PanelHeight - (CHAR_Height * (h1))-6)
+ 987   1      unsigned short xy;
+ 988   1              xy = (unsigned long)OSDxy_RBx(ucOSDWidth) * x / 100;    //xy = (unsigned long)OSDxy_RBx * ucOSDXPos / 100;
+ 989   1              WriteWordIIC560(OSD_HS_LI,xy);
+ 990   1              WriteIIC560(OSD_HW,ucOSDWidth-1);
+ 991   1              xy = (unsigned long)OSDxy_RBy(ucOSDHeight) * (100 - y) / 100;   //xy = (unsigned long)OSDxy_RBy * (100 - uc
+             -OSDYPos) / 100;
+ 992   1              WriteWordIIC560(OSD_VS_LI,xy);
+ 993   1              WriteIIC560(OSD_VH,ucOSDHeight-1);
+ 994   1              WaitSetup(4);
+ 995   1      }
+ 996          
+ 997          void ClearOSD(void)
+ 998          {
+ 999   1      //      bOSDReady = FALSE;
+1000   1              
+1001   1      
+1002   1              //WriteIIC560(OSD_TRANSLUCENT_CTL,0x1b);
+1003   1      // Clear osd ram
+1004   1              WriteIIC560(OSD_CODE_FC,0x00);
+1005   1              WriteIIC560(OSD_CODE_FC_CTL,0x01 );
+1006   1              //WriteIIC560(OSD_CODE_FC_CTL,0x01 | BIT4 | BIT5);
+1007   1      // Wait for Clear Ready....
+1008   1              while((ReadIIC560(OSD_CODE_FC_CTL) & BIT_0) != 0){
+1009   2                      CheckModeChange();
+1010   2              }
+1011   1              WriteXY_Char(1,0,0,0x00);
+1012   1      }
+1013          
+1014          
+1015          
+1016          void OSD_OFF(void)
+1017          {
+1018   1              if(ucSavePointer != svNONE)
+1019   1                      SaveData();             
+1020   1              if(ucOSDType != OSDOFF){
+1021   2                      SubIconWinOff();
+1022   2                      MainIconWinOff();
+1023   2                      WriteIIC560(OSD_CTRL1,0x00);
+1024   2                      if(ucOSDType == FACTORY){
+1025   3                              LoadFont();
+1026   3                      }
+1027   2                      ucOSDType = OSDOFF;
+1028   2              }
+1029   1      }
+1030          
+1031          
+1032          
+1033          void ShowBrightness()
+1034          {
+1035   1              if(ucOSDType == DIRECT_MENU){
+1036   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1037   2                      ShowSliderBar(5,5, ucBrightness);
+1038   2                      ShowNum(0,11,6, ucBrightness);
+1039   2              }
+1040   1              else{
+1041   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1042   2                      ShowNum(0,25,6, ucBrightness);
+1043   2                      ShowSliderBar(10,8, ucBrightness);
+1044   2              }
+1045   1      }
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 18  
+
+1046          
+1047          void ShowContrast()
+1048          {       
+1049   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1050   1              ShowNum(0,25,6, ucContrast);
+1051   1              ShowSliderBar(10,8, ucContrast);        
+1052   1      }
+1053          
+1054          void ShowSaturation()
+1055          {       
+1056   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1057   1              ShowNum(0,25,6, ucSaturation);
+1058   1              ShowSliderBar(10,8, ucSaturation);      
+1059   1      }
+1060          
+1061          void ShowTint()
+1062          {       
+1063   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1064   1              ShowNum(0,25,6, ucTint);
+1065   1              ShowSliderBar(10,8, ucTint);    
+1066   1      }
+1067          
+1068          void ShowPhase()
+1069          {
+1070   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1071   1              ShowNum(0,25,6, ucADCCPhase100Pa);
+1072   1              ShowSliderBar(10,8, ucADCCPhase100Pa);
+1073   1      
+1074   1      }
+1075          
+1076          void ShowClock()
+1077          {
+1078   1      unsigned char value;
+1079   1              value = (usHTotal-usMinClk) * 100 / (usMaxClk-usMinClk);
+1080   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1081   1              ShowNum(0,25,6, value);
+1082   1              ShowSliderBar(10,8, value);     
+1083   1      }
+1084          
+1085          void ShowHP()
+1086          {
+1087   1      unsigned char value;
+1088   1              value = (usHPStart-ucMinHP) * 100 / (usMaxHP-ucMinHP);
+1089   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1090   1              ShowNum(0,25,6, value);
+1091   1              ShowSliderBar(10,8, value);     
+1092   1      }
+1093          
+1094          void ShowVP()
+1095          {
+1096   1      unsigned char value;
+1097   1              value = (usVPStart-ucMinVP) * 100 / (ucMaxVP-ucMinVP);
+1098   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1099   1              ShowNum(0,25,6, value);
+1100   1              ShowSliderBar(10,8, value);     
+1101   1      }
+1102          
+1103          void ShowRed()
+1104          {
+1105   1      unsigned char value;
+1106   1              value = ScalingColorGain(ucR_GainUser);
+1107   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 19  
+
+1108   1              ShowNum(0,25,6, value);
+1109   1              ShowSliderBar(10,8, value);     
+1110   1      }
+1111          
+1112          void ShowGreen()
+1113          {
+1114   1      unsigned char value;
+1115   1              value = ScalingColorGain(ucG_GainUser);
+1116   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1117   1              ShowNum(0,25,6, value);
+1118   1              ShowSliderBar(10,8, value);     
+1119   1      }
+1120          
+1121          void ShowBlue()
+1122          {
+1123   1      unsigned char value;
+1124   1              value = ScalingColorGain(ucB_GainUser);
+1125   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1126   1              ShowNum(0,25,6, value);
+1127   1              ShowSliderBar(10,8, value);     
+1128   1      }
+1129          
+1130          void ShowOSD_X()
+1131          {
+1132   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1133   1              ShowNum(0,25,6, ucOSDXPos);
+1134   1              ShowSliderBar(10,8, ucOSDXPos);
+1135   1      
+1136   1      }
+1137          void ShowOSD_Y()
+1138          {
+1139   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1140   1              ShowNum(0,25,6, ucOSDYPos);
+1141   1              ShowSliderBar(10,8, ucOSDYPos);
+1142   1      
+1143   1      }
+1144          void ShowTransparency()
+1145          {
+1146   1      unsigned char value;
+1147   1              value = ((unsigned short)ucTransparency * 100 + 2) / 4;
+1148   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1149   1              ShowNum(0,25,6, value);
+1150   1              ShowSliderBar(10,8, value);
+1151   1      }
+1152          
+1153          void ShowOSD_Timer()
+1154          {
+1155   1      unsigned char value;
+1156   1              value = ((unsigned short)ucOSDTimer * 100 + 30) / 60;
+1157   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1158   1              ShowNum(0,25,6, ucOSDTimer);
+1159   1              ShowSliderBar(10,8, value);
+1160   1      }
+1161          
+1162          //---------------- +jwshin 110418
+1163          
+1164          void ShowOSD_Debug(unsigned char Val)
+1165          {
+1166   1              WriteWordIIC560(OSD_FC_ATTR_LSB,SliderColor);
+1167   1              ShowNum(0,25,6, Val);
+1168   1              ShowSliderBar(10,8, Val);
+1169   1      }
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 20  
+
+1170          
+1171          //---------------------------------------------------
+1172          
+1173          
+1174          
+1175          void WriteSequenceScaler(unsigned char addr,unsigned char *p)
+1176          {
+1177   1      #if NT68665
+              unsigned short i,l;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(addr);
+                      l = p[1] * 256;
+                      l = l + p[0] + 2;
+                      for(i=2; i<l; i++){
+                              WriteByte(p[i]);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1193   1      unsigned short i,l;
+1194   1      unsigned char volatile *pBus;
+1195   1              SC_RegPage = (unsigned char)(addr>>8);
+1196   1              pBus = &SC_StarAddress;
+1197   1              pBus += (unsigned char)addr;
+1198   1              l = p[1] * 256;
+1199   1              l = l + p[0] + 2;
+1200   1              *pBus = p[2];
+1201   1              pBus++;
+1202   1              *pBus = p[3];
+1203   1              pBus++;
+1204   1              *pBus = p[4];
+1205   1              pBus++;
+1206   1              for(i=5; i<l; i++){
+1207   2                      *pBus = p[i];
+1208   2              }
+1209   1      #endif
+1210   1      }
+1211          /*
+1212          void WriteStringScaler(unsigned char Attr,unsigned char *p)
+1213          {
+1214          #if NT68665
+1215          unsigned char i,l,ch;
+1216          unsigned short m;
+1217                  CheckRegPage(0x0e0);
+1218          
+1219                  IIC_Start();
+1220          
+1221                  WriteByte(SCALER_I2C_ADDR);
+1222                  WriteByte(0xe0);
+1223                  if(Attr == 0)
+1224                          WriteByte(0x40);
+1225                  else
+1226                          WriteByte(0x90);
+1227                  m = p[2] * ucOSDWidth + p[1];
+1228                  ch = (unsigned char)m;
+1229                  WriteByte(ch);
+1230                  ch = (unsigned char)(m >> 8);
+1231                  WriteByte(ch);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 21  
+
+1232                  l = p[0] + 1;
+1233                  for(i=3; i<l; i++){
+1234                          ch = p[i];
+1235                          WriteByte(ch);
+1236                  }
+1237          
+1238                  IIC_Stop();
+1239          #else
+1240          unsigned char i,l;
+1241          unsigned char volatile *pBus;
+1242          unsigned short m;
+1243                  SC_RegPage = 0x00;
+1244                  pBus = &SC_INDEX_CTRL;
+1245                  if(Attr == 0)
+1246                          *pBus = 0x40;
+1247                  else
+1248                          *pBus = 0x90;
+1249                  pBus++;
+1250                  m = p[2] * ucOSDWidth + p[1];
+1251                  *pBus = (unsigned char)m;
+1252                  pBus++;
+1253                  *pBus = (unsigned char)(m >> 8);
+1254                  pBus++;
+1255                  l = p[0] + 1;
+1256                  for(i=3; i<l; i++){
+1257                          *pBus = p[i];
+1258                  }
+1259          #endif
+1260          }
+1261          */
+1262          
+1263          
+1264          void WriteXY_Line(unsigned char x,unsigned char y,unsigned char l,unsigned char k)
+1265          {
+1266   1      #if NT68665
+              unsigned char i,ch;
+              unsigned short m;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      WriteByte(0x90);
+                      m = y * ucOSDWidth + x;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                      for(i=0; i<l; i++){
+                              WriteByte(k);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1287   1      unsigned char i;
+1288   1      unsigned char volatile *pBus;
+1289   1      unsigned short m;
+1290   1              SC_RegPage = 0x00;
+1291   1              pBus = &SC_INDEX_CTRL;
+1292   1              *pBus = 0x90;
+1293   1              pBus++;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 22  
+
+1294   1              m = y * ucOSDWidth + x;
+1295   1              *pBus = (unsigned char)m;
+1296   1              pBus++;
+1297   1              *pBus = (unsigned char)(m >> 8);
+1298   1              pBus++;
+1299   1              for(i=0; i<l; i++){
+1300   2                      *pBus = k;
+1301   2              }
+1302   1      #endif
+1303   1      }
+1304          
+1305          void WriteXY_Char(unsigned char Attr,unsigned char x,unsigned char y,unsigned char letter)
+1306          {
+1307   1      #if NT68665
+              unsigned char ch;
+              unsigned short m;
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      if(Attr == 0)
+                              WriteByte(0x40);
+                      else
+                              WriteByte(0x90);
+                      m = y * ucOSDWidth + x;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+              
+                      WriteByte(letter);
+              
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1330   1      unsigned char volatile *pBus;
+1331   1      unsigned short m;
+1332   1              SC_RegPage = 0x00;
+1333   1              pBus = &SC_INDEX_CTRL;
+1334   1              if(Attr == 0)
+1335   1                      *pBus = 0x40;
+1336   1              else
+1337   1                      *pBus = 0x90;
+1338   1              pBus++;
+1339   1              m = y * ucOSDWidth + x;
+1340   1              *pBus = (unsigned char)m;
+1341   1              pBus++;
+1342   1              *pBus = (unsigned char)(m >> 8);
+1343   1              pBus++;
+1344   1              *pBus = letter;
+1345   1      #endif
+1346   1      }
+1347          
+1348          #if 0
+              void WriteXY_StrScaler(unsigned char Attr,unsigned char x,unsigned char y,unsigned char *p)
+              {
+              #if NT68665
+              unsigned char i,l,ch;
+              unsigned short m;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 23  
+
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      if(Attr == 0)
+                              WriteByte(0x40);
+                      else
+                              WriteByte(0x90);
+                      m = (unsigned short)y * ucOSDWidth + x;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                      l = p[0] + 1;
+                      for(i=1; i<l; i++){
+                              ch = p[i];
+                              WriteByte(ch);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+              unsigned char i,l;
+              unsigned char volatile *pBus;
+              unsigned short m;
+                      SC_RegPage = 0x00;
+                      pBus = &SC_INDEX_CTRL;
+                      if(Attr == 0)
+                              *pBus = 0x40;
+                      else
+                              *pBus = 0x90;
+                      pBus++;
+                      m = (unsigned short)y * ucOSDWidth + x;
+                      *pBus = (unsigned char)m;
+                      pBus++;
+                      *pBus = (unsigned char)(m >> 8);
+                      pBus++;
+                      l = p[0] + 1;
+                      for(i=1; i<l; i++){
+                              *pBus = p[i];
+                      }
+              #endif
+              }
+              #endif
+1399          
+1400          void FillLineAttr(unsigned char x,unsigned char y,unsigned char l,unsigned short Attr)
+1401          {
+1402   1      #if NT68665
+              unsigned char i,ch;
+              unsigned short m;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      WriteByte(0x70);
+                      m = y * ucOSDWidth + x;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                      ch = (unsigned char)(Attr>>8);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 24  
+
+                      for(i=0; i<l; i++){
+                              //WriteByte((unsigned char) (Attr|0x02));
+                              WriteByte((unsigned char)Attr);
+                              WriteByte(ch);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1426   1      unsigned char i;
+1427   1      unsigned short m;
+1428   1      unsigned char volatile *pBus;
+1429   1              SC_RegPage = 0x00;
+1430   1              pBus = &SC_INDEX_CTRL;
+1431   1              *pBus = 0x70;
+1432   1              pBus++;
+1433   1              m = y * ucOSDWidth + x;
+1434   1              *pBus = (unsigned char)m;
+1435   1              pBus++;
+1436   1              *pBus = (unsigned char)(m >> 8);
+1437   1              pBus++;
+1438   1              for(i=0; i<l; i++){
+1439   2                      *pBus = (unsigned char)Attr;
+1440   2                      *pBus = (unsigned char)(Attr>>8);
+1441   2              }
+1442   1      #endif
+1443   1      }
+1444          
+1445          void ShowNum(unsigned char Attr,unsigned char xx,unsigned char yy,unsigned char value)
+1446          {
+1447   1      unsigned char i,ch;
+1448   1      unsigned short m;
+1449   1      unsigned char buff[4];
+1450   1      #if !NT68665
+1451   1      unsigned char volatile *pBus;
+1452   1      #endif
+1453   1      //show value
+1454   1      #ifdef NO_PRINT_LIB
+                      UShortToStr((unsigned short)value, buff, 3);
+              #else
+1457   1              sprintf(buff,"%3d",(unsigned short)value);
+1458   1      #endif
+1459   1      #if NT68665
+                      CheckRegPage(0x0e0);
+              
+                      IIC_Start();
+              
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      if(Attr == 0)
+                              WriteByte(0x40);
+                      else
+                              WriteByte(0x90);
+                      m = yy * ucOSDWidth + xx;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                              
+                      for(i=0; i<3; i++){
+                              if ( (ch=buff[i]) == 0x20 )
+                                      WriteByte(0);
+                              else
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 25  
+
+                                      WriteByte(ch-0x28);
+                      }
+              
+                      IIC_Stop();
+              #else
+1485   1              SC_RegPage = 0x00;
+1486   1              pBus = &SC_INDEX_CTRL;
+1487   1              if(Attr == 0)
+1488   1                      *pBus = 0x40;
+1489   1              else
+1490   1                      *pBus = 0x90;
+1491   1              pBus++;
+1492   1              m = yy * ucOSDWidth + xx;
+1493   1              *pBus = (unsigned char)m;
+1494   1              pBus++;
+1495   1              *pBus = (unsigned char)(m >> 8);
+1496   1              pBus++;
+1497   1              for(i=0; i<3; i++){
+1498   2                      ch = buff[i];
+1499   2                      if(ch == 0x20)
+1500   2                              *pBus = 0;
+1501   2                      else
+1502   2                              *pBus = ch - 0x28;
+1503   2              }
+1504   1      
+1505   1      #endif
+1506   1      }
+1507          
+1508          void ShowSliderBar(unsigned char xx,unsigned char yy,unsigned char value)
+1509          {
+1510   1      #define BarWidth 15
+1511   1      #if NT68665
+              unsigned char i,k,ch;
+              unsigned short m;
+                      CheckRegPage(0x0e0);
+              
+                      IIC_Start();
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      WriteByte(0x90);
+                      m = yy * ucOSDWidth + xx;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+                      m = value * BarWidth;
+                      k = m / 100;
+                      WriteByte(0x01);
+                      for(i=0; i<k; i++){
+                              WriteByte(0x06);
+                      }
+                      if(i < BarWidth){
+                              k = (m % 100) / 20;
+                              switch(k){
+                              case 0:
+                                      WriteByte(0x02);
+                                      break;
+                              case 1:
+                                      WriteByte(0x03);
+                                      break;
+                              case 2:
+                                      WriteByte(0x04);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 26  
+
+                                      break;
+                              case 3:
+                                      WriteByte(0x05);
+                                      break;
+                              case 4:
+                                      WriteByte(0x06);
+                                      break;  
+                              }
+                              i++;
+                              for(i; i<BarWidth; i++){
+                                      WriteByte(0x02);
+                              }
+                      }
+                      WriteByte(0x07);
+                      IIC_Stop();
+              #else
+1558   1      unsigned char i,k;
+1559   1      unsigned char volatile *pBus;
+1560   1      unsigned short m;
+1561   1              SC_RegPage = 0x00;
+1562   1              pBus = &SC_INDEX_CTRL;
+1563   1              *pBus = 0x90;
+1564   1              pBus++;
+1565   1              m = (unsigned short)yy * ucOSDWidth + xx;
+1566   1              *pBus = (unsigned char)m;
+1567   1              pBus++;
+1568   1              *pBus = (unsigned char)(m >> 8);
+1569   1              pBus++;
+1570   1      
+1571   1              m = value * BarWidth;
+1572   1              k = m / 100;
+1573   1              *pBus = 0x01;
+1574   1              for(i=0; i<k; i++){
+1575   2                      *pBus = 0x06;
+1576   2              }
+1577   1              if(i < BarWidth){
+1578   2                      k = (m % 100) / 20;
+1579   2                      switch(k){
+1580   3                      case 0:
+1581   3                              *pBus = 0x02;
+1582   3                              break;
+1583   3                      case 1:
+1584   3                              *pBus = 0x03;
+1585   3                              break;
+1586   3                      case 2:
+1587   3                              *pBus = 0x04;
+1588   3                              break;
+1589   3                      case 3:
+1590   3                              *pBus = 0x05;
+1591   3                              break;
+1592   3                      case 4:
+1593   3                              *pBus = 0x06;
+1594   3                              break;  
+1595   3                      }
+1596   2                      i++;
+1597   2                      for(i; i<BarWidth; i++){
+1598   3                              *pBus = 0x02;
+1599   3                      }
+1600   2              }
+1601   1              *pBus = 0x07;
+1602   1      #endif
+1603   1      }
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 27  
+
+1604          
+1605          
+1606          void ShowResolution(unsigned char x,unsigned char y)
+1607          {
+1608   1      unsigned char i;
+1609   1      
+1610   1              sprintf(glob_buff,"n%dx%d@%d.%dHz",GetHActive(ucResolution),GetVActive(ucResolution), (unsigned short)usV
+             -Sync / 10, (unsigned short)usVSync % 10);
+1611   1              for(i=0; i<32; i++){
+1612   2                      if(glob_buff[i] == 0)
+1613   2                              break;
+1614   2              }
+1615   1              glob_buff[0] = i - 1;
+1616   1              ucStrAlignment = 1;
+1617   1              ucStrWidth = 15;
+1618   1      //      WriteWordIIC560(OSD_FC_ATTR_LSB,ColorAttr);
+1619   1              WriteArialFont(glob_buff);
+1620   1              WriteXY_String(0,x,y);
+1621   1      }
+1622          
+1623          void ShowSerialNo(unsigned char x, unsigned char y)
+1624          {
+1625   1      unsigned char i;
+1626   1              ucStrAlignment = 0;
+1627   1              ucStrWidth = 2;
+1628   1              if(ucOSDType == MAIN_MENU){
+1629   2      //              WriteArialFont(SerialNoStrTab);                         //-jwshin 111208
+1630   2      //              WriteXY_String(0,x-3,y);
+1631   2              }
+1632   1      
+1633   1              ucStrAlignment = 1;
+1634   1              ucStrWidth = 15;
+1635   1              glob_buff[1] =' ';                              // Space 처리... +jwshin 111208
+1636   1              glob_buff[2] =' ';
+1637   1              glob_buff[3] =' ';
+1638   1              for(i=4; i<SN_LEN+4; i++){
+1639   2                      glob_buff[i] = ucSerialNum[i-4];
+1640   2                      if(glob_buff[i]==0x00 || glob_buff[i]==0x0A) break;
+1641   2                      //printf("%d=%02x\r\n", (unsigned short)i,(unsigned short)glob_buff[i]);
+1642   2              }
+1643   1              glob_buff[0] = i-1;
+1644   1              WriteArialFont(glob_buff);
+1645   1              WriteXY_String(0,x,y);
+1646   1      
+1647   1      }
+1648          
+1649          void WriteXY_String(unsigned char Attr,unsigned char x,unsigned char y)
+1650          {
+1651   1      #if NT68665
+              unsigned char i,l,ch;
+              unsigned short m,IndexTemp;
+                      IndexTemp = usFontIndex - ucFontLen;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      if(Attr == 0)
+                              WriteByte(0x40);
+                      else
+                              WriteByte(0x90);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 28  
+
+                      m = y * ucOSDWidth + x;
+                      ch = (unsigned char)m;
+                      WriteByte(ch);
+                      ch = (unsigned char)(m >> 8);
+                      WriteByte(ch);
+              
+              //ucStrAlignment
+                      if(ucStrAlignment == 0){                //Left
+                              l = 0;
+                      }
+                      else if(ucStrAlignment == 1){           //Right
+                              l = ucStrWidth - ucFontLen;
+                      }
+                      else if(ucStrAlignment == 2){           //Center
+                              l = (ucStrWidth - ucFontLen) >> 1;
+                      }
+              //write front space
+                      for(i=0; i<l; i++){
+                              WriteByte(0x00);
+                      }
+              //write font index
+                      for(i=0; i<ucFontLen; i++){
+                              ch = (unsigned char)(IndexTemp + i);
+                              WriteByte(ch);
+                      }
+              //write back space
+                      i = l + ucFontLen;
+                      for(i; i<ucStrWidth; i++){
+                              WriteByte(0x00);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1698   1      unsigned char i,l,ch;
+1699   1      unsigned char volatile *pBus;
+1700   1      unsigned short m,IndexTemp;
+1701   1              IndexTemp = usFontIndex - ucFontLen;
+1702   1              SC_RegPage = 0x00;
+1703   1              pBus = &SC_INDEX_CTRL;
+1704   1              if(Attr == 0)
+1705   1                      *pBus = 0x40;
+1706   1              else
+1707   1                      *pBus = 0x90;
+1708   1              pBus++;
+1709   1              m = y * ucOSDWidth + x;
+1710   1              *pBus = (unsigned char)m;
+1711   1              pBus++;
+1712   1              *pBus = (unsigned char)(m >> 8);
+1713   1              pBus++;
+1714   1      
+1715   1      //ucStrAlignment
+1716   1              if(ucStrAlignment == 0){                //Left
+1717   2                      l = 0;
+1718   2              }
+1719   1              else if(ucStrAlignment == 1){           //Right
+1720   2                      l = ucStrWidth - ucFontLen;
+1721   2              }
+1722   1              else if(ucStrAlignment == 2){           //Center
+1723   2                      l = (ucStrWidth - ucFontLen) >> 1;
+1724   2              }
+1725   1      //write front space
+1726   1              for(i=0; i<l; i++){
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 29  
+
+1727   2                      *pBus = 0x00;
+1728   2              }
+1729   1      //write font index
+1730   1              for(i=0; i<ucFontLen; i++){
+1731   2                      ch = (unsigned char)(IndexTemp + i);
+1732   2                      *pBus = ch;
+1733   2              }
+1734   1      //write back space
+1735   1              i = l + ucFontLen;
+1736   1              for(i; i<ucStrWidth; i++){
+1737   2                      *pBus = 0x00;
+1738   2              }
+1739   1      #endif
+1740   1      }
+1741          
+1742          void WriteArialFont(unsigned char *p)
+1743          {
+1744   1      unsigned char i,l,WD_Point,k,Row,width;
+1745   1      unsigned short m;
+1746   1              ucFontLen = 0;
+1747   1      //string width
+1748   1              m = 0;
+1749   1              l = p[0] + 1;
+1750   1              for(i=1; i<l; i++){
+1751   2                      k = p[i];// - 0x20; offset
+1752   2                      m += Arial_Width[k];
+1753   2              }
+1754   1      //ucStrAlignment
+1755   1              if(ucStrAlignment == 0){                //Left
+1756   2                      WD_Point = 0;
+1757   2              }
+1758   1              else if(ucStrAlignment == 1){           //Right
+1759   2                      m = (unsigned short)ucStrWidth * 12 - m;
+1760   2                      WD_Point = m % 12;
+1761   2              }
+1762   1              else if(ucStrAlignment == 2){           //Center
+1763   2                      m = (unsigned short)ucStrWidth * 12 - m;
+1764   2                      k = m / 12;
+1765   2                      WD_Point = m % 12;
+1766   2                      if((k & BIT_0) != 0){
+1767   3                              WD_Point += 12;
+1768   3                      }
+1769   2                      WD_Point >>= 1;
+1770   2              }
+1771   1      
+1772   1              for(Row=0; Row<CHAR_Height; Row++){
+1773   2                      usFontBuffer[Row] = 0;
+1774   2              }
+1775   1      //write font
+1776   1              for(i=1; i<l; i++){
+1777   2                      k = p[i];// - 0x20;             //get font and font width
+1778   2                      width = Arial_Width[k]; //get font font width
+1779   2                      
+1780   2                      m = k * CHAR_Height;
+1781   2      
+1782   2                      if(WD_Point == 0){
+1783   3                              for(Row=0; Row<CHAR_Height; Row++){
+1784   4                                      usFontBuffer[Row] = Arial_Font[m+Row];
+1785   4                              }
+1786   3                      }
+1787   2                      else{
+1788   3                              for(Row=0; Row<CHAR_Height; Row++){     
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 30  
+
+1789   4                                      usFontBuffer[Row] |= (Arial_Font[m+Row] >> WD_Point);
+1790   4                              }
+1791   3                      }
+1792   2                      WD_Point += width;
+1793   2                      do{
+1794   3                              
+1795   3                              if(WD_Point == 12){             //buffer full?
+1796   4                                      WriteCharFont();
+1797   4                                      WD_Point = 0;
+1798   4                              }
+1799   3                              else if(WD_Point > 12){
+1800   4                                      WriteCharFont();
+1801   4                                      WD_Point -= 12;
+1802   4                                      for(Row=0; Row<CHAR_Height; Row++){
+1803   5                                              usFontBuffer[Row] = (Arial_Font[m+Row] << (width - WD_Point));
+1804   5                                      }
+1805   4                              }
+1806   3                      }while(WD_Point>11);
+1807   2              }
+1808   1      //write back space
+1809   1              if(WD_Point != 0){
+1810   2                      WriteCharFont();
+1811   2                      WD_Point = 0;
+1812   2              }
+1813   1              
+1814   1              if(bBGMode == FALSE)    //2007-02-16
+1815   1                      CheckModeChange();
+1816   1      }
+1817          
+1818          void WriteCharFont(void)
+1819          {
+1820   1      #if NT68665
+              unsigned char i,ch;
+                      CheckRegPage(0x0e0);
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(0xe0);
+                      WriteByte(0xa0);        //0xa0
+                      WriteByte((unsigned char)usFontIndex);  //Index low
+                      WriteByte((unsigned char)(usFontIndex>>8));     //Index high
+                      for(i=0; i<CHAR_Height; i++){
+                              usFontBuffer[i] >>= 4;
+                              WriteByte((unsigned char)usFontBuffer[i]);      //1'st byte
+                              ch = (unsigned char)(usFontBuffer[i]>>8) & 0x0f;
+                              i++;
+                              ch |= ((unsigned char)usFontBuffer[i] & 0xf0);
+                              WriteByte(ch);  //2'nd byte
+                              ch = (unsigned char)((usFontBuffer[i]>>8) & 0x00ff);
+                              WriteByte(ch);  //3'th byte
+                      }
+                      usFontIndex++;
+                      ucFontLen++;
+              /* stop bit */
+                      IIC_Stop();
+              #else
+1846   1      unsigned char i,ch;
+1847   1      unsigned char volatile *pBus;
+1848   1              SC_RegPage = 0x00;
+1849   1              pBus = &SC_INDEX_CTRL;
+1850   1              *pBus = 0xa0;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 31  
+
+1851   1              pBus++;
+1852   1              *pBus = (unsigned char)usFontIndex;     //Index low
+1853   1              pBus++;
+1854   1              *pBus = (unsigned char)(usFontIndex>>8);        //Index high
+1855   1              pBus++;
+1856   1              for(i=0; i<CHAR_Height; i++){
+1857   2                      usFontBuffer[i] >>= 4;
+1858   2                      *pBus = (unsigned char)usFontBuffer[i]; //1'st byte
+1859   2                      ch = (unsigned char)(usFontBuffer[i]>>8) & 0x0f;
+1860   2                      i++;
+1861   2                      ch |= ((unsigned char)usFontBuffer[i] & 0xf0);
+1862   2                      *pBus = ch;     //2'nd byte
+1863   2                      ch = (unsigned char)((usFontBuffer[i]>>8) & 0x00ff);
+1864   2                      *pBus = ch;     //3'th byte
+1865   2              }
+1866   1              usFontIndex++;
+1867   1              ucFontLen++;
+1868   1      #endif
+1869   1      }
+1870          
+1871          void ShowAutoAdj(void)
+1872          {
+1873   1              ucOSDType = AUTO_SIGNAL;
+1874   1              
+1875   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+1876   1      
+1877   1              ShowTitleGradient();
+1878   1              ucStrAlignment = 2;
+1879   1              ucStrWidth = ucOSDWidth;
+1880   1              usFontIndex = 48;
+1881   1              
+1882   1      
+1883   1              WriteArialFont(AutoStrTab[ucLanguage]);
+1884   1              WriteXY_String(0,0,1);
+1885   1      
+1886   1              WriteArialFont(WaitStrTab[ucLanguage]);
+1887   1              WriteXY_String(0,0,5);
+1888   1              
+1889   1              
+1890   1              
+1891   1              OSD_ON();
+1892   1              
+1893   1      }
+1894          
+1895          
+1896          //----------------+jwshin 120224
+1897          void ShowMonSelMsg(unsigned char Val)
+1898          {
+1899   1              ucOSDType = POWER_ON_LOGO;
+1900   1              
+1901   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+1902   1              
+1903   1              ucStrAlignment = 2;
+1904   1              ucStrWidth = ucOSDWidth;
+1905   1              usFontIndex = 48;
+1906   1              
+1907   1              WriteArialFont(MonSel1_Tab[Val]);
+1908   1              WriteXY_String(0,0,4);
+1909   1              
+1910   1              if(Val==0) {                            // +jwshin 120224 Button A가 Select 되어 있을 경우에만, RGB SW 상태를 Display 한다..
+1911   2                      if(!Read24C16(EPADDR_RGB_SW1)) {
+1912   3                              WriteArialFont(RGBSel_Tab[0]);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 32  
+
+1913   3                      }
+1914   2                      else {
+1915   3                              WriteArialFont(RGBSel_Tab[1]);
+1916   3                      }
+1917   2                      WriteXY_String(0,0,5);
+1918   2              }
+1919   1              
+1920   1              WriteArialFont(DomainDisplay_Tab[0]);
+1921   1              WriteXY_String(0,0,6);
+1922   1      
+1923   1              OSD_ON();
+1924   1              if(bInSync == FALSE) {
+1925   2                      Set_usOSD2Timer_10ms((unsigned short)ucOSDTimer*100);                           // +jwshin 120302
+1926   2              }
+1927   1              else {
+1928   2                      Set_usOSD2Timer_10ms(300);                              // +jwshin 120302
+1929   2              }
+1930   1              
+1931   1      }
+1932          //----------------------------------    
+1933                  
+1934                  
+1935          //----------------- +jwshin 120224
+1936          void ShowRGBStatus(void)
+1937          {
+1938   1              ucOSDType = POWER_ON_LOGO;
+1939   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+1940   1              
+1941   1              ucStrAlignment = 2;
+1942   1              ucStrWidth = ucOSDWidth;
+1943   1              usFontIndex = 48;
+1944   1              
+1945   1              if(Read24C16(EPADDR_RGB_SW1)) {
+1946   2                      WriteArialFont(RGBSel_Tab[0]);
+1947   2              }
+1948   1              else {
+1949   2                      WriteArialFont(RGBSel_Tab[1]);
+1950   2              }
+1951   1              WriteXY_String(0,0,4);
+1952   1              OSD_ON();
+1953   1              if(bInSync == FALSE) {
+1954   2                      Set_usOSD2Timer_10ms((unsigned short)ucOSDTimer*100);                           // +jwshin 120302
+1955   2              }
+1956   1              else {
+1957   2                      Set_usOSD2Timer_10ms(300);                              // +jwshin 120302
+1958   2              }
+1959   1      }
+1960          
+1961          void ShowSourceMsg(void)
+1962          {
+1963   1      //printf("ShowSourceMsg\r\n");
+1964   1              ucOSDType = SOURCE_MSG;
+1965   1              
+1966   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+1967   1              
+1968   1              ucStrAlignment = 2;
+1969   1              ucStrWidth = ucOSDWidth;
+1970   1              usFontIndex = 48;
+1971   1              
+1972   1              //-------------- +jwshin 120302
+1973   1              if(bInSync == TRUE) {
+1974   2                      if(ucPowerStatus == (SoftPowerOnFlag|mSource_VGA))
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 33  
+
+1975   2                              WriteArialFont(SrcAnalogStrTab[ucLanguage]);
+1976   2                      else if(ucPowerStatus == (SoftPowerOnFlag|mSource_DVI))
+1977   2                              WriteArialFont(SrcDigitalStrTab[ucLanguage]);
+1978   2                      else  if(ucPowerStatus == (SoftPowerOnFlag|mSource_HDMI))
+1979   2                              WriteArialFont(HDMI_StrTab[ucLanguage]);
+1980   2                      else
+1981   2                              WriteArialFont(VIDEO_StrTab[ucLanguage]);
+1982   2              }
+1983   1              else {
+1984   2                      WriteArialFont(NoVideoStrTab[ucLanguage]);      
+1985   2              }
+1986   1      
+1987   1              WriteXY_String(0,0,4);
+1988   1              
+1989   1              //---------------- +jwshin 120224
+1990   1              if(!Read24C16(EPADDR_RGB_SW1)) {
+1991   2                      WriteArialFont(RGBSel_Tab[0]);
+1992   2              }
+1993   1              else {
+1994   2                      WriteArialFont(RGBSel_Tab[1]);
+1995   2              }
+1996   1              WriteXY_String(0,0,6);
+1997   1              //--------------------------------------
+1998   1              OSD_ON();
+1999   1              Set_usOSDTimer_10ms(300);
+2000   1      }
+2001          
+2002          void ShowOutOfRangeOver(void)
+2003          {
+2004   1      //unsigned char i;
+2005   1              if(bShowOutRange == FALSE){
+2006   2      //printf("ShowOutOfRangeOver0\r\n");
+2007   2                      ucOSDType = OUT_RANGE;
+2008   2      
+2009   2                      OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2010   2      
+2011   2                      ucStrAlignment = 2;
+2012   2                      ucStrWidth = ucOSDWidth;
+2013   2                      usFontIndex = 48;
+2014   2                      WriteArialFont(OutOfRangeOverStrTab[ucLanguage]);
+2015   2                      WriteXY_String(0,0,4);
+2016   2                      WriteArialFont(OutOfRangeOverStrTab[LANG_NUM+ucLanguage]);
+2017   2                      WriteXY_String(0,0,5);
+2018   2                      WriteArialFont(OutOfRangeOverStrTab[LANG_NUM*2+ucLanguage]);
+2019   2                      WriteXY_String(0,0,6);
+2020   2                      WriteArialFont(OutOfRangeOverStrTab[LANG_NUM*3+ucLanguage]);
+2021   2                      WriteXY_String(0,0,7);
+2022   2                      OSD_ON();
+2023   2                      usOSDMovingX = MaxMoveX/2;
+2024   2                      usOSDMovingY = MaxMoveY/2;
+2025   2                      Set_usWarningMsgTimer_1s(1800);
+2026   2                      bShowOutRange = TRUE;
+2027   2              }
+2028   1              else{
+2029   2                      SetMovePosition();
+2030   2              }
+2031   1              Set_usPoSvTimer(530);   //480+50        OUTRRANGETimer = 500;
+2032   1      }
+2033          
+2034          void ShowOutOfRange85Hz(void)
+2035          {
+2036   1      //unsigned char i;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 34  
+
+2037   1              bShowOutRange85 = TRUE;
+2038   1              ucOSDType = OUT_RANGE2;
+2039   1      //printf("ShowOutOfRange85Hz\r\n");
+2040   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2041   1              
+2042   1              ucStrAlignment = 2;
+2043   1              usFontIndex = 48;
+2044   1              ucStrWidth = ucOSDWidth;
+2045   1              WriteArialFont(OutOfRange85HzStrTab[ucLanguage]);
+2046   1              WriteXY_String(0,0,4);
+2047   1              WriteArialFont(OutOfRange85HzStrTab[LANG_NUM+ucLanguage]);
+2048   1              WriteXY_String(0,0,5);
+2049   1              WriteArialFont(OutOfRange85HzStrTab[LANG_NUM*2+ucLanguage]);
+2050   1              WriteXY_String(0,0,6);
+2051   1              WriteArialFont(OutOfRange85HzStrTab[LANG_NUM*3+ucLanguage]);
+2052   1              WriteXY_String(0,0,7);
+2053   1      
+2054   1              OSD_ON();
+2055   1              Set_usOSDTimer_10ms(500);
+2056   1      }
+2057          
+2058          void ShowOSD_Lock(void)
+2059          {
+2060   1              SubIconWinOff();
+2061   1              MainIconWinOff();
+2062   1              ucOSDType = LOCK_MSG;
+2063   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2064   1              
+2065   1              ucStrAlignment = 2;
+2066   1              ucStrWidth = ucOSDWidth;
+2067   1              usFontIndex = 48;
+2068   1      
+2069   1              if(bIsOSDLocked == FALSE){
+2070   2                      WriteArialFont(OSD_LockStrTab[ucLanguage]);
+2071   2                      WriteXY_String(0,0,4);
+2072   2                      WriteArialFont(OSD_LockStrTab[LANG_NUM+ucLanguage]);
+2073   2                      WriteXY_String(0,0,5);
+2074   2              }
+2075   1              else{
+2076   2                      WriteArialFont(OSD_LockStrTab[LANG_NUM*2+ucLanguage]);
+2077   2                      WriteXY_String(0,0,4);
+2078   2                      WriteArialFont(OSD_LockStrTab[LANG_NUM*3+ucLanguage]);
+2079   2                      WriteXY_String(0,0,5);
+2080   2              }
+2081   1              OSD_ON();
+2082   1              Set_usOSDTimer_10ms(300);
+2083   1      
+2084   1      }
+2085          
+2086          void ShowDDCCiOnOff(void)
+2087          {
+2088   1              ucOSDType = DDCCI_MSG;
+2089   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2090   1              
+2091   1              ucStrAlignment = 2;
+2092   1              usFontIndex = 48;
+2093   1              ucStrWidth = ucOSDWidth;
+2094   1              if(bIsDDCCiSupported){
+2095   2                      WriteArialFont(DDCCiOnTab1[ucLanguage]);
+2096   2                      WriteXY_String(0,0,4);
+2097   2              }
+2098   1              else{
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 35  
+
+2099   2                      WriteArialFont(DDCCiOffTab1[ucLanguage]);
+2100   2                      WriteXY_String(0,0,4);
+2101   2              }
+2102   1              OSD_ON();
+2103   1              Set_usOSDTimer_10ms(300);
+2104   1      }
+2105          
+2106          void ShowNoSync(void)
+2107          {
+2108   1      
+2109   1      //      bIsFRCMode = 0;
+2110   1              SetFreeRun();
+2111   1              bBGMode = FALSE;                //NSTL "OSD flashes" 2006-01-11
+2112   1              ForceToBackground(0);   //
+2113   1              
+2114   1              ucOSDType = NOSIGNAL;//ucOSDType = AUTO_SIGNAL;
+2115   1              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2116   1              
+2117   1              
+2118   1              ucStrAlignment = 2;
+2119   1              ucStrWidth = ucOSDWidth;
+2120   1              usFontIndex = 48;
+2121   1              WriteArialFont(NoSyncStrTab[ucLanguage]);
+2122   1              WriteXY_String(0,0,5);
+2123   1              OSD_ON();
+2124   1      }
+2125          
+2126          void ShowNoVideo(void)
+2127          {
+2128   1      
+2129   1              if(bShowNoInput == FALSE){
+2130   2      //              bIsFRCMode = 0;
+2131   2                      SetFreeRun();
+2132   2                      
+2133   2                      ucOSDType = OUT_RANGE;
+2134   2                      OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2135   2                      usFontIndex = 48;
+2136   2                      ucStrAlignment = 2;
+2137   2                      ucStrWidth = ucOSDWidth;
+2138   2                      WriteArialFont(NoVideoStrTab[ucLanguage]);                      
+2139   2                      WriteXY_String(0,0,4);
+2140   2                      //----------------- +jwshin 120224 RGB Display...
+2141   2                      if(!Read24C16(EPADDR_RGB_SW1)) {
+2142   3                              WriteArialFont(RGBSel_Tab[0]);
+2143   3                      }
+2144   2                      else {
+2145   3                              WriteArialFont(RGBSel_Tab[1]);
+2146   3                      }
+2147   2                      WriteXY_String(0,0,6);
+2148   2                      //---------------------------------------
+2149   2                      OSD_ON();
+2150   2                      usOSDMovingX = MaxMoveX/2;
+2151   2                      usOSDMovingY = MaxMoveY/2;
+2152   2                      Set_usWarningMsgTimer_1s(20);                           // +jwshin 111209    Timer~!
+2153   2                      Set_usPoSvTimer(350);   //300+100
+2154   2                      bShowNoInput = TRUE;
+2155   2              }
+2156   1              else{
+2157   2                      Set_usPoSvTimer(350);
+2158   2                      SetMovePosition();
+2159   2              }
+2160   1      }
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 36  
+
+2161          
+2162          void ShowDisconnected(void)
+2163          {
+2164   1      //printf("ShowDisconnected\r\n");
+2165   1              if(bShowDiscon == FALSE){
+2166   2                      bIsFRCMode = 0;         //
+2167   2                      SetFreeRun();
+2168   2                      
+2169   2                      ucOSDType = OUT_RANGE;
+2170   2                      OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+2171   2      
+2172   2                      usFontIndex = 48;
+2173   2                      ucStrAlignment = 2;
+2174   2                      ucStrWidth = ucOSDWidth;
+2175   2                      WriteArialFont(DisconnectedStrTab[ucLanguage]);
+2176   2                      WriteXY_String(0,0,4);
+2177   2                      WriteArialFont(DisconnectedStrTab[LANG_NUM+ucLanguage]);
+2178   2                      WriteXY_String(0,0,5);
+2179   2                      OSD_ON();
+2180   2                      usOSDMovingX = MaxMoveX/2;
+2181   2                      usOSDMovingY = MaxMoveY/2;
+2182   2                      Set_usWarningMsgTimer_1s(1800);
+2183   2                      bShowDiscon = TRUE;
+2184   2              }
+2185   1              else{
+2186   2                      SetMovePosition();
+2187   2              }
+2188   1      }
+2189          
+2190          #ifdef ENABLE_TD_       //      THEFT DETERRENCE
+              void ShowTheftOSD(void)
+              {
+              code unsigned char TheftModeStr4[]={18, "Theft Mode Enabled"};
+                      if(bShowTheftOSD == FALSE){
+                              
+                              ucOSDType = THEFT_OSD;
+                              OsdInit(OSD2_WIDTH,OSD2_HIGHT);
+                              usFontIndex = 32;
+                              ucStrAlignment = 2;
+                              ucStrWidth = ucOSDWidth;
+                              WriteArialFont(TheftModeStr4);
+                              WriteXY_String(0,0,5);
+                              OSD_ON();
+                              usOSDMovingX = MaxMoveX/2;
+                              usOSDMovingY = MaxMoveY/2;
+                              Set_usPoSvTimer(350);   //300+100
+                              bShowTheftOSD = TRUE;
+                      }
+                      else{
+                              Set_usPoSvTimer(350);
+                              SetMovePosition();
+                      }
+              }
+              #endif
+2215          
+2216          void SetMovePosition(void)
+2217          {
+2218   1      unsigned short xy;
+2219   1              if(usOSDMovingX < 0x8000){
+2220   2                      usOSDMovingX += 6;
+2221   2                      if(usOSDMovingX >= MaxMoveX){
+2222   3                              usOSDMovingX = 0x8000+MaxMoveX;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 37  
+
+2223   3                      }
+2224   2              }
+2225   1              else{
+2226   2                      usOSDMovingX -= 6;
+2227   2                      if(usOSDMovingX < 0x8000){
+2228   3                              usOSDMovingX = 1;
+2229   3                      }
+2230   2              }
+2231   1              if(usOSDMovingY < 0x8000){
+2232   2                      usOSDMovingY += 6;
+2233   2                      if(usOSDMovingY >= MaxMoveY){
+2234   3                              usOSDMovingY = 0x8000+MaxMoveY;
+2235   3                      }
+2236   2              }
+2237   1              else{
+2238   2                      usOSDMovingY -= 6;
+2239   2                      if(usOSDMovingY <0x8000){
+2240   3                              usOSDMovingY = 1;
+2241   3                      }
+2242   2              }
+2243   1      //      printf("\r\n");
+2244   1      //      printf("MaxMoveX=%d\r\n",MaxMoveX);
+2245   1      //      printf("MaxMoveY=%d\r\n",MaxMoveY);
+2246   1              //xy = (usOSDMovingX & 0x7fff) * 6;
+2247   1              xy = (usOSDMovingX & 0x7fff);
+2248   1              //printf("usOSDMovingX=%d %d\r\n",usOSDMovingX,xy);
+2249   1              WriteWordIIC560(OSD_HS_LI,xy);
+2250   1              //xy = (usOSDMovingY & 0x7fff) * 6;
+2251   1              xy = (usOSDMovingY & 0x7fff);
+2252   1              //printf("usOSDMovingY=%d %d\r\n",usOSDMovingY,xy);
+2253   1              WriteWordIIC560(OSD_VS_LI,xy);
+2254   1              WriteIIC560(OSD_HW,OSD2_WIDTH-1);
+2255   1              WriteIIC560(OSD_VH,OSD2_HIGHT-1);
+2256   1      }
+2257          
+2258          #if 1
+2259          void ShowAging(unsigned char i)
+2260          {
+2261   1      #define OSD3_WIDTH      30
+2262   1      #define OSD3_HIGHT      1
+2263   1      #define OSD3_CCx (PanelWidth - (CHAR_Width * OSD_ZoomX * OSD3_WIDTH)) / 2
+2264   1      #define OSD3_CCy (PanelHeight - (CHAR_Height * OSD_ZoomY * OSD3_HIGHT)) / 2
+2265   1      #define OSD3_RRx (PanelWidth - (CHAR_Width * OSD_ZoomX * OSD3_WIDTH))
+2266   1      #define OSD3_BBy (PanelHeight - (CHAR_Height * OSD_ZoomY * OSD3_HIGHT))
+2267   1      
+2268   1      
+2269   1      
+2270   1      code unsigned char Str[]={      32,"Auto + Menu : Quit burn in mode."};
+2271   1              WriteIIC560(OSD_CTRL1,0x00);
+2272   1              WriteIIC560(WIN_SEL,0x00);
+2273   1              bShowAging = TRUE;
+2274   1              ucOSDType = AUTO_SIGNAL;
+2275   1              ucStrWidth = OSD3_WIDTH;
+2276   1              switch(i){
+2277   2              case 0://black
+2278   2                      ucStrAlignment = 2;
+2279   2                      WriteWordIIC560(OSD_HS_LI,OSD3_CCx);
+2280   2                      WriteWordIIC560(OSD_VS_LI,OSD3_CCy);
+2281   2                      break;
+2282   2              case 4://Red
+2283   2                      ucStrAlignment = 2;
+2284   2                      WriteWordIIC560(OSD_HS_LI,OSD3_CCx);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 38  
+
+2285   2                      WriteWordIIC560(OSD_VS_LI,0);
+2286   2                      break;
+2287   2              case 2://Green
+2288   2                      ucStrAlignment = 1;
+2289   2                      WriteWordIIC560(OSD_HS_LI,OSD3_RRx);
+2290   2                      WriteWordIIC560(OSD_VS_LI,OSD3_CCy);
+2291   2                      break;
+2292   2              case 1://Blue
+2293   2                      ucStrAlignment = 2;
+2294   2                      WriteWordIIC560(OSD_HS_LI,OSD3_CCx);
+2295   2                      WriteWordIIC560(OSD_VS_LI,OSD3_BBy);
+2296   2                      break;
+2297   2              case 7://White
+2298   2                      ucStrAlignment = 0;
+2299   2                      WriteWordIIC560(OSD_HS_LI,0);
+2300   2                      WriteWordIIC560(OSD_VS_LI,OSD3_CCy);
+2301   2                      break;
+2302   2              default:
+2303   2                      ucStrAlignment = 2;
+2304   2                      WriteWordIIC560(OSD_HS_LI,OSD3_CCx);
+2305   2                      WriteWordIIC560(OSD_VS_LI,OSD3_CCy);
+2306   2                      break;
+2307   2              }
+2308   1              WriteIIC560(OSD_HW,OSD3_WIDTH-1);
+2309   1              WriteIIC560(OSD_VH,OSD3_HIGHT-1);
+2310   1              Sleep(40);
+2311   1              ClearOSD();
+2312   1              usFontIndex = 32;
+2313   1              if(i == 7){
+2314   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,AgingColor2);
+2315   2              }
+2316   1              else{
+2317   2                      WriteWordIIC560(OSD_FC_ATTR_LSB,AgingColor1);
+2318   2              }
+2319   1              WriteArialFont(Str);
+2320   1              WriteXY_String(1,0,0);
+2321   1              OSD_ON();
+2322   1      }
+2323          #endif
+2324          
+2325          void SaveData(void)
+2326          {
+2327   1              switch(ucSavePointer){
+2328   2              case svBRIGHTNESS:
+2329   2                      Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+2330   2                      if ( ucLFMode==LF_MODE_OFF)
+2331   2                      {
+2332   3                              ucBrightnessUser = ucBrightness;
+2333   3                              Write24C16(EPADDR_BRIGHT_USER,ucBrightnessUser);//0x36 = brightness user
+2334   3                      }
+2335   2      #if _SmartBright_ == ON
+                              if((ucColorTemperature != COLOR_SRGB)&&(bSmartBrightEnable == ON)){
+                                      //Write24C16(EPADDR_BRIGHTOFFSET_HI,(unsigned char)(usBrightOffset>>8));//0x2e = BrightOffset high
+                                      Write24C16(EPADDR_BRIGHTOFFSET_LO,(unsigned char)usBrightOffset);//0x2f = BrightOffset low
+                              }
+              #endif          
+2341   2                      break;
+2342   2      //      case svPANELIDX:
+2343   2      //              Write24C16(EPADDR_IDX, ucPanelIDX);
+2344   2      //              break;
+2345   2              case svCONTRAST:
+2346   2                      Write24C16(EPADDR_CONTRAST,ucContrast);//0x09 = contrast
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 39  
+
+2347   2                      if ( ucLFMode==LF_MODE_OFF)
+2348   2                      {
+2349   3                              ucContrastUser = ucContrast;
+2350   3                              Write24C16(EPADDR_CONTRAST_USER,ucContrastUser);
+2351   3                      }
+2352   2                      break;
+2353   2              case svCLOCK:
+2354   2                      Write24C16_Short(NVRAM_HTOTAL(ucModeNumber), usHTotal);
+2355   2                      break;
+2356   2              case svPHASE:
+2357   2                      Write24C16(NVRAM_PHASE(ucModeNumber), ucADCPhase);
+2358   2                      break;
+2359   2              case svHPOS:
+2360   2                      Write24C16_Short(NVRAM_HPSTART(ucModeNumber), usHPStart);
+2361   2      //              Write24C16(NVRAM_TIMING_ALTER(ucModeNumber), 1);
+2362   2                      break;
+2363   2              case svVPOS:
+2364   2                      Write24C16_Short(NVRAM_VPSTART(ucModeNumber), usVPStart);               
+2365   2      //              Write24C16(NVRAM_TIMING_ALTER(ucModeNumber), 1);
+2366   2                      break;
+2367   2              case svRED:
+2368   2                      if ( ucLFMode==LF_MODE_OFF)
+2369   2                      {
+2370   3                              Write24C16(EPADDR_RGAIN_USER,ucR_Gain);//0x3e = r gain user
+2371   3                      }
+2372   2                      break;
+2373   2              case svGREEN:
+2374   2                      if ( ucLFMode==LF_MODE_OFF)
+2375   2                      {
+2376   3                              Write24C16(EPADDR_GGAIN_USER,ucG_Gain);//0x3f = g gain user
+2377   3                      }
+2378   2                      break;
+2379   2              case svBLUE:
+2380   2                      if ( ucLFMode==LF_MODE_OFF)
+2381   2                      {
+2382   3                              Write24C16(EPADDR_BGAIN_USER,ucB_Gain);//0x40 = b gain user
+2383   3                      }
+2384   2                      break;
+2385   2              case svOSDX:
+2386   2                      Write24C16(EPADDR_OSDX,ucOSDXPos);//0x15 = OSD position x
+2387   2                      break;
+2388   2              case svOSDY:
+2389   2                      Write24C16(EPADDR_OSDY,ucOSDYPos);//0x16 = OSD position y
+2390   2                      break;
+2391   2              case svBRIGHTNESS_F:
+2392   2                      Write24C16(EPADDR_BRIGHT_FACTORY,ucBrightness);
+2393   2                      Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+2394   2                      if ( ucLFMode==LF_MODE_OFF)
+2395   2                      {
+2396   3                              ucBrightnessUser = ucBrightness;
+2397   3                              Write24C16(EPADDR_BRIGHT_USER,ucBrightnessUser);//0x36 = brightness user
+2398   3                      }
+2399   2      #if _SmartBright_ == ON         
+                              if((ucColorTemperature != COLOR_SRGB)&&(bSmartBrightEnable == ON)){
+                                      //Write24C16(EPADDR_BRIGHTOFFSET_HI,(unsigned char)(usBrightOffset>>8));//0x2e = BrightOffset high
+                                      Write24C16(EPADDR_BRIGHTOFFSET_LO,(unsigned char)usBrightOffset);//0x2f = BrightOffset low
+                              }
+              #endif
+2405   2                      break;
+2406   2              case svCONTRAST_F:
+2407   2      /*
+2408   2                      Write24C16(EPADDR_CONTRAST_FACTORY,ucContrast);
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 40  
+
+2409   2                      Write24C16(EPADDR_CONTRAST,ucContrast);//0x09 = contrast
+2410   2                      if(ucLFMode==LF_MODE_OFF){
+2411   2                              ucContrastUser = ucContrast;
+2412   2                              Write24C16(EPADDR_CONTRAST_USER,ucContrastUser);
+2413   2                      }
+2414   2      */
+2415   2                      Write24C16(EPADDR_RGB_OFFSET,ucRGB_OFFSET);
+2416   2                      break;
+2417   2              case svLANGUAGE:
+2418   2                      Write24C16(EPADDR_OSDLANG,ucLanguage);//0x06 = OSD Language
+2419   2                      break;
+2420   2              case svVOLUME:
+2421   2                      Write24C16(EPADDR_VOLUME, ucVolume);//0x0c = volume
+2422   2                      break;
+2423   2              case svSTANDALONE:
+2424   2                      Write24C16(EPADDR_STANDALONE, (unsigned char)bStandalone);      // 0x27
+2425   2                      break;
+2426   2              case svMUTE:
+2427   2                      Write24C16(EPADDR_MUTE, (unsigned char)bMute);
+2428   2                      break;
+2429   2              case svCOLOR:
+2430   2                      Write24C16(EPADDR_COLOR_TEMP,ucColorTemperature);//0x19 = color temperature select
+2431   2                      break;
+2432   2      #if _SmartBright_ == ON
+                      case svSMARTBRIGHT:
+                              Write24C16(EPADDR_SMARTBRIGHT,(unsigned char)bSmartBrightEnable);
+                              if(bSmartBrightEnable == ON){
+                                      usBrightOffset = DefaultBrightOffset;
+                                      //ucADCCounter = 0;
+                                      //ucBrightADC1 = 0;
+                                      //Write24C16(EPADDR_BRIGHTOFFSET_HI,(unsigned char)(usBrightOffset>>8));//0x2e = BrightOffset high
+                                      Write24C16(EPADDR_BRIGHTOFFSET_LO,(unsigned char)usBrightOffset);//0x2f = BrightOffset low
+                              }
+                              break;
+              #endif
+2444   2              case svTRANSPARENCY:
+2445   2                      Write24C16(EPADDR_TRANSPARENCY, ucTransparency);
+2446   2                      break;
+2447   2              case svOSDTIMEOUT:
+2448   2                      Write24C16(EPADDR_OSDTIMER, ucOSDTimer);
+2449   2                      break;
+2450   2              case svSOURCE:
+2451   2                      Write24C16(EPADDR_INPUT_SRC, ucSource);
+2452   2                      ucPowerStatus = (ucSource | SoftPowerOnFlag);
+2453   2                      Write24C16(EPADDR_POWER, ucPowerStatus);
+2454   2                      break;
+2455   2              case svSATURATION:
+2456   2                      Write24C16(EPADDR_SATURATION, ucSaturation);
+2457   2                      break;
+2458   2              case svTINT:
+2459   2                      Write24C16(EPADDR_TINT, ucTint);
+2460   2                      break;
+2461   2              case svDYBK:
+2462   2                      if(ucDynBKMode == 0){
+2463   3                              SetBrightness();
+2464   3                              iCurDynBk = ucBrightness;
+2465   3                      }
+2466   2                      ucNewDynBk = ucBrightness;
+2467   2                      if(ucLFMode==LF_MODE_OFF){
+2468   3                              Write24C16(EPADDR_DYNAMIC_BKMODE,ucDynBKMode);
+2469   3                      }
+2470   2                      break;
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 41  
+
+2471   2              }
+2472   1              ucSavePointer = svNONE;
+2473   1              ucNewControlValue = 2;
+2474   1      }
+2475          
+2476          void SelectLFMITM(void)
+2477          {
+2478   1      unsigned char i;
+2479   1      
+2480   1              if(ucOSDType == LF_MAIN_MENU){
+2481   2                      i = ucOSDLvl1_Cursor * 2 + 4;
+2482   2              }
+2483   1              else{
+2484   2                      i = ucOSDLvl2_Cursor * 2  + 4;
+2485   2                      ucSource = ucOSDLvl2_Cursor;
+2486   2              }
+2487   1      
+2488   1              MainIconWinOff();
+2489   1              SelectMainIconWin();
+2490   1              WriteIIC560(WIN_HS,0);
+2491   1              WriteIIC560(WIN_HE,17);
+2492   1              WriteIIC560(WIN_VS,i);
+2493   1              WriteIIC560(WIN_VE,i);
+2494   1              WriteIIC560(WIN_CL,iWHITE);
+2495   1              WriteIIC560(OSD_WIN_ATTR,0x80);
+2496   1              WriteIIC560(WIN_BL_HWID,0x01);
+2497   1              WriteIIC560(WIN_BL_RCL,iMAGENTA);
+2498   1              WriteIIC560(WIN_BL_LCL,iMAGENTA);
+2499   1              MainIconWinOn();
+2500   1      }
+2501          
+2502          
+2503          
+2504          
+2505          #include "HDCP.H"
+2506          void HDCPPowerDet()
+2507          {
+2508   1      #if _ENABLE_HDCP_
+2509   1              WriteIIC560(DVI_CTRL15, 0xb3);
+2510   1              ucHDCPFlag=0;
+2511   1              CheckHDCP();
+2512   1              if(ucHDCPFlag) Sleep(1000);
+2513   1              else WriteIIC560(DVI_CTRL15, 0xf3);
+2514   1      #endif
+2515   1      }
+2516          
+2517          /*
+2518          void SourceToAuto()
+2519          {
+2520          //      ucSource = mSource_Auto;
+2521                  ucSavePointer = svSOURCE;
+2522                  OSD_OFF();
+2523                  BackLightOff();
+2524                  ucModeNumber=0xff;
+2525                  ucPowerStatus &= ~InputSourceDVI;
+2526                  InputSourceSelect();
+2527                  bSwitchSource = TRUE;
+2528                  HDCPPowerDet();
+2529          }
+2530          */
+2531          void ChangeInputSource()
+2532          {
+C51 COMPILER V8.12   OSD                                                                   11/09/2015 19:43:37 PAGE 42  
+
+2533   1              ucSource = ucOSDLvl2_Cursor;
+2534   1              ucSavePointer = svSOURCE;       //2007-03-06
+2535   1              OSD_OFF();
+2536   1              BackLightOff();
+2537   1              ucModeNumber=0xff;
+2538   1      //      ucPowerStatus ^= InputSourceDVI;
+2539   1              ucPowerStatus = SoftPowerOnFlag | ucSource;
+2540   1              InputSourceSelect();
+2541   1      //      bShowNotAvailable = TRUE;
+2542   1              bSwitchSource = TRUE;
+2543   1              if((ucSource == mSource_DVI)||(ucSource == mSource_HDMI)){
+2544   2                      HDCPPowerDet();
+2545   2              }
+2546   1      }
+2547          
+2548          void CheckColorTemperature(void)
+2549          {
+2550   1              if(ucColorTemperature == COLOR_SRGB){   //sRGB
+2551   2                      ucColorTemperature = COLOR_6500;
+2552   2                      Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);//0x19 = color temperature select
+2553   2                      SetColorTemp(ucColorTemperature);
+2554   2              }
+2555   1      }
+2556          
+2557          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   9646    ----
+   CONSTANT SIZE    =    331    ----
+   XDATA SIZE       =     24      95
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,658 @@
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE KEYPAD
+OBJECT MODULE PLACED IN .\BIN\KeyPad.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\KeyPad.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mode
+                    -lName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\KeyPad.lst) OBJECT(.\BIN\KeyPad.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          #include "sRGB.H"
+   3          #include "NT686xx_MCU_REG.H"
+   4          #include "NVRAM.H"
+   5          #include "Scaler.H"
+   6          #include "AutoAdj.H"
+   7          #include "OSD.H"
+   8          #include "UserAdj.H"
+   9          #include "Board.H"
+  10          //#include "stdio.H"
+  11          #include "mis.H"
+  12          #include "ddc_ci.H"
+  13          #include "8051.H"       // EA
+  14          #include "ROM_Map.H"
+  15          #include "factory.H"
+  16          #include "modehandle.H"
+  17          #include "SmartBright.H"
+  18          #include "NT686xx_SC_REG.H"
+  19          #include "BFControl.H"
+  20          #include "OSD_LF.H"
+  21          #include "MCU.H"
+  22          //#define KeyPadDebug
+  23          
+  24          #ifdef KeyPadDebug
+                      #define NVTprint(s,a1) printf(s,a1)
+              #else
+  27                  #define NVTprint(s,a1)
+  28          #endif
+  29          
+  30          
+  31          void ScanKeyPad(void)
+  32          {
+  33   1      
+  34   1      #define KeyTypLevel0 0x02//0x0b//0x02//0x13
+  35   1      #define KeyTypLevel1 0x16//0x1e//0x2c
+  36   1      #define KeyTypLevel2 0x34//0x2c//0x5b
+  37   1      #define KeyTypLevel3 0x5f
+  38   1      #define KeyTypLevel4 0x6f
+  39   1      #define KeyTypLevel5 0x7f
+  40   1      
+  41   1      #define KeyMinLevel0 ((KeyTypLevel0+KeyTypLevel1)/2)                            //0x0c
+  42   1      #define KeyMinLevel1 ((KeyTypLevel1+KeyTypLevel2)/2)                            //0x25                  
+  43   1      #define KeyMinLevel2 ((KeyTypLevel2+KeyTypLevel3)/2)                            //0x49
+  44   1      #define KeyMinLevel3 ((KeyTypLevel3+KeyTypLevel4)/2)                            //0x67
+  45   1      #define KeyMinLevel4 ((KeyTypLevel4+KeyTypLevel5)/2)                            //0x77
+  46   1      
+  47   1      unsigned char KeyPad1,KeyPad2;
+  48   1      
+  49   1              Set_usTimer1_1ms(0);
+  50   1              do{     
+  51   2                      WaitADConversion();
+  52   2      
+  53   2                      KeyPad1 = Key1_Input();
+  54   2                      KeyPad2 = Key2_Input();
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 2   
+
+  55   2      
+  56   2                      //------------- Power Button Check  +jwshin 120223
+  57   2                      if(!(PortC & BIT_2))
+  58   2                      {
+  59   3                              KeyPad2 = 0x02;                 
+  60   3                              //----------- +jwshin PortC의 Bit2를 검지해서, 강제로 A/D Value를 입력함.                                                       
+  61   3                      }
+  62   2      
+  63   2                      //----------- +jwshin 120224 Copy Button Detection
+  64   2                      if((Button_Copy() == LOW))
+  65   2                      {
+  66   3                              KeyPad1 = 0x35;
+  67   3                      }
+  68   2                      //------------------
+  69   2      
+  70   2                      //--------- A/D Value를 읽기위해, Routine Call..~!!!
+  71   2      //              ShowOSD_Debug(KeyPad2);                         // +jwshin 110418
+  72   2                      
+  73   2      //      printf("1");
+  74   2                      
+  75   2                      
+  76   2                      if(IsAC_PowerOff()){
+  77   3                              bExitSysLoop = TRUE;
+  78   3                              printf("LowPower\r\n");
+  79   3                              return;
+  80   3                      }
+  81   2      
+  82   2      #if _SmartBright_ == ON
+                              // SmartBrightControl
+                              ucBrightADC = Bright_Input();
+              #if 1
+                              SmartBright();
+              #else           
+                              if(ucBrightADC1 < ucBrightADC) ucBrightADC1=ucBrightADC;
+              
+                              if(++ucADCCounter > 3){ 
+                                      ucBrightADC = ucBrightADC1;
+                                      ucADCCounter = 0;
+                                      ucBrightADC1 = 0;
+                                      //printf("ucBrightADC(MAX)=%d\r\n",(unsigned short)ucBrightADC);
+                                      SmartBright();
+                              }
+              #endif
+              #endif
+  99   2              
+ 100   2                      //printf("KeyInput=%02x,%02x\r\n",(unsigned short)KeyPad1,(unsigned short)KeyPad2);             // +jwshin 110526
+ 101   2              
+ 102   2                      ADC_CON = DEFAULT_ADC_CON;              //Channel;  // Start AD Convert
+ 103   2                      
+ 104   2                      
+ 105   2                      if(KeyPad1 < KeyMinLevel0)
+ 106   2                              KeyTemp1 = 0x01;
+ 107   2                      else if(KeyPad1 < KeyMinLevel1)
+ 108   2                              KeyTemp1 = 0x02;
+ 109   2                      else if(KeyPad1 < KeyMinLevel2)
+ 110   2                              KeyTemp1 = 0x08;
+ 111   2                      else
+ 112   2                              KeyTemp1 = 0x00;
+ 113   2                              
+ 114   2                      if(KeyPad2 < KeyMinLevel0)
+ 115   2                              KeyTemp1 |= 0x10;
+ 116   2                      else if(KeyPad2 < KeyMinLevel1)
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 3   
+
+ 117   2                              KeyTemp1 |= 0x20;
+ 118   2                      else if(KeyPad2 < KeyMinLevel2)
+ 119   2                              KeyTemp1 |= 0x30;
+ 120   2                      else
+ 121   2                              KeyTemp1 |= 0x00;
+ 122   2      
+ 123   2                      if(KeyTemp1 != KeyTemp2){
+ 124   3                              //printf("KeyInput=%02x,%02x\r\n",(unsigned short)KeyPad1,(unsigned short)KeyPad2);             // +jwshin 110526
+ 125   3                              //printf("KeyTemp=%02x,%02x\r\n",(unsigned short)KeyTemp1,(unsigned short)KeyTemp2);            // +jwshin 110526
+ 126   3                              KeyTemp2 = KeyTemp1;
+ 127   3                              bKeyChanged = TRUE;
+ 128   3                              Set_usTimer1_1ms(KEY_STABLE_TIME);
+ 129   3                      }
+ 130   2                      
+ 131   2                      
+ 132   2                      
+ 133   2      #if 0
+              //--------------------------------- -jwshin 111208 이 Routine은 사용하지 않음...
+              //check power key
+              //      -----------------------------------
+              //              Power button down
+                              if((GetPowerKeyStatus() == LOW)&&( bPowerKeyFlag == FALSE) ){
+                                      bPowerKeyFlag = TRUE;
+                                      bKeyChanged = TRUE;
+                                      Set_usTimer1_1ms(KEY_STABLE_TIME);
+              //                      printf("bPowerKeyFlag == TRUE\r\n");
+                              }
+              
+              //      -----------------------------------
+              //              Power button up
+                      //      printf("test %x\r\n", (unsigned short)bPowerKeyFlag);
+                              if((GetPowerKeyStatus() != LOW)&&(bPowerKeyFlag == TRUE)){
+                                      bPowerKeyFlag = FALSE;
+                                      bKeyChanged = TRUE;
+                                      Set_usTimer1_1ms(KEY_STABLE_TIME);
+                      //              printf("bPowerKeyFlag == FALSE\r\n");
+                              }
+              //---------------------------------------------------------------------------------             
+              #endif
+ 156   2              }while(Get_usTimer1_1ms() != 0);
+ 157   1      
+ 158   1      //change key
+ 159   1              if(bKeyChanged == TRUE){
+ 160   2                      bKeyChanged = FALSE;
+ 161   2                      ucCurKey = KeyTemp2;
+ 162   2                      //--------------- +jwshin 111208
+ 163   2                      if(ucCurKey == FactoryKey) {
+ 164   3                              printf("EEPROM Init...2011.12 jwshin...\r\n");                  // +jwshin 111208
+ 165   3                              InitEEPROM(1);
+ 166   3                              ucCurKey = IGNORE_KEY;
+ 167   3                      }
+ 168   2                      //----------------------------------------
+ 169   2                      
+ 170   2                      
+ 171   2                      
+ 172   2                      //--------------------- bPowerKeyFlag 도 사용하지 않음...
+ 173   2                      if(bPowerKeyFlag == TRUE){
+ 174   3      //                      printf("bPowerKeyFlag\r\n");
+ 175   3                      if((ucCurKey == FactoryKey)&&(ucPowerStatus < 0x80)){   //entry factory mode
+ 176   4                              FactoryEnterMode();                                                             
+ 177   4      #ifdef BenQ_FACTORY
+                                      BenQ_EnterFactoryMode();
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 4   
+
+              #endif
+ 180   4      
+ 181   4                              }
+ 182   3                              ucCurKey = POWER_KEY;
+ 183   3                      }
+ 184   2                      //------------------------------------------------
+ 185   2                      else{
+ 186   3                      if((bVideoMuted == TRUE)&&(bIsBurnInEnabled == TRUE)&&(ucCurKey == QuitBurninKey)&&(bShowAging == TRUE))
+             -{
+ 187   4                              bIsBurnInEnabled = FALSE;
+ 188   4                              Write24C16(EPADDR_BURNIN, bIsBurnInEnabled);//0x14 = Burn-in mode               
+ 189   4      //                      Write24C16(EPADDR_FACTORY, 0 );
+ 190   4                              ucCurKey = IGNORE_KEY;
+ 191   4                      }
+ 192   3                      }
+ 193   2      
+ 194   2                      if ((ucCurKey == IGNORE_KEY) && (ucPrevKey == FUNC_KEY) && !bIsOSDLocked)
+ 195   2                              ucCurKey = LF_KEY;
+ 196   2      
+ 197   2                      if (ucOSDType == LFDEMO && ucCurKey != FUNC_KEY )
+ 198   2                              ucCurKey = IGNORE_KEY;
+ 199   2      
+ 200   2      #ifdef ENABLE_TD_                       //      THEFT DETERRENCE
+                              if(ucTD_State == TD_THEFT){
+                                      ucCurKey = IGNORE_KEY;
+                              }
+              #endif
+ 205   2      //printf("ucCurKey=%02x,%02x\r\n",(unsigned short)ucCurKey,(unsigned short)ucPrevKey);  // +jwshin 110526
+ 206   2                      
+ 207   2      // set repeat timer
+ 208   2                      ucPrevKey = ucCurKey;
+ 209   2                      if (ucCurKey == FUNC_KEY)
+ 210   2                              ucTime2RepeatKey = 255;
+ 211   2                      else
+ 212   2                              ucTime2RepeatKey = KEY_HOLDING_TIME;
+ 213   2      //release Repeat mark
+ 214   2              //      THEFT DETERRENCE
+ 215   2      //              if(ucCurKey == MENU_KEY || ucCurKey == DDCCiHotKey ||ucCurKey == TDResetKey||ucCurKey == QuickResetKey
+             -)
+ 216   2                      if(ucCurKey == MENU_KEY || ucCurKey == DDCCiHotKey ||ucCurKey == QuickResetKey )
+ 217   2                      {
+ 218   3                              RepeatCounter = 60;
+ 219   3                      }
+ 220   2                      else if ( ucCurKey==IGNORE_KEY ){
+ 221   3                      }
+ 222   2              }
+ 223   1              //---------------------------------- Power Key가 On되면, 여기로 진입..~!
+ 224   1              else if((ucPowerStatus & SoftPowerOnFlag) !=0){ // ONLY IN DC ON
+ 225   2                      if(ucTime2RepeatKey == 0){
+ 226   3                              if((ucPrevKey == MENU_KEY)&&(bVideoMuted == FALSE)){
+ 227   4                                      ucTime2RepeatKey = 10;  //6 Sec
+ 228   4                                      if(RepeatCounter != 0){
+ 229   5                                              if(--RepeatCounter == 0){
+ 230   6                                                      if(bIsOSDLocked == FALSE){
+ 231   7                                                              bIsOSDLocked = TRUE;            //change to osd lock
+ 232   7                                                              Write24C16(EPADDR_OSDLOCK, bIsOSDLocked);//0x05 = osd lock
+ 233   7                                                      }
+ 234   6                                                      else{
+ 235   7                                                              bIsOSDLocked = FALSE;           //change to osd unlock
+ 236   7                                                              Write24C16(EPADDR_OSDLOCK, bIsOSDLocked);//0x05 = osd lock
+ 237   7                                                      }
+ 238   6                                                      ShowOSD_Lock();
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 5   
+
+ 239   6                                                      ucCurKey = IGNORE_KEY;
+ 240   6                                                      ucPrevKey = IGNORE_KEY;
+ 241   6                                              }
+ 242   5                                      }
+ 243   4                              }
+ 244   3      //#ifdef ENABLE_TD_                     //      THEFT DETERRENCE
+ 245   3                              else if((ucPrevKey == DDCCiHotKey)&&(bVideoMuted == FALSE)){
+ 246   4                                      ucTime2RepeatKey = 10;  //6 Sec
+ 247   4                                      if(RepeatCounter != 0){
+ 248   5                                              if(--RepeatCounter == 0){
+ 249   6                                                      if(bIsDDCCiSupported == FALSE){
+ 250   7                                                              bIsDDCCiSupported = TRUE;               //change to osd lock
+ 251   7                                                              Write24C16(EPADDR_DDCCI, bIsDDCCiSupported);//0x05 = osd lock
+ 252   7                                                              StartDDCCI();
+ 253   7                                                      }
+ 254   6                                                      else{
+ 255   7                                                              bIsDDCCiSupported = FALSE;              //change to osd unlock
+ 256   7                                                              Write24C16(EPADDR_DDCCI, bIsDDCCiSupported);//0x05 = osd lock
+ 257   7                                                              StopDDCCI();
+ 258   7                                                      }
+ 259   6                                                      OSD_OFF();      // RELOAD FONT AFTER SOURCE MENU
+ 260   6                                                      ShowDDCCiOnOff();
+ 261   6                                                      ucCurKey = IGNORE_KEY;
+ 262   6                                                      ucPrevKey = IGNORE_KEY;
+ 263   6                                              }
+ 264   5                                      }
+ 265   4                              }
+ 266   3                              else if(ucPrevKey == FUNC_KEY){
+ 267   4                                      ucCurKey = LF_DEMO_KEY;
+ 268   4                                      ucPrevKey = LF_DEMO_KEY;
+ 269   4                              }
+ 270   3                              else if(((ucOSDType >= OSDOFF)&&(ucOSDType <= DIRECT_MENU))||
+ 271   3                                      (ucOSDType == FACTORY) ||
+ 272   3                                      (ucOSDType == OUT_RANGE2)){
+ 273   4                                      switch(ucPrevKey){
+ 274   5                                      case UpKey:
+ 275   5                                      case DownKey:
+ 276   5                                              //if (ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source) break;
+ 277   5      
+ 278   5                                              ucCurKey = ucPrevKey;
+ 279   5      
+ 280   5                                              if( ucOSDType==MAIN_MENU || ucOSDType ==SUB_MENU )
+ 281   5                                                      ucTime2RepeatKey = 50;
+ 282   5                                              else
+ 283   5                                                      ucTime2RepeatKey = KEY_REPEATING_TIME;
+ 284   5                                              break;
+ 285   5                                      }
+ 286   4                              }
+ 287   3                      }
+ 288   2              }
+ 289   1      }
+ 290          
+ 291          void CheckKey(void)
+ 292          {
+ 293   1      
+ 294   1              ScanKeyPad();
+ 295   1      
+ 296   1      //      if ( ucCurKey == IGNORE_KEY ) return;
+ 297   1      //power saving
+ 298   1              if((ucPowerStatus & SoftPowerOnFlag) == 0){
+ 299   2                      if(ucCurKey == UpKey){
+ 300   3                              ucModeNumber = 0xff;
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 6   
+
+ 301   3                      }
+ 302   2                      if(ucCurKey == DownKey){
+ 303   3                              ucModeNumber--;
+ 304   3                      }
+ 305   2                      if(ucCurKey != POWER_KEY){
+ 306   3                              ucCurKey = IGNORE_KEY;
+ 307   3                      }
+ 308   2              }
+ 309   1              else if(bIsOSDLocked && ucCurKey!=IGNORE_KEY ){
+ 310   2                      if(!bVideoMuted){
+ 311   3                              if(ucOSDType != OSDOFF )
+ 312   3                                      OSD_OFF();
+ 313   3                              else 
+ 314   3                                      ShowOSD_Lock();
+ 315   3                      }
+ 316   2                       ucCurKey = IGNORE_KEY;
+ 317   2              }
+ 318   1              else if((IsPanelPowerOn() == OFF)||
+ 319   1                      (bOutOfLimit && !(ucOSDType == DIRECT_MENU && ucOSDLvl1_Cursor == mDirect_Source)) ||
+ 320   1                      (bVideoMuted == TRUE)){
+ 321   2      
+ 322   2      
+ 323   2                      if(ucCurKey==INPUT_KEY && !bDCReset){
+ 324   3                              bForceToSleep = FALSE;
+ 325   3                              ScalerPowerUp();
+ 326   3                      
+ 327   3                              if(bOutOfLimit){
+ 328   4                                      Set_usPoSvTimer(0);     //LET ShowOutOfRangeOver() DISABLED
+ 329   4                              }       
+ 330   3                      
+ 331   3                              OSD_OFF();
+ 332   3                              bBGMode = FALSE;
+ 333   3                              ForceToBackground(0);
+ 334   3                              SourceMenu();
+ 335   3                              BackLightOn();
+ 336   3                              
+ 337   3                              Set_usOSDTimer_10ms(500);
+ 338   3                              ucPrevKey = IGNORE_KEY;
+ 339   3                      }
+ 340   2      
+ 341   2      
+ 342   2                      if(ucCurKey != POWER_KEY){                                                                                              // +jwshin 120227  PowerSaving 모드에서 Power Key를 제외한 모든 Ke
+             -y Disable...
+ 343   3                              if((bInSync==FALSE)&&(bPowerSaveFlag==FALSE)) {                                         // +jwshin 120227                                        단, No Signal 이고, PowerS
+             -aving 이 아닌 상태에서는 Mode 전환 진입 허용
+ 344   4                              }
+ 345   3                              else {
+ 346   4                                      ucCurKey = IGNORE_KEY;
+ 347   4                              }
+ 348   3                      }
+ 349   2              }
+ 350   1      
+ 351   1      //if ( ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source )     printf("usOSDTimer_10ms=%d\r\n",usOSDT
+             -imer_10ms);
+ 352   1      
+ 353   1              if(ucCurKey != IGNORE_KEY && ucCurKey !=POWER_KEY ){
+ 354   2                      if(ucCurKey != AUTO_KEY && usVSync > V_UPPER_BOUND && !(ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDir
+             -ect_Source)){
+ 355   3                              //if ( bShowOutRange85 && ucCurKey== DownKey )
+ 356   3                              if(ucCurKey==INPUT_KEY){
+ 357   4                                      if(bShowOutRange85){
+ 358   5                                              OSD_OFF();
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 7   
+
+ 359   5                                              bShowOutRange85 = FALSE;
+ 360   5                                      }
+ 361   4                              }
+ 362   3                              else{
+ 363   4                                      if(bShowOutRange85 ==  FALSE)
+ 364   4                                              ShowOutOfRange85Hz();
+ 365   4                                      ucCurKey = IGNORE_KEY;
+ 366   4                              }
+ 367   3                      }
+ 368   2                      else if(ucOSDType==SOURCE_MSG || ucOSDType==BEST_MSG){
+ 369   3                              OSD_OFF();
+ 370   3                              ucCurKey = IGNORE_KEY;
+ 371   3                      }
+ 372   2              }
+ 373   1              switch(ucCurKey){
+ 374   2      //      printf("%d \n",ucCurKey);                       // +jwshin 110527       
+ 375   2              case POWER_KEY:         //POWER
+ 376   2                      ucCurKey = IGNORE_KEY;
+ 377   2                      bShowAging = 0;
+ 378   2                      if((ucPowerStatus & SoftPowerOnFlag) == 0){
+ 379   3                              ucPowerStatus |= SoftPowerOnFlag;       //normal
+ 380   3                              Write24C16(EPADDR_POWER, ucPowerStatus);//0x04 = Power Status
+ 381   3                              bInSync = FALSE;
+ 382   3                              
+ 383   3                              if(bVideoMuted == FALSE){
+ 384   4                                      bVideoMuted = TRUE;
+ 385   4                                      Set_usPoSvTimer(500);
+ 386   4                              }
+ 387   3      
+ 388   3                              bBGMode = FALSE;
+ 389   3                              ForceToBackground(0);   //Set fource to background
+ 390   3                              ScalerPowerUp();
+ 391   3                              if(ucModeNumber == 0xfc){
+ 392   4      //                              LED_RedOn();                            // -jwshin 111213
+ 393   4                                      InitEEPROM(1);                  
+ 394   4                                      EA = 0;
+ 395   4                                      while(1){};
+ 396   4                              }
+ 397   3                              
+ 398   3                              ucModeNumber = 0xff;
+ 399   3                              
+ 400   3              //SLOW UP FOR BOBO
+ 401   3      /*              if((!bMute)&&(bStandalone == 0)){
+ 402   3                              if(ucVolume!=0){
+ 403   3                                      ucVolume = 1;
+ 404   3                                      SetVolume();
+ 405   3                              }
+ 406   3                      } */                                    //-jwshin 111214
+ 407   3      
+ 408   3                              bShowDiscon = FALSE;    //clear display flag
+ 409   3                              bShowOutRange = FALSE;
+ 410   3                              bShowOutRange85 = FALSE;
+ 411   3                              bDCReset = TRUE;
+ 412   3                              //InputSourceSelect();
+ 413   3                              if(Read24C16(EPADDR_BURNIN) != 0){
+ 414   4                                      FactoryEnterMode();                     
+ 415   4                      #ifdef BenQ_FACTORY
+                                              BenQ_EnterFactoryMode();
+                              #endif                                                          
+ 418   4                              }
+ 419   3      
+ 420   3                              LoadModeIndependentSettings();
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 8   
+
+ 421   3                              LoadFont();
+ 422   3      
+ 423   3      /*                      if(ucSource == mSource_DVI)
+ 424   3                                      ucPowerStatus |= InputSourceDVI;
+ 425   3                              else
+ 426   3                                      ucPowerStatus &= ~InputSourceDVI;*/
+ 427   3                              InputSourceSelect();                    
+ 428   3                      }
+ 429   2                  else{
+ 430   3                              OSD_OFF();
+ 431   3      
+ 432   3                              ucPowerStatus &= ~SoftPowerOnFlag;      //power off
+ 433   3                              Write24C16(EPADDR_POWER, ucPowerStatus);//0x04 = Power Status
+ 434   3      
+ 435   3                              BF_DisableWindow(BF_WINDOW_1);
+ 436   3                              BF_DisableWindow(BF_WINDOW_2);
+ 437   3      
+ 438   3                              if(bFactoryMode == TRUE){
+ 439   4                                      ReleaseFactoryMode();
+ 440   4                              }
+ 441   3                              PowerSaving();
+ 442   3                              WriteIIC560(DVI_CTRL15,0xb3);   // DVI Power Consumptipn 2006-03-27
+ 443   3                              bStatusReport = 0;      
+ 444   3      //                      ClearNewModeLED();
+ 445   3                              LED_RedOff();
+ 446   3                              LED_GrnOff();
+ 447   3                              COPYLED_GrnOff();                       // +jwshin 120224
+ 448   3      //                      SEL1_GrnOff();                  // +jwshin 120224
+ 449   3      //                      SEL2_GrnOff();
+ 450   3      
+ 451   3      
+ 452   3                              AUDIO_MUTE();
+ 453   3                              AMP_STBY();
+ 454   3      
+ 455   3                      }
+ 456   2                      break;
+ 457   2              case MENU_KEY:          //MENNU 
+ 458   2                      MainMenu();
+ 459   2                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 460   2                      ucCurKey = IGNORE_KEY;
+ 461   2                      break;
+ 462   2              case UpKey:             //up
+ 463   2                      ItemUp();
+ 464   2                      ucCurKey = IGNORE_KEY;
+ 465   2                      break;
+ 466   2              case DownKey:           //Down
+ 467   2                      ItemDown();
+ 468   2                      ucCurKey = IGNORE_KEY;
+ 469   2                      break;
+ 470   2              case INPUT_KEY:
+ 471   2                      if(bFactoryMode == TRUE){
+ 472   3                              if(ucOSDType==OSDOFF||ucOSDType==OUT_RANGE2){
+ 473   4                                      FactoryShowMenu();
+ 474   4                              }
+ 475   3                      }
+ 476   2                      else{
+ 477   3                              if(ucOSDType==OSDOFF||ucOSDType==OUT_RANGE2){
+ 478   4                                      OSD_OFF();
+ 479   4                                      SourceMenu();
+ 480   4                              }
+ 481   3                              else if((ucOSDType == DIRECT_MENU)&&(ucOSDLvl1_Cursor == mDirect_Source)){
+ 482   4                                      if(++ucOSDLvl2_Cursor > mSource_VIDEO )
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 9   
+
+ 483   4                                              ucOSDLvl2_Cursor = mSource_VGA;
+ 484   4                                      SelectLFMITM();
+ 485   4                              }
+ 486   3                              else{
+ 487   4                                      OSD_OFF();
+ 488   4                              }
+ 489   3                              Set_usOSDTimer_10ms(500);
+ 490   3                      }
+ 491   2                      ucCurKey = IGNORE_KEY;
+ 492   2                      break;
+ 493   2              case LF_KEY:
+ 494   2                      if(ucOSDType == LF_MAIN_MENU){
+ 495   3                              LFMenuControl(LFDown);                  
+ 496   3                              Set_usOSDTimer_10ms(500);
+ 497   3                      }
+ 498   2                      else if(ucIsLFDemoMode == FALSE){
+ 499   3                              LFMenuControl(LFOpen);
+ 500   3                              Set_usOSDTimer_10ms(500);
+ 501   3                      }
+ 502   2                      ucCurKey = IGNORE_KEY;
+ 503   2                      break;
+ 504   2              case LF_DEMO_KEY:
+ 505   2      
+ 506   2                      if (ucOSDType == LFDEMO)
+ 507   2                              LFLeaveDemoMode(1);
+ 508   2                      else if (ucOSDType == OSDOFF)
+ 509   2                              LFEnterDemoMode(1);
+ 510   2      
+ 511   2                      ucCurKey = IGNORE_KEY;
+ 512   2                      break;
+ 513   2      
+ 514   2              case AUTO_KEY:                  //Auto
+ 515   2      
+ 516   2                      if(ucOSDType == FACTORY)                // disable AutoKey in Factory Mode
+ 517   2                              return;
+ 518   2                              
+ 519   2                      
+ 520   2                      if(ucOSDType >= MAIN_MENU &&  ucOSDType <= SHOW_SLDR){
+ 521   3                              ExitKey();
+ 522   3                              Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 523   3                              break;
+ 524   3                      }
+ 525   2                      else if((ucSignalType != sigDVI)&&(ucOSDType == OSDOFF)&&(bBGMode == FALSE)){
+ 526   3                              LED_GrnOn();
+ 527   3                              OSD_OFF();
+ 528   3                              ShowAutoAdj();
+ 529   3                              AutoTune();
+ 530   3                              OSD_OFF();
+ 531   3                              if(usVSync > V_UPPER_BOUND) ucOSDType = OUT_RANGE2;
+ 532   3                      }
+ 533   2                      else if(bInSync==FALSE) {                               // +jwshin 120227 신호 없을 때...               Sync Signal이 없을 때...
+ 534   3                      }
+ 535   2                      else
+ 536   2                              OSD_OFF();
+ 537   2                      ucCurKey = IGNORE_KEY;
+ 538   2                      break;
+ 539   2                      
+ 540   2                      //------------- +jwshin 120224    Button Copy 
+ 541   2                      case BUTTON_COPY :
+ 542   2                      if(ucOSDType!=OUT_RANGE) {                              // +jwshin 120227                       
+ 543   3                              OSD_OFF();
+ 544   3                              
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 10  
+
+ 545   3                              if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 0)) {
+ 546   4                                      bCopy_Flag = 1;
+ 547   4                                      Write24C16(EPADDR_COPY_FLAG,bCopy_Flag);
+ 548   4                                      bRGB_SW_Flag = 1;
+ 549   4                                      Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 550   4                                      RGB_SW1_RGB1();
+ 551   4                                      COPYLED_GrnOn();
+ 552   4                              }
+ 553   3                              else if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 1)) {
+ 554   4                                      bCopy_Flag = 0;
+ 555   4                                      Write24C16(EPADDR_COPY_FLAG,bCopy_Flag);
+ 556   4                                      bRGB_SW_Flag = 0;
+ 557   4                                      Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 558   4                                      RGB_SW1_RGB2();
+ 559   4                                      COPYLED_GrnOff();
+ 560   4                              }
+ 561   3                              else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 1)) {
+ 562   4                                      bCopy_Flag = 1;
+ 563   4                                      Write24C16(EPADDR_COPY_FLAG,bCopy_Flag);
+ 564   4                                      bRGB_SW_Flag = 0;
+ 565   4                                      Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 566   4                                      RGB_SW1_RGB2();
+ 567   4                                      COPYLED_GrnOn();
+ 568   4                              }
+ 569   3                              else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 0)) {
+ 570   4                                      bCopy_Flag = 0;
+ 571   4                                      Write24C16(EPADDR_COPY_FLAG,bCopy_Flag);
+ 572   4                                      bRGB_SW_Flag = 1;
+ 573   4                                      Write24C16(EPADDR_RGB_SW1,bRGB_SW_Flag);
+ 574   4                                      RGB_SW1_RGB1();
+ 575   4                                      COPYLED_GrnOff();
+ 576   4                              }
+ 577   3                              else
+ 578   3                              {}
+ 579   3                      }       
+ 580   2                      ucCurKey = IGNORE_KEY;
+ 581   2                      break;
+ 582   2                      
+ 583   2              //------------------- A Scaler 에서 만 사용함... -jwshin 120224 
+ 584   2              //-------------- +jwshin 120223
+ 585   2              /*
+ 586   2              case BUTTON_SEL_KEY_A :
+ 587   2                      //--------------- +jwshin 120224 Select Button A가 선택되었을 경우...
+ 588   2                      Button_En_SelA();
+ 589   2                      SEL1_GrnOn();
+ 590   2                      SEL2_GrnOff();
+ 591   2                      ShowMonSelMsg(0);
+ 592   2                      Write24C16(EPADDR_BUTTON_STATUS,0x01);
+ 593   2                      ucCurKey = IGNORE_KEY;  
+ 594   2                      break;
+ 595   2              case BUTTON_SEL_KEY_B :
+ 596   2                      //--------------- +jwshin 120224 Select Button B가 선택되었을 경우...
+ 597   2                      Button_En_SelB();
+ 598   2                      SEL2_GrnOn();
+ 599   2                      SEL1_GrnOff();
+ 600   2                      ShowMonSelMsg(1);
+ 601   2                      Write24C16(EPADDR_BUTTON_STATUS,0x00);
+ 602   2                      ucCurKey = IGNORE_KEY;
+ 603   2                      break;
+ 604   2              //------------------------------                
+ 605   2              */
+ 606   2              }
+C51 COMPILER V8.12   KEYPAD                                                                04/16/2014 18:12:28 PAGE 11  
+
+ 607   1      }
+ 608          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1432    ----
+   CONSTANT SIZE    =     45    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

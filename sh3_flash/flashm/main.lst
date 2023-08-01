@@ -1,0 +1,203 @@
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:32  PAGE    1
+
+************ OBJECT LISTING ************
+
+FILE NAME: main.c
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+P                         ; File main.c    , Line 32       ; block
+    00000000              _ap_main:                        ; function: ap_main
+                                                           ; frame size=0
+                          ; File main.c    , Line 33       ; block
+                          ; File main.c    , Line 34       ; expression statement
+    00000000 0002                   STC         SR,R0
+    00000002 9332                   MOV.W       L254,R3    ; H'FF0F
+    00000004 2039                   AND         R3,R0
+    00000006 CBF0                   OR          #240,R0
+    00000008 400E                   LDC         R0,SR
+                          ; File main.c    , Line 37       ; expression statement
+    0000000A D418                   MOV.L       L254+2,R4  ; H'B4000000
+    0000000C D218                   MOV.L       L254+6,R2  ; __29fxxx_set_offset
+    0000000E 420B                   JSR         @R2
+    00000010 0009                   NOP
+                          ; File main.c    , Line 38       ; expression statement
+    00000012 D318                   MOV.L       L254+10,R3 ; _comm_init
+    00000014 430B                   JSR         @R3
+    00000016 0009                   NOP
+                          ; File main.c    , Line 40       ; expression statement
+    00000018 D217                   MOV.L       L254+14,R2 ; _ei
+    0000001A 420B                   JSR         @R2
+    0000001C 0009                   NOP
+                          ; File main.c    , Line 41       ; expression statement
+    0000001E 0002                   STC         SR,R0
+    00000020 9323                   MOV.W       L254,R3    ; H'FF0F
+    00000022 2039                   AND         R3,R0
+    00000024 400E                   LDC         R0,SR
+                          ; File main.c    , Line 43       ; expression statement
+    00000026 B00C                   BSR         L240
+    00000028 0009                   NOP
+                          ; File main.c    , Line 45       ; for
+    0000002A A008                   BRA         L250
+    0000002C 0009                   NOP
+    0000002E              L251:                             
+                          ; File main.c    , Line 46       ; block
+                          ; File main.c    , Line 47       ; expression statement
+    0000002E E400                   MOV         #0,R4
+    00000030 D312                   MOV.L       L254+18,R3 ; _send_proc
+    00000032 430B                   JSR         @R3
+    00000034 0009                   NOP
+                          ; File main.c    , Line 48       ; expression statement
+    00000036 E400                   MOV         #0,R4
+    00000038 D211                   MOV.L       L254+22,R2 ; _rec_proc
+    0000003A 420B                   JSR         @R2
+    0000003C 0009                   NOP
+    0000003E              L250:                             
+    0000003E AFF6                   BRA         L251
+    00000040 0009                   NOP
+                          ; File main.c    , Line 50       ; block
+                          ; File main.c    , Line 53       ; block
+    00000042              L240:                            ; function: buffer_clear
+                                                           ; frame size=8
+    00000042 7FF8                   ADD         #-8,R15
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:32  PAGE    2
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+                          ; File main.c    , Line 54       ; block
+                          ; File main.c    , Line 58       ; for
+    00000044 D30F                   MOV.L       L254+26,R3 ; H'0C000000
+    00000046 2F32                   MOV.L       R3,@R15
+    00000048 A008                   BRA         L252
+    0000004A 0009                   NOP
+    0000004C              L253:                             
+                          ; File main.c    , Line 59       ; block
+                          ; File main.c    , Line 60       ; expression statement
+    0000004C 61F2                   MOV.L       @R15,R1
+    0000004E 1F11                   MOV.L       R1,@(4,R15)
+                          ; File main.c    , Line 61       ; expression statement
+    00000050 53F1                   MOV.L       @(4,R15),R3
+    00000052 E2FF                   MOV         #-1,R2
+    00000054 2322                   MOV.L       R2,@R3
+    00000056 63F2                   MOV.L       @R15,R3
+    00000058 7304                   ADD         #4,R3
+    0000005A 2F32                   MOV.L       R3,@R15
+    0000005C              L252:                             
+    0000005C D20A                   MOV.L       L254+30,R2 ; H'0C0FFFFF
+    0000005E 61F2                   MOV.L       @R15,R1
+    00000060 3122                   CMP/HS      R2,R1
+    00000062 8BF3                   BF          L253
+                          ; File main.c    , Line 63       ; block
+    00000064 7F08                   ADD         #8,R15
+    00000066 000B                   RTS
+    00000068 0009                   NOP
+    0000006A              L254:                             
+    0000006A FF0F                   .DATA.W     H'FF0F
+    0000006C B4000000               .DATA.L     H'B4000000
+    00000070 <00000000>             .DATA.L     __29fxxx_set_offset
+    00000074 <00000000>             .DATA.L     _comm_init
+    00000078 <00000000>             .DATA.L     _ei
+    0000007C <00000000>             .DATA.L     _send_proc
+    00000080 <00000000>             .DATA.L     _rec_proc
+    00000084 0C000000               .DATA.L     H'0C000000
+    00000088 0C0FFFFF               .DATA.L     H'0C0FFFFF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:32  PAGE    1
+
+
+******** STATISTICS INFORMATION ********
+
+
+********** ERROR INFORMATION ***********
+
+NUMBER OF ERRORS:           0
+NUMBER OF WARNINGS:         0
+
+
+
+
+******* SOURCE LINE INFORMATION ********
+
+COMPILED SOURCE LINE:       64
+
+
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION (P):                               0000008C Byte(s)
+CONSTANT SECTION (C):                               00000000 Byte(s)
+DATA     SECTION (D):                               00000000 Byte(s)
+BSS      SECTION (B):                               00000000 Byte(s)
+
+ TOTAL PROGRAM SIZE: 0000008C Byte(s)
+
+
+
+********** LABEL INFORMATION ***********
+
+NUMBER OF EXTERNAL REFERENCE SYMBOLS:            5
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:           1
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:            12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** COMMAND PARAMETER ***
+
+
+  /op=0 /cpu=SH3 /endian=b /define=_SHC3_ /show=ob,noso /list main.c 
+

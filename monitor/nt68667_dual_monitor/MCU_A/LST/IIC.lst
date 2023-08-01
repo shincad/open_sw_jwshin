@@ -1,0 +1,424 @@
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN .\BIN\IIC.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\IIC.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\IIC.lst) OBJECT(.\BIN\IIC.obj)
+
+line level    source
+
+   1          #include "Board.H"
+   2          #include "stdio.h"
+   3          #include "8051.H"
+   4          #include "RAM.H"
+   5          #include "IIC.H"
+   6          #include "MCU.H"
+   7          #include "ROM_MAP.H"
+   8          #include "NT686xx_MCU_REG.H"
+   9          #include "UserAdj.H"
+  10          #include "Scaler.H"
+  11          #include <intrins.h>
+  12          
+  13          #if (!PBusProtocol) || FE2P_LIB==OFF
+  14          void IIC_Start(void)
+  15          {
+  16   1      /* start bit */
+  17   1              ISDA = 0;               /* SDA=0 */
+  18   1              IIC_DelayHigh();
+  19   1              ISCL = 0;               /* SCL=0 */
+  20   1      }
+  21          void IIC_Stop(void)
+  22          {
+  23   1      /* stop bit */
+  24   1              ISDA = 0;               /* SDA=0 */
+  25   1              IIC_DelayHigh();
+  26   1              ISCL = 1;
+  27   1              SetISCL();              /* SCL=1 */
+  28   1              ISDA = 1;               /* SDA=1 */
+  29   1      }
+  30          
+  31          void WriteIIC(unsigned char device,unsigned char addr,unsigned char ch)
+  32          {
+  33   1      /* start bit */
+  34   1              IIC_Start();
+  35   1      /* transmit data */
+  36   1              WriteByte(device);
+  37   1              WriteByte(addr);
+  38   1              WriteByte(ch);
+  39   1      /* stop bit */
+  40   1              IIC_Stop();
+  41   1      }
+  42          
+  43          void WriteByte(unsigned char temp)
+  44          {
+  45   1              ISDA = (temp & 0x80);
+  46   1              _nop_();
+  47   1              ISCL = 1;               /* SCL=1 */
+  48   1              SetISCL();              /* SCL=1 */
+  49   1              ISCL = 0;               /* SCL=0 */
+  50   1              ISDA = (temp & 0x40);
+  51   1              _nop_();
+  52   1              ISCL = 1;               /* SCL=1 */
+  53   1              SetISCL();              /* SCL=1 */
+  54   1              ISCL = 0;               /* SCL=0 */
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 2   
+
+  55   1              ISDA = (temp & 0x20);
+  56   1              _nop_();
+  57   1              ISCL = 1;               /* SCL=1 */
+  58   1              SetISCL();              /* SCL=1 */
+  59   1              ISCL = 0;               /* SCL=0 */
+  60   1              ISDA = (temp & 0x10);
+  61   1              _nop_();
+  62   1              ISCL = 1;               /* SCL=1 */
+  63   1              SetISCL();              /* SCL=1 */
+  64   1              ISCL = 0;               /* SCL=0 */
+  65   1              ISDA = (temp & 0x08);
+  66   1              _nop_();
+  67   1              ISCL = 1;               /* SCL=1 */
+  68   1              SetISCL();              /* SCL=1 */
+  69   1              ISCL = 0;               /* SCL=0 */
+  70   1              ISDA = (temp & 0x04);
+  71   1              _nop_();
+  72   1              ISCL = 1;               /* SCL=1 */
+  73   1              SetISCL();              /* SCL=1 */
+  74   1              ISCL = 0;               /* SCL=0 */
+  75   1              ISDA = (temp & 0x02);
+  76   1              _nop_();
+  77   1              ISCL = 1;               /* SCL=1 */
+  78   1              SetISCL();              /* SCL=1 */
+  79   1              ISCL = 0;               /* SCL=0 */
+  80   1              ISDA = (temp & 0x01);
+  81   1              _nop_();
+  82   1              ISCL = 1;               /* SCL=1 */
+  83   1              SetISCL();              /* SCL=1 */
+  84   1              ISCL = 0;               /* SCL=0 */
+  85   1              IIC_DelayHigh();
+  86   1              IIC_ACK();
+  87   1      }
+  88          #endif
+  89          
+  90          #if PBusProtocol
+  91          void WriteIIC_WaitV(unsigned char device,unsigned short addr,unsigned char ch)
+  92          {
+  93   1      unsigned char xdata *Pbus;
+  94   1      Union Page;
+  95   1      
+  96   1              if(device!=SCALER_I2C_ADDR)
+  97   1                      return;
+  98   1      
+  99   1              #if NT68167
+                              usTimer1_1ms = 40;
+                              while( (ReadIIC560(0x187) &BIT_7) )
+                              {
+                                      if(usTimer1_1ms == 0)
+                                              break;
+                              }
+                              
+                              Page.w = addr;
+                              Pbus = 0x80ff;
+                              *Pbus = Page.b[0];      
+                              Pbus = 0x8000 + Page.b[1];
+                              *Pbus = ch;
+                      
+                      #else //#elif SCALAR_BOARD!=PCBA_Q80x67
+ 114   1              
+ 115   1                      Page.w = addr;
+ 116   1                      Pbus = 0x80ff;
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 3   
+
+ 117   1                      *Pbus = Page.b[0];      
+ 118   1                      Pbus = 0x8000 + Page.b[1];
+ 119   1              
+ 120   1                      usTimer1_1ms = 40;
+ 121   1                      while(GetVsyncLevel != LOW)
+ 122   1                      {
+ 123   2                              if(usTimer1_1ms == 0)
+ 124   2                                      break;
+ 125   2                      }
+ 126   1                      *Pbus = ch;
+ 127   1              #endif
+ 128   1      }
+ 129          
+ 130          #else
+              
+              void WriteIIC_WaitV(unsigned char device,unsigned char addr,unsigned char ch)
+              {
+                      IIC_Start();
+                      WriteByte(device);
+                      WriteByte(addr);
+                      WriteByteWaitV(ch);
+                      IIC_Stop();
+              }
+              
+              void WriteByteWaitV(unsigned char temp)
+              {
+              unsigned char i,j;
+                      j=temp;
+                      for (i=0; i<8; i++){
+              //#if NT68167
+              //              if(i == 7){
+              //                      usTimer1_1ms = 40;                      /* timeout 40 */
+              //                      while( (ReadIIC560(0x187) &BIT_7) ){
+              //                              if(usTimer1_1ms == 0){
+              //                                      break;
+              //                              }
+              //                      }
+              //              }
+              //#elif SCALAR_BOARD!=PCBA_Q80x67
+                              if(i == 7){
+                                      usTimer1_1ms = 40;                      /* timeout 40 */
+                                      while(GetVsyncLevel != LOW){
+                                              if(usTimer1_1ms == 0){
+                                                      break;
+                                              }
+                                      }
+                              }
+              
+                              if ((j & 0x80) ==0)
+                                      ISDA = 0;       /* SDA=0 */
+                              else
+                                      ISDA = 1;       /* SDA=1 */
+                              j = j << 1;
+                              ISCL = 1;
+                              SetISCL();              /* SCL=1 */
+                              ISCL = 0;               /* SCL=0 */
+                              IIC_DelayLow();
+                      }
+                      IIC_ACK();
+              }
+              #endif
+ 178          
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 4   
+
+ 179          
+ 180          #if (!PBusProtocol) || FE2P_LIB==OFF
+ 181          void IIC_ACK(void)
+ 182          {
+ 183   1              ISDA = 1;               /* SDA=1 */
+ 184   1              ISCL = 1;               /* SCL=1 */
+ 185   1              SetISCL();              /* SCL=1 */
+ 186   1              usTimer1_1ms = 10;                      /* timeout 10ms */
+ 187   1              while(ISDA != 0){
+ 188   2                      if(usTimer1_1ms == 0){
+ 189   3      #ifdef Debug
+                                      printf("ACK Fail\r\n");
+              #endif
+ 192   3                              EA = 0;
+ 193   3                              break;
+ 194   3                      }
+ 195   2              }
+ 196   1              ISCL = 0;               /* SCL=0 */
+ 197   1      }
+ 198          
+ 199          void SetISCL(void)
+ 200          {
+ 201   1              while(ISCL == 0){};
+ 202   1              _nop_();
+ 203   1              _nop_();
+ 204   1              _nop_();
+ 205   1      }
+ 206          
+ 207          unsigned char ReadIIC(unsigned char device,unsigned char addr)
+ 208          {
+ 209   1      unsigned char value;
+ 210   1      /* start bit */
+ 211   1              IIC_Start();
+ 212   1      /* transmit data */
+ 213   1              WriteByte(device);
+ 214   1              WriteByte(addr);
+ 215   1              ISCL = 1;
+ 216   1              SetISCL();              /* SCL=1 */
+ 217   1      //      IIC_DelayHigh();
+ 218   1      /* start bit */
+ 219   1              ISDA = 0;               /* SDA=0 */
+ 220   1              IIC_DelayHigh();
+ 221   1              ISCL = 0;               /* SCL=0 */
+ 222   1              IIC_DelayHigh();
+ 223   1      /* transmit data */
+ 224   1              WriteByte(device+1);
+ 225   1              value=ReadByte();
+ 226   1      /* no ack */
+ 227   1              MasterNACK();
+ 228   1      /* stop bit */
+ 229   1              IIC_Stop();
+ 230   1              return(value);
+ 231   1      }
+ 232          
+ 233          unsigned char ReadByte(void)
+ 234          {
+ 235   1      unsigned char i,j;
+ 236   1              ISDA = 1;               /* SDA=1 */
+ 237   1              for(i=0; i<8; i++){
+ 238   2                      ISCL = 1;
+ 239   2                      j = j << 1;
+ 240   2                      if(ISDA == 0)
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 5   
+
+ 241   2                              j &= 0xfe;      /* SDA=0 */
+ 242   2                      else
+ 243   2                              j |= 0x01;      /* SDA=1 */
+ 244   2                      ISCL = 0;               /* SCL=0 */
+ 245   2                      _nop_();
+ 246   2                      _nop_();
+ 247   2                      _nop_();
+ 248   2                      _nop_();
+ 249   2                      _nop_();
+ 250   2                      _nop_();
+ 251   2              }
+ 252   1              return j;
+ 253   1      }
+ 254          
+ 255          void IIC_DelayHigh(void)
+ 256          {
+ 257   1              _nop_();
+ 258   1              _nop_();
+ 259   1              _nop_();
+ 260   1              _nop_();
+ 261   1              _nop_();
+ 262   1      }
+ 263          
+ 264          
+ 265          void MasterACK(void)
+ 266          {
+ 267   1              ISDA = 0;               /* SDA=1 */
+ 268   1              ISCL = 1;
+ 269   1              SetISCL();              /* SCL=1 */
+ 270   1              ISCL = 0;               /* SCL=0 */
+ 271   1      }
+ 272          
+ 273          void MasterNACK(void)
+ 274          {
+ 275   1              ISDA = 1;               /* SDA=1 */
+ 276   1              ISCL = 1;
+ 277   1              SetISCL();              /* SCL=1 */
+ 278   1              ISCL = 0;               /* SCL=0 */
+ 279   1      }
+ 280          
+ 281          
+ 282          #if (!PBusProtocol)
+              void IIC_DelayLow(void)
+              {
+              //      _nop_();
+              //      _nop_();
+              }
+              #endif
+ 289          
+ 290          #if NT68665
+              void WriteWordIIC(unsigned char device,unsigned char addr,unsigned short value)
+              {
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device);
+                      WriteByte(addr);
+                      WriteByte((unsigned char)value);
+                      WriteByte((unsigned char)(value >> 8));
+              /* stop bit */
+                      IIC_Stop();
+              }
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 6   
+
+              
+              unsigned short ReadWordIIC(unsigned char device,unsigned char addr)
+              {
+              unsigned char ch;
+              unsigned short value;
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device);
+                      WriteByte(addr);
+                      ISCL = 1;
+                      SetISCL();              /* SCL=1 */
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device+1);
+                      ch = ReadByte();
+                      MasterACK();
+                      value = ReadByte();
+                      value <<= 8;
+                      value += ch;
+              /* no ack */
+                      MasterNACK();
+              /* stop bit */
+                      IIC_Stop();
+                      return(value);
+              }
+              #endif
+ 331          
+ 332          #if 0
+              void IIC_Release(void)
+              {
+              #if 0 && (!FE2P_LIB)
+              //      IIC_Start();
+              //
+              unsigned char i;
+              
+                      ISDA = 1;
+              
+                      for (i=0;i<9;i++) {
+                              _nop_();
+                              ISCL = 1;               /* SCL=1 */
+                              SetISCL();              /* SCL=1 */
+                              ISCL = 0;               /* SCL=0 */
+                      }
+                      IIC_DelayHigh();
+              
+                      ISCL = 1;               /* SCL=1 */
+              #endif
+              }
+              #endif
+ 354          
+ 355          #if 0
+              unsigned long Read3ByteIIC(unsigned char device,unsigned char addr)
+              {
+              unsigned char ch;
+              unsigned long value;
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device);
+                      WriteByte(addr);
+C51 COMPILER V8.12   IIC                                                                   11/09/2015 19:43:40 PAGE 7   
+
+                      ISCL = 1;
+                      SetISCL();              /* SCL=1 */
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device+1);
+                      ch = ReadByte();
+                      MasterACK();
+                      value = ch;
+                      ch = ReadByte();
+                      MasterACK();
+                      value = value + (unsigned short)ch * 256;
+                      ch = ReadByte();
+              /* no ack */
+                      MasterNACK();
+              /* stop bit */
+                      IIC_Stop();
+                      value = value + (unsigned short)ch * 65536;
+                      return(value);
+              }
+              
+              #endif
+ 387          
+ 388          #endif //#if (!PBusProtocol) || FE2P_LIB==OFF
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    419    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

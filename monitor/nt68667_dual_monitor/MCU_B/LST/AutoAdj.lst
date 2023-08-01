@@ -1,0 +1,1757 @@
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE AUTOADJ
+OBJECT MODULE PLACED IN .\BIN\AutoAdj.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\AutoAdj.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mod
+                    -elName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\AutoAdj.lst) OBJECT(.\BIN\AutoAdj.obj)
+
+line level    source
+
+   1          #include "Scaler.H"
+   2          #include "AutoAdj.H"
+   3          #include "NVRAM.H"
+   4          #include "RAM.H"
+   5          #include "UserAdj.H"
+   6          #include "ModeHandle.H"
+   7          #include "8051.H"
+   8          #include "sRGB.H"
+   9          #include "ROM_MAP.H"
+  10          #include "OSD.H"
+  11          #include "Panel.H"
+  12          #include "NT686xx_SC_REG.H"
+  13          #include "Mis.H"
+  14          #include "Board.H"
+  15          #include "DDC_Ci.H"
+  16          #include "Factory.H"
+  17          #include "math.H"
+  18          #include "HDCP.H"
+  19          #include "smartbright.h"
+  20          #include "BFControl.H"
+  21          
+  22          #define __CHECK_RESOLUTION__
+  23          
+  24          //#ifdef ADC_OFFSET_DOWN
+  25          //xdata unsigned char ucR_OFFSET,ucG_OFFSET,ucB_OFFSET;
+  26          //#endif
+  27          
+  28          #ifdef AUTO_OFFSET
+              xdata unsigned char regNR1,regNR2,regNR3,regNR4;
+              #endif
+  31          
+  32          idata unsigned char ucAutoPct;
+  33          
+  34          void CheckResolution(void);
+  35          
+  36          
+  37          void EndExit(unsigned char Reg0x06A)
+  38          {
+  39   1              ucTime2RepeatKey = KEY_HOLDING_TIME;
+  40   1              ucPrevKey = IGNORE_KEY;
+  41   1              WriteIIC560(JITTER_CTRL,Reg0x06A);      //Analog de-jitter // Jude 2005/04/06
+  42   1      }
+  43          
+  44          void AutoTuneExit()
+  45          {
+  46   1              if ( bOptAbort == TRUE ) {
+  47   2                      if(usTmpHSync != 0xffff){
+  48   3                              unsigned char temp;
+  49   3                              ForceToBackground(0);   //Set fource to background
+  50   3                              temp = ucVPOffset;
+  51   3                              LoadModeDependentSettings();
+  52   3                              ucVPOffset = temp;
+  53   3                              SetHP();                                // 2006-01-23 RETURN H_POSITION IF AUTO_FAIL
+  54   3                              SetADC_PLL();
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 2   
+
+  55   3                              SetADC_Phase();
+  56   3                              SetScaler();
+  57   3                              WriteIIC560(OSD_CTRL1,0x00);
+  58   3                              SetDisplayNormal();
+  59   3                      }
+  60   2              }
+  61   1              else{           //ok
+  62   2                      SaveModeDependentSettings();
+  63   2                      SetMinMax();
+  64   2                      AutoPosition();
+  65   2      //              AutoDelay();
+  66   2              }
+  67   1      #if FE2P_LIB==ON
+                      FE2P_Process(1);        
+              #endif
+  70   1      }
+  71          
+  72          #ifdef ADC_OFFSET_DOWN
+              void RestoreADCOffset()
+              {
+                      //WriteIIC560(ROFFSET, ucR_OFFSET);
+                      //WriteIIC560(GOFFSET, ucG_OFFSET);
+                      //WriteIIC560(BOFFSET, ucB_OFFSET);
+                      WriteIIC560(ROFFSET, ucR_ADC_Offset);
+                      WriteIIC560(GOFFSET, ucG_ADC_Offset);
+                      WriteIIC560(BOFFSET, ucB_ADC_Offset);
+              }
+              #endif
+  83          
+  84          
+  85          void AutoTune(void)
+  86          {
+  87   1      unsigned short HP_Temp,VP_Temp;
+  88   1      unsigned char Reg0x06A;
+  89   1      
+  90   1              if(ucSignalType == sigDVI)      return;
+  91   1      
+  92   1              ucAutoPct = 4;
+  93   1      //      ClearNewModeLED();
+  94   1              Reg0x06A = ReadIIC560(JITTER_CTRL);
+  95   1      
+  96   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+  97   1              {
+  98   2                      EndExit(Reg0x06A);
+  99   2                      return;
+ 100   2              }
+ 101   1      
+ 102   1              //Reg0x06A = ReadIIC560(JITTER_CTRL);
+ 103   1              WriteIIC560(JITTER_CTRL,0x00);  //Analog de-jitter // Jude 2005/04/06
+ 104   1              HP_Temp = usHPStart;
+ 105   1              VP_Temp = usVPStart;
+ 106   1              bIsNonFullScreen = FALSE;
+ 107   1              bOptAbort = FALSE;
+ 108   1      #ifdef __CHECK_RESOLUTION__
+ 109   1              CheckResolution();
+ 110   1      #endif
+ 111   1              AutoPosition();
+ 112   1      
+ 113   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+ 114   1              {
+ 115   2                      EndExit(Reg0x06A);
+ 116   2                      return;
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 3   
+
+ 117   2              }
+ 118   1              if(bOptAbort == TRUE){
+ 119   2                      if(bIsNonFullScreen == FALSE){
+ 120   3                              //goto Error1;
+ 121   3                              EndExit(Reg0x06A);
+ 122   3                              return;
+ 123   3                      }
+ 124   2              }
+ 125   1              
+ 126   1      #ifdef ADC_OFFSET_DOWN
+              //      printf("ADC_Offset_DOWN\r\n");
+                      WriteIIC560(ROFFSET, ucR_ADC_Offset+16); // 2005-11-30 jerry
+                      WriteIIC560(GOFFSET, ucG_ADC_Offset+16);
+                      WriteIIC560(BOFFSET, ucB_ADC_Offset+16);
+              #endif
+ 132   1      
+ 133   1              AutoClock();
+ 134   1      
+ 135   1      
+ 136   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+ 137   1              {
+ 138   2                      EndExit(Reg0x06A);
+ 139   2      #ifdef ADC_OFFSET_DOWN
+                              RestoreADCOffset();
+              #endif
+ 142   2                      return;
+ 143   2              }
+ 144   1              
+ 145   1              if ( bOptAbort ==TRUE ) {
+ 146   2                      if(bIsNonFullScreen == FALSE){
+ 147   3                              //goto Error;
+ 148   3                              AutoTuneExit();
+ 149   3                              EndExit(Reg0x06A);
+ 150   3      #ifdef ADC_OFFSET_DOWN
+                                      RestoreADCOffset();
+              #endif
+ 153   3                              return;
+ 154   3                      }
+ 155   2                      else{
+ 156   3                              bOptAbort = FALSE;                      
+ 157   3                              AutoClockByPhase(1);
+ 158   3                      }
+ 159   2              }
+ 160   1              else{
+ 161   2                      AutoClockByPhase(0);
+ 162   2              }
+ 163   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+ 164   1              {
+ 165   2                      EndExit(Reg0x06A);
+ 166   2      #ifdef ADC_OFFSET_DOWN
+                              RestoreADCOffset();
+              #endif
+ 169   2                      return;
+ 170   2              }
+ 171   1      
+ 172   1              AutoPhaseFineTune();
+ 173   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+ 174   1              {
+ 175   2                      EndExit(Reg0x06A);
+ 176   2      #ifdef ADC_OFFSET_DOWN
+                              RestoreADCOffset();
+              #endif
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 4   
+
+ 179   2                      return;
+ 180   2              }
+ 181   1              
+ 182   1              if ( bOptAbort == TRUE )        //      goto Error;
+ 183   1              {
+ 184   2                      AutoTuneExit();
+ 185   2      #ifdef ADC_OFFSET_DOWN
+                              RestoreADCOffset();
+              #endif
+ 188   2                      return;
+ 189   2              }
+ 190   1      
+ 191   1              AutoPosition();
+ 192   1              if(usTmpHSync == 0xffff)        //      goto Error1;
+ 193   1              {
+ 194   2                      EndExit(Reg0x06A);
+ 195   2      #ifdef ADC_OFFSET_DOWN
+                              RestoreADCOffset();
+              #endif
+ 198   2                      return;
+ 199   2              }
+ 200   1              
+ 201   1              //fail
+ 202   1              if((bOptAbort ==TRUE ) && (bIsNonFullScreen == TRUE)){  //fail
+ 203   2      
+ 204   2                      usHPStart = HP_Temp;
+ 205   2                      usVPStart = VP_Temp;
+ 206   2                      SetHP();
+ 207   2                      SetVP();
+ 208   2                      bOptAbort = FALSE;
+ 209   2              }
+ 210   1              AutoTuneExit();
+ 211   1              EndExit(Reg0x06A);
+ 212   1      #ifdef ADC_OFFSET_DOWN
+                      RestoreADCOffset();
+              #endif
+ 215   1      
+ 216   1      
+ 217   1      
+ 218   1      }
+ 219          
+ 220          void AutoPosition(void)
+ 221          {
+ 222   1      //unsigned short temph,tempv,H_Active,V_Active;
+ 223   1      unsigned short temph,tempv,V_Active;
+ 224   1      
+ 225   1              WriteIIC560(GI_HMASK_BEG,0x10);  // AutoPosition Pixel mask -> H
+ 226   1              WriteIIC560(GI_HMASK_END,ucMinHP);  // AutoPosition Pixel mask -> H
+ 227   1              WriteIIC560(GI_VMASK_BEG,0x00);  // AutoPosition Pixel mask -> V
+ 228   1              WriteIIC560(GI_VMASK_END,0x00);  // AutoPosition Pixel mask -> V
+ 229   1              WriteIIC560(GI_POS_THR,0x40);  // Red Noise Margin
+ 230   1              WriteIIC560(GI_AUTO_TUNE_CTRL,0x00);
+ 231   1      
+ 232   1              CheckModeChange();
+ 233   1              if(bOptAbort == TRUE)
+ 234   1                      return;
+ 235   1                      
+ 236   1              if(ucSignalType == sigDVI){     //DVI
+ 237   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x11);
+ 238   2                      Sleep(20);
+ 239   2              }
+ 240   1              else{
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 5   
+
+ 241   2                      GetHmask();
+ 242   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+ 243   2              }
+ 244   1              ucLoopTimer_10ms = 10;
+ 245   1              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_0) && ucLoopTimer_10ms != 0){
+ 246   2                      CheckModeChange();
+ 247   2                      if ( bOptAbort == TRUE )
+ 248   2                              return;
+ 249   2              }
+ 250   1              if(ucLoopTimer_10ms != 0){                              // Auto-Position OK
+ 251   2                      V_Active = ReadWordIIC560(GI_POS_VLEN_LI) & 0x07ff;             //Active
+ 252   2                      //H_Active = ReadWordIIC560(GI_POS_HWID_LI) & 0x07ff;
+ 253   2      
+ 254   2      //              printf("ucResolution = %d\r\n", (unsigned short)ucResolution);
+ 255   2      //              printf("V_Active = %d\r\n",V_Active);
+ 256   2                      //printf("H_Active = %d\r\n",H_Active);
+ 257   2      
+ 258   2                      
+ 259   2                      tempv = ReadWordIIC560(GI_POS_VBEGO_LI) & 0x07ff;               //Back-porch
+ 260   2                      temph = ReadWordIIC560(GI_POS_HBEG_LI) & 0x07ff;
+ 261   2      #ifdef R640_TUNE
+                              if(H_ActiveTab[ucResolution] == 640) temph >>= 1;
+              #endif
+ 264   2      //              printf("temph=%d,usHTotal=%d,H_ActiveTab=%d\r\n", temph,usHTotal,H_ActiveTab[ucResolution]);
+ 265   2      //              printf("tempv=%d,usVTotal=%d,V_ActiveTab=%d\r\n", tempv,usVTotal,V_ActiveTab[ucResolution]);
+ 266   2      
+ 267   2                      if ( ucResolution == 1 && V_Active==350 )       // 640x350 SOG==> resolution show 720x400; activeV=350
+ 268   2                      {                                                                       // 2005-11-25 jerry
+ 269   3      /*
+ 270   3                              tempv = ReadWordIIC560(GI_POS_VBEGO_LI) & 0x07ff;               //Back-porch
+ 271   3                              temph = ReadWordIIC560(GI_POS_HBEG_LI) & 0x07ff;
+ 272   3      #ifdef R640_TUNE
+ 273   3                              if(H_ActiveTab[ucResolution] == 640) temph >>= 1;
+ 274   3      #endif
+ 275   3      */
+ 276   3      /*
+ 277   3                              if(temph > usMaxHP)
+ 278   3                                      usHPStart = usMaxHP;
+ 279   3                              else if(temph < ucMinHP)
+ 280   3                                      usHPStart = ucMinHP;
+ 281   3                              else
+ 282   3                              usHPStart = temph;
+ 283   3      
+ 284   3                              if(tempv > ucMaxVP)
+ 285   3                                      usVPStart = ucMaxVP;
+ 286   3                              else if(tempv < ucMinVP)
+ 287   3                                      usVPStart = ucMinVP;
+ 288   3                              else
+ 289   3                                      usVPStart = tempv-25;   // 720x350 => 720x400
+ 290   3      */
+ 291   3                              usHPStart = temph;
+ 292   3                              usVPStart = tempv-25;   // 720x350 => 720x400
+ 293   3                              SetHP();
+ 294   3                              SetVP();
+ 295   3                              return;
+ 296   3                      }
+ 297   2      //              else if ( (ucResolution == 2 && (V_Active == 350 || V_Active==400)) ||   // 640x350@60, 720x400@60 ERR
+             -OR TO SHOW 640x480@60
+ 298   2      //                      (ucResolution == 5  || ucResolution==14 ) )                             // 1024x768 & 1280x768 for (-,+)
+ 299   2                      else if ( (ucResolution == 2 && (V_Active == 350 || V_Active==400)))   // 640x350@60, 720x400@60 ERROR T
+             -O SHOW 640x480@60
+ 300   2                      {
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 6   
+
+ 301   3      /*
+ 302   3                              tempv = ReadWordIIC560(GI_POS_VBEGO_LI) & 0x07ff;               //Back-porch
+ 303   3                              temph = ReadWordIIC560(GI_POS_HBEG_LI) & 0x07ff;
+ 304   3      #ifdef R640_TUNE
+ 305   3                              if(H_ActiveTab[ucResolution] == 640) temph >>= 1;
+ 306   3      #endif
+ 307   3      */
+ 308   3                              // THESE MODES WILL ALIGN WTHIN LEFT TOP CORNER, COMMENT 2006-02-15
+ 309   3                              
+ 310   3                              usHPStart = temph;
+ 311   3                              usVPStart = tempv;
+ 312   3      
+ 313   3                              SetHP();
+ 314   3                              SetVP();
+ 315   3                              return;
+ 316   3                      }
+ 317   2      
+ 318   2      /*
+ 319   2                      tempv = ReadWordIIC560(GI_POS_VBEGO_LI) & 0x07ff;               //Back-porch
+ 320   2                      temph = ReadWordIIC560(GI_POS_HBEG_LI) & 0x07ff;
+ 321   2      #ifdef R640_TUNE
+ 322   2                      if(H_ActiveTab[ucResolution] == 640) temph >>= 1;
+ 323   2      #endif
+ 324   2                      printf("temph=%d,usHTotal=%d,usActiveH=%d\r\n", temph,usHTotal,usActiveH);
+ 325   2                      printf("tempv=%d,usVTotal=%d,usActiveV=%d\r\n", tempv,usVTotal,V_ActiveTab[ucResolution]);
+ 326   2      */
+ 327   2      
+ 328   2      //              if((tempv > 0xff) || (temph > (usHTotal-usActiveH))){
+ 329   2                      if((tempv > (usVTotal-V_ActiveTab[ucResolution])) || (temph > (usHTotal-H_ActiveTab[ucResolution]))){
+ 330   3                              if((V_Active == V_ActiveTab[ucResolution]) && (H_ActiveTab[ucResolution] > 1152)){
+ 331   4                                      SetHP();
+ 332   4                                      SetVP();
+ 333   4                              }
+ 334   3                              else{
+ 335   4                                      bOptAbort = TRUE;
+ 336   4                                      bIsNonFullScreen = TRUE;
+ 337   4                                      // WHO WILL COME HERE??
+ 338   4                              }
+ 339   3                      }
+ 340   2                      else{
+ 341   3                              //--------      DOS MODE(640X480) AUTO TUNE ISSUE -------------
+ 342   3                              if(temph > usMaxHP)
+ 343   3                                      usHPStart = usMaxHP;
+ 344   3                              else if(temph < ucMinHP)
+ 345   3                                      usHPStart = ucMinHP;
+ 346   3                              else
+ 347   3                              usHPStart = temph;
+ 348   3      
+ 349   3                              if(tempv > ucMaxVP)
+ 350   3                                      usVPStart = ucMaxVP;
+ 351   3                              else if(tempv < ucMinVP)
+ 352   3                                      usVPStart = ucMinVP;
+ 353   3                              else
+ 354   3                                      usVPStart = tempv;
+ 355   3                              //--------      DOS MODE(640X480) AUTO TUNE ISSUE -------------
+ 356   3                              
+ 357   3                              SetHP();
+ 358   3                              SetVP();
+ 359   3                              if(V_Active != V_ActiveTab[ucResolution]){
+ 360   4                                      bOptAbort = TRUE;
+ 361   4                                      bIsNonFullScreen = TRUE;
+ 362   4                              }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 7   
+
+ 363   3                      }
+ 364   2              }
+ 365   1              else{                           // abort
+ 366   2                      bOptAbort = TRUE;       
+ 367   2      
+ 368   2              }
+ 369   1      }
+ 370          
+ 371          void AutoClock(void)
+ 372          {
+ 373   1      unsigned char H_Difference,i,Compare;//,k;
+ 374   1      //unsigned short PLL_Divider,V_Act;
+ 375   1      unsigned short H_Ref,H_temp,H_Max;
+ 376   1      
+ 377   1              if ( bOptAbort == TRUE)
+ 378   1              return;
+ 379   1              H_Ref = H_ActiveTab[ucResolution];
+ 380   1      //      V_Act = V_ActiveTab[ucResolution];
+ 381   1              H_Max = H_Ref << 1;
+ 382   1      // Set refance H_Active
+ 383   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640)
+                              WriteWordIIC560(GI_CLK_REF_LI,H_Ref<<1);
+                      else
+              #endif
+ 388   1              WriteWordIIC560(GI_CLK_REF_LI,H_Ref);
+ 389   1      // read pll divider
+ 390   1              H_temp = usHTotal;
+ 391   1              if(usHTotal <= H_Ref){
+ 392   2                      usHTotal = H_Ref + usHPStart;
+ 393   2                      SetADC_PLL();
+ 394   2                      if(bOutOfLimit == TRUE){
+ 395   3                              bOptAbort = TRUE;
+ 396   3                              return;
+ 397   3                      }
+ 398   2              }
+ 399   1      
+ 400   1              for(i=0; i<0x20; i++){
+ 401   2                      GetHmask();
+ 402   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+ 403   2                      ucLoopTimer_10ms = 10;
+ 404   2                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_0) && ucLoopTimer_10ms != 0){
+ 405   3                              CheckModeChange();
+ 406   3                              if(bOptAbort == TRUE)
+ 407   3                                      return;
+ 408   3                      }
+ 409   2                      if(ucLoopTimer_10ms == 0){
+ 410   3                              bOptAbort = TRUE;
+ 411   3                              return;
+ 412   3                      }
+ 413   2                      usActiveH = ReadWordIIC560(GI_POS_HWID_LI) & 0x0fff;
+ 414   2                      H_Difference = ReadIIC560(GI_CLK_RESULT);
+ 415   2                      Compare = (H_Difference & 0xc0) >> 6;
+ 416   2                      H_Difference = H_Difference & 0x3f;
+ 417   2      ///             if((flag3 & BIT_2) != 0x00){    
+ 418   2      ///                     printf("PLL_Divider = %d\r\n",PLL_Divider);
+ 419   2      ///                     printf("H_Act = %d\r\n",usActiveH);
+ 420   2      //                      printf("H_Difference = %d\r\n",(unsigned short)H_Difference);
+ 421   2      ///             }
+ 422   2                      if(Compare==0x00){
+ 423   3                              break; //H_Ref=usActiveH
+ 424   3                      }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 8   
+
+ 425   2                      if(Compare==0x01){
+ 426   3      //                      if(H_Difference == 0x01)
+ 427   3      //                              break;
+ 428   3      #ifdef R640_TUNE
+                                      if(H_ActiveTab[ucResolution] == 640)
+                                              usHTotal = usHTotal + (H_Difference >> 1);
+                                      else
+              #endif
+ 433   3                              usHTotal = usHTotal + H_Difference;
+ 434   3                              if(usHTotal > H_Max){//2048
+ 435   4                                      i = 0xff;
+ 436   4                                      break;
+ 437   4                              }
+ 438   3                      }
+ 439   2                      if(Compare > 0x01){
+ 440   3      //                      if(H_Difference == 0x01)
+ 441   3      //                              break;
+ 442   3      #ifdef R640_TUNE
+                                      if(H_ActiveTab[ucResolution] == 640)
+                                              usHTotal = usHTotal - (H_Difference >> 1);
+                                      else
+              #endif
+ 447   3                              usHTotal = usHTotal - H_Difference;
+ 448   3                              if(usHTotal < H_Ref){
+ 449   4                                      i = 0xff;
+ 450   4                                      break;
+ 451   4                              }
+ 452   3                      }
+ 453   2                      SetADC_PLL();
+ 454   2                      if(bOutOfLimit == TRUE ) { 
+ 455   3                              bOptAbort = TRUE;
+ 456   3                              return;
+ 457   3                      }
+ 458   2              }
+ 459   1              if(i == 0xff){
+ 460   2                      bIsNonFullScreen = TRUE;
+ 461   2                      bOptAbort = TRUE;
+ 462   2      
+ 463   2              }
+ 464   1              else{
+ 465   2      //#if 0
+ 466   2      //              usHTotal = (usHTotal + 2) & 0xfffc;
+ 467   2      //#else
+ 468   2      //              usHTotal = (usHTotal + 1) & 0xfffe;
+ 469   2      //#endif
+ 470   2      
+ 471   2      //              printf("usHTotal = %d\r\n",usHTotal);
+ 472   2                      if(ucModeNumber < NUMBER_OF_USER_MODE){         
+ 473   3                              H_Ref = EEPROM_TimingTable[ucModeNumber].usHTotal;
+ 474   3      //                      if((H_ActiveTab[ucResolution] < 1280)&&(abs(usVSync - 600) < 12))
+ 475   3      //                      if(!((H_ActiveTab[ucResolution] > 1024)&&(abs(usVSync - 600) < 12))){
+ 476   3                              if((H_ActiveTab[ucResolution] < 800)&&(V_ActiveTab[ucResolution] < 600)){
+ 477   4                                      if(abs(usHTotal-H_Ref) > 70){
+ 478   5      //                              if(usHTotal < H_Ref){
+ 479   5      //                                      if((H_Ref - usHTotal) > 70){
+ 480   5                                                      usHTotal = H_temp;
+ 481   5                                                      SetADC_PLL();
+ 482   5                                                      if(bOutOfLimit == TRUE){
+ 483   6                                                              bOptAbort = TRUE;
+ 484   6                                                              return;
+ 485   6                                                      }
+ 486   5      //                                      }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 9   
+
+ 487   5                                      }
+ 488   4                              }
+ 489   3                      }
+ 490   2              }
+ 491   1      }
+ 492          
+ 493          void AutoPhaseFineTune(void)
+ 494          {
+ 495   1      unsigned char   qq,yy,uu,i;//,value;
+ 496   1      //unsigned short   zz;
+ 497   1      xdata unsigned long   Phase_0, Phase_1, Phase_2, Phase_Pre3, Phase_Now3, Phase_Delta;
+ 498   1      
+ 499   1              if ( bOptAbort == TRUE )
+ 500   1                      return;
+ 501   1      
+ 502   1      //-------------------------at color xx , calculate phase-------------------------
+ 503   1              Phase_1 = 0x00000000;   // (i-1)
+ 504   1          Phase_2 = 0x00000000;   // (i-2)
+ 505   1          Phase_Pre3 = 0x00000000;   // (pre sum)->(delta)->(now sum)
+ 506   1          Phase_Delta = 0xffffffff;   // (min delta)
+ 507   1              qq = ucADCPhase;
+ 508   1              WriteIIC560(GI_AUTO_TUNE_CTRL,0x42); // 0x01 --> 0x09
+ 509   1              ucLoopTimer_10ms = 10;
+ 510   1              for(yy=1; yy<ucPrevKey; yy++){
+ 511   2      
+ 512   2      if (ucAutoPct<=100)
+ 513   2      
+ 514   2                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+ 515   3                              CheckModeChange();
+ 516   3                              if ( bOptAbort == TRUE )
+ 517   3                                      return;
+ 518   3                      }
+ 519   2      
+ 520   2                      ucADCPhase = (qq + yy) & 0x3f;
+ 521   2                      SetADC_Phase();
+ 522   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x42); // 0x01 --> 0x09
+ 523   2                      ucLoopTimer_10ms = 10;
+ 524   2                      Phase_Now3 = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+ 525   2                      Phase_Now3 <<= 16;
+ 526   2                      Phase_Now3 += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+ 527   2                      i = (ucADCPhase - 1) & 0x3f;
+ 528   2      
+ 529   2      //              printf("Phase %d = %ld\r\n",(unsigned short)i,Phase_Now3);      
+ 530   2      
+ 531   2              Phase_2 = Phase_1;  // Shift    
+ 532   2              Phase_1 = Phase_0;
+ 533   2              Phase_0 = Phase_Now3;
+ 534   2                      Phase_Now3 = (Phase_0>>2) + (Phase_1>>1) + (Phase_2>>2); // Phase_Now3
+ 535   2                      if(yy < 4){
+ 536   3                              Phase_Pre3  = Phase_Now3;   // Phase_Pre3 = Phase_Now3
+ 537   3                      }
+ 538   2                      else{
+ 539   3                              if(Phase_Now3 > Phase_Pre3){
+ 540   4                                      Phase_Pre3  = Phase_Now3 - Phase_Pre3;
+ 541   4                              }
+ 542   3                              else{
+ 543   4                                      Phase_Pre3  = Phase_Pre3 - Phase_Now3;  // Phase_Pre3=delta
+ 544   4                              }
+ 545   3                              if(Phase_Pre3 < Phase_Delta){
+ 546   4                                      uu = i;           
+ 547   4                                      Phase_Delta = Phase_Pre3;
+ 548   4                              }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 10  
+
+ 549   3                              Phase_Pre3  = Phase_Now3;   // Phase_Pre3 = Phase_Now3
+ 550   3                      }     
+ 551   2              }
+ 552   1              ucADCPhase = (uu - 2) & 0x3f;
+ 553   1              SetADC_Phase();
+ 554   1      
+ 555   1              //NVTprint1("Phase ok = %d\r\n",(unsigned short)ucADCPhase);
+ 556   1      
+ 557   1      }
+ 558          
+ 559          
+ 560          void SetADC_Offset(unsigned char OffSet)
+ 561          {
+ 562   1      unsigned char i,j,k,m,n,value;
+ 563   1      xdata unsigned long PhaseResult,Temp;
+ 564   1      
+ 565   1              WriteIIC560(RGAIN_HI,MCU_DataMap[EPADDR_ADCR_GAIN]);
+ 566   1              WriteIIC560(GGAIN_HI,MCU_DataMap[EPADDR_ADCG_GAIN]);
+ 567   1              WriteIIC560(BGAIN_HI,MCU_DataMap[EPADDR_ADCB_GAIN]);
+ 568   1      
+ 569   1              SetADC_Offset_C();
+ 570   1              SetADC_Gain_C();
+ 571   1      /*
+ 572   1              OffSet = ReadIIC560(ROFFSET);
+ 573   1              value = ReadIIC560(GOFFSET);
+ 574   1              if(OffSet > value)
+ 575   1                      OffSet = value;
+ 576   1              value = ReadIIC560(BOFFSET);
+ 577   1              if(OffSet > value)
+ 578   1                      OffSet = value;
+ 579   1      */
+ 580   1      //      WriteIIC560(0x0f8,0x00);
+ 581   1              WriteIIC560(GAUGE_OFFSET,0x00);
+ 582   1              for(m=0; m<3; m++){
+ 583   2                      i = 0x003 + m * 3;      //3,6,9
+ 584   2                      OffSet = ReadIIC560(i);
+ 585   2      //              for(k=OffSet; k<128; k=k+8){
+ 586   2                      for(k=OffSet; k<248; k=k+8){
+ 587   3                              WriteIIC560(GAUGE_CTRL,0x00);
+ 588   3                              i = 0x003 + m * 3;      //3,6,9
+ 589   3      //                      WriteIIC560(i,k*2);
+ 590   3                              WriteIIC560(i,k);
+ 591   3      //                      WaitSetup(2);
+ 592   3                              ucLoopTimer_10ms = 10;
+ 593   3                              i = 0x80 + (2-m)*0x08;
+ 594   3      //                      i = 0x80 + m * 0x08;    //
+ 595   3                              WriteIIC560(GAUGE_CTRL,i);
+ 596   3                              while((ReadIIC560(GAUGE_CTRL) & BIT_7) && ucLoopTimer_10ms != 0){
+ 597   4                                      CheckModeChange();
+ 598   4                                      if(bOptAbort == TRUE)
+ 599   4                                              return;
+ 600   4                              }
+ 601   3                              if(ucLoopTimer_10ms == 0){
+ 602   4                                      bOptAbort = TRUE;
+ 603   4                                      return;
+ 604   4                              }
+ 605   3                              j = 0;
+ 606   3                              Temp = 0;
+ 607   3                              for(i=0; i<8; i++){             // 2005-12-16 fine tune
+ 608   4                                      WriteIIC560(GAUGE_AREA_SEL,7-i);//i
+ 609   4                                      PhaseResult = ReadWordIIC560(GAUGE_RESULT_MI);
+ 610   4                                      PhaseResult <<= 8;
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 11  
+
+ 611   4                                      value = ReadIIC560(GAUGE_RESULT_LI);
+ 612   4                                      PhaseResult += value;
+ 613   4      //                              printf("PhaseResult %x = %x %ld\r\n",(unsigned short)m,(unsigned short)k,PhaseResult);
+ 614   4      /*                              if(PhaseResult > Temp){
+ 615   4                                              Temp = PhaseResult;
+ 616   4                                              j = i;
+ 617   4                                      }*/
+ 618   4      //                              if(i==0 && PhaseResult == 0) break;     //B/W pattern
+ 619   4      //                              if(PhaseResult > (V_ActiveTab[ucResolution] * 10)){
+ 620   4                                      if(PhaseResult > (V_ActiveTab[ucResolution] * 3)){
+ 621   5                                              j = 0xff;
+ 622   5                                              break;
+ 623   5                                      }
+ 624   4                              }
+ 625   3      /*
+ 626   3                              if(Temp > (V_ActiveTab[ucResolution] * 10)){
+ 627   3      //                      if(Temp > 80){
+ 628   3                                      i = 0x003 + m*3;
+ 629   3      //                              j = k*2+j;
+ 630   3                                      j = k+j;
+ 631   3                                      WriteIIC560(i,j);
+ 632   3                                      //printf("Offset %x = %x %d\r\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 633   3      
+ 634   3                                      break;
+ 635   3                              }*/
+ 636   3                              if(j != 0) break;
+ 637   3                      }
+ 638   2                      //k=j;  // 2005-12-02   //2005-12-16 fine tune
+ 639   2      //              if(k == 128){
+ 640   2                      if(k == 248){
+ 641   3                              bOptAbort = TRUE;
+ 642   3                              return;
+ 643   3                      }
+ 644   2                      for(n=0; n<16; n++){    //2005-12-16 fine tune
+ 645   3                              WriteIIC560(GAUGE_CTRL,0x00);
+ 646   3                              i = 0x003 + 3 * m;
+ 647   3      //                      WriteIIC560(i,k*2+n);
+ 648   3                              WriteIIC560(i,k+n);
+ 649   3      //                      WaitSetup(2);
+ 650   3                              ucLoopTimer_10ms = 10;
+ 651   3                              i = 0x80 + (2-m)*0x08;
+ 652   3      //                      i = 0x80 + m * 0x08;
+ 653   3                              WriteIIC560(GAUGE_CTRL,i);
+ 654   3                              while((ReadIIC560(GAUGE_CTRL) & BIT_7) && ucLoopTimer_10ms != 0){
+ 655   4                                      CheckModeChange();
+ 656   4                                      if(bOptAbort == TRUE)
+ 657   4                                              return;
+ 658   4                              }
+ 659   3                              if(ucLoopTimer_10ms == 0){
+ 660   4                                      bOptAbort = TRUE;
+ 661   4                                      return;
+ 662   4                              }
+ 663   3                              j = 0;
+ 664   3                              Temp = 0;
+ 665   3      /*
+ 666   3                              for(i=0; i<8; i++){
+ 667   3                                      WriteIIC560(GAUGE_AREA_SEL,i);
+ 668   3                                      PhaseResult = ReadWordIIC560(GAUGE_RESULT_MI);
+ 669   3                                      PhaseResult <<= 8;
+ 670   3                                      value = ReadIIC560(GAUGE_RESULT_LI);
+ 671   3                                      PhaseResult += value;
+ 672   3      //                              printf("PhaseResult %x = %x %ld\r\n",(unsigned short)m,(unsigned short)n,PhaseResult);
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 12  
+
+ 673   3                                      if(PhaseResult > Temp){
+ 674   3                                              Temp = PhaseResult;
+ 675   3                                              j = i;
+ 676   3                                              if(j != 0) break;
+ 677   3                                      }
+ 678   3                              }
+ 679   3                              if(j == 0){
+ 680   3                                      break;
+ 681   3                              }
+ 682   3      */
+ 683   3                                      WriteIIC560(GAUGE_AREA_SEL,0);
+ 684   3                                      PhaseResult = ReadWordIIC560(GAUGE_RESULT_MI);
+ 685   3                                      PhaseResult <<= 8;
+ 686   3                                      value = ReadIIC560(GAUGE_RESULT_LI);
+ 687   3                                      PhaseResult += value;
+ 688   3      //                              printf("PhaseResult %x = %x %ld\r\n",(unsigned short)m,(unsigned short)n,PhaseResult);
+ 689   3                                      if(PhaseResult > (V_ActiveTab[ucResolution] * 10)){
+ 690   4                                              break;
+ 691   4                                      }
+ 692   3      
+ 693   3      
+ 694   3                      }
+ 695   2                      i = 0x003 + 3 * m;
+ 696   2      //              j = k*2+n;
+ 697   2                      j = k+n;
+ 698   2                      WriteIIC560(i,j);
+ 699   2                      //printf("Offset %x = %x %d\r\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 700   2      
+ 701   2              }
+ 702   1      
+ 703   1              // + black will be blacker
+ 704   1      
+ 705   1      #ifdef MODE_OFFSET
+              #if PanelSxga == 1
+                      if ( H_ActiveTab[ucResolution] < 1280 )
+              #else
+                      if ( H_ActiveTab[ucResolution] < 1024 )
+              #endif
+                      {
+                              ucR_ADC_Offset = ReadIIC560(ROFFSET)+5;
+                              ucG_ADC_Offset = ReadIIC560(GOFFSET)+5;
+                              ucB_ADC_Offset = ReadIIC560(BOFFSET)+5;
+                              bOffsetDown = 1;
+                      }
+                      else
+                      {
+              //printf("AutoColor: Native Offset+8\r\n");
+                              ucR_ADC_Offset = ReadIIC560(ROFFSET)+8;
+                              ucG_ADC_Offset = ReadIIC560(GOFFSET)+8;
+                              ucB_ADC_Offset = ReadIIC560(BOFFSET)+8;
+                              bOffsetDown = 0;
+                      }
+                      Write24C16(EPADDR_OFFSETDOWN, bOffsetDown);
+              #else
+ 727   1      #if PanelID == AUO_M220EW01_V0
+                      #define ADC_Offset2 4
+              #else
+ 730   1              #define ADC_Offset2 4
+ 731   1      #endif
+ 732   1                      ucR_ADC_Offset = ReadIIC560(ROFFSET)+ADC_Offset2;
+ 733   1                      ucG_ADC_Offset = ReadIIC560(GOFFSET)+ADC_Offset2;//+5;  // Solve the green-ish issue over gray level patt
+             -ern // Jude 2007/05/16
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 13  
+
+ 734   1                      ucB_ADC_Offset = ReadIIC560(BOFFSET)+ADC_Offset2;
+ 735   1      #endif
+ 736   1      
+ 737   1      
+ 738   1              UpdateADCOffset();
+ 739   1      }
+ 740          
+ 741          void SetADC_Gain(unsigned char OffSet)
+ 742          {
+ 743   1      unsigned char i,j,k,m,n,value;
+ 744   1      xdata unsigned long PhaseResult,Temp;
+ 745   1      
+ 746   1      //      SetADC_Gain_C();
+ 747   1      /*      OffSet = ReadIIC560(RGAIN_HI);
+ 748   1              value = ReadIIC560(GGAIN_HI);
+ 749   1              if(OffSet < value)
+ 750   1                      OffSet = value;
+ 751   1              value = ReadIIC560(BGAIN_HI);
+ 752   1              if(OffSet < value)
+ 753   1                      OffSet = value;
+ 754   1      */
+ 755   1      //      WriteIIC560(0x0f8,0x00);
+ 756   1              WriteIIC560(GAUGE_OFFSET,0xf8);
+ 757   1              for(m=0; m<3; m++){
+ 758   2                      i = 0x001 + m * 3;      //1,4,7
+ 759   2                      OffSet = ReadIIC560(i);
+ 760   2                      for(k=OffSet; k>7; k=k-8){
+ 761   3                              WriteIIC560(GAUGE_CTRL,0x00);
+ 762   3                              i = 0x001 + m * 3;      //1,4,7
+ 763   3                              WriteIIC560(i,k);
+ 764   3      //                      WaitSetup(2);
+ 765   3                              ucLoopTimer_10ms = 10;
+ 766   3                              i = 0x80 + (2-m)*0x08;
+ 767   3      //                      i = 0x80 + m * 0x08;
+ 768   3                              WriteIIC560(GAUGE_CTRL,i);
+ 769   3                              while((ReadIIC560(GAUGE_CTRL) & BIT_7) && ucLoopTimer_10ms != 0){
+ 770   4                                      CheckModeChange();
+ 771   4                                      if ( bOptAbort == TRUE )
+ 772   4                                              return;
+ 773   4                              }
+ 774   3                              if(ucLoopTimer_10ms == 0){
+ 775   4                                      bOptAbort = TRUE;
+ 776   4                                      return;
+ 777   4                              }
+ 778   3                              j = 0;
+ 779   3                              Temp = 0;
+ 780   3                              for(i=0; i<8; i++){
+ 781   4                                      WriteIIC560(GAUGE_AREA_SEL,i);
+ 782   4                                      PhaseResult = ReadWordIIC560(GAUGE_RESULT_MI);
+ 783   4                                      PhaseResult <<= 8;
+ 784   4                                      value = ReadIIC560(GAUGE_RESULT_LI);
+ 785   4                                      PhaseResult += value;
+ 786   4      //                              //printf("PhaseResult %x = %x %ld\r\n",(unsigned short)m,(unsigned short)k,(PhaseResult));
+ 787   4      /*                              if(PhaseResult > Temp){
+ 788   4                                              Temp = PhaseResult;
+ 789   4                                              j = i;
+ 790   4                                      }*/
+ 791   4                                      if(PhaseResult > (V_ActiveTab[ucResolution] * 3)){
+ 792   5                                              j = 0xff;
+ 793   5                                              break;
+ 794   5                                      }
+ 795   4                              }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 14  
+
+ 796   3      /*                      if(Temp > 0){
+ 797   3                                      i = 0x001 + m * 3;      //1,4,7
+ 798   3                                      j = k+j;
+ 799   3      
+ 800   3                                      //printf("Gain %x = %x %x\r\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 801   3                                      break;
+ 802   3                              }*/
+ 803   3                              if(j != 0) break;
+ 804   3                      }
+ 805   2                      if(k == 0){
+ 806   3                              bOptAbort = TRUE;
+ 807   3                              return;
+ 808   3                      }
+ 809   2                      for(n=0; n<16; n++){
+ 810   3                              WriteIIC560(GAUGE_CTRL,0x00);
+ 811   3                              i = 0x001 + m * 3;      //1,4,7
+ 812   3                              WriteIIC560(i,k-n);
+ 813   3      //                      WaitSetup(2);
+ 814   3                              ucLoopTimer_10ms = 10;
+ 815   3                              i = 0x80 + (2-m)*0x08;
+ 816   3      //                      i = 0x80 + m * 0x08;
+ 817   3                              WriteIIC560(GAUGE_CTRL,i);
+ 818   3                              while((ReadIIC560(GAUGE_CTRL) & BIT_7) && ucLoopTimer_10ms != 0){
+ 819   4                                      CheckModeChange();
+ 820   4                                      if(bOptAbort == TRUE)
+ 821   4                                              return;
+ 822   4                              }
+ 823   3                              if(ucLoopTimer_10ms == 0){
+ 824   4                                      bOptAbort = TRUE;
+ 825   4                                      return;
+ 826   4                              }
+ 827   3                              j = 0;
+ 828   3                              Temp = 0;
+ 829   3                              WriteIIC560(GAUGE_AREA_SEL,7);
+ 830   3                              PhaseResult = ReadWordIIC560(GAUGE_RESULT_MI);
+ 831   3                              PhaseResult <<= 8;
+ 832   3                              value = ReadIIC560(GAUGE_RESULT_LI);
+ 833   3                              PhaseResult += value;
+ 834   3      //                      printf("PhaseResult %x = %x %ld\r\n",(unsigned short)m,(unsigned short)n,(PhaseResult);
+ 835   3                              if(PhaseResult > (V_ActiveTab[ucResolution] * 10)){//80
+ 836   4                                      break;
+ 837   4                              }
+ 838   3      
+ 839   3                      }               
+ 840   2                      i = 0x001 + m * 3;      //1,4,7
+ 841   2                      j = k-n;
+ 842   2                      WriteIIC560(i,j);
+ 843   2                      //printf("Gain %x = %x %x\r\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 844   2      
+ 845   2              }
+ 846   1              // + all color will be darker;
+ 847   1      #if PanelID==LPL_LM220WE1
+                      ucR_ADC_Gain = ReadIIC560(RGAIN_HI);//-4;               
+                      ucG_ADC_Gain = ReadIIC560(GGAIN_HI)-2;//-4;
+                      ucB_ADC_Gain = ReadIIC560(BGAIN_HI)+2;//-4;
+              #else
+ 852   1              ucR_ADC_Gain = ReadIIC560(RGAIN_HI);//-4;               
+ 853   1              ucG_ADC_Gain = ReadIIC560(GGAIN_HI);//-4;
+ 854   1              ucB_ADC_Gain = ReadIIC560(BGAIN_HI);//-4;
+ 855   1      #endif
+ 856   1      
+ 857   1              WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 15  
+
+ 858   1              WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+ 859   1              WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+ 860   1              Write24C16(EPADDR_ADCR_GAIN,ucR_ADC_Gain);//0x4d = ADC r gain
+ 861   1              Write24C16(EPADDR_ADCG_GAIN,ucG_ADC_Gain);//0x4e = ADC g gain
+ 862   1              Write24C16(EPADDR_ADCB_GAIN,ucB_ADC_Gain);//0x4f = ADC b gain
+ 863   1      }
+ 864          
+ 865          
+ 866          bit AutoColor(void)
+ 867          {
+ 868   1      unsigned char Reg0x06A;
+ 869   1              if(ucSignalType == sigDVI) return FALSE;
+ 870   1      
+ 871   1      //      OSD_OFF();      // close before auto tuning color
+ 872   1              
+ 873   1      //      ucBlackLevel = MCU_DataMap[EPADDR_SCALER_OFFSET];       
+ 874   1      //      SetScalerOffset();
+ 875   1      //      Write24C16(EPADDR_SCALER_OFFSET, ucBlackLevel);
+ 876   1      
+ 877   1              Reg0x06A = ReadIIC560(JITTER_CTRL);
+ 878   1              WriteIIC560(JITTER_CTRL,0x00);  //Analog de-jitter // Jude 2005/04/06
+ 879   1              bOptAbort = FALSE;
+ 880   1              WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart - 20);
+ 881   1      
+ 882   1              SetADC_Offset(0x30);
+ 883   1      
+ 884   1      /*
+ 885   1              if (bOptAbort ==TRUE) {
+ 886   1                      goto Error;
+ 887   1              }
+ 888   1              WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+ 889   1              SetADC_Gain(0xf0);
+ 890   1      Error:
+ 891   1              if ( bOptAbort == TRUE ) {
+ 892   1                      LoadADC_Gain();
+ 893   1              }
+ 894   1              WriteIIC560(JITTER_CTRL,Reg0x06A);      //Analog de-jitter      
+ 895   1      */      
+ 896   1      
+ 897   1              if(!bOptAbort){
+ 898   2                      //WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+ 899   2                      SetHP();
+ 900   2                      SetADC_Gain(0xf0);
+ 901   2              }
+ 902   1              //else  // bOptAbort==TRUE
+ 903   1              
+ 904   1              if(bOptAbort){
+ 905   2                      LoadADC_Gain();
+ 906   2              }
+ 907   1              WriteIIC560(JITTER_CTRL,Reg0x06A);      //Analog de-jitter
+ 908   1      #if FE2P_LIB==ON
+                              FE2P_Process(1);        
+              #endif
+ 911   1              
+ 912   1              return !bOptAbort;
+ 913   1      }
+ 914          
+ 915          
+ 916          //////////////////////////////////////////////////////////////////////////////
+ 917          void AutoClockByPhase(bit h)
+ 918          {
+ 919   1      unsigned char k,templ,temph;
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 16  
+
+ 920   1      unsigned short GoodDotClk,PoorDotClk;
+ 921   1      xdata unsigned long MaxMin,Value,minMaxMin;
+ 922   1      
+ 923   1              if((ucModeNumber < NUMBER_OF_USER_MODE)&&(h == 1)){
+ 924   2      //              usHTotal = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHTotal;
+ 925   2                      GoodDotClk = usHTotal;
+ 926   2                      usHTotal = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHTotal;
+ 927   2                      if(usHTotal < H_ActiveTab[ucResolution])
+ 928   2                              usHTotal = GoodDotClk;
+ 929   2              }
+ 930   1      
+ 931   1              GoodDotClk = usHTotal;
+ 932   1              PoorDotClk = usHTotal;
+ 933   1              MaxMin = 0;
+ 934   1              minMaxMin = 0xffffffff;
+ 935   1              usHTotal -= 2;  //2005-05-25 mingyu: reduce fine tune time change to 2 times from 5 times
+ 936   1              for(k=0; k<5; k++){
+ 937   2                      SetADC_PLL();
+ 938   2      //              WaitSetup(4);
+ 939   2                      if ( bOptAbort == TRUE )
+ 940   2                              return;
+ 941   2                      Value = CheckPhaseData();
+ 942   2                      if ( bOptAbort == TRUE )
+ 943   2                              return;
+ 944   2                      if(MaxMin < Value){
+ 945   3                              GoodDotClk = usHTotal;
+ 946   3                              MaxMin = Value;
+ 947   3                              templ = TempValue;
+ 948   3                              temph = TempData;
+ 949   3                      }
+ 950   2                      if(minMaxMin > Value){
+ 951   3                              minMaxMin = Value;
+ 952   3                              PoorDotClk = usHTotal;
+ 953   3                      }
+ 954   2                      usHTotal ++;
+ 955   2              }
+ 956   1      
+ 957   1              usHTotal = GoodDotClk;
+ 958   1              if(abs(GoodDotClk - PoorDotClk) != 1)
+ 959   1                      usHTotal &= 0xfffe;
+ 960   1              SetADC_PLL();
+ 961   1              
+ 962   1      #if 1   // 2005-12-01
+ 963   1              //Value = (unsigned long)H_ActiveTab[ucResolution] * V_ActiveTab[ucResolution] * 256;
+ 964   1              Value = (unsigned long)H_ActiveTab[ucResolution] * V_ActiveTab[ucResolution] *64;  // V028, FIND BEST IN 
+             -PAT-1
+ 965   1      //printf("Value=%ld\r\n", Value);
+ 966   1      //printf("MaxMin=%ld\r\n", MaxMin);
+ 967   1              if(MaxMin < Value){
+ 968   2                      ucADCPhase = (templ + 24) & 0x3f;
+ 969   2                      ucPrevKey = 32;
+ 970   2                      //printf("REVERSE 180\r\n");
+ 971   2              }
+ 972   1              else{
+ 973   2                      ucADCPhase = (temph - 8) & 0x3f;
+ 974   2                      ucPrevKey = 16;
+ 975   2                      //printf("FIND BEST PHASE\r\n");
+ 976   2              }
+ 977   1      #else
+                      ucADCPhase = (temph - 8) & 0x3f;
+                      ucPrevKey = 16;
+              #endif
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 17  
+
+ 981   1      /*
+ 982   1              ucADCPhase = (templ + 24) & 0x3f;
+ 983   1              ucPrevKey = 32;
+ 984   1      */
+ 985   1              SetADC_Phase();
+ 986   1              //NVTprint1("MinPhase = %d\r\n",(unsigned short)templ);
+ 987   1              //NVTprint1("MaxPhase = %d\r\n",(unsigned short)temph);
+ 988   1              //NVTprint1("usHTotal = %d\r\n",usHTotal);
+ 989   1      
+ 990   1      }
+ 991          
+ 992          unsigned long CheckPhaseData(void)
+ 993          {
+ 994   1      xdata unsigned long Value,MinValueTemp,MaxValueTemp;
+ 995   1              MaxValueTemp = 0;
+ 996   1              MinValueTemp = 0xffffffff;
+ 997   1              ucADCPhase = 0;
+ 998   1              SetADC_Phase();
+ 999   1      //      Sleep(5);
+1000   1              WriteIIC560(GI_AUTO_TUNE_CTRL,0x42); // 0x01 --> 0x09
+1001   1              ucLoopTimer_10ms = 10;
+1002   1              for(ucADCPhase=4; ucADCPhase<0x42; ucADCPhase = ucADCPhase + 4){
+1003   2      
+1004   2      
+1005   2                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+1006   3                              CheckModeChange();
+1007   3                              if ( bOptAbort == TRUE )
+1008   3                                      return 0;
+1009   3                      }
+1010   2                      SetADC_Phase();
+1011   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x42);
+1012   2                      ucLoopTimer_10ms = 10;
+1013   2                      Value = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+1014   2                      Value <<= 16;
+1015   2                      Value += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+1016   2                      if(Value < MinValueTemp){
+1017   3                              MinValueTemp = Value;
+1018   3                              TempValue = (ucADCPhase - 4) & 0x3f;
+1019   3                      }
+1020   2                      if(Value > MaxValueTemp){
+1021   3                              MaxValueTemp = Value;
+1022   3                              TempData = (ucADCPhase - 4) & 0x3f;
+1023   3                      }
+1024   2              }
+1025   1      
+1026   1              Value = MaxValueTemp - MinValueTemp;
+1027   1      
+1028   1      //      printf("usHTotal = %d\r\n",usHTotal);
+1029   1      //      printf("MaxMin = %ld\r\n",Value);
+1030   1      
+1031   1              return Value;
+1032   1      }
+1033          
+1034          bit FindOffset()
+1035          {
+1036   1              ucLoopTimer_10ms = 100;
+1037   1                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x6a);    //minimum value
+1038   1                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+1039   2                              CheckModeChange();
+1040   2                              if ( bOptAbort == TRUE )
+1041   2                                      return 0;
+1042   2                      }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 18  
+
+1043   1              return 1;
+1044   1      }
+1045          
+1046          void UpdateADCOffset()
+1047          {       
+1048   1              WriteIIC560(ROFFSET, ucR_ADC_Offset);
+1049   1              WriteIIC560(GOFFSET, ucG_ADC_Offset);
+1050   1              WriteIIC560(BOFFSET, ucB_ADC_Offset);
+1051   1              
+1052   1              Write24C16(EPADDR_ADCR_OFFSET, ucR_ADC_Offset);//0x4a = ADC r offset
+1053   1              if(ucSignalType == sigSOG)
+1054   1                      Write24C16(EPADDR_ADCG_OFFSET, ucG_ADC_Offset+5);//0x4b = ADC g offset
+1055   1              else
+1056   1                      Write24C16(EPADDR_ADCG_OFFSET, ucG_ADC_Offset);//0x4b = ADC g offset
+1057   1              Write24C16(EPADDR_ADCB_OFFSET, ucB_ADC_Offset);//0x4c = ADC b offset
+1058   1      //printf("offset:r=%d,g=%d,b=%d\r\n", (unsigned short)r_offset,(unsigned short)g_offset,(unsigned short)b_
+             -offset);
+1059   1      
+1060   1      }
+1061          
+1062          #ifdef AUTO_OFFSET
+              void AutoOffsetExit()
+              {
+                      UpdateADCOffset();
+                      
+                      WriteIIC560(NR_CTRL,regNR1);
+                      WriteIIC560(NR_THR_CTRL1,regNR2);
+                      WriteIIC560(JITTER_CTRL,regNR3);                        //Analog de-jitter
+                      WriteIIC560(NR_THR_CTRL2,regNR4);               //Analog de-jitter
+                      
+                      WriteIIC560(ADC_BW_CTRL,0x06);
+              }
+              
+              
+              void SetADC_AutoOffset(void)
+              {
+              #define OFFSET1(x) (x-40)
+              #define OFFSET2(x) (x-80)
+              #define OFFSET_DIFF 40
+              //unsigned char r,g,b,          // original RGB
+              unsigned char   r1,g1,b1,               // RGB from Offset-40
+                                   r2,g2,b2;          // RGB from Offset-80
+              
+              //unsigned char r_offset=0, g_offset=0, b_offset=0;
+              float temp_offset;
+              
+                      WriteIIC560(ADC_BW_CTRL,0x00);
+                                   
+                      regNR1 = ReadIIC560(NR_CTRL);
+                      regNR2 = ReadIIC560(NR_THR_CTRL1);
+                      regNR3 = ReadIIC560(JITTER_CTRL);
+                      regNR4 = ReadIIC560(NR_THR_CTRL2);
+                      
+                      WriteIIC560(NR_CTRL,0x3a);
+                      WriteIIC560(NR_THR_CTRL1,0xee);
+                      WriteIIC560(JITTER_CTRL,0x00);                  //Analog de-jitter
+                      WriteIIC560(NR_THR_CTRL2,0x0e);         //Analog de-jitter
+                      
+                      ucR_ADC_Offset = ReadIIC560(ROFFSET);
+                      ucG_ADC_Offset = ReadIIC560(GOFFSET);
+                      ucB_ADC_Offset = ReadIIC560(BOFFSET);
+              
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 19  
+
+                     
+              //printf("offset:r=%d,g=%d,b=%d\r\n", (unsigned short)r,(unsigned short)g,(unsigned short)b);
+                      //--------------------------------------------
+                      //      1ST: OFFSET-40
+                      //--------------------------------------------
+                      WriteIIC560(ROFFSET, OFFSET1(ucR_ADC_Offset));
+                      WriteIIC560(GOFFSET, OFFSET1(ucG_ADC_Offset));
+                      WriteIIC560(BOFFSET, OFFSET1(ucB_ADC_Offset));
+                      
+                      if ( FindOffset() == 0 )
+                      {
+                              AutoOffsetExit();
+                              return;
+                      }
+                      
+                      r1 = ReadIIC560(GI_PHS_SDIFF_LI0);
+                      g1 = ReadIIC560(GI_PHS_SDIFF_LI1);
+                      b1 = ReadIIC560(GI_PHS_SDIFF_HI0);
+              //printf("%d,%d,%d\r\n", (unsigned short)r1, (unsigned short)g1, (unsigned short)b1);
+                      //--------------------------------------------
+                      //      2ND: OFFSET-80
+                      //--------------------------------------------
+                      WriteIIC560(ROFFSET, OFFSET2(ucR_ADC_Offset));
+                      WriteIIC560(GOFFSET, OFFSET2(ucG_ADC_Offset));
+                      WriteIIC560(BOFFSET, OFFSET2(ucB_ADC_Offset));
+                      
+                      if ( FindOffset() == 0 )
+                      {
+                              AutoOffsetExit();
+                              return;
+                      }
+                      
+                      r2 = ReadIIC560(GI_PHS_SDIFF_LI0);
+                      g2 = ReadIIC560(GI_PHS_SDIFF_LI1);
+                      b2 = ReadIIC560(GI_PHS_SDIFF_HI0);
+              //printf("%d,%d,%d\r\n", (unsigned short)r2, (unsigned short)g2, (unsigned short)b2);
+              
+                      temp_offset = ((float)(OFFSET_DIFF)/(r2-r1)+(float)(OFFSET_DIFF)/(g2-g1)+(float)(OFFSET_DIFF)/(b2-b1))/3;
+                      if ( (temp_offset < 8 ) && (r1!=0 &&  g1!=0 && b1!=0 &&  r2!=0 &&  g2!=0 &&  b2!=0))
+                      {
+              //printf("%d\r\n",(unsigned short) temp_offset);
+                      /*
+                              r_offset = OFFSET1(r) + (r1+4)*(float)(OFFSET1(r)-OFFSET2(r))/(r2-r1)+0.5;
+                              g_offset = OFFSET1(g) + (g1+4)*(float)(OFFSET1(g)-OFFSET2(g))/(g2-g1)+0.5;
+                              b_offset = OFFSET1(b) + (b1+4)*(float)(OFFSET1(b)-OFFSET2(b))/(b2-b1)+0.5;
+                      */
+                              ucR_ADC_Offset = OFFSET1(ucR_ADC_Offset) + (r1+6)*temp_offset+0.5;
+                              ucG_ADC_Offset = OFFSET1(ucG_ADC_Offset) + (g1+6)*temp_offset+0.5;
+                              ucB_ADC_Offset = OFFSET1(ucB_ADC_Offset) + (b1+6)*temp_offset+0.5;
+                      
+                      }
+                      
+                      AutoOffsetExit();
+                      
+              }
+              #endif
+1160          
+1161          
+1162          void SetADC_Offset_C(void)
+1163          {
+1164   1      #define MaxBlackOffset 10//8//6
+1165   1      #define MinBlackOffset 5//3//1
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 20  
+
+1166   1      unsigned char i,k,value,rgb[3];
+1167   1              rgb[0] = ReadIIC560(ROFFSET);
+1168   1              rgb[1] = ReadIIC560(GOFFSET);
+1169   1              rgb[2] = ReadIIC560(BOFFSET);
+1170   1      
+1171   1              for(k=32; k<240; k++){
+1172   2                      
+1173   2                      if(FindOffset() == 0) return;
+1174   2                      
+1175   2      //              printf("\r\n");
+1176   2      //              printf("r = %d\r\n", (unsigned short)rgb[0]);
+1177   2      //              printf("g = %d\r\n", (unsigned short)rgb[1]);
+1178   2      //              printf("b = %d\r\n", (unsigned short)rgb[2]);
+1179   2                      i = 0;
+1180   2                      value = ReadIIC560(GI_PHS_SDIFF_LI0);
+1181   2      //              printf("GI_PHS_SDIFF_LI0 = %d\r\n", (unsigned short)value);
+1182   2                      if((value < MinBlackOffset) && (rgb[0] > 8)){   // >0
+1183   3                              rgb[0] -= (MinBlackOffset-value);//2;
+1184   3                              i = 0xff;
+1185   3                      }
+1186   2                      if((value > MaxBlackOffset) && (rgb[0] < 248)){ // < 0x7f
+1187   3                              rgb[0] += (value - MaxBlackOffset);//2;
+1188   3                              i = 0xff;
+1189   3                      }
+1190   2                      value = ReadIIC560(GI_PHS_SDIFF_LI1);
+1191   2      //              printf("GI_PHS_SDIFF_LI1 = %d\r\n", (unsigned short)value);
+1192   2                      if((value < MinBlackOffset) && (rgb[1] > 8)){   // >0
+1193   3                              rgb[1] -= (MinBlackOffset-value);//2;
+1194   3                              i = 0xff;
+1195   3                      }
+1196   2                      if((value > MaxBlackOffset) && (rgb[1] < 248)){ // < 0x7F
+1197   3                              rgb[1] += (value - MaxBlackOffset);//2;
+1198   3                              i = 0xff;
+1199   3                      }
+1200   2                      value = ReadIIC560(GI_PHS_SDIFF_HI0);
+1201   2      //              printf("GI_PHS_SDIFF_HI0 = %d\r\n", (unsigned short)value);
+1202   2                      if((value < MinBlackOffset) && (rgb[2] > 8)){   // >0
+1203   3                              rgb[2] -= (MinBlackOffset-value);//2;
+1204   3                              i = 0xff;
+1205   3                      }
+1206   2                      if((value > MaxBlackOffset) && (rgb[2] < 248)){   // < 0x7f
+1207   3                              rgb[2] += (value - MaxBlackOffset);//2;
+1208   3                              i = 0xff;
+1209   3                      }
+1210   2                      if(i == 0){
+1211   3                              break;
+1212   3                      }
+1213   2                      else{
+1214   3                              WriteIIC560(ROFFSET,rgb[0]);
+1215   3                              WriteIIC560(GOFFSET,rgb[1]);
+1216   3                              WriteIIC560(BOFFSET,rgb[2]);
+1217   3                      }
+1218   2              }
+1219   1      
+1220   1      }
+1221          
+1222          void SetADC_Gain_C(void)
+1223          {
+1224   1      #define MaxWhiteGain 0xf8//0xfa//0xfe
+1225   1      #define MinWhiteGain 0xf0//0xf2//0xf9
+1226   1      
+1227   1      unsigned char i,k,value,rgb[3];
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 21  
+
+1228   1      
+1229   1              rgb[0] = ReadIIC560(RGAIN_HI);
+1230   1              rgb[1] = ReadIIC560(GGAIN_HI);
+1231   1              rgb[2] = ReadIIC560(BGAIN_HI);
+1232   1      
+1233   1              for(k=0; k<128; k++){
+1234   2                      ucLoopTimer_10ms = 100;
+1235   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x6e);
+1236   2                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+1237   3                              CheckModeChange();
+1238   3                              if(bOptAbort == TRUE)
+1239   3                                      return;
+1240   3                      }
+1241   2      //              printf("\r\n");
+1242   2      //              printf("r = %d\r\n", (unsigned short)rgb[0]);
+1243   2      //              printf("g = %d\r\n", (unsigned short)rgb[1]);
+1244   2      //              printf("b = %d\r\n", (unsigned short)rgb[2]);
+1245   2                      i = 0;
+1246   2                      value = ReadIIC560(GI_PHS_SDIFF_LI0);
+1247   2      //              printf("GI_PHS_SDIFF_LI0 = %d\r\n", (unsigned short)value);
+1248   2                      if((value < MinWhiteGain) && (rgb[0] > 8)){     // >0
+1249   3                              rgb[0] -= (MinWhiteGain-value);//2;
+1250   3                              i = 0xff;
+1251   3                      }
+1252   2                      if((value > MaxWhiteGain) && (rgb[0] < 248)){   // < 0xff
+1253   3                              rgb[0] += (value-MaxWhiteGain);//2;
+1254   3                              i = 0xff;
+1255   3                      }
+1256   2                      value = ReadIIC560(GI_PHS_SDIFF_LI1);
+1257   2      //              printf("GI_PHS_SDIFF_LI1 = %d\r\n", (unsigned short)value);
+1258   2                      if((value < MinWhiteGain) && (rgb[1] > 8)){
+1259   3                              rgb[1] -= (MinWhiteGain-value);//2;
+1260   3                              i = 0xff;
+1261   3                      }
+1262   2                      if((value > MaxWhiteGain) && (rgb[1] < 248)){
+1263   3                              rgb[1] += (value-MaxWhiteGain);//2;
+1264   3                              i = 0xff;
+1265   3                      }
+1266   2                      value = ReadIIC560(GI_PHS_SDIFF_HI0);
+1267   2      //              printf("GI_PHS_SDIFF_HI0 = %d\r\n", (unsigned short)value);
+1268   2                      if((value < MinWhiteGain) && (rgb[2] > 8)){
+1269   3                              rgb[2] -= (MinWhiteGain-value);//2;
+1270   3                              i = 0xff;
+1271   3                      }
+1272   2                      if((value > MaxWhiteGain) && (rgb[2] < 248)){
+1273   3                              rgb[2] += (value-MaxWhiteGain);//2;
+1274   3                              i = 0xff;
+1275   3                      }
+1276   2                      if(i == 0){
+1277   3                              break;
+1278   3                      }
+1279   2                      else{
+1280   3                              WriteIIC560(RGAIN_HI,rgb[0]);
+1281   3                              WriteIIC560(GGAIN_HI,rgb[1]);
+1282   3                              WriteIIC560(BGAIN_HI,rgb[2]);
+1283   3      //                      Sleep(10);
+1284   3                      }
+1285   2              }
+1286   1      
+1287   1      }
+1288          
+1289          
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 22  
+
+1290          void CheckClock(void)
+1291          {
+1292   1      unsigned char H_Difference,Compare,i;
+1293   1      unsigned short H_Ref,H_MAX;
+1294   1      unsigned long TempPhase,ScreenPixel;
+1295   1      
+1296   1              bOptAbort = FALSE;
+1297   1              H_Ref = H_ActiveTab[ucResolution];
+1298   1      //      V_Act = V_ActiveTab[ucResolution];
+1299   1              H_MAX = H_Ref << 1;
+1300   1              H_MAX += H_Ref;
+1301   1              ScreenPixel = (unsigned long)H_ActiveTab[ucResolution] * V_ActiveTab[ucResolution];
+1302   1      //      printf("Check Resolution = %d x %d\r\n",H_ActiveTab[ucResolution],V_ActiveTab[ucResolution]);
+1303   1      // Set refance H_Active
+1304   1              WriteWordIIC560(GI_CLK_REF_LI,H_Ref);
+1305   1      //      printf("Check %d\r\n",H_Ref);
+1306   1      
+1307   1              WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+1308   1              ucLoopTimer_10ms = 10;
+1309   1              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_0) && ucLoopTimer_10ms != 0){
+1310   2                      CheckModeChange();
+1311   2                      if(bOptAbort == TRUE)
+1312   2                              return;
+1313   2              }
+1314   1              if(ucLoopTimer_10ms == 0){
+1315   2                      bOptAbort = TRUE;
+1316   2                      return;
+1317   2              }
+1318   1              usActiveH = ReadWordIIC560(GI_POS_HWID_LI) & 0x0fff;
+1319   1              H_Difference = ReadIIC560(GI_CLK_RESULT);
+1320   1              Compare = (H_Difference & 0xc0) >> 6;
+1321   1              H_Difference = H_Difference & 0x3f;
+1322   1      //      printf("usHTotal = %d\r\n",usHTotal);
+1323   1      //      printf("H_Act = %d\r\n",usActiveH);
+1324   1      //      printf("H_Difference = %d\r\n",(unsigned short)H_Difference);
+1325   1              if(abs(usActiveH-H_Ref) > 48){  //32
+1326   2                      bAutoClockResult = FALSE;
+1327   2      //              printf("Clock Fail\r\n");
+1328   2      
+1329   2                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x42); // 0x01 --> 0x09
+1330   2                      ucLoopTimer_10ms = 10;
+1331   2                      while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+1332   3                              CheckModeChange();
+1333   3                              if(bOptAbort == TRUE)
+1334   3                                      return;
+1335   3                      }
+1336   2                      TempPhase = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+1337   2                      TempPhase <<= 16;
+1338   2                      TempPhase += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+1339   2      //              printf("Phase %ld %ld\r\n",TempPhase,ScreenPixel);      
+1340   2      //              if(TempPhase < ScreenPixel){
+1341   2                      if(TempPhase < (ScreenPixel >> 3)){
+1342   3                              bOptAbort = TRUE;
+1343   3      //                      printf("bOptAbort\r\n");        
+1344   3                      }
+1345   2              }
+1346   1              else{
+1347   2                      for(i=0; i<0x20; i++){
+1348   3                              GetHmask();
+1349   3                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+1350   3                              ucLoopTimer_10ms = 10;
+1351   3                              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_0) && ucLoopTimer_10ms != 0){
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 23  
+
+1352   4                                      CheckModeChange();
+1353   4                                      if(bOptAbort == TRUE)
+1354   4                                              return;
+1355   4                              }
+1356   3                              if(ucLoopTimer_10ms == 0){
+1357   4                                      bOptAbort = TRUE;
+1358   4                                      return;
+1359   4                              }
+1360   3                              usActiveH = ReadWordIIC560(GI_POS_HWID_LI) & 0x0fff;
+1361   3                              H_Difference = ReadIIC560(GI_CLK_RESULT);
+1362   3                              Compare = (H_Difference & 0xc0) >> 6;
+1363   3                              H_Difference = H_Difference & 0x3f;
+1364   3      //                      printf("usHTotal = %d\r\n",usHTotal);
+1365   3      //                      printf("H_Act = %d\r\n",usActiveH);
+1366   3      //                      printf("H_Difference = %d\r\n",(unsigned short)H_Difference);
+1367   3                              if(Compare==0x00){
+1368   4                                      break; //H_Ref=usActiveH
+1369   4                              }
+1370   3                              if(Compare==0x01){
+1371   4                                      usHTotal = usHTotal + H_Difference;
+1372   4                                      if(usHTotal > H_MAX){   //4096 //2048
+1373   5                                              i = 0xff;
+1374   5                                              break;
+1375   5                                      }
+1376   4                              }
+1377   3                              if(Compare > 0x01){
+1378   4                                      usHTotal = usHTotal - H_Difference;
+1379   4                                      if(usHTotal < H_Ref){
+1380   5                                              i = 0xff;
+1381   5                                              break;
+1382   5                                      }
+1383   4                              }
+1384   3                              SetADC_PLL();
+1385   3                              if(bOutOfLimit == TRUE){ 
+1386   4                                      bOptAbort = TRUE;
+1387   4                                      return;
+1388   4                              }
+1389   3                      }
+1390   2                      if(i == 0xff)
+1391   2                              bAutoClockResult = FALSE;
+1392   2                      else
+1393   2                              bAutoClockResult = TRUE;
+1394   2      //              printf("Clock OK\r\n");
+1395   2              }
+1396   1      }
+1397          
+1398          float CheckPhase(void)
+1399          {
+1400   1      xdata unsigned long Phase_Now;
+1401   1      xdata float Phase_average;
+1402   1      xdata unsigned short H_Width,V_High;
+1403   1      
+1404   1      //      printf("CheckPhase\r\n");
+1405   1              H_Width = ReadWordIIC560(GI_POS_HWID_LI) & 0x0fff;
+1406   1              V_High = ReadWordIIC560(GI_POS_VLEN_LI) & 0x0fff;
+1407   1              Phase_Now = CheckPhaseData();
+1408   1      //      printf("Phase %ld\r\n",Phase_Now);
+1409   1              Phase_average = (float)Phase_Now / H_Width / V_High;
+1410   1      //      printf("Phase_average = %f\r\n",Phase_average);
+1411   1              return Phase_average;
+1412   1      }
+1413          
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 24  
+
+1414          #ifdef __CHECK_RESOLUTION__
+1415          void CheckResolution(void)
+1416          {
+1417   1      code unsigned char ResolutionTab[]={
+1418   1              R1024x768,R1280x768,R1280x768,R1360x768,R960x720,R1280x720,R1680x1050,R1680x1050
+1419   1      };
+1420   1      
+1421   1      code unsigned short HTotalTab60Hz[]={
+1422   1      //      1024 1280 1280 1360  960 1280  1680  1680
+1423   1              1344,1440,1644,1792,1288,1664,1840,2240
+1424   1      };
+1425   1      code unsigned short HTotalTab70Hz[]={
+1426   1      //      1024 1280 1280 1360
+1427   1              1328,1696,1696,1808,
+1428   1      };
+1429   1      code unsigned short HTotalTab72Hz[]={
+1430   1      //      1024 1280 1280 1360
+1431   1              1360,1696,1696,1808,
+1432   1      };
+1433   1      code unsigned short HTotalTab75Hz[]={
+1434   1      //      1024 1280 1280 1360  960 1280  1680
+1435   1              1312,1696,1696,1808,1284,1696,2272
+1436   1      };
+1437   1      code unsigned short HTotalTab85Hz[]={
+1438   1      //      1024 1280 1280 1360
+1439   1              1376,1712,1712,1808,
+1440   1      };
+1441   1      unsigned char Resolution,i,ResolutionBak;
+1442   1      xdata float maxPhase,temp_phase;
+1443   1      unsigned short HTotal_temp;//,Min_Dif,HTotal_Dif;
+1444   1      unsigned char min,max;
+1445   1              maxPhase = 0;
+1446   1              HTotal_temp = usHTotal;
+1447   1              if((ucResolution == R1024x768)||(ucResolution == R1280x768)||(ucResolution == R1360x768)||
+1448   1                 (ucResolution == R1400x1050)||
+1449   1                 (ucResolution == R1680x1050)||
+1450   1                 (ucResolution == R960x720)||
+1451   1                 (ucResolution == R1280x720)){        //H/V, H+V, SOG
+1452   2                      
+1453   2                      if ((ucResolution == R1280x720) || (ucResolution == R960x720)){
+1454   3                              if ((usVSync > 590) && (usVSync < 610)){
+1455   4                                      min = 4;
+1456   4                                      max = 6;
+1457   4                              }
+1458   3                              else if ((usVSync > 740) && (usVSync < 760)){
+1459   4                                      min = 4;
+1460   4                                      max = 6;
+1461   4                              }
+1462   3                              else return;
+1463   3      
+1464   3                              Resolution = R960x720;
+1465   3                      }
+1466   2                      else if ((ucResolution == R1680x1050) || (ucResolution == R1400x1050)){
+1467   3                              if ((usVSync > 590) && (usVSync < 610)){
+1468   4                                      min = 6;
+1469   4                                      max = 8;
+1470   4                              }
+1471   3                              else if ((usVSync > 740) && (usVSync < 760)){
+1472   4                                      min = 6;
+1473   4                                      max = 8;
+1474   4                              }
+1475   3                              else 
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 25  
+
+1476   3                                      return;
+1477   3                              Resolution = R1680x1050;
+1478   3                      }
+1479   2                      else{
+1480   3                              min = 0;
+1481   3                              max = 4;
+1482   3                              Resolution = R1024x768;
+1483   3                      }
+1484   2      
+1485   2                      ResolutionBak = ucResolution;
+1486   2                      bBGMode = TRUE;
+1487   2                      for(i=min; i<max; i++){
+1488   3                              if((abs(usVSync-600) > 10)&&(i == 1)){
+1489   4                                      i++;
+1490   4                              }
+1491   3      //                      printf("i=%d\r\n",(unsigned short)i);
+1492   3                              ucResolution = ResolutionTab[i];
+1493   3                              if(usVSync < 650)
+1494   3                                      usHTotal = HTotalTab60Hz[i];
+1495   3                              else if(usVSync < 710)
+1496   3                                      usHTotal = HTotalTab70Hz[i];
+1497   3                              else if(usVSync < 735)
+1498   3                                      usHTotal = HTotalTab72Hz[i];
+1499   3                              else if(usVSync < 800)
+1500   3                                      usHTotal = HTotalTab75Hz[i];
+1501   3                              else
+1502   3                                      usHTotal = HTotalTab85Hz[i];
+1503   3                              SetADC_PLL();
+1504   3      //                      WriteWordIIC560(GI_CAP_VLEN_LI,V_ActiveTab[ucResolution]);              // Capture V_Active
+1505   3      //                      WriteWordIIC560(GI_CAP_HWID_LI,H_ActiveTab[ucResolution]);              // Capture H_Active
+1506   3                              ucMinVP = 0;
+1507   3                              ucVPOffset = 0;
+1508   3                              SetScaler();
+1509   3                              bOptAbort = FALSE;
+1510   3                              AutoPosition();
+1511   3                              CheckClock();
+1512   3                              if(bOptAbort == TRUE) break;
+1513   3                              if(bAutoClockResult == TRUE){
+1514   4                                      temp_phase = CheckPhase();
+1515   4                                      if(bOptAbort == TRUE) break;
+1516   4                                      if(maxPhase < temp_phase){
+1517   5                                              maxPhase = temp_phase;
+1518   5                                              HTotal_temp = usHTotal;
+1519   5                                              Resolution = ResolutionTab[i];
+1520   5      //                                      printf("Resolution %d\r\n",(unsigned short)Resolution);
+1521   5      //                                      printf("usHTotal %d\r\n",(unsigned short)HTotal_temp);
+1522   5                                      }
+1523   4                              }
+1524   3                      }
+1525   2                      ucResolution = Resolution;
+1526   2      //              min = ucModeNumber;
+1527   2      //              Min_Dif = 0xffff;
+1528   2                      if((ucResolution != ResolutionBak)&&(bOptAbort == FALSE)){
+1529   3      /*                      for(ucModeNumber=0; ucModeNumber<NUMBER_OF_USER_MODE; ucModeNumber++){
+1530   3                                      ucResolution = EEPROM_TimingTable[ucModeNumber].ucResolution;
+1531   3                                      if(Resolution == ucResolution){
+1532   3                                              usHTotal = EEPROM_TimingTable[ucModeNumber].usHTotal;
+1533   3                                              HTotal_Dif = abs(usHTotal - HTotal_temp);
+1534   3                                              if(Min_Dif > HTotal_Dif){
+1535   3                                                      Min_Dif = HTotal_Dif;
+1536   3                                                      min = ucModeNumber;
+1537   3                                              }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 26  
+
+1538   3                                      }
+1539   3                              }
+1540   3                              ucModeNumber = min;
+1541   3                      }*/
+1542   3                              usHTotal = HTotal_temp;
+1543   3                              HTotal_temp = (unsigned short)((float)H_ActiveTab[ucResolution] * 1.05); 
+1544   3                              if(usHTotal < HTotal_temp)
+1545   3                                      usHTotal = HTotal_temp;
+1546   3                              Write24C16(NVRAM_RESOLU(ucModeNumber), Resolution);
+1547   3                              Write24C16_Short(NVRAM_HTOTAL(ucModeNumber), usHTotal);
+1548   3                              SetADC_PLL();
+1549   3                              ucMinVP = 0;
+1550   3                              ucVPOffset = 0;
+1551   3                              SetScaler();
+1552   3      //                      printf("ModeNumberx1 %d\r\n",(unsigned short)ucModeNumber);
+1553   3      //                      printf("Resolutionx1 %d\r\n",(unsigned short)ucResolution);
+1554   3                      }
+1555   2                      else{
+1556   3                              LoadModeDependentSettings();
+1557   3                              SetADC_PLL();
+1558   3                              SetScaler();
+1559   3      //                      printf("ModeNumberx2 %d\r\n",(unsigned short)ucModeNumber);
+1560   3      //                      printf("Resolutionx2 %d\r\n",(unsigned short)ucResolution);
+1561   3                      }
+1562   2                      bBGMode = FALSE;
+1563   2              }
+1564   1      }
+1565          #endif
+1566          #if 0
+              void AutoDelay(void)
+              {
+              unsigned char Reg0x0d9,k,d;
+              unsigned long temp1,temp2;
+                      Reg0x0d9 = ReadIIC560(HPLL_PHASE_CTRL1) & 0x3f;
+                      WriteIIC560(HPLL_PHASE_CTRL1,Reg0x0d9);
+                      k = 0;
+                      temp2 = 0;
+                      for(d=0; d<0x10; d++){
+                              WriteIIC560(HPLL_PHASE_CTRL2,d);
+                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x42);
+                              ucLoopTimer_10ms = 10;
+                              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+                                      CheckModeChange();
+                                      if(bOptAbort == TRUE )
+                                              return;
+                              }
+                              temp1 = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+                              temp1 <<= 16;
+                              temp1 += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+                              printf("%d %ld\r\n",(unsigned short)d,temp1);
+                              if(temp2 < temp1){
+                                      temp2 = temp1;
+                                      k = d;
+                              }
+                      }
+                      WriteIIC560(HPLL_PHASE_CTRL2,0);//k;
+                      printf("r=%d\r\n",(unsigned short)k);
+              
+                      WriteIIC560(HPLL_PHASE_CTRL1,(Reg0x0d9 | BIT_6));
+                      k = 0;
+                      temp2 = 0;
+                      for(d=0; d<0x10; d++){
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 27  
+
+                              WriteIIC560(HPLL_PHASE_CTRL2,d);
+                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x42);
+                              ucLoopTimer_10ms = 10;
+                              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+                                      CheckModeChange();
+                                      if(bOptAbort == TRUE )
+                                              return;
+                              }
+                              temp1 = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+                              temp1 <<= 16;
+                              temp1 += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+                              printf("%d %ld\r\n",(unsigned short)d,temp1);
+                              if(temp2 < temp1){
+                                      temp2 = temp1;
+                                      k = d;
+                              }
+                      }
+                      WriteIIC560(HPLL_PHASE_CTRL2,0);//k;
+                      printf("g=%d\r\n",(unsigned short)k);
+              
+                      WriteIIC560(HPLL_PHASE_CTRL1,(Reg0x0d9 | BIT_7));
+                      k = 0;
+                      temp2 = 0;
+                      for(d=0; d<0x10; d++){
+                              WriteIIC560(HPLL_PHASE_CTRL2,d);
+                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x42);
+                              ucLoopTimer_10ms = 10;
+                              while((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) && ucLoopTimer_10ms != 0){
+                                      CheckModeChange();
+                                      if(bOptAbort == TRUE )
+                                              return;
+                              }
+                              temp1 = ReadWordIIC560(GI_PHS_SDIFF_HI0);
+                              temp1 <<= 16;
+                              temp1 += ReadWordIIC560(GI_PHS_SDIFF_LI0);
+                              printf("%d %ld\r\n",(unsigned short)d,temp1);
+                              if(temp2 < temp1){
+                                      temp2 = temp1;
+                                      k = d;
+                              }
+                      }
+                      WriteIIC560(HPLL_PHASE_CTRL2,0);//k;
+                      printf("b=%d\r\n",(unsigned short)k);
+              }
+              
+              #endif
+1646          
+1647          void GetHmask(void)
+1648          {
+1649   1      
+1650   1      unsigned short mask,hw;
+1651   1      unsigned char sw;
+1652   1      float temp;
+1653   1              WriteIIC560(GI_HMASK_BEG,0x10);  // AutoPosition Pixel mask -> H
+1654   1              sw = ReadIIC560(GI_HS_WID);
+1655   1      //      printf("GI_HS_WID=%d\r\n",(unsigned short)sw);
+1656   1              hw = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+1657   1      //      printf("GI_HCNT_LI=%d\r\n",hw);
+1658   1              temp = (float)usHTotal * sw * 8 / hw;
+1659   1              if((abs(usVSync-600) < 11)&&((H_ActiveTab[ucResolution] == 640)&&(V_ActiveTab[ucResolution] == 480))){
+1660   2                      mask = (unsigned char)(temp * 11 / 10 + 0.5);
+1661   2              }
+C51 COMPILER V8.12   AUTOADJ                                                               04/16/2014 18:12:31 PAGE 28  
+
+1662   1              else{
+1663   2                      mask = (unsigned char)(temp * 12 / 10 + 0.5);
+1664   2              }
+1665   1              if(mask > 0xff) mask = 0xff;
+1666   1              hw = usHTotal - H_ActiveTab[ucResolution] - usHPStart;
+1667   1              if(mask > hw)
+1668   1                      mask = hw;
+1669   1              WriteIIC560(GI_HMASK_END,mask);  // AutoPosition Pixel mask -> H
+1670   1      //      printf("mask=%d\r\n",(unsigned short)mask);
+1671   1      
+1672   1      }
+1673          
+1674          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   6292    ----
+   CONSTANT SIZE    =     62    ----
+   XDATA SIZE       =   ----     162
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =      1    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

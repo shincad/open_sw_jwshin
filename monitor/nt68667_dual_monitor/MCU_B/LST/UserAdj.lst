@@ -1,0 +1,1106 @@
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE USERADJ
+OBJECT MODULE PLACED IN .\BIN\UserAdj.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\UserAdj.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mod
+                    -elName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\UserAdj.lst) OBJECT(.\BIN\UserAdj.obj)
+
+line level    source
+
+   1          #include "NT686xx_MCU_REG.H"
+   2          #include "NT686xx_SC_REG.H"
+   3          #include "UserAdj.H"
+   4          #include "RAM.H"
+   5          #include "IIC.H"
+   6          #include "MyDef.H"
+   7          #include "Scaler.H"
+   8          #include "NVRAM.H"
+   9          #include "Rom_map.H"
+  10          #include "OSD.H"
+  11          #include "MCU.H"
+  12          #include "OSD_TAB.H"    // LANG_NUM
+  13          #include "sRGB.H"
+  14          #include "AutoAdj.H"
+  15          //#include "stdio.H"
+  16          #include "ModeHandle.H"
+  17          #include "Panel.H"
+  18          #include "board.H"
+  19          #include "SmartBright.H"
+  20          #include "BFControl.H"
+  21          #include "HDCP.H"
+  22          #include "MIs.H"
+  23          
+  24          
+  25          void BrightnessUp(void)
+  26          {
+  27   1              CheckColorTemperature();
+  28   1              if(++ucBrightness > 100)
+  29   1                      ucBrightness = 100;
+  30   1              else{
+  31   2                      SetBrightness();
+  32   2                      ShowBrightness();
+  33   2                      ucSavePointer = svBRIGHTNESS;
+  34   2                      ucDynBKMode = OFF;
+  35   2              }
+  36   1      }
+  37          
+  38          void BrightnessDown(void)
+  39          {
+  40   1              CheckColorTemperature();
+  41   1              if(--ucBrightness == 0xff)
+  42   1                      ucBrightness = 0x00;
+  43   1              else{
+  44   2                      SetBrightness();
+  45   2                      ShowBrightness();
+  46   2                      ucSavePointer = svBRIGHTNESS;
+  47   2                      ucDynBKMode = OFF;
+  48   2              }
+  49   1      }
+  50          
+  51          
+  52          #if _SmartBright_ == ON
+              void SetBrightOffset(void)
+              {
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 2   
+
+                      if(ucBrightness > ucSmartBrightValue)
+              //              if ( (ucBrightness - ucSmartBrightValue) < (usBrightOffset-100) )
+                                      usBrightOffset = 100 + (ucBrightness - ucSmartBrightValue);
+                      else
+              //              if ( (ucSmartBrightValue-ucBrightness) > (100-usBrightOffset) )
+                                      usBrightOffset = 100 - (ucSmartBrightValue - ucBrightness);
+              //      printf("usBrightOffset x= %d\r\n",(unsigned short)usBrightOffset);
+              }
+              #endif
+  64          
+  65          void ContrastUp(void)
+  66          {
+  67   1              if(++ucContrast > 100)
+  68   1                      ucContrast = 100;
+  69   1              else{
+  70   2                      SetContrastRGB();
+  71   2                      ShowContrast();
+  72   2                      ucSavePointer = svCONTRAST;
+  73   2              }
+  74   1      }
+  75          
+  76          void ContrastDown(void)
+  77          {
+  78   1              if(--ucContrast == 0xff)
+  79   1                      ucContrast = 0x00;
+  80   1              else{
+  81   2                      SetContrastRGB();
+  82   2                      ShowContrast();
+  83   2                      ucSavePointer = svCONTRAST;
+  84   2              }
+  85   1      }
+  86          
+  87          void SaturationUp(void)
+  88          {
+  89   1              if(++ucSaturation > 100)
+  90   1                      ucSaturation = 100;
+  91   1              else{
+  92   2                      SetContrastRGB();
+  93   2                      ShowSaturation();
+  94   2                      ucSavePointer = svSATURATION;
+  95   2              }
+  96   1      }
+  97          
+  98          void SaturationDown(void)
+  99          {
+ 100   1              if(--ucSaturation == 0xff)
+ 101   1                      ucSaturation = 0x00;
+ 102   1              else{
+ 103   2                      SetContrastRGB();
+ 104   2                      ShowSaturation();
+ 105   2                      ucSavePointer = svSATURATION;
+ 106   2              }
+ 107   1      }
+ 108          
+ 109          void TintUp(void)
+ 110          {
+ 111   1              if(++ucTint > 100)
+ 112   1                      ucTint = 100;
+ 113   1              else{
+ 114   2                      SetContrastRGB();
+ 115   2                      ShowTint();
+ 116   2                      ucSavePointer = svTINT;
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 3   
+
+ 117   2              }
+ 118   1      }
+ 119          
+ 120          void TintDown(void)
+ 121          {
+ 122   1              if(--ucTint == 0xff)
+ 123   1                      ucTint = 0x00;
+ 124   1              else{
+ 125   2                      SetContrastRGB();
+ 126   2                      ShowTint();
+ 127   2                      ucSavePointer = svTINT;
+ 128   2              }
+ 129   1      }
+ 130          
+ 131          
+ 132          
+ 133          
+ 134          
+ 135          
+ 136          
+ 137          
+ 138          
+ 139          void ClockUp(void)
+ 140          {
+ 141   1              if(++usHTotal > usMaxClk)
+ 142   1                      usHTotal = usMaxClk;
+ 143   1              else{
+ 144   2                      SetADC_PLL();
+ 145   2                      ShowClock();
+ 146   2                      ucSavePointer = svCLOCK;
+ 147   2      
+ 148   2              }
+ 149   1      }
+ 150          
+ 151          void ClockDown(void)
+ 152          {
+ 153   1              if(--usHTotal < usMinClk)
+ 154   1                      usHTotal = usMinClk;
+ 155   1              else{
+ 156   2                      SetADC_PLL();
+ 157   2                      ShowClock();
+ 158   2                      ucSavePointer = svCLOCK;
+ 159   2              }
+ 160   1      }
+ 161          
+ 162          void PhaseUp(void)
+ 163          {
+ 164   1              if(++ucADCPhase > 0x3f)
+ 165   1                      ucADCPhase = 0x3f;
+ 166   1              else{
+ 167   2                      SetADC_Phase();
+ 168   2                      ShowPhase();
+ 169   2                      ucSavePointer = svPHASE;
+ 170   2              }
+ 171   1      }
+ 172          
+ 173          void PhaseDown(void)
+ 174          {
+ 175   1              if(--ucADCPhase == 0xff)
+ 176   1                      ucADCPhase = 0x00;
+ 177   1              else{
+ 178   2                      SetADC_Phase();
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 4   
+
+ 179   2                      ShowPhase();
+ 180   2                      ucSavePointer = svPHASE;
+ 181   2              }
+ 182   1      }
+ 183          
+ 184          void HP_Up(void)
+ 185          {
+ 186   1              if(++usHPStart > usMaxHP){
+ 187   2                      usHPStart = usMaxHP;
+ 188   2              }
+ 189   1              else{
+ 190   2                      SetHP();
+ 191   2                      ShowHP();
+ 192   2                      ucSavePointer = svHPOS;
+ 193   2              }
+ 194   1      }
+ 195          
+ 196          void HP_Down(void)
+ 197          {
+ 198   1              usHPStart--;
+ 199   1              if((usHPStart < ucMinHP) || (usHPStart == 0xffff) ) {
+ 200   2                      usHPStart = ucMinHP;
+ 201   2              }
+ 202   1              else{
+ 203   2                      SetHP();
+ 204   2                      ShowHP();
+ 205   2                      ucSavePointer = svHPOS;
+ 206   2              }
+ 207   1      }
+ 208          
+ 209          void VP_Up(void)
+ 210          {
+ 211   1              if(++usVPStart > ucMaxVP)
+ 212   1                      usVPStart = ucMaxVP;
+ 213   1              else{
+ 214   2                      SetVP();
+ 215   2                      ShowVP();
+ 216   2                      ucSavePointer = svVPOS;
+ 217   2              }
+ 218   1      }
+ 219          
+ 220          void VP_Down(void)
+ 221          {
+ 222   1              usVPStart--;
+ 223   1              if((usVPStart == 0xffff)||(usVPStart < ucMinVP))
+ 224   1                      usVPStart = ucMinVP;
+ 225   1              else{
+ 226   2                      SetVP();
+ 227   2                      ShowVP();
+ 228   2                      ucSavePointer = svVPOS;
+ 229   2              }
+ 230   1      }
+ 231          
+ 232          void ClearNewMode()
+ 233          {
+ 234   1      code unsigned char initTab[]={
+ 235   1              0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+ 236   1      };
+ 237   1      unsigned char i;
+ 238   1              //WRITE NEW MODE
+ 239   1              for (i=0;i<0x80;i+=16)
+ 240   1              {
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 5   
+
+ 241   2                      WritePage24C16(NVRAM_SYNC(0)+i,0,initTab,16);
+ 242   2              }
+ 243   1      }
+ 244          
+ 245          void FactoryReset()
+ 246          {
+ 247   1      //      unsigned char i;
+ 248   1              
+ 249   1              //LED_GrnOff();
+ 250   1              //LED_RedOn();
+ 251   1              bIsBurnInEnabled = FALSE;
+ 252   1              Write24C16(EPADDR_BURNIN, bIsBurnInEnabled);    //0x14 = Burn-in mode                   
+ 253   1      //      Write24C16(EPADDR_FACTORY, 0 );
+ 254   1              
+ 255   1              RecallPOT();
+ 256   1              
+ 257   1              ucBrightness = MCU_DataMap[EPADDR_BRIGHT_FACTORY];      //0x08 = brightness
+ 258   1              ucSavePointer = svBRIGHTNESS_F;
+ 259   1              SaveData();     
+ 260   1              
+ 261   1      //      ucContrast = MCU_DataMap[EPADDR_CONTRAST_FACTORY];              //0x09 = contrast
+ 262   1      //      ucSavePointer = svCONTRAST_F;
+ 263   1      //      SaveData();
+ 264   1              
+ 265   1              ucColorTemperature = COLOR_6500;
+ 266   1              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 267   1              SetColorTemp(ucColorTemperature);
+ 268   1                      
+ 269   1              //WRITE NEW MODE
+ 270   1              //for (i=0;i<0x80;i+=16)
+ 271   1              //{
+ 272   1              //      WritePage24C16(NVRAM_SYNC(0)+i,0,initTab,16);
+ 273   1              //}
+ 274   1              ClearNewMode();
+ 275   1              
+ 276   1              //write factory mode in user area
+ 277   1              //for(i=0; i<NUMBER_OF_USER_MODE; i++){
+ 278   1              //              InitModeData(i);
+ 279   1              //}
+ 280   1              InitModeData16();
+ 281   1              Write24C16(EPADDR_USERSTART, MCU_DataMap[EPADDR_USERSTART]);
+ 282   1      
+ 283   1      #ifdef DEMO_HDCP_KEY
+                      InitHDCP_DemoKey();
+              #endif
+ 286   1      //      LED_GrnOn();
+ 287   1      //      LED_RedOff();
+ 288   1                      
+ 289   1              if ( ucLanguage != MCU_DataMap[EPADDR_OSDLANG] )
+ 290   1              {
+ 291   2                      ucLanguage = MCU_DataMap[EPADDR_OSDLANG];
+ 292   2                      Write24C16(EPADDR_OSDLANG,ucLanguage);
+ 293   2      
+ 294   2              }
+ 295   1      }
+ 296          
+ 297          void Recall(void)
+ 298                  {
+ 299   1      #if _SmartBright_ == ON
+                      bSmartBrightEnable = OFF;
+                      Write24C16(EPADDR_SMARTBRIGHT,bSmartBrightEnable);//0x2d = SmartBright
+                      
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 6   
+
+                      ucBrightValue = 0xff;
+              #endif
+ 305   1      
+ 306   1              ucLFMode=LF_MODE_OFF;   // FOR RESET BrightnessUser
+ 307   1              ucBrightness = Read24C16(EPADDR_BRIGHT_FACTORY);        //0x08 = brightness
+ 308   1              ucSavePointer = svBRIGHTNESS;
+ 309   1              SaveData();
+ 310   1              
+ 311   1              ucContrast = Read24C16(EPADDR_CONTRAST_FACTORY);                //0x09 = contrast
+ 312   1              ucSavePointer = svCONTRAST;
+ 313   1              SaveData();
+ 314   1              //Recall6500(1);
+ 315   1              ucColorTemperature = COLOR_6500;
+ 316   1              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 317   1              //SetColorTemp(ucColorTemperature);
+ 318   1              
+ 319   1      
+ 320   1      #ifdef BF_DYNAMIC_BACKLIGHT
+ 321   1              ucDynBKMode = MCU_DataMap[EPADDR_DYNAMIC_BKMODE];
+ 322   1              Write24C16(EPADDR_DYNAMIC_BKMODE,ucDynBKMode);
+ 323   1              ucSavePointer = svDYBK;
+ 324   1              SaveData();
+ 325   1      #endif
+ 326   1      
+ 327   1              ucLFMode = MCU_DataMap[EPADDR_DVI_LF_MODE];
+ 328   1              Write24C16(EPADDR_DVI_LF_MODE, ucLFMode);
+ 329   1              ucLFMode = MCU_DataMap[EPADDR_DSUB_LF_MODE];
+ 330   1              Write24C16(EPADDR_DSUB_LF_MODE, ucLFMode);
+ 331   1              if (POWER_DIGITAL)
+ 332   1                      ucLFMode = Read24C16(EPADDR_DVI_LF_MODE);
+ 333   1              else
+ 334   1                      ucLFMode = Read24C16(EPADDR_DSUB_LF_MODE);
+ 335   1              
+ 336   1              LFEnableSettings();                     
+ 337   1      
+ 338   1              SetOSDAtCenter();
+ 339   1      
+ 340   1              ucR_GainUser = MCU_DataMap[EPADDR_RGAIN_USER];
+ 341   1              ucG_GainUser = MCU_DataMap[EPADDR_GGAIN_USER];
+ 342   1              ucB_GainUser = MCU_DataMap[EPADDR_BGAIN_USER];
+ 343   1              Write24C16(EPADDR_RGAIN_USER, ucR_GainUser);
+ 344   1              Write24C16(EPADDR_GGAIN_USER, ucG_GainUser);
+ 345   1              Write24C16(EPADDR_BGAIN_USER, ucB_GainUser);
+ 346   1                      
+ 347   1              bStandalone = MCU_DataMap[EPADDR_STANDALONE];
+ 348   1              Write24C16(EPADDR_STANDALONE, (unsigned char)bStandalone);
+ 349   1              
+ 350   1              bMute = MCU_DataMap[EPADDR_MUTE];
+ 351   1              Write24C16(EPADDR_MUTE, (unsigned char)bMute);
+ 352   1              
+ 353   1              ucVolume = MCU_DataMap[EPADDR_VOLUME];          //0x0c = volume
+ 354   1              Write24C16(EPADDR_VOLUME, ucVolume);    //0x0c = volume
+ 355   1              SetVolume();
+ 356   1      
+ 357   1      
+ 358   1              ucTransparency = MCU_DataMap[EPADDR_TRANSPARENCY];
+ 359   1              Write24C16(EPADDR_TRANSPARENCY,ucTransparency);
+ 360   1              ucOSDTimer = MCU_DataMap[EPADDR_OSDTIMER];
+ 361   1              Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 362   1              Write24C16(EPADDR_OSDTIMER,ucOSDTimer);
+ 363   1              ucSource = MCU_DataMap[EPADDR_INPUT_SRC];
+ 364   1              Write24C16(EPADDR_INPUT_SRC,ucSource);
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 7   
+
+ 365   1              bResolutionNot = MCU_DataMap[EPADDR_RSO_NOTF];
+ 366   1              Write24C16(EPADDR_RSO_NOTF,bResolutionNot);
+ 367   1      
+ 368   1              bIsBurnInEnabled = FALSE;
+ 369   1              Write24C16(EPADDR_BURNIN, bIsBurnInEnabled);    //0x14 = Burn-in mode   
+ 370   1      #ifdef DEMO_HDCP_KEY
+                              InitHDCP_DemoKey();
+              #endif
+ 373   1              
+ 374   1      //      ClearAutoAdjTag();
+ 375   1              
+ 376   1              //-------------- RGB Mode 인 경우, 자동설정까지 해줄 것~!
+ 377   1              if(ucSignalType != sigDVI){
+ 378   2                      if((bFactoryMode == FALSE)&&(bIsBurnInEnabled == FALSE)){
+ 379   3                              if(ucOSDType != FACTORY){
+ 380   4                                      ShowAutoAdj();
+ 381   4                              }
+ 382   3                              AutoTune();
+ 383   3                      }
+ 384   2              }
+ 385   1              //---------------- 자동 설정 후, OSD 깨짐 증상을 방지하기 위해, OSD Off Function Call~!
+ 386   1              OSD_OFF();                              // +jwshin 111213
+ 387   1              
+ 388   1              
+ 389   1      }
+ 390          void OSD_X_Up(void)
+ 391          {
+ 392   1              if(++ucOSDXPos > 100)
+ 393   1                      ucOSDXPos = 100;
+ 394   1              else{
+ 395   2                      SetPosition(ucOSDXPos,ucOSDYPos);
+ 396   2                      ShowOSD_X();
+ 397   2                      ucSavePointer = svOSDX;
+ 398   2              }
+ 399   1      }
+ 400          
+ 401          void OSD_X_Down(void)
+ 402          {
+ 403   1              if(--ucOSDXPos > 100)
+ 404   1                      ucOSDXPos = 0;
+ 405   1              else{
+ 406   2                      SetPosition(ucOSDXPos,ucOSDYPos);
+ 407   2                      ShowOSD_X();
+ 408   2                      ucSavePointer = svOSDX;
+ 409   2              }
+ 410   1      }
+ 411          
+ 412          void OSD_Y_Up(void)
+ 413          {
+ 414   1              if(++ucOSDYPos > 100)
+ 415   1                      ucOSDYPos = 100;
+ 416   1              else{
+ 417   2                      SetPosition(ucOSDXPos,ucOSDYPos);
+ 418   2                      ShowOSD_Y();
+ 419   2                      ucSavePointer = svOSDY;
+ 420   2              }
+ 421   1      }
+ 422          
+ 423          void OSD_Y_Down(void)
+ 424          {
+ 425   1              if(--ucOSDYPos > 100)
+ 426   1                      ucOSDYPos = 0;
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 8   
+
+ 427   1              else{
+ 428   2                      SetPosition(ucOSDXPos,ucOSDYPos);
+ 429   2                      ShowOSD_Y();
+ 430   2                      ucSavePointer = svOSDY;
+ 431   2              }
+ 432   1      }
+ 433          
+ 434          void TransparencyUp()
+ 435          {
+ 436   1              if(++ucTransparency > 4)
+ 437   1                      ucTransparency = 4;
+ 438   1              else{
+ 439   2                      SetTransparency();
+ 440   2                      ShowTransparency();
+ 441   2                      ucSavePointer = svTRANSPARENCY;
+ 442   2              }
+ 443   1      }
+ 444          
+ 445          void TransparencyDown()
+ 446          {
+ 447   1              if(--ucTransparency > 4)
+ 448   1                      ucTransparency = 0;
+ 449   1              else{
+ 450   2                      SetTransparency();
+ 451   2                      ShowTransparency();
+ 452   2                      ucSavePointer = svTRANSPARENCY;
+ 453   2              }
+ 454   1      }
+ 455          
+ 456          void SetTransparency()
+ 457          {
+ 458   1              if(ucTransparency > 0){
+ 459   2                      WriteIIC560(OSD_TRANSLUCENT_CTL, ((ucTransparency-1)<<3)|( ucTransparency-1) ); //(ucTransparency-1)*2
+ 460   2                      WriteIIC560(OSD_CODE_FC_CTL,0x30);
+ 461   2              }
+ 462   1              else
+ 463   1                      WriteIIC560(OSD_CODE_FC_CTL,0x00);
+ 464   1      }
+ 465          
+ 466          void OSD_TimerUp(void)
+ 467          {
+ 468   1              if(++ucOSDTimer > 60)
+ 469   1                      ucOSDTimer = 60;
+ 470   1              else{
+ 471   2                      ShowOSD_Timer();
+ 472   2                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 473   2                      ucSavePointer = svOSDTIMEOUT;
+ 474   2              }       
+ 475   1      }
+ 476          
+ 477          void OSD_TimerDown(void)
+ 478          {
+ 479   1              if(--ucOSDTimer < 5)
+ 480   1                      ucOSDTimer = 5;
+ 481   1              else{
+ 482   2                      ShowOSD_Timer();
+ 483   2                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 484   2                      ucSavePointer = svOSDTIMEOUT;
+ 485   2              }
+ 486   1      }
+ 487          
+ 488          
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 9   
+
+ 489          void LanguageUp(void)
+ 490          {
+ 491   1              if(++ucLanguage > mCHINESE_S)
+ 492   1                      ucLanguage = mENGLISH;
+ 493   1              SelectLanguage();
+ 494   1              ucSavePointer = svLANGUAGE;
+ 495   1      }
+ 496          
+ 497          void LanguageDown(void)
+ 498          {
+ 499   1              if(--ucLanguage > mCHINESE_S)
+ 500   1                      ucLanguage = mCHINESE_S;
+ 501   1              SelectLanguage();
+ 502   1              ucSavePointer = svLANGUAGE;
+ 503   1      }
+ 504          
+ 505          void InputSourceUp(void)
+ 506          {
+ 507   1              if(++ucSource > mSource_VIDEO)
+ 508   1                      ucSource = mSource_VGA;
+ 509   1              SelectInput();
+ 510   1              ucSavePointer = svSOURCE;
+ 511   1      }
+ 512          
+ 513          void InputSourceDown(void)
+ 514          {
+ 515   1              if(--ucSource > mSource_VIDEO)
+ 516   1                      ucSource = mSource_VIDEO;
+ 517   1              SelectInput();
+ 518   1              ucSavePointer = svSOURCE;
+ 519   1      }
+ 520          
+ 521          void DirectVolumeUp(void)
+ 522          {
+ 523   1              if(++ucVolume > MAXVOLUME){
+ 524   2                      ucVolume = MAXVOLUME;
+ 525   2              }
+ 526   1              else{
+ 527   2                      if(bMute){
+ 528   3                              bMute = FALSE;
+ 529   3                              ucSavePointer = svMUTE;
+ 530   3                              SaveData();
+ 531   3                              WriteWordIIC560(OSD_FC_ATTR_LSB,DirectWarningColor);
+ 532   3                              WriteXY_Line(11, 3, 8, 0x00);
+ 533   3                      }
+ 534   2                      SetVolume();
+ 535   2                      ShowVolume();
+ 536   2                      ucSavePointer = svVOLUME;
+ 537   2              }
+ 538   1      }
+ 539          
+ 540          void DirectVolumeDown(void)
+ 541          {
+ 542   1              if(--ucVolume == 0xff){
+ 543   2                      ucVolume = 0;
+ 544   2              }
+ 545   1              else{
+ 546   2                      if(bMute){
+ 547   3                              bMute = FALSE;
+ 548   3                              ucSavePointer = svMUTE;
+ 549   3                              SaveData();
+ 550   3                              WriteWordIIC560(OSD_FC_ATTR_LSB,DirectWarningColor);
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 10  
+
+ 551   3                              WriteXY_Line(11, 3, 8, 0x00);
+ 552   3                      }
+ 553   2                      SetVolume();
+ 554   2                      ShowVolume();
+ 555   2                      ucSavePointer = svVOLUME;
+ 556   2              }
+ 557   1      }
+ 558          
+ 559          
+ 560          void DirectBrightnessUp(void)
+ 561          {
+ 562   1              CheckColorTemperature();
+ 563   1              if(++ucBrightness > 100){
+ 564   2                      ucBrightness = 100;
+ 565   2              }
+ 566   1              else{
+ 567   2                      SetBrightness();
+ 568   2                      ShowBrightness();
+ 569   2                      ucSavePointer = svBRIGHTNESS;
+ 570   2                      ucDynBKMode = OFF;
+ 571   2              }
+ 572   1      }
+ 573          
+ 574          void DirectBrightnessDown(void)
+ 575          {
+ 576   1              CheckColorTemperature();
+ 577   1              if(--ucBrightness == 0xff){
+ 578   2                      ucBrightness = 0;
+ 579   2              }
+ 580   1              else{
+ 581   2                      SetBrightness();
+ 582   2                      ShowBrightness();
+ 583   2                      ucSavePointer = svBRIGHTNESS;
+ 584   2                      ucDynBKMode = OFF;
+ 585   2              }
+ 586   1      }
+ 587          
+ 588          void LoadModeIndependentSettings(void)
+ 589          {
+ 590   1              
+ 591   1                      //---- +jwshin 120224   
+ 592   1                      //---- CopyLED Status Check 및 Reverse Flag Check
+ 593   1                      bCopy_Flag = Read24C16(EPADDR_COPY_FLAG);
+ 594   1                      bB_Screen_ReverseFlag = Read24C16(EPADDR_B_SCREEN_REV);
+ 595   1                      bRGB_SW_Flag = Read24C16(EPADDR_RGB_SW1);
+ 596   1              
+ 597   1                      if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 0)) {
+ 598   2                              printf("1\r\n");
+ 599   2                              RGB_SW1_RGB2();
+ 600   2                              COPYLED_GrnOff();
+ 601   2                      }
+ 602   1                      else if((bB_Screen_ReverseFlag == 0) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 1)) {
+ 603   2                              printf("4\r\n");
+ 604   2                              RGB_SW1_RGB1();
+ 605   2                              COPYLED_GrnOn();
+ 606   2                      }
+ 607   1                      else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 0) && (bRGB_SW_Flag == 1)) {
+ 608   2                              printf("6\r\n");
+ 609   2                              RGB_SW1_RGB1();
+ 610   2                              COPYLED_GrnOff();
+ 611   2                      }
+ 612   1                      else if((bB_Screen_ReverseFlag == 1) && (bCopy_Flag == 1) && (bRGB_SW_Flag == 0)) {
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 11  
+
+ 613   2                              printf("7\r\n");
+ 614   2                              RGB_SW1_RGB2();
+ 615   2                              COPYLED_GrnOn();
+ 616   2                      }
+ 617   1                      else
+ 618   1                      {
+ 619   2                              printf("Exp\r\n");
+ 620   2                              }
+ 621   1                              
+ 622   1                      //--------------------------------------------------            
+ 623   1                      ucOSDXPos = Read24C16(EPADDR_OSDX);             //0x15 = OSD position x // read at OsdInit()
+ 624   1                      ucOSDYPos = Read24C16(EPADDR_OSDY);             //0x16 = OSD position y
+ 625   1                      ucTransparency = Read24C16(EPADDR_TRANSPARENCY);
+ 626   1                      ucOSDTimer = Read24C16(EPADDR_OSDTIMER);
+ 627   1                      Set_usOSDTimer_10ms((unsigned short)ucOSDTimer*100);
+ 628   1                      ucColorTemperature = Read24C16(EPADDR_COLOR_TEMP);
+ 629   1                      if(!bFactoryMode && (ucColorTemperature ==   COLOR_ORIGIN)){
+ 630   2                              ucColorTemperature = COLOR_6500;
+ 631   2                              Write24C16(EPADDR_COLOR_TEMP, ucColorTemperature);
+ 632   2                      }
+ 633   1                      ucLanguage = Read24C16(EPADDR_OSDLANG);         //0x06 = OSD Language
+ 634   1                      ucSource = Read24C16(EPADDR_INPUT_SRC);
+ 635   1      
+ 636   1                      ucBrightnessUser = Read24C16(EPADDR_BRIGHT_USER);       //0x36 = brightness/Inverter user
+ 637   1                      ucContrastUser = Read24C16(EPADDR_CONTRAST_USER);       //0x37 = contrast user
+ 638   1                      ucBrightnesssRGB = Read24C16(EPADDR_BRIGHT_SRGB);       //0x3a = brightness/Inverter sRGB
+ 639   1                      ucContrastsRGB = Read24C16(EPADDR_CONTRAST_SRGB);       //0x3b = contrast sRGB
+ 640   1                      ucSaturation = Read24C16(EPADDR_SATURATION);
+ 641   1                      ucTint = Read24C16(EPADDR_TINT);
+ 642   1              
+ 643   1                      //LoadCurrentSettingByInput(0,1);
+ 644   1                      ucR_Gain5000K = Read24C16(EPADDR_RGAIN_5000);
+ 645   1                      ucG_Gain5000K = Read24C16(EPADDR_GGAIN_5000);
+ 646   1                      ucB_Gain5000K = Read24C16(EPADDR_BGAIN_5000);
+ 647   1                      ucR_Gain7500K = Read24C16(EPADDR_RGAIN_7500);
+ 648   1                      ucG_Gain7500K = Read24C16(EPADDR_GGAIN_7500);
+ 649   1                      ucB_Gain7500K = Read24C16(EPADDR_BGAIN_7500);
+ 650   1                      ucR_Gain8200K = Read24C16(EPADDR_RGAIN_8200);
+ 651   1                      ucG_Gain8200K = Read24C16(EPADDR_GGAIN_8200);
+ 652   1                      ucB_Gain8200K = Read24C16(EPADDR_BGAIN_8200);
+ 653   1                      ucR_Gain11500K = Read24C16(EPADDR_RGAIN_11500);
+ 654   1                      ucG_Gain11500K = Read24C16(EPADDR_GGAIN_11500);
+ 655   1                      ucB_Gain11500K = Read24C16(EPADDR_BGAIN_11500);
+ 656   1                              
+ 657   1                      ucR_Gain9300K = Read24C16(EPADDR_RGAIN_9300);   //0x47 = r gain 9300K
+ 658   1                      ucG_Gain9300K = Read24C16(EPADDR_GGAIN_9300);   //0x48 = g gain 9300K
+ 659   1                      ucB_Gain9300K = Read24C16(EPADDR_BGAIN_9300);   //0x49 = b gain 9300K
+ 660   1                      ucR_Gain6500K = Read24C16(EPADDR_RGAIN_6500);   //0x41 = r gain 6500K
+ 661   1                      ucG_Gain6500K = Read24C16(EPADDR_GGAIN_6500);   //0x42 = g gain 6500K
+ 662   1                      ucB_Gain6500K = Read24C16(EPADDR_BGAIN_6500);   //0x43 = b gain 6500K
+ 663   1                      ucR_GainsRGB = Read24C16(EPADDR_RGAIN_SRGB);    //0x44 = r gain sRGB
+ 664   1                      ucG_GainsRGB = Read24C16(EPADDR_GGAIN_SRGB);    //0x45 = g gain sRGB
+ 665   1                      ucB_GainsRGB = Read24C16(EPADDR_BGAIN_SRGB);    //0x46 = b gain sRGB
+ 666   1                      ucR_GainUser = Read24C16(EPADDR_RGAIN_USER);    //0x3e = r gain user
+ 667   1                      ucG_GainUser = Read24C16(EPADDR_GGAIN_USER);    //0x3f = g gain user
+ 668   1                      ucB_GainUser = Read24C16(EPADDR_BGAIN_USER);    //0x40 = b gain user
+ 669   1                      ucBkOffset[0] = Read24C16(EPADDR_RBKOFFSET);
+ 670   1                      ucBkOffset[1] = Read24C16(EPADDR_GBKOFFSET);
+ 671   1                      ucBkOffset[2] = Read24C16(EPADDR_BBKOFFSET);
+ 672   1                      
+ 673   1                      #if 0                                           // -jwshin 130307
+                              ucBlackLevel = Read24C16(EPADDR_SCALER_OFFSET); //0x17 = scaler offset  // jerry
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 12  
+
+                              ucPanelIDX = Read24C16(EPADDR_IDX);
+                              #else
+ 677   1      //              ucBlackLevel = DEF_BLACKLEVEL;  //20051020 Steward+             // the same from MCU_DataMap[]
+ 678   1                      ucBlackLevel = 100;                                             // +jwshin 130307
+ 679   1                      ucPanelIDX = DEF_PANELIDX;              //20051020 Steward+
+ 680   1                      #endif
+ 681   1      //              ucPanelID = Read24C16(EPADDR_PANELID);
+ 682   1                      ucMaxBrightness = Read24C16(EPADDR_MAX_BRIGHT);
+ 683   1                      ucMinBrightness = Read24C16(EPADDR_MIN_BRIGHT);
+ 684   1                      ucMaxContrast = Read24C16(EPADDR_MAX_CONTRAST);
+ 685   1                      ucMidContrast = Read24C16(EPADDR_MID_CONTRAST);
+ 686   1                      ucMinContrast = Read24C16(EPADDR_MIN_CONTRAST);
+ 687   1                      
+ 688   1                      //bIsBurnInEnabled = Read24C16(EPADDR_BURNIN);
+ 689   1                      bIsBurnInEnabled = 0;
+ 690   1                      Write24C16(EPADDR_BURNIN, bIsBurnInEnabled);                            
+ 691   1                      bIsOSDLocked = Read24C16(EPADDR_OSDLOCK);
+ 692   1      //              bIsSWLocked = Read24C16(EPADDR_SWLOCK);
+ 693   1                      bResolutionNot = Read24C16(EPADDR_RSO_NOTF);
+ 694   1                      
+ 695   1      //#ifdef BF_DYNAMIC_BACKLIGHT
+ 696   1      //              ucNewDynBk  = iCurDynBk = ucBrightnessUser;
+ 697   1      //              ucDynBKMode = Read24C16(EPADDR_DYNAMIC_BKMODE);
+ 698   1      //#endif
+ 699   1                              
+ 700   1      #if _SmartBright_ == ON
+                              bSmartBrightEnable = Read24C16(EPADDR_SMARTBRIGHT);//0x29 = SmartBright
+              //              usBrightOffset = Read24C16(EPADDR_BRIGHTOFFSET_HI);//0x2a = BrightOffset high
+              //              usBrightOffset <<= 8;
+              //              usBrightOffset += Read24C16(EPADDR_BRIGHTOFFSET_LO);//0x2b = BrightOffset low
+                              usBrightOffset = Read24C16(EPADDR_BRIGHTOFFSET_LO);//0x2b = BrightOffset low
+              #endif
+ 707   1      
+ 708   1                      bStandalone = Read24C16(EPADDR_STANDALONE);
+ 709   1                      bMute = Read24C16(EPADDR_MUTE);
+ 710   1                      ucVolume = Read24C16(EPADDR_VOLUME);            //0x0c = volume
+ 711   1      
+ 712   1      #ifdef MODE_OFFSET              
+                              bOffsetDown = Read24C16(EPADDR_OFFSETDOWN);
+              #endif
+ 715   1                      ucRGB_OFFSET = Read24C16(EPADDR_RGB_OFFSET);
+ 716   1      
+ 717   1      #if _SmartBright_ == ON
+                      
+                      ucSmartBrightStart = ucBrightness;
+                      ucSmartBrightEnd = ucBrightness;
+              //      temp = ucBrightness + 256;
+              //      ucBrightValue = temp - usBrightOffset;
+              //      ucSmartBrightValue = (unsigned char)((float)(ucMaxBrightness - ucMinBrightness) * (ucBrightValue - MinB
+             -rightValue) / (MaxBrightValue - MinBrightValue) + ucMinBrightness + 0.5);
+              
+                      ucSmartBrightValue = ucBrightness + 100 - usBrightOffset;
+                      if( ucSmartBrightValue > ucMaxBrightness ){
+                              ucSmartBrightValue = ucMaxBrightness;
+                              usBrightOffset = 100 + (ucBrightness-ucSmartBrightValue);
+                      }
+                      else if(ucSmartBrightValue < ucMinBrightness ){
+                              ucSmartBrightValue = ucMinBrightness;
+                              usBrightOffset = 100 + (ucBrightness-ucSmartBrightValue);
+                      }
+              
+                      ucBrightValue = (unsigned char)((float)(MaxBrightValue - MinBrightValue) * (ucSmartBrightValue-ucMinBrigh
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 13  
+
+             -tness) / (ucMaxBrightness - ucMinBrightness) + MinBrightValue +0.5);
+              
+              //printf("ucBrightValue=%d\r\n",(unsigned short)ucBrightValue); 
+              //printf("usBrightOffset=%d\r\n",(unsigned short)usBrightOffset);
+              //printf("Load:ucSmartBrightValue=%d\r\n",(unsigned short)ucSmartBrightValue);
+              
+              #endif
+ 742   1      
+ 743   1              SetPanelIDX();
+ 744   1              //SetBrightness();
+ 745   1      
+ 746   1      //      LoadCurrentSettingByInput(0,1);
+ 747   1      //      LFLoadInitState();
+ 748   1              if (POWER_DIGITAL)
+ 749   1                      ucLFMode = Read24C16(EPADDR_DVI_LF_MODE);
+ 750   1              else
+ 751   1                      ucLFMode = Read24C16(EPADDR_DSUB_LF_MODE);
+ 752   1              //LFEnableSettings();
+ 753   1              LFResetData();
+ 754   1      
+ 755   1      //      SetColorTemp(ucColorTemperature);
+ 756   1      //printf("Load1=%d,%d,%02x\r\n",(unsigned short)ucBrightness,(unsigned short)ucContrast,(unsigned short)uc
+             -ColorTemperature);    
+ 757   1      //      SetScalerOffset();
+ 758   1              
+ 759   1      }
+ 760          
+ 761          void SetColorTemp(unsigned char color_temp)
+ 762          {
+ 763   1      unsigned char bktemp;
+ 764   1      //printf("SetColorTemp=%x\r\n",(unsigned short)color_temp);
+ 765   1      
+ 766   1              switch(color_temp){
+ 767   2              case COLOR_ORIGIN:      //Panel Orignal Color
+ 768   2                      ucR_Gain = 0xff;                //r Panel Orignal Color
+ 769   2                      ucG_Gain = 0xff;                //g Panel Orignal Color
+ 770   2                      ucB_Gain = 0xff;                //b Panel Orignal Color
+ 771   2                      break;
+ 772   2              case COLOR_SRGB:        //sRGB
+ 773   2      // Philips iLab 20060831: to make a comparison between original factory alignment and TrueColor alignment 
+             -possible
+ 774   2      // we simulate the original 6500K configuration in the sRGB mode, so by switching between the 6500K and th
+             -e sRGB mode
+ 775   2      // one can see in one monitor the difference between the two alignment methods.
+ 776   2                      ucR_Gain = ucR_GainsRGB;        //0x44 = r gain sRGB
+ 777   2                      ucG_Gain = ucG_GainsRGB;        //0x45 = g gain sRGB
+ 778   2                      ucB_Gain = ucB_GainsRGB;        //0x46 = b gain sRGB
+ 779   2                      break;
+ 780   2              case COLOR_USER:        //user
+ 781   2                      ucR_Gain = ucR_GainUser;        //0x3e = r gain user
+ 782   2                      ucG_Gain = ucG_GainUser;        //0x3f = g gain user
+ 783   2                      ucB_Gain = ucB_GainUser;        //0x40 = b gain user
+ 784   2                      break;
+ 785   2              case COLOR_6500:        //6500K
+ 786   2                      ucR_Gain = ucR_Gain6500K;       //0x41 = r gain 6500K
+ 787   2                      ucG_Gain = ucG_Gain6500K;       //0x42 = g gain 6500K
+ 788   2                      ucB_Gain = ucB_Gain6500K;       //0x43 = b gain 6500K
+ 789   2                      break;
+ 790   2              case COLOR_9300:        //9300K
+ 791   2                      ucR_Gain = ucR_Gain9300K;       //0x41 = r gain 6500K
+ 792   2                      ucG_Gain = ucG_Gain9300K;       //0x42 = g gain 6500K
+ 793   2                      ucB_Gain = ucB_Gain9300K;       //0x43 = b gain 6500K
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 14  
+
+ 794   2                      break;
+ 795   2              case COLOR_5000:
+ 796   2                      ucR_Gain = ucR_Gain5000K;       //0x41 = r gain 6500K
+ 797   2                      ucG_Gain = ucG_Gain5000K;       //0x42 = g gain 6500K
+ 798   2                      ucB_Gain = ucB_Gain5000K;       //0x43 = b gain 6500K
+ 799   2                      break;
+ 800   2              case COLOR_7500:
+ 801   2                      ucR_Gain = ucR_Gain7500K;       //0x41 = r gain 6500K
+ 802   2                      ucG_Gain = ucG_Gain7500K;       //0x42 = g gain 6500K
+ 803   2                      ucB_Gain = ucB_Gain7500K;       //0x43 = b gain 6500K
+ 804   2                      break;
+ 805   2              case COLOR_8200:
+ 806   2                      ucR_Gain = ucR_Gain8200K;       //0x41 = r gain 6500K
+ 807   2                      ucG_Gain = ucG_Gain8200K;       //0x42 = g gain 6500K
+ 808   2                      ucB_Gain = ucB_Gain8200K;       //0x43 = b gain 6500K
+ 809   2                      break;
+ 810   2              case COLOR_11500:
+ 811   2                      ucR_Gain = ucR_Gain11500K;      //0x41 = r gain 6500K
+ 812   2                      ucG_Gain = ucG_Gain11500K;      //0x42 = g gain 6500K
+ 813   2                      ucB_Gain = ucB_Gain11500K;      //0x43 = b gain 6500K
+ 814   2                      break;
+ 815   2              }
+ 816   1      //printf("SetFC=%d,%d,%d\r\n",(unsigned short)ucR_Gain,(unsigned short)ucG_Gain,(unsigned short)ucB_Gain);
+ 817   1              // 2006-12-05 +
+ 818   1              bktemp = ucBrightness;
+ 819   1              if(color_temp != COLOR_SRGB){
+ 820   2                      ucBrightness = Read24C16(EPADDR_BRIGHT);
+ 821   2                      ucContrast = Read24C16(EPADDR_CONTRAST);                //0x09 = contrast
+ 822   2              }
+ 823   1              else{
+ 824   2                      ucBrightness = ucBrightnesssRGB;        //0x3a = brightness/Inverter sRGB
+ 825   2                      ucContrast = ucContrastsRGB;            //0x3b = contrast sRGB                  
+ 826   2              }
+ 827   1      
+ 828   1      //      printf("ucDynBKMode = %x\r\n",(unsigned short)ucDynBKMode);
+ 829   1              if((ucDynBKMode == OFF)||(bBGMode == TRUE))
+ 830   1                      SetBrightness();        
+ 831   1              else
+ 832   1                      ucBrightness = bktemp;
+ 833   1      
+ 834   1              SetContrastRGB();
+ 835   1      }
+ 836          
+ 837          void LoadModeDependentSettings(void)
+ 838          {
+ 839   1      
+ 840   1      unsigned short addr;
+ 841   1      
+ 842   1      //printf("RAM OK\r\n");
+ 843   1              addr = NVRAM_HPSTART((unsigned short)ucModeNumber);
+ 844   1              usHPStart = Read24C16_Short(addr);
+ 845   1              addr = NVRAM_RESOLU((unsigned short)ucModeNumber);
+ 846   1              ucResolution = Read24C16(addr);
+ 847   1              addr = NVRAM_PHASE((unsigned short)ucModeNumber);
+ 848   1              ucADCPhase = Read24C16(addr);
+ 849   1              addr = NVRAM_HTOTAL((unsigned short)ucModeNumber);
+ 850   1              usHTotal = Read24C16_Short(addr);
+ 851   1              addr = NVRAM_VPSTART((unsigned short)ucModeNumber);
+ 852   1              usVPStart = Read24C16_Short(addr);
+ 853   1              addr = usHPStart + H_ActiveTab[ucResolution]; 
+ 854   1              if(usHTotal < addr)
+ 855   1                      usHTotal = addr;
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 15  
+
+ 856   1              ucVPOffset = 0;
+ 857   1      
+ 858   1      }
+ 859          
+ 860          void SaveModeDependentSettings(void)
+ 861          {
+ 862   1      
+ 863   1      unsigned short short_mode = (unsigned short)ucModeNumber;
+ 864   1      
+ 865   1              Write24C16_Short(NVRAM_HPSTART(short_mode), usHPStart);
+ 866   1              Write24C16(NVRAM_PHASE(short_mode), ucADCPhase);
+ 867   1              Write24C16_Short(NVRAM_HTOTAL(short_mode), usHTotal);
+ 868   1              Write24C16_Short(NVRAM_VPSTART(short_mode), usVPStart);
+ 869   1      
+ 870   1              Write24C16_Short(NVRAM_HTOTAL50(short_mode), usHTotal);
+ 871   1      //      Write24C16_Short(NVRAM_HP50(short_mode), usHPStart);
+ 872   1      
+ 873   1      //      Write24C16(NVRAM_TIMING_ALTER(ucModeNumber), 1);
+ 874   1      
+ 875   1      }
+ 876          
+ 877          void ColorTempUp(void)
+ 878          {
+ 879   1              if(++ucColorTemperature > COLOR_USER){
+ 880   2                      ucColorTemperature = COLOR_USER;
+ 881   2              }
+ 882   1              else{
+ 883   2                      ucSavePointer = svCOLOR;
+ 884   2                      SetColorTemp(ucColorTemperature);
+ 885   2                      if(ucColorTemperature > 3){
+ 886   3                              ShowColorMenu();
+ 887   3                      }
+ 888   2                      SelectColorTemp();
+ 889   2              }
+ 890   1      }
+ 891          
+ 892          void ColorTempDown(void)
+ 893          {
+ 894   1              if(--ucColorTemperature > COLOR_USER){
+ 895   2                      ucColorTemperature = COLOR_5000;
+ 896   2              }
+ 897   1              else{
+ 898   2                      ucSavePointer = svCOLOR;
+ 899   2                      SetColorTemp(ucColorTemperature);
+ 900   2                      if(ucColorTemperature > 3){
+ 901   3                              ShowColorMenu();
+ 902   3                      }
+ 903   2                      SelectColorTemp();
+ 904   2              }
+ 905   1      }
+ 906          
+ 907          unsigned char ScalingColorGain(unsigned char RGB_Gain)
+ 908          {
+ 909   1              return((unsigned char)((float)(RGB_Gain - MinColorGain) * 100 / (MaxColorGain - MinColorGain) + 0.5));
+ 910   1      }
+ 911          
+ 912          unsigned char ColorGainReturnToNormal(unsigned char RGB_Percentage)
+ 913          {
+ 914   1              return((unsigned char)((float)RGB_Percentage * (MaxColorGain - MinColorGain) / 100 + MinColorGain + 0.5))
+             -;
+ 915   1      }
+ 916          
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 16  
+
+ 917          void ColorRedUp(void)
+ 918          {
+ 919   1      unsigned char temp;
+ 920   1              temp = ScalingColorGain(ucR_GainUser);
+ 921   1              if(++temp > 100){
+ 922   2                      temp = 100;
+ 923   2              }
+ 924   1              else{
+ 925   2                      ucR_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+ 926   2                      ucR_Gain = ucR_GainUser;
+ 927   2                      SetContrastRGB();
+ 928   2                      ucSavePointer = svRED;
+ 929   2                      ShowRed();
+ 930   2              }
+ 931   1      }
+ 932          
+ 933          void ColorGreenUp(void)
+ 934          {
+ 935   1      unsigned char temp;
+ 936   1              temp = ScalingColorGain(ucG_GainUser);
+ 937   1              if(++temp > 100){
+ 938   2                      temp = 100;
+ 939   2              }
+ 940   1              else{
+ 941   2                      ucG_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+ 942   2                      ucG_Gain = ucG_GainUser;
+ 943   2                      SetContrastRGB();
+ 944   2                      ucSavePointer = svGREEN;
+ 945   2                      ShowGreen();
+ 946   2              }
+ 947   1      }
+ 948          
+ 949          void ColorBlueUp(void)
+ 950          {
+ 951   1      unsigned char temp;
+ 952   1              temp = ScalingColorGain(ucB_GainUser);
+ 953   1              if(++temp > 100){
+ 954   2                      temp = 100;
+ 955   2              }
+ 956   1              else{
+ 957   2                      ucB_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+ 958   2                      ucB_Gain = ucB_GainUser;
+ 959   2                      SetContrastRGB();
+ 960   2                      ucSavePointer = svBLUE;
+ 961   2                      ShowBlue();
+ 962   2              }
+ 963   1      }
+ 964          
+ 965          void ColorRedDown(void)
+ 966          {
+ 967   1      unsigned char temp;
+ 968   1              temp = ScalingColorGain(ucR_GainUser);
+ 969   1              if(--temp == 0xff){
+ 970   2                      temp = 0;
+ 971   2              }
+ 972   1              else{
+ 973   2                      ucR_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+ 974   2                      ucR_Gain = ucR_GainUser;
+ 975   2                      SetContrastRGB();
+ 976   2                      ucSavePointer = svRED;
+ 977   2                      ShowRed();
+ 978   2              }
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 17  
+
+ 979   1      }
+ 980          
+ 981          void ColorGreenDown(void)
+ 982          {
+ 983   1      unsigned char temp;
+ 984   1              temp = ScalingColorGain(ucG_GainUser);
+ 985   1              if(--temp == 0xff){
+ 986   2                      temp = 0;
+ 987   2              }
+ 988   1              else{
+ 989   2                      ucG_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+ 990   2                      ucG_Gain = ucG_GainUser;
+ 991   2                      SetContrastRGB();
+ 992   2                      ucSavePointer = svGREEN;
+ 993   2                      SaveData();
+ 994   2                      ShowGreen();
+ 995   2              }
+ 996   1      }
+ 997          
+ 998          void ColorBlueDown(void)
+ 999          {
+1000   1      unsigned char temp;
+1001   1              temp = ScalingColorGain(ucB_GainUser);
+1002   1              if(--temp == 0xff)
+1003   1                      temp = 0;
+1004   1              else{
+1005   2                      ucB_GainUser = ColorGainReturnToNormal(temp);   //((unsigned short)temp * 255 + 50) / 100;
+1006   2                      ucB_Gain = ucB_GainUser;
+1007   2                      SetContrastRGB();
+1008   2                      ucSavePointer = svBLUE;
+1009   2                      ShowBlue();
+1010   2              }
+1011   1      }
+1012          
+1013          
+1014          void RecallsRGBOffset()
+1015          {
+1016   1              ucBkOffset[0] = MCU_DataMap[EPADDR_RBKOFFSET];
+1017   1              ucBkOffset[1] = MCU_DataMap[EPADDR_GBKOFFSET];
+1018   1              ucBkOffset[2] = MCU_DataMap[EPADDR_BBKOFFSET];
+1019   1              Write24C16(EPADDR_RBKOFFSET,ucBkOffset[0]);
+1020   1              Write24C16(EPADDR_GBKOFFSET,ucBkOffset[1]);
+1021   1              Write24C16(EPADDR_BBKOFFSET,ucBkOffset[2]);
+1022   1              WriteIIC560(SRGB_CTRL, 0x21);
+1023   1              WriteIIC560(SRGB_COEF_OFFSET, MCU_DataMap[EPADDR_RBKOFFSET]);
+1024   1              WriteIIC560(SRGB_CTRL, 0x23);
+1025   1              WriteIIC560(SRGB_COEF_OFFSET, MCU_DataMap[EPADDR_GBKOFFSET]);
+1026   1              WriteIIC560(SRGB_CTRL, 0x25);
+1027   1              WriteIIC560(SRGB_COEF_OFFSET, MCU_DataMap[EPADDR_BBKOFFSET]);
+1028   1      }
+1029          
+1030          
+1031          void RecallPOT()
+1032          {
+1033   1              usPOTTimerS_900 = 0;
+1034   1              usPOTTimerS_900 = 0;
+1035   1              ucPOTTimerM_4 = 0;
+1036   1              ulPOTTimerH = 0;
+1037   1              ulPOTTimerH = 0;
+1038   1              Write24C16(EPADDR_POT_BYTE0,0x00);//0x1a = POT byte 0
+1039   1              Write24C16(EPADDR_POT_BYTE1,0x00);//0x1b = POT byte 1
+1040   1              Write24C16(EPADDR_POT_15M,0x00);        //0x2d = POT_5M
+C51 COMPILER V8.12   USERADJ                                                               04/16/2014 18:12:31 PAGE 18  
+
+1041   1              bPOTUpdate = FALSE;
+1042   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3701    ----
+   CONSTANT SIZE    =     38    ----
+   XDATA SIZE       =   ----       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

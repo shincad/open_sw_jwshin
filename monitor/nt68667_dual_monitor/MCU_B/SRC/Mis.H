@@ -1,0 +1,29 @@
+#ifndef _MIS_H_
+#define  _MIS_H_
+
+void CheckPowerStatus();
+void CheckTimer();
+void LEDFlash();
+void GrnLEDFlick();							// +jwshin 111213
+void Sleep(unsigned short time);
+void WriteFixString( unsigned char x, unsigned char y, unsigned char *str);
+void UShortToStr(unsigned short us_value, unsigned char *str, unsigned int digit);
+void StrCat(unsigned char *p_str1,unsigned char *p_str2, unsigned int str1_len);
+void Set_usTimer1_1ms(unsigned short time);
+unsigned short Get_usTimer1_1ms(void);
+void Set_usPoSvTimer(unsigned short time);
+unsigned short Get_usPoSvTimer(void);
+void Set_usWarningMsgTimer_1s(unsigned short time);
+unsigned short Get_usWarningMsgTimer_1s(void);
+void Set_usOSDTimer_10ms(unsigned short time);
+unsigned short Get_usOSDTimer_10ms(void);
+//------------------- +jwshin 120302
+void Set_usOSD2Timer_10ms(unsigned short time);
+unsigned short Get_usOSD2Timer_10ms(void);
+//----------------------------------
+void Set_ulPOTTimerH(unsigned long time);
+unsigned long Get_ulPOTTimerH(void);
+void Set_usBFTimer_10ms(unsigned short time);
+unsigned short Get_usBFTimer_10ms(void);
+
+#endif

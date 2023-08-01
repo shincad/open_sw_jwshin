@@ -1,0 +1,70 @@
+#ifndef _MCU_H_
+#define  _MCU_H_
+
+extern code unsigned char KeyTab[];
+extern code unsigned short LG_IR_Tab[];
+extern code unsigned char IR_KeyTab[];
+
+#define CPU_CLK 12000000*2//unit Mhz
+
+void InitMCU(void);
+void Timer0(void);
+void Sleep(unsigned short);
+void WaitSetup(unsigned short time);
+void KeyProcess(void);
+void LED_GrnOn(void);
+void LED_GrnOff(void);
+void LED_RedOn(void);
+void LED_RedOff(void);
+void FLED_GrnOn(void);		// +jwshin 060908
+void FLED_GrnOff(void);		// +jwshin 060908
+void BackLightOn(void);
+void BackLightOff(void);
+bit DetectBacklight();
+//void FastMuteOn();
+//void FastMuteOff();
+void PanelPowerOff(void);
+void PanelPowerOn(void);
+void ResetOff(void);
+void ResetOn(void);
+void SAA7114Off();
+void SAA7114On();
+//----------------------
+void SoundRGB(void);
+void SoundVideo(void);
+void SoundTV(void);
+void SoundComp(void);
+//----------------------
+bit Saa7114Status();
+bit DetectDVI();
+bit DetectDsub();
+bit DetectIRQ();
+//bit DetectPower();
+bit VsyncValide();
+void WaitVblank();
+//void CheckDDC2Bi(void);
+void ScanKeyPad(void);
+unsigned char GetKey();
+void PowerOffProcess();
+void AUDIO_MUTE(void);
+void AUDIO_On(void);
+void SetAudioVolume(void);
+void SetVCM_Vol(void);
+void SetAudioMute(void);
+void CheckAnyKey();
+void DC2DCPowerOn(void);
+void DC2DCPowerOff(void);
+void XAO_On(void);
+void XAO_Off(void);
+void CheckDDC2Bi(void);
+void CheckIR(void);
+
+void RGB_SW1_RGB1(void);
+void RGB_SW1_RGB2(void);
+
+void Button_En1_Act(void);
+void Button_En1_InAct(void);
+void Button_En2_Act(void);
+void Button_En2_InAct(void);
+
+#endif

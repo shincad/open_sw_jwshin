@@ -1,0 +1,124 @@
+C51 COMPILER V8.12   NT686XX_MCU_REG                                                       11/09/2015 19:43:36 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE NT686XX_MCU_REG
+OBJECT MODULE PLACED IN .\BIN\NT686xx_MCU_REG.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\NT686xx_MCU_REG.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190
+                    -AW01,ModelName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\NT686xx_MCU_REG.lst) OBJECT(.\BIN\NT686xx_MCU_REG.
+                    -obj)
+
+line level    source
+
+   1          /*----------------------------------------*/
+   2          /* NT68F632 System Register Declare               */
+   3          /* Date : 2002/10/08                                      */
+   4          /*----------------------------------------*/
+   5          #include "NT686xx_MCU_REG.H"
+   6          
+   7          xdata unsigned char volatile SC_StarAddress _at_ 0x8000;
+   8          xdata unsigned char volatile SC_SYNC_INT_FLAG1 _at_ 0x80ab;
+   9          xdata unsigned char volatile SC_ACE_DATA_PORT _at_ 0x80b2;
+  10          xdata unsigned char volatile SC_INDEX_CTRL _at_ 0x80e0;
+  11          xdata unsigned char volatile SC_INDEX_ADDR_LI _at_ 0x80e1;
+  12          xdata unsigned char volatile SC_INDEX_ADDR_HI _at_ 0x80e2;
+  13          xdata unsigned char volatile SC_INDEX_DATA _at_ 0x80e3;
+  14          xdata unsigned char volatile SC_RegPage _at_ 0x80ff;
+  15          
+  16          /* General I/O Port Control Registers */
+  17          xdata unsigned char volatile PortA _at_ 0xf000;
+  18          xdata unsigned char volatile PortB _at_ 0xf001;
+  19          xdata unsigned char volatile PortC _at_ 0xf002;
+  20          xdata unsigned char volatile PortD _at_ 0xf003;
+  21          xdata unsigned char volatile PortE _at_ 0xf004;
+  22          /* GPIO R/W Direction Control */
+  23          xdata unsigned char volatile RDPA_REG _at_ 0xf005;
+  24          xdata unsigned char volatile RDPB_REG _at_ 0xf006;
+  25          xdata unsigned char volatile RDPC_REG _at_ 0xf007;
+  26          xdata unsigned char volatile RDPD_REG _at_ 0xf008;
+  27          xdata unsigned char volatile RDPE_REG _at_ 0xf009;
+  28          
+  29          /* Watch-Dog Timer */
+  30          xdata unsigned char volatile CLRWDT _at_ 0xf00a;
+  31          
+  32          /* A/D Converter */
+  33          xdata unsigned char volatile ADC_CON _at_ 0xf00b;             // (-W-) : $00
+  34          xdata unsigned char volatile ADC_REG[4] _at_ 0xf00c;  // (-R-) : ADC0 Value
+  35          
+  36          /* PWM D/A Converters */
+  37          xdata unsigned char volatile ENPWM_LB _at_ 0xf010;  // (-W-) : Enable PWM01-PWM00
+  38          xdata unsigned char volatile ENPWM_HB _at_ 0xf011;  // (-W-) : Enable PWM09-PWM02
+  39          xdata unsigned char volatile PWM_REG[10] _at_ 0xf012;
+  40          
+  41          /* DDC Port-0 PB4,PB5 */
+  42          xdata unsigned char volatile DDC_CTRL_0 _at_ 0xf01c;
+  43          xdata unsigned char volatile DDC_ADDR_0 _at_ 0xf01d;
+  44          
+  45          /* DDC Port-1 PB6,PB7 */
+  46          xdata unsigned char volatile DDC_CTRL_1 _at_ 0xf01e;
+  47          xdata unsigned char volatile DDC_ADDR_1 _at_ 0xf01f;
+  48          
+  49          
+  50          /* Interrupt Sources */
+  51          xdata unsigned char volatile INT_SRC _at_ 0xf020;
+  52          
+  53          /* External Interrupt */
+C51 COMPILER V8.12   NT686XX_MCU_REG                                                       11/09/2015 19:43:36 PAGE 2   
+
+  54          xdata unsigned char volatile INTEXT_FLG _at_ 0xf021;
+  55          xdata unsigned char volatile INTEXT_EN _at_ 0xf022;
+  56          xdata unsigned char volatile INTSC_EN _at_ 0xf024;
+  57          
+  58          /*I2C Port-0 (PB4,PB5) Control Register*/
+  59          xdata unsigned char volatile IIC0_CFG _at_ 0xf039;
+  60          xdata unsigned char volatile IIC0_STATUS _at_ 0xf03a;
+  61          xdata unsigned char volatile IIC0_INT_EN _at_ 0xf03b;
+  62          xdata unsigned char volatile IIC0INT_FLG _at_ 0xf03c;
+  63          xdata unsigned char volatile IIC0INT_CLR _at_ 0xf03d;
+  64          xdata unsigned char volatile IIC0_TXDATA _at_ 0xf03e;
+  65          xdata unsigned char volatile IIC0_RXDATA _at_ 0xf03f;
+  66          xdata unsigned char volatile IIC0_ADDR _at_ 0xf040;
+  67          
+  68          /*I2C Port-1 (PB6,PB7) Control Register*/
+  69          xdata unsigned char volatile IIC1_CFG _at_ 0xf041;
+  70          xdata unsigned char volatile IIC1_STATUS _at_ 0xf042;
+  71          xdata unsigned char volatile IIC1_INT_EN _at_ 0xf043;
+  72          xdata unsigned char volatile IIC1INT_FLG _at_ 0xf044;
+  73          xdata unsigned char volatile IIC1INT_CLR _at_ 0xf045;
+  74          xdata unsigned char volatile IIC1_TXDATA _at_ 0xf046;
+  75          xdata unsigned char volatile IIC1_RXDATA _at_ 0xf047;
+  76          xdata unsigned char volatile IIC1_ADDR _at_ 0xf048;
+  77          
+  78          /* Flash Memory */
+  79          xdata unsigned char volatile ISP_REG _at_ 0xf049;
+  80          xdata unsigned char volatile FLASH_BUF _at_ 0xf04a;
+  81          xdata unsigned char volatile CPU_CLK _at_ 0xf04c;
+  82          xdata unsigned char volatile BANK_SET _at_ 0xf04d;
+  83          xdata unsigned char volatile DDC_THRES _at_ 0xf04e;
+  84          xdata unsigned char volatile SC_HW_RST _at_ 0xf04f;
+  85          xdata unsigned char volatile LDO_ADJ _at_ 0xf050;
+  86          xdata unsigned char volatile SC_SR              _at_ 0xf055;
+  87          xdata unsigned char volatile HDCP_MUX   _at_ 0xf056;
+  88          xdata unsigned char volatile CURR_ADJ1 _at_ 0xf060;
+  89          xdata unsigned char volatile CURR_ADJ2 _at_ 0xf061;
+  90          xdata unsigned char volatile SLEW_CTL _at_ 0xf062;
+  91          
+  92          xdata unsigned char volatile SRAMstart _at_ 0xF400;
+  93          xdata unsigned char volatile SRAMend   _at_ 0xF600;
+  94          
+  95          xdata unsigned char volatile DDCPtr0 _at_ 0xF800;                                       //  (R/W) : $07 
+  96          xdata unsigned char volatile DDCPtr1 _at_ 0xF900;                                       //  (R/W) : $07 
+  97          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

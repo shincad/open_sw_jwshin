@@ -1,0 +1,167 @@
+C51 COMPILER V8.12   SMARTBRIGHT                                                           11/09/2015 19:43:36 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE SMARTBRIGHT
+OBJECT MODULE PLACED IN .\BIN\SmartBright.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\SmartBright.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01
+                    -,ModelName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\SmartBright.lst) OBJECT(.\BIN\SmartBright.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          #include "MyDef.H"
+   3          #include "NT686xx_MCU_REG.H"
+   4          #include "NVRAM.H"
+   5          #include "Board.H"
+   6          //#include "stdio.H"
+   7          #include "8051.H"
+   8          #include "Rom_map.H"
+   9          #include "math.H"
+  10          #include "SmartBright.H"
+  11          #include "Scaler.H"
+  12          #include "OSD.H"
+  13          
+  14          //#define SmartBrightDebug
+  15          #ifdef SmartBrightDebug
+                      #define NVTprintf(s) printf(s)
+                      #define NVTprintf1(s,a1) printf(s,a1)
+                      #define NVTprintf2(s,a1,a2) printf(s,a1,a2)
+              #else
+  20                  #define NVTprintf(s)
+  21                  #define NVTprintf1(s,a)
+  22                  #define NVTprintf2(s,a1,a2)
+  23          #endif
+  24          
+  25          //------------------------------------------
+  26          // SMART BRIGHTNESS ( 190P7 ONLY )
+  27          //------------------------------------------
+  28          #if _SmartBright_ == ON
+              idata bit bSmartBrightEnable;
+              idata bit bSaveSmartBright;
+              xdata unsigned long ulBrightV;
+              xdata unsigned char ucBrightValue;
+              xdata unsigned short usBrightCounter;
+              xdata unsigned char ucTempBrightValue;
+              xdata unsigned char ucSmartBrightStart;
+              xdata unsigned char ucSmartBrightEnd;
+              xdata unsigned char ucBrightADC;
+              xdata unsigned char ucTempBrightADC;
+              xdata unsigned short usBrightOffset;
+              xdata unsigned char ucSmartBrightValue;
+              //xdata unsigned char ucADCCounter;
+              //xdata unsigned char ucBrightADC1;
+              #endif
+  44          
+  45          
+  46          //
+  47          //      ucBrightADC = input from light sensor [0..127]
+  48          //
+  49          //      ucBrightValue = average for Range(ucBrightADC) for BrightTimes time [MinBrightValue..MaxBrightValue] (c
+             -overed by 0..127)
+  50          //      
+  51          //      ucSmartBrightValue [MinBrightness..MaxBrightness]
+  52          //
+  53          //      ucSmartBrightStart = ucBrightness NOW
+C51 COMPILER V8.12   SMARTBRIGHT                                                           11/09/2015 19:43:36 PAGE 2   
+
+  54          //
+  55          //      ucSmartBrightEnd = ucBrightness Final
+  56          //
+  57          //      usBrightOffset = 100    +/-    | ucSmartBrightValue - ucBrightness(Final) |
+  58          //
+  59          //
+  60          #if _SmartBright_ == ON
+              
+              void SmartBright(void)
+              {
+              unsigned short temp;
+                      if((ucColorTemperature != COLOR_SRGB)&&(bSmartBrightEnable == ON)){
+                              if(abs(ucTempBrightADC-ucBrightADC) > deltaBright){
+                                      //printf("Counter reset=%d,last=%d\r\n",(unsigned short)ucBrightADC ,(unsigned short)ucTempBrightADC);
+                                      usBrightCounter = 0;
+                                      ulBrightV = 0;
+                                      ucTempBrightADC = ucBrightADC;
+                              }
+                              ulBrightV += ucBrightADC;
+                              if(++usBrightCounter > BrightTimes){
+                                      usBrightCounter = 0;
+                                      ucTempBrightValue = (unsigned char)((float)ulBrightV / BrightTimes + 0.5);
+                                      ulBrightV = 0;
+                                      //printf("BrightValue = %d,ucTempBrightValue=%d\r\n",(unsigned short)ucBrightValue,(unsigned short)ucTe
+             -mpBrightValue);
+                                      //if(abs(ucTempBrightValue-ucBrightValue) > deltaBright){
+                                      if(abs(ucTempBrightValue-ucBrightValue) > DifferenceBrightness){
+                                              ucBrightValue = ucTempBrightValue;
+                                              if(ucBrightValue > MaxBrightValue)
+                                                      ucBrightValue = MaxBrightValue;
+                                              else if(ucBrightValue < MinBrightValue)
+                                                      ucBrightValue = MinBrightValue;
+                                              ucSmartBrightStart = ucBrightness;
+                                              ucSmartBrightValue = (unsigned char)((float)(ucMaxBrightness - (ucMinBrightness+20)) * (ucBrightValue 
+             -- MinBrightValue) / (MaxBrightValue - MinBrightValue) + (ucMinBrightness+20) + 0.5);
+                                              if(abs(ucSmartBrightStart - ucSmartBrightValue) > DifferenceBrightness){
+              //                                      ucSmartBrightEnd = ucSmartBrightValue;
+                                                      temp = (unsigned short)ucSmartBrightValue + usBrightOffset;
+                                                      if(temp < 100)
+                                                              temp = 0;
+                                                      else
+                                                              temp -= 100;
+                                                      if(temp > ucMaxBrightness)
+                                                              ucSmartBrightEnd = ucMaxBrightness;
+                                                      else if(temp < ucMinBrightness)
+                                                              ucSmartBrightEnd = ucMinBrightness;
+                                                      else
+                                                              ucSmartBrightEnd = temp;
+              
+                                                      bSaveSmartBright = 1;
+                                                      //printf("ucSmartBrightStart = %d\r\n",(unsigned short)ucSmartBrightStart);
+                                                      //printf("ucSmartBrightEnd = %d\r\n",(unsigned short)ucSmartBrightEnd);
+                                                      //printf("ucSmartBrightValue = %d\r\n",(unsigned short)ucSmartBrightValue);
+                                                      //printf("usBrightOffset = %d\r\n",(unsigned short)usBrightOffset);
+                                              }
+                                              else{
+                                                      ucSmartBrightEnd = ucSmartBrightStart;
+                                              }
+                                      }
+                              }
+                              if(ucSmartBrightStart > ucSmartBrightEnd){      //down
+                                      ucSmartBrightStart--;
+C51 COMPILER V8.12   SMARTBRIGHT                                                           11/09/2015 19:43:36 PAGE 3   
+
+                                      ucBrightness = ucSmartBrightStart;
+                                      SetBrightness();
+                              }
+                              else if(ucSmartBrightStart < ucSmartBrightEnd){ //up
+                                      ucSmartBrightStart++;
+                                      ucBrightness = ucSmartBrightStart;
+                                      SetBrightness();
+                              }
+                              else{
+                                      if(bSaveSmartBright == 1){
+                                              bSaveSmartBright = 0;
+                                              if (bFactoryMode)               ucSavePointer = svBRIGHTNESS_F; //Brightness
+                                              else                                    ucSavePointer = svBRIGHTNESS;           //Brightness
+                                              SaveData();
+                                              //Write24C16(EPADDR_BRIGHT,ucBrightness);//0x08 = brightness
+                                              //Write24C16(EPADDR_BRIGHT_USER,ucBrightness);//0x36 = brightness user
+                                              NVTprintf("bSaveSmartBright\r\n");
+                                      }
+                              }
+                      }
+              }
+              
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

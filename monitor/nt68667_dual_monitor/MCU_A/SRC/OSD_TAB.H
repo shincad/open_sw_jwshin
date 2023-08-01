@@ -1,0 +1,142 @@
+#ifndef _OSD_TAB_H
+#define _OSD_TAB_H
+
+
+#define FONT_1BIT_NUM	27//25
+#define FONT_2BIT_NUM	18
+#define FONT_4BIT_NUM	9
+
+
+extern code unsigned char Arial_Width[];
+extern code unsigned short Arial_Font[];
+extern code unsigned char oneBitFont[];
+extern code unsigned char MainIconTowBitFont[];
+extern code unsigned char MainIconFourBitFont[];
+extern code unsigned char *MainMenuStrTab[];
+extern code unsigned char *BrightnessStrTab[];
+extern code unsigned char *ContrastStrTab[];
+extern code unsigned char *PhaseStrTab[];
+extern code unsigned char *ClockStrTab[];
+extern code unsigned char *HPosStrTab[]; 
+extern code unsigned char *VPosStrTab[]; 
+extern code unsigned char StrTab11500K[];
+extern code unsigned char StrTab9300K[];
+extern code unsigned char StrTab8200K[];
+extern code unsigned char StrTab7500K[];
+extern code unsigned char StrTab6500K[];
+extern code unsigned char StrTab5000K[];
+extern code unsigned char *sRGB_StrTab[];
+extern code unsigned char *UserDefineStrTab[];
+extern code unsigned char *ColorTempStrTab[];
+extern code unsigned char *RedStrTab[];
+extern code unsigned char *GreenStrTab[];
+extern code unsigned char *BlueStrTab[];
+extern code unsigned char *HorizontalStrTab[];
+extern code unsigned char *VerticalStrTab[];
+extern code unsigned char *TransparencyStrTab[];
+extern code unsigned char *OSDTimeStrTab[];
+extern code unsigned char *LanguageStrTab[];
+extern code unsigned char *InputStrTab[];
+extern code unsigned char *ResetStrTab[];
+extern code unsigned char *CountryStrTab[];
+extern code unsigned char *VGA_StrTab[];
+extern code unsigned char *DVI_StrTab[];
+extern code unsigned char *HDMI_StrTab[];
+extern code unsigned char *VIDEO_StrTab[];
+extern code unsigned char *WaitStrTab[];
+extern code unsigned char *DCR_StrTab[];
+extern code unsigned char *ColorTemp_StrTab[];
+extern code unsigned char *SaturationStrTab[];
+extern code unsigned char *TintStrTab[];
+extern code unsigned char *OverDriverTab[];
+extern code unsigned char *DoubleFrameRateTab[];
+
+
+
+
+
+
+extern code unsigned char *MonitorSetupTab1[];
+extern code unsigned char *BackStrTab[];
+extern code unsigned char *ExitStrTab[];
+extern code unsigned char *OKStrTab[];
+extern code unsigned char *NextStrTab[];
+
+extern code unsigned char *InputUStrTab[];
+
+extern code unsigned char *BrightnessUStrTab[];
+
+extern code unsigned char *StandAloneTab[];
+extern code unsigned char *MuteTab[];
+
+extern code unsigned char *OrignalColorStrTab[];
+extern code unsigned char *WarmStrTab[];
+extern code unsigned char *CoolStrTab[];
+
+extern code unsigned char *AutoSrcStrTab[];
+
+
+extern code unsigned char *VolumeStrTab[];
+
+
+extern code unsigned char *OnTab[];
+extern code unsigned char *OffTab[];
+extern code unsigned char *YesStrTab[];
+extern code unsigned char *NoStrTab[];
+extern code unsigned char *SizeStrTab[];
+
+
+
+extern code unsigned char *AutoStrTab[];
+extern code unsigned char *OutOfRangeOverStrTab[];
+extern code unsigned char *OutOfRange85HzStrTab[];
+extern code unsigned char *OSD_LockStrTab[];
+extern code unsigned char *NoSyncStrTab[];
+extern code unsigned char *NoVideoStrTab[];
+extern code unsigned char *DisconnectedStrTab[];
+extern code unsigned char *NotAvailableStrTab[];
+extern code unsigned char *PwSavingTab1[];
+extern code unsigned char *ToPwSavingTab1[];
+
+extern code unsigned char *DDCCiOnTab1[];
+extern code unsigned char *DDCCiOffTab1[];
+
+
+extern code unsigned char *BestResultStrTab[];
+extern code unsigned char *sRGBWarningStrTab[];
+extern code unsigned char *DemoStrTab[];
+
+extern code unsigned char *SrcDigitalStrTab[];
+extern code unsigned char *SrcAnalogStrTab[];
+
+extern code unsigned char *AttentionStrTab[];
+
+extern code unsigned char SerialNoStrTab[];
+
+extern code unsigned char ModelStrTab[];
+extern code unsigned char VersionStrTab[];
+
+// Strings for LF OSD
+extern code unsigned char *CusSetupStrTab[];
+extern code unsigned char *LTMItemStrTab[];
+extern code unsigned char *LTCusItemStrTab[];
+extern code unsigned char *BTMItemStrTab[];
+extern code unsigned char *BTMItemStrTab1[];
+
+extern code unsigned char *BF_FT_StrTab[];
+extern code unsigned char *BF_FTUSR_StrTab[];
+extern code unsigned char *BF_YP_StrTab[];
+
+extern code unsigned char BrightModeStrTab[];
+extern code unsigned char *LF_DEMO_StrTab[];
+
+extern code unsigned char Arial_Width_Page0[];
+extern code unsigned short Arial_Font_Page0[];
+
+
+//-------------+jwshin 120224
+code unsigned char *MonSel1_Tab[];
+code unsigned char *MonSel_MainTab[];
+code unsigned char *DomainDisplay_Tab[];
+code unsigned char *RGBSel_Tab[];
+#endif

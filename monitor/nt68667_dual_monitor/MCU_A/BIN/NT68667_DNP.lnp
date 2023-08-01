@@ -1,0 +1,39 @@
+COMMON {".\BIN\STARTUP.obj"},
+COMMON {".\BIN\INT.obj"},
+COMMON {".\BIN\MAIN.obj"},
+COMMON {".\BIN\NT686xx_BANK.obj"},
+COMMON {".\BIN\NT686xx_MCU_REG.obj"},
+COMMON {".\SRC\DebugModeEn.LIB"},
+COMMON {".\SRC\fe2p_nt68667_large.LIB"},
+BANK0 {".\BIN\Gamma.obj"},
+BANK0 {".\BIN\OD.obj"},
+BANK0 {".\BIN\SmartBright.obj"},
+BANK0 {".\BIN\OSD_TAB.obj"},
+BANK0 {".\BIN\Factory.obj"},
+BANK0 {".\BIN\OSD_LF.obj"},
+BANK0 {".\BIN\OSD.obj"},
+BANK1 {".\BIN\DDC_CI.obj"},
+BANK1 {".\BIN\KeyPad.obj"},
+BANK1 {".\BIN\RAM.obj"},
+BANK1 {".\BIN\OSD_Key.obj"},
+BANK1 {".\BIN\BFControl.obj"},
+BANK1 {".\BIN\Mis.obj"},
+BANK1 {".\BIN\HDCP.obj"},
+BANK1 {".\BIN\MCU.obj"},
+BANK1 {".\BIN\sRGB.obj"},
+BANK1 {".\BIN\IIC.obj"},
+BANK1 {".\BIN\AutoAdj.obj"},
+BANK1 {".\BIN\UserAdj.obj"},
+BANK1 {".\BIN\Board.obj"},
+BANK1 {".\BIN\ModeHandle.obj"},
+BANK1 {".\BIN\NVRAM.obj"},
+BANK1 {".\BIN\NVTDebug.obj"},
+BANK1 {".\BIN\Rom_map.obj"},
+BANK1 {".\BIN\Scaler.obj"},
+BANK1 {".\BIN\FactoryAlignment.obj"} 
+TO ".\BIN\NT68667_DNP" BankArea(0x0000,0xFFFF) 
+PRINT(".\LST\NT68667_DNP.m51") RAMSIZE(256) 
+B0(?CO?OSD_TAB,?CO?OSD,?CO?FACTORY)
+
+CODE( 0X0000-0XFFFF )
+XDATA( 0XF400-0XF6FF )

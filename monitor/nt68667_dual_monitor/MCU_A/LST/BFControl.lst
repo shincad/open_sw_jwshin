@@ -1,0 +1,1622 @@
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE BFCONTROL
+OBJECT MODULE PLACED IN .\BIN\BFControl.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\BFControl.c LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,M
+                    -odelName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\BFControl.lst) OBJECT(.\BIN\BFControl.obj)
+
+line level    source
+
+   1          #include "stdio.h"
+   2          #include "math.h"
+   3          #include "8051.h"
+   4          #include "NT686xx_MCU_REG.h"
+   5          #include "NT686xx_SC_REG.H"
+   6          
+   7          #include "PANEL.H"
+   8          
+   9          #include "MyDef.H"
+  10          #include "IIC.H"
+  11          #include "OD.h"
+  12          
+  13          #include "BFControl.h"
+  14          
+  15          //
+  16          #include "Ram.h"
+  17          #include "Board.h"
+  18          #include "Scaler.h"
+  19          #include "SRGB.h"
+  20          #include "NVRAM.h"
+  21          #include "ROM_MAP.H"
+  22          
+  23          #include "Mis.h"
+  24          
+  25          #include "UserAdj.h"
+  26          #include "OSD.h"
+  27          #include "OSD_LF.H"
+  28          //
+  29          
+  30          // BrightFrame function
+  31          static idata unsigned char ucCurBFW;
+  32          
+  33          
+  34          void LFEnableSettings(void)
+  35          {
+  36   1              unsigned char tmpBr;
+  37   1      
+  38   1      
+  39   1              if((ucLFMode != LF_MODE_OFF||ucDynBKMode)){
+  40   2                      printf("LFEnableSettings\r\n");
+  41   2                      BF_DisableWindow(BF_WINDOW_2);
+  42   2                      BF_EnableWindow(BF_WINDOW_1);
+  43   2                      BF_SetActiveWindow(BF_WINDOW_1);
+  44   2              }
+  45   1              else{
+  46   2                      BF_DisableWindow(BF_WINDOW_1);
+  47   2              }
+  48   1      
+  49   1              //if (ucPrevLFMode == ucLFMode) return;
+  50   1              ucPrevLFMode = ucLFMode;
+  51   1      
+  52   1      #if _Enable_OD_ == ON
+                      ucCurODMode = LF_OD_MODE_OFF;
+                      LFSetODMode();
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 2   
+
+              #endif
+  56   1      
+  57   1      //      if ((ucIsBF == FALSE) || (ucOSDType != LF_MAIN_MENU))
+  58   1      //      {
+  59   1      
+  60   1                      if ( POWER_DIGITAL )
+  61   1                              Write24C16(EPADDR_DVI_LF_MODE, ucLFMode);
+  62   1                      else
+  63   1                              Write24C16(EPADDR_DSUB_LF_MODE, ucLFMode);
+  64   1                              
+  65   1      /*
+  66   1                      if (ucLFMode == LF_MODE_Economic)
+  67   1                      {
+  68   1      //                      WriteIIC560(DISPLAY_CTRL,ucDisplayControl & ~BIT_3); 
+  69   1                              WriteIIC560(GAMMA_CTRL,0x00);   //gamma off, 10bit
+  70   1                      }
+  71   1                      else
+  72   1                      {
+  73   1      //                      WriteIIC560(DISPLAY_CTRL,ucDisplayControl); 
+  74   1                              if (Read24C16(EPADDR_GAMMA_ONOFF) != 0x00)
+  75   1                                      WriteIIC560(GAMMA_CTRL,0x80);   //gamma on, 10bit
+  76   1                      }
+  77   1      */
+  78   1      
+  79   1                      tmpBr = ucBrightness;
+  80   1                      LFResetData();
+  81   1                      //LFSetColorTemp();
+  82   1                      //SetBrightness();      
+  83   1                      //SetContrastRGB();
+  84   1                      
+  85   1                      LFSetSaturation();
+  86   1                      LFSetHue();
+  87   1                      LFSetSharpness(); 
+  88   1                      LFSetYPeak();
+  89   1                      BFEnhanceColor();
+  90   1      //      }
+  91   1      
+  92   1              LFSetACEMode();
+  93   1      
+  94   1      #ifdef BF_DYNAMIC_BACKLIGHT
+  95   1              if (ucDynBKMode == 0)
+  96   1              {
+  97   2      #endif
+  98   2      /*      SetBrightness();
+  99   2              if (tmpBr > ucBrightness)
+ 100   2              {
+ 101   2                      while(tmpBr!=ucBrightness)
+ 102   2                      {
+ 103   2                              tmpBr--;
+ 104   2                              tmpBrBK = ucBrightness;
+ 105   2                              ucBrightness = tmpBr;
+ 106   2                              SetBrightness();
+ 107   2                              ucBrightness = tmpBrBK;
+ 108   2                      }
+ 109   2              }
+ 110   2              else
+ 111   2              {
+ 112   2                      while(tmpBr!=ucBrightness)
+ 113   2                      {
+ 114   2                              tmpBr++;
+ 115   2                              tmpBrBK = ucBrightness;
+ 116   2                              ucBrightness = tmpBr;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 3   
+
+ 117   2                              SetBrightness();
+ 118   2                              ucBrightness = tmpBrBK;
+ 119   2                      }
+ 120   2              }*/
+ 121   2      #ifdef BF_DYNAMIC_BACKLIGHT
+ 122   2              }
+ 123   1      #endif
+ 124   1      
+ 125   1      #if _Enable_OD_ == ON
+                      LFSetODMode();
+              #endif
+ 128   1      }
+ 129          
+ 130          void LFMenuControl(enum LFAction act)
+ 131          {
+ 132   1              switch(act){
+ 133   2              case LFConfirm : 
+ 134   2                      OSD_OFF();
+ 135   2      #ifdef DCR_BY_PATTERN
+                              bBrightnessManual = 0;
+                              Set_usBFTimer_10ms(300);
+              #endif
+ 139   2                      ucCurKey = 0xff;
+ 140   2                      break;
+ 141   2              case LFOpen  : 
+ 142   2                      OSD_OFF();
+ 143   2                      ucOSDLvl1_Cursor = ucLFMode;
+ 144   2                      ShowLFMainMenu();
+ 145   2                      ucCurKey = 0xff;
+ 146   2                      break;
+ 147   2              case LFDown  : 
+ 148   2                      if(ucOSDType == LF_MAIN_MENU){
+ 149   3                              ucLFMode = (ucLFMode + 1)%NUM_LF_MODE; // The number of LF modes is 6
+ 150   3                              ucOSDLvl1_Cursor = ucLFMode;
+ 151   3                              SelectLFMITM();
+ 152   3                              LFEnableSettings();
+ 153   3                              if(ucLFCusACCMode == LF_ACC_AUTO) Set_usBFTimer_10ms(300);
+ 154   3                      }
+ 155   2                      ucCurKey = 0xff;
+ 156   2                      break;
+ 157   2              case LFUp : 
+ 158   2                      if(ucOSDType == LF_MAIN_MENU){
+ 159   3                              ucLFMode = (ucLFMode + NUM_LF_MODE-1)%NUM_LF_MODE; // The number of LF modes is 6
+ 160   3                              ucOSDLvl1_Cursor = ucLFMode;
+ 161   3                              SelectLFMITM();
+ 162   3                              LFEnableSettings();
+ 163   3                              if(ucLFCusACCMode == LF_ACC_AUTO) Set_usBFTimer_10ms(300);
+ 164   3                      }
+ 165   2                      ucCurKey = 0xff;
+ 166   2                      break;
+ 167   2              default:
+ 168   2                      break;
+ 169   2              }       
+ 170   1              ucCurKey = 0xff;
+ 171   1      
+ 172   1              if (ucOSDType != OSDOFF) Set_usOSDTimer_10ms(500);
+ 173   1      }
+ 174          
+ 175          
+ 176          enum LF_DEFAULT_TABLE
+ 177          { 
+ 178                  LF_DEFAULT_COLORTEMP = 0,
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 4   
+
+ 179                  LF_DEFAULT_LUMINANCE,
+ 180                  LF_DEFAULT_CONTRAST,
+ 181                  LF_DEFAULT_COLOR,
+ 182                  LF_DEFAULT_HUE,
+ 183                  LF_DEFAULT_SHARPNESS,
+ 184                  LF_DEFAULT_YPEAK,
+ 185                  LF_DEFAULT_ACE,
+ 186                  LF_DEFAULT_FT,
+ 187                  LF_DEFAULT_OD,
+ 188                  LF_DEFAULT_DBC
+ 189          };
+ 190          code unsigned char LFSettingTable[LF_MODE_NUMBER][11] =
+ 191          {
+ 192                  {       // OFFICE
+ 193                          LF_DEFAULT_COLORTEMP_OFFICE_WORK,   
+ 194                          LF_DEFAULT_LUMINANCE_OFFICE_WORK, 
+ 195                          LF_DEFAULT_CONTRAST_OFFICE_WORK, 
+ 196                          LF_DEFAULT_COLOR_OFFICE_WORK, 
+ 197                          LF_DEFAULT_HUE_OFFICE_WORK,             
+ 198                          LF_DEFAULT_SHARPNESS_OFFICE_WORK, 
+ 199                          LF_DEFAULT_YPEAK_OFFICE_WORK, 
+ 200                          LF_DEFAULT_ACE_OFFICE_WORK, 
+ 201                          LF_DEFAULT_FT_OFFICE_WORK,
+ 202                          LF_DEFAULT_OD_OFFICE_WORK,
+ 203                          LF_DEFAULT_DBC_OFFICE_WORK
+ 204                  },{     // IMAGE VIEWING
+ 205                          LF_DEFAULT_COLORTEMP_IMAGE_VIEWING, 
+ 206                          LF_DEFAULT_LUMINANCE_IMAGE_VIEWING, 
+ 207                          LF_DEFAULT_CONTRAST_IMAGE_VIEWING, 
+ 208                          LF_DEFAULT_COLOR_IMAGE_VIEWING, 
+ 209                          LF_DEFAULT_HUE_IMAGE_VIEWING, 
+ 210                          LF_DEFAULT_SHARPNESS_IMAGE_VIEWING, 
+ 211                          LF_DEFAULT_YPEAK_IMAGE_VIEWING, 
+ 212                          LF_DEFAULT_ACE_IMAGE_VIEWING, 
+ 213                          LF_DEFAULT_FT_IMAGE_VIEWING,
+ 214                          LF_DEFAULT_OD_IMAGE_VIEWING,
+ 215                          LF_DEFAULT_DBC_IMAGE_VIEWING
+ 216                          
+ 217                  },{     // ENTERTAINMENT
+ 218                          LF_DEFAULT_COLORTEMP_ENTERTAINMENT,
+ 219                          LF_DEFAULT_LUMINANCE_ENTERTAINMENT, 
+ 220                          LF_DEFAULT_CONTRAST_ENTERTAINMENT, 
+ 221                          LF_DEFAULT_COLOR_ENTERTAINMENT, 
+ 222                          LF_DEFAULT_HUE_ENTERTAINMENT, 
+ 223                          LF_DEFAULT_SHARPNESS_ENTERTAINMENT, 
+ 224                          LF_DEFAULT_YPEAK_ENTERTAINMENT, 
+ 225                          LF_DEFAULT_ACE_ENTERTAINMENT, 
+ 226                          LF_DEFAULT_FT_ENTERTAINMENT,
+ 227                          LF_DEFAULT_OD_ENTERTAINMENT,
+ 228                          LF_DEFAULT_DBC_ENTERTAINMENT
+ 229                  },
+ 230                  {       // CUSTOM
+ 231          #ifdef __LF_CUSTOM_MODE__
+                              LF_DEFAULT_COLORTEMP_CUSTOM,
+                              LF_DEFAULT_LUMINANCE_CUSTOM, 
+                              LF_DEFAULT_CONTRAST_CUSTOM, 
+                              LF_DEFAULT_COLOR_CUSTOM, 
+                              LF_DEFAULT_HUE_CUSTOM, 
+                              LF_DEFAULT_SHARPNESS_CUSTOM, 
+                              LF_DEFAULT_YPEAK_CUSTOM, 
+                              LF_DEFAULT_ACE_CUSTOM, 
+                              LF_DEFAULT_FT_CUSTOM,
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 5   
+
+                              LF_DEFAULT_OD_CUSTOM,
+                              LF_DEFAULT_DBC_CUSTOM
+              #else   // ECONOMIC
+ 244                          LF_DEFAULT_COLORTEMP_ECONOMIC,
+ 245                          LF_DEFAULT_LUMINANCE_ECONOMIC, 
+ 246                          LF_DEFAULT_CONTRAST_ECONOMIC, 
+ 247                          LF_DEFAULT_COLOR_ECONOMIC, 
+ 248                          LF_DEFAULT_HUE_ECONOMIC, 
+ 249                          LF_DEFAULT_SHARPNESS_ECONOMIC, 
+ 250                          LF_DEFAULT_YPEAK_ECONOMIC, 
+ 251                          LF_DEFAULT_ACE_ECONOMIC, 
+ 252                          LF_DEFAULT_FT_ECONOMIC,
+ 253                          LF_DEFAULT_OD_ECONOMIC,
+ 254                          LF_DEFAULT_DBC_ECONOMIC
+ 255          #endif
+ 256                  },{     // OFF
+ 257                          LF_DEFAULT_COLORTEMP_OFF,
+ 258                          LF_DEFAULT_LUMINANCE_OFF, 
+ 259                          LF_DEFAULT_CONTRAST_OFF, 
+ 260                          LF_DEFAULT_COLOR_OFF, 
+ 261                          LF_DEFAULT_HUE_OFF, 
+ 262                          LF_DEFAULT_SHARPNESS_OFF, 
+ 263                          LF_DEFAULT_YPEAK_OFF, 
+ 264                          LF_DEFAULT_ACE_OFF, 
+ 265                          LF_DEFAULT_FT_OFF,
+ 266                          LF_DEFAULT_OD_OFF,
+ 267                          LF_DEFAULT_DBC_OFF
+ 268                  }
+ 269          };
+ 270          
+ 271          void LFResetData(void)
+ 272          {
+ 273   1      
+ 274   1                      if (ucLFMode == LF_MODE_OFF)
+ 275   1                      {
+ 276   2                              ucColorTemperature = Read24C16(EPADDR_COLOR_TEMP);
+ 277   2      
+ 278   2                              LFLoadInitState();
+ 279   2                              
+ 280   2                              ucDynBKMode        = Read24C16(EPADDR_DYNAMIC_BKMODE);
+ 281   2      #if _Enable_OD_ == ON   
+                                      ucCurODMode        = Read24C16(EPADDR_OD_MODE);
+              #endif
+ 284   2      
+ 285   2                              
+ 286   2                              ucR_GainUser = Read24C16(EPADDR_RGAIN_USER);    //0x3e = r gain user
+ 287   2                              ucG_GainUser = Read24C16(EPADDR_GGAIN_USER);    //0x3f = g gain user
+ 288   2                              ucB_GainUser = Read24C16(EPADDR_BGAIN_USER);    //0x40 = b gain user
+ 289   2                      }
+ 290   1                      else
+ 291   1                      {
+ 292   2                              ucColorTemperature = LFSettingTable[ucLFMode][LF_DEFAULT_COLORTEMP];
+ 293   2                              ucLFLuminance      = LFSettingTable[ucLFMode][LF_DEFAULT_LUMINANCE];
+ 294   2                              ucLFContrast       = LFSettingTable[ucLFMode][LF_DEFAULT_CONTRAST];
+ 295   2                              Write24C16(EPADDR_LF_LUM, ucLFLuminance);
+ 296   2                              Write24C16(EPADDR_LF_CON, ucLFContrast);    
+ 297   2                              Write24C16(EPADDR_LF_CLRTEMP, ucColorTemperature);;
+ 298   2                              ucDynBKMode        = LFSettingTable[ucLFMode][LF_DEFAULT_DBC];
+ 299   2      #if _Enable_OD_ == ON   
+                                      ucCurODMode        = LFSettingTable[ucLFMode][LF_DEFAULT_OD];
+              #endif
+ 302   2      
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 6   
+
+ 303   2                              ucR_GainUser = MCU_DataMap[EPADDR_RGAIN_USER-EPADDR_EMPTY0];    //0x3e = r gain user
+ 304   2                              ucG_GainUser = MCU_DataMap[EPADDR_GGAIN_USER-EPADDR_EMPTY0];    //0x3f = g gain user
+ 305   2                              ucB_GainUser = MCU_DataMap[EPADDR_BGAIN_USER-EPADDR_EMPTY0];    //0x40 = b gain user
+ 306   2                              
+ 307   2                      }
+ 308   1                      ucBF_Status = 0;
+ 309   1                      if(ucDynBKMode == OFF)
+ 310   1                              ucBrightness = ucLFLuminance;
+ 311   1                      ucContrast = ucLFContrast;
+ 312   1                      ucSavePointer = svBRIGHTNESS;
+ 313   1                      SaveData();
+ 314   1                      ucSavePointer = svCONTRAST;
+ 315   1                      SaveData();
+ 316   1      
+ 317   1                      ucLFColor          = LFSettingTable[ucLFMode][LF_DEFAULT_COLOR];
+ 318   1                      ucLFHue            = LFSettingTable[ucLFMode][LF_DEFAULT_HUE];
+ 319   1                      ucLFSharpness      = LFSettingTable[ucLFMode][LF_DEFAULT_SHARPNESS];
+ 320   1                      ucLFYPeakEN        = LFSettingTable[ucLFMode][LF_DEFAULT_YPEAK];
+ 321   1                      ucLFCusACCMode     = LFSettingTable[ucLFMode][LF_DEFAULT_ACE];
+ 322   1                      ucBFColorMode      = LFSettingTable[ucLFMode][LF_DEFAULT_FT];
+ 323   1                      
+ 324   1      #ifdef BF_DYNAMIC_BACKLIGHT
+ 325   1                      ucNewDynBk  = iCurDynBk = ucBrightness;
+ 326   1      #endif
+ 327   1      
+ 328   1      #ifdef __LF_CUSTOM_MODE__
+                      }
+              #endif  
+ 331   1              //printf("LF Mode: %d\n\r", (unsigned short)ucLFMode);
+ 332   1              //printf("\tTemperature : %d\n\r", (unsigned short)ucColorTemperature);
+ 333   1              //printf("\tLuminance   : %d\n\r", (unsigned short)ucLFLuminance     );
+ 334   1              //printf("\tContrast Gap: %d\n\r", (unsigned short)ucLFContrast      );
+ 335   1              //printf("\tColor Sat.  : %d\n\r", (unsigned short)ucLFColor         );
+ 336   1              //printf("\tSharpness   : %d\n\r", (unsigned short)ucLFSharpness     );
+ 337   1              //printf("\tYPEAK Enhance: %d\n\r", (unsigned short)ucLFYPeakEN        );
+ 338   1              //printf("\tACE Mode    : %d\n\r", (unsigned short)ucBFMode          );
+ 339   1              //printf("\tFT Mode     : %d\n\r", (unsigned short)ucBFColorMode     );
+ 340   1              
+ 341   1              SetColorTemp(ucColorTemperature);
+ 342   1              
+ 343   1              
+ 344   1              LFSetMinMax(0);
+ 345   1              LFSetMinMax(1);
+ 346   1              LFSetMinMax(2);
+ 347   1              LFSetMinMax(3);
+ 348   1      }
+ 349          
+ 350          void LFLoadInitState(void)
+ 351          {
+ 352   1                      if(POWER_DIGITAL)
+ 353   1                              ucLFMode = Read24C16(EPADDR_DVI_LF_MODE);
+ 354   1                      else
+ 355   1                              ucLFMode = Read24C16(EPADDR_DSUB_LF_MODE);
+ 356   1      
+ 357   1                      ucLFLuminance = ucBrightnessUser;       //Read24C16(EPADDR_LF_CUS_LUM);
+ 358   1                      ucLFContrast  = ucContrastUser; //Read24C16(EPADDR_LF_CUS_CON);
+ 359   1                      ucLFColor     = Read24C16(EPADDR_LF_CUS_CLR);
+ 360   1                      ucLFSharpness = Read24C16(EPADDR_LF_CUS_SHP);
+ 361   1                      ucLFCusACCMode = Read24C16(EPADDR_LF_CUS_ACC);
+ 362   1                      ucLFYPeakEN    = Read24C16(EPADDR_LF_CUS_YP);
+ 363   1                      
+ 364   1                      ucBFMode      = Read24C16(EPADDR_BF_MODE);
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 7   
+
+ 365   1      
+ 366   1                      ucBFColorMode = Read24C16(EPADDR_BF_FT_MODE);
+ 367   1                      ucBFFTMore    = Read24C16(EPADDR_BF_FT_FT);
+ 368   1                      ucBFGreenMore = Read24C16(EPADDR_BF_FT_GREEN);
+ 369   1                      ucBFBlueMore  = Read24C16(EPADDR_BF_FT_BLUE);
+ 370   1      
+ 371   1                      ucBrightness = ucLFLuminance;
+ 372   1                      ucContrast = ucLFContrast;
+ 373   1      }
+ 374          
+ 375          void LFSetMinMax(unsigned char index)
+ 376          {
+ 377   1              code unsigned char LFMinMaxTable[][LF_MODE_NUMBER*2] =
+ 378   1              {
+ 379   1                      {   // LUMINANCE
+ 380   1                              LF_MIN_LUMINANCE_OFFICE_WORK   ,LF_MAX_LUMINANCE_OFFICE_WORK   ,
+ 381   1                              LF_MIN_LUMINANCE_IMAGE_VIEWING ,LF_MAX_LUMINANCE_IMAGE_VIEWING ,
+ 382   1      //                      LF_MIN_LUMINANCE_VIDEO_PLAYBACK,LF_MAX_LUMINANCE_VIDEO_PLAYBACK,        
+ 383   1                              LF_MIN_LUMINANCE_ENTERTAINMENT ,LF_MAX_LUMINANCE_ENTERTAINMENT        ,
+ 384   1                              LF_MIN_LUMINANCE_ECONOMIC      ,LF_MAX_LUMINANCE_ECONOMIC      ,
+ 385   1                              LF_MIN_LUMINANCE_OFF           ,LF_MAX_LUMINANCE_OFF
+ 386   1                      },{ // CONTRAST
+ 387   1                              LF_MIN_CONTRAST_OFFICE_WORK    ,LF_MAX_CONTRAST_OFFICE_WORK   ,
+ 388   1                              LF_MIN_CONTRAST_IMAGE_VIEWING  ,LF_MAX_CONTRAST_IMAGE_VIEWING ,
+ 389   1      //                      LF_MIN_CONTRAST_VIDEO_PLAYBACK ,LF_MAX_CONTRAST_VIDEO_PLAYBACK, 
+ 390   1                              LF_MIN_CONTRAST_ENTERTAINMENT         ,LF_MAX_CONTRAST_ENTERTAINMENT        ,
+ 391   1                              LF_MIN_CONTRAST_ECONOMIC       ,LF_MAX_CONTRAST_ECONOMIC      ,
+ 392   1                              LF_MIN_CONTRAST_OFF            ,LF_MAX_CONTRAST_OFF
+ 393   1                      },{ // Color Sat.
+ 394   1                              LF_MIN_COLORSAT_OFFICE_WORK    ,LF_MAX_COLORSAT_OFFICE_WORK   ,
+ 395   1                              LF_MIN_COLORSAT_IMAGE_VIEWING  ,LF_MAX_COLORSAT_IMAGE_VIEWING ,
+ 396   1      //                      LF_MIN_COLORSAT_VIDEO_PLAYBACK ,LF_MAX_COLORSAT_VIDEO_PLAYBACK, 
+ 397   1                              LF_MIN_COLORSAT_ENTERTAINMENT         ,LF_MAX_COLORSAT_ENTERTAINMENT        ,
+ 398   1                              LF_MIN_COLORSAT_ECONOMIC       ,LF_MAX_COLORSAT_ECONOMIC      ,
+ 399   1                              LF_MIN_COLORSAT_OFF            ,LF_MAX_COLORSAT_OFF
+ 400   1                      },{ // SHARP
+ 401   1                              LF_MIN_SHARP_OFFICE_WORK       ,LF_MAX_SHARP_OFFICE_WORK      ,
+ 402   1                              LF_MIN_SHARP_IMAGE_VIEWING     ,LF_MAX_SHARP_IMAGE_VIEWING    ,
+ 403   1      //                      LF_MIN_SHARP_VIDEO_PLAYBACK    ,LF_MAX_SHARP_VIDEO_PLAYBACK   , 
+ 404   1                              LF_MIN_SHARP_ENTERTAINMENT            ,LF_MAX_SHARP_ENTERTAINMENT           ,
+ 405   1                              LF_MIN_SHARP_ECONOMIC          ,LF_MAX_SHARP_ECONOMIC         ,
+ 406   1                              LF_MIN_SHARP_OFF               ,LF_MAX_SHARP_OFF
+ 407   1                      }
+ 408   1              };
+ 409   1              
+ 410   1              ucLFMaxAdj = LFMinMaxTable[index][2*ucLFMode+1];
+ 411   1              ucLFMinAdj = LFMinMaxTable[index][2*ucLFMode];
+ 412   1              
+ 413   1              if (index == 0)
+ 414   1              {
+ 415   2                      if (ucLFMode == LF_MODE_OFF)
+ 416   2                      {
+ 417   3                              ucMinBrightness = Read24C16(EPADDR_MIN_BRIGHT);//0x24 = MinBrightness
+ 418   3                              ucMaxBrightness = Read24C16(EPADDR_MAX_BRIGHT);//0x25 = MaxBrightness
+ 419   3                      }
+ 420   2                      else
+ 421   2                      {
+ 422   3                              ucMinBrightness = ucLFMinAdj;
+ 423   3                              ucMaxBrightness = ucLFMaxAdj;
+ 424   3                      }
+ 425   2              }
+ 426   1              else if (index == 1)
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 8   
+
+ 427   1              {
+ 428   2                      if (ucLFMode == LF_MODE_OFF)
+ 429   2                      {
+ 430   3                              ucMinContrast = Read24C16(EPADDR_MIN_CONTRAST);//0x26 = MinContrast
+ 431   3                              ucMaxContrast = Read24C16(EPADDR_MAX_CONTRAST);//0x28 = MaxContrast
+ 432   3                      }
+ 433   2                      else
+ 434   2                      {
+ 435   3                              ucMinContrast = ucLFMinAdj;
+ 436   3                              ucMaxContrast = ucLFMaxAdj; 
+ 437   3                      }
+ 438   2              }
+ 439   1      }
+ 440          
+ 441          
+ 442          
+ 443          
+ 444          void LFSetSaturation(void)
+ 445          {
+ 446   1              BF_SetSaturation(ucLFColor);
+ 447   1      }
+ 448          
+ 449          void LFSetHue(void)
+ 450          {
+ 451   1              BF_SetHue(ucLFHue);
+ 452   1      }
+ 453          
+ 454          void LFSetSharpness(void)
+ 455          {
+ 456   1              BF_SetSharpness(ucLFSharpness); 
+ 457   1      }
+ 458          
+ 459          void LFSetACEMode(void)
+ 460          {
+ 461   1      
+ 462   1                      ucBFMode = ucLFCusACCMode;
+ 463   1                      if      (ucLFCusACCMode > LF_ACC_MODE_2) ucBFMode -= BF_ACC_MODE_3;
+ 464   1                      
+ 465   1                      if (ucLFCusACCMode == LF_ACC_OFF)
+ 466   1                      {
+ 467   2                              BF_DisableACEMode();
+ 468   2                      }
+ 469   1                      else if (ucLFCusACCMode == LF_ACC_AUTO)
+ 470   1                      {
+ 471   2                              BF_SetDymACEMode(1);
+ 472   2                              Set_usBFTimer_10ms(BF_DYNAMIC_ACC_TIME);
+ 473   2                      }
+ 474   1                      else
+ 475   1                              BF_SetPreACEMode(ucLFCusACCMode);
+ 476   1      }
+ 477          
+ 478          void LFSetYPeak(void)
+ 479          {
+ 480   1              BF_SetYPeaking(ucLFYPeakEN);
+ 481   1      }
+ 482          
+ 483          
+ 484          
+ 485          #if _Enable_OD_ == ON
+              
+              #ifdef SMART_ACCELERATOR_OSD
+              void LFEnableOD(void)
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 9   
+
+              {
+                      if (ucLFMode == LF_MODE_OFF)
+                              ucCurODMode = LF_OD_MODE_HIGH;
+                      else
+                              ucCurODMode = LFSettingTable[ucLFMode][LF_DEFAULT_OD];  
+                      LFSetODMode();
+              }
+              
+              void LFDisableOD(void)
+              {
+                      ucCurODMode = LF_OD_MODE_OFF;
+                      LFSetODMode();
+              }
+              #endif
+              
+              
+              void LFSetODMode(void)
+              {
+              
+                      if(ucSignalType != sigDVI)
+                      {
+                              unsigned char i = ReadIIC560(POWER_CTRL2);
+                              if (ucModeNumber < 9)
+                              {
+                                      DisableOD();
+                                      WriteIIC560(POWER_CTRL2,(i | BIT_0));
+                                      return;
+                              }
+                              else
+                                      WriteIIC560(POWER_CTRL2,i&0xFE);
+                      }
+              
+                      if (ucPrevODMode == ucCurODMode) return;
+                      ucPrevODMode = ucCurODMode;
+              
+              
+              }
+              #endif
+ 527          
+ 528          void LFLeaveDemoMode(unsigned char k)
+ 529          {
+ 530   1      
+ 531   1              unsigned char tmpReg;
+ 532   1      
+ 533   1              if (ucOSDType == LFDEMO)
+ 534   1              {
+ 535   2                      OSD_OFF();
+ 536   2                      Sleep(20);
+ 537   2              }
+ 538   1              tmpReg = ReadIIC560(0x390);
+ 539   1              WriteIIC560(0x390, tmpReg&(~0xC0));
+ 540   1              WriteIIC560(0x394, 0x00); // Disable Border Type
+ 541   1              ucIsLFDemoMode = FALSE;
+ 542   1              BF_SetWindowSize(BF_WINDOW_FULLSCREEN);
+ 543   1      #if 0
+                      bIsLFLEDFlashing = FALSE;
+                      LED_LF_Off();
+              #endif  
+ 547   1              WriteIIC560(VHGLOB_ZMRNG,0x00);
+ 548   1              WriteIIC560(OSD_ZOOM_CTL,0x00);
+ 549   1              
+ 550   1      
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 10  
+
+ 551   1              if (k) 
+ 552   1              {
+ 553   2                      if ( POWER_DIGITAL )
+ 554   2                              ucLFMode = Read24C16(EPADDR_DVI_LF_MODE);
+ 555   2                      else
+ 556   2                              ucLFMode = Read24C16(EPADDR_DSUB_LF_MODE);
+ 557   2                      LFEnableSettings();
+ 558   2                      Write24C16(EPADDR_LFDEMO_ONOFF, ucIsLFDemoMode);
+ 559   2              }
+ 560   1      }
+ 561          
+ 562          void LFEnterDemoMode(unsigned char k)
+ 563          {
+ 564   1      
+ 565   1              unsigned char tmpReg;
+ 566   1      
+ 567   1              OSD_OFF();
+ 568   1      
+ 569   1              WriteIIC560(0x391, 0xFF); // Border Color R
+ 570   1              WriteIIC560(0x392, 0xFF); // Border Color G
+ 571   1              WriteIIC560(0x393, 0xFF); // Border Color B
+ 572   1              WriteIIC560(0x394, 0x02); // Enable Border Type
+ 573   1              tmpReg = ReadIIC560(0x390);
+ 574   1              WriteIIC560(0x390, tmpReg|0x40);
+ 575   1      
+ 576   1              tmpReg = ucLFMode;
+ 577   1              ucLFMode = LF_MODE_Entertainment;
+ 578   1              LFEnableSettings();
+ 579   1      #if _Enable_OD_ == ON
+                      ucCurODMode = LF_OD_MODE_HIGH;
+                      LFSetODMode();
+              #endif
+ 583   1      
+ 584   1              if ( POWER_DIGITAL )
+ 585   1                      Write24C16(EPADDR_DVI_LF_MODE, tmpReg);
+ 586   1              else
+ 587   1                      Write24C16(EPADDR_DSUB_LF_MODE, tmpReg);
+ 588   1      
+ 589   1      #ifdef BF_MOVING_WINDOW
+ 590   1              #if defined(BF_RF_DISPLAY)
+                      usBFMovingWidth = PanelWidth>>1;
+                      #else
+ 593   1                      usBFMovingWidth = H_ActiveTab[ucResolution]>>1;
+ 594   1              #endif
+ 595   1      
+ 596   1              bBFMovingDir = 0;
+ 597   1      #endif
+ 598   1              ShowLFDemoOSD();
+ 599   1              ucIsLFDemoMode = TRUE;
+ 600   1              BF_SetWindowSize(BF_WINDOW_LEFTSIZE);
+ 601   1      
+ 602   1              ucLFMode = tmpReg;
+ 603   1              if (k) Write24C16(EPADDR_LFDEMO_ONOFF, ucIsLFDemoMode);
+ 604   1              
+ 605   1              
+ 606   1      }
+ 607          
+ 608          
+ 609          void BF_Init(void)
+ 610          {
+ 611   1      
+ 612   1              unsigned char tmpReg;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 11  
+
+ 613   1              
+ 614   1              ucPrevLFMode = 0xff;
+ 615   1              ucIsLFDemoMode = FALSE;
+ 616   1              ucCurBFW = BF_WINDOW_1;
+ 617   1              ucBFWSize = 0xff;
+ 618   1              BF_SetWindowSize(BF_WINDOW_FULLSCREEN);
+ 619   1      
+ 620   1              tmpReg = ReadIIC560(0x390);
+ 621   1              WriteIIC560(0x390, tmpReg&(~0xC0));
+ 622   1              WriteIIC560(0x394, 0x00); // Disable Border Type
+ 623   1      
+ 624   1              BF_SetPreACEMode(BF_ACC_LINEAR);
+ 625   1      #if 0
+                      ucPrevODMode = LF_OD_MODE_LOW;
+                      SetODTable(LF_OD_MODE_LOW);
+              #endif
+ 629   1      }
+ 630          
+ 631          void BF_EnableWindow(enum BF_WINDOW bfw)
+ 632          {
+ 633   1              unsigned char tmpReg1, tmpReg2;
+ 634   1      
+ 635   1              tmpReg1 = ReadIIC560(BRIGHT_FRM_CTRL);
+ 636   1      
+ 637   1      #if defined(BF_RF_DISPLAY)
+                      tmpReg1 |= 0x10; // Reference to display
+              #else
+ 640   1              tmpReg1 &= 0xEF; // Reference to capture
+ 641   1      #endif
+ 642   1              tmpReg2 = ReadIIC560(0x390);
+ 643   1      
+ 644   1              switch(bfw)
+ 645   1              {
+ 646   2                      case BF_WINDOW_1: 
+ 647   2                              WriteIIC560(BRIGHT_FRM_CTRL, tmpReg1 | BRIGHT_FRM1_EN);
+ 648   2                              WriteIIC560(0x390, tmpReg2 | 0x03);
+ 649   2                              break;
+ 650   2                      case BF_WINDOW_2: 
+ 651   2                              WriteIIC560(BRIGHT_FRM_CTRL, tmpReg1 | BRIGHT_FRM2_EN);
+ 652   2                              WriteIIC560(0x390, tmpReg2 | 0x0C);
+ 653   2                              break;
+ 654   2              }
+ 655   1      }
+ 656          
+ 657          void BF_DisableWindow(enum BF_WINDOW bfw)
+ 658          {
+ 659   1              unsigned char tmpReg1;
+ 660   1      
+ 661   1              tmpReg1 = ReadIIC560(BRIGHT_FRM_CTRL);
+ 662   1      
+ 663   1              if (bfw == BF_WINDOW_1)
+ 664   1                      WriteIIC560(BRIGHT_FRM_CTRL, tmpReg1 & (~BRIGHT_FRM1_EN));
+ 665   1              else
+ 666   1                      WriteIIC560(BRIGHT_FRM_CTRL, tmpReg1 & (~BRIGHT_FRM2_EN));
+ 667   1      
+ 668   1      }
+ 669                  
+ 670          void BF_SetActiveWindow(enum BF_WINDOW bfw)
+ 671          {
+ 672   1              unsigned char tmpReg1;
+ 673   1      
+ 674   1              ucCurBFW = bfw;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 12  
+
+ 675   1              
+ 676   1              tmpReg1 = ReadIIC560(BRIGHT_FRM_SEL);
+ 677   1              if (bfw == BF_WINDOW_1)
+ 678   1                      WriteIIC560(BRIGHT_FRM_SEL, tmpReg1&0xfe);
+ 679   1              else
+ 680   1                      WriteIIC560(BRIGHT_FRM_SEL, tmpReg1|0x01);
+ 681   1      
+ 682   1                      BF_SetWindowSize(ucBFWSize);
+ 683   1      
+ 684   1              WriteIIC560(0x3C0, 0x7C);
+ 685   1      }
+ 686          
+ 687          void BF_SetWindowSize(unsigned char type)
+ 688          {
+ 689   1      
+ 690   1      #ifndef BF_MOVING_WINDOW
+                      if (ucBFWSize == type) return;
+              #endif
+ 693   1      
+ 694   1              ucBFWSize = type;
+ 695   1              if (type == BF_WINDOW_FULLSCREEN)
+ 696   1              {
+ 697   2      #if defined(BF_RF_DISPLAY)
+                              WriteIIC560(BRIGHT_FRM_HS_LI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_HS_HI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_HW_LI, PanelWidth&0xff);
+                              WriteIIC560(BRIGHT_FRM_HW_HI, PanelWidth>>8);
+                              WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_VH_LI, PanelHeight&0xff);
+                              WriteIIC560(BRIGHT_FRM_VH_HI, PanelHeight>>8);
+              #else
+ 707   2                      WriteIIC560(BRIGHT_FRM_HS_LI, 0x00);
+ 708   2                      WriteIIC560(BRIGHT_FRM_HS_HI, 0x00);
+ 709   2                      WriteIIC560(BRIGHT_FRM_HW_LI, H_ActiveTab[ucResolution]&0xff);
+ 710   2                      WriteIIC560(BRIGHT_FRM_HW_HI, H_ActiveTab[ucResolution]>>8);
+ 711   2                      WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+ 712   2                      WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);
+ 713   2                      WriteIIC560(BRIGHT_FRM_VH_LI, V_ActiveTab[ucResolution]&0xff);
+ 714   2                      WriteIIC560(BRIGHT_FRM_VH_HI, V_ActiveTab[ucResolution]>>8);
+ 715   2      #endif
+ 716   2              }
+ 717   1              else if (type == BF_WINDOW_LEFTSIZE)
+ 718   1              {
+ 719   2      #if defined(BF_RF_DISPLAY)
+                              WriteIIC560(BRIGHT_FRM_HS_LI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_HS_HI, 0x00);
+              #ifdef BF_MOVING_WINDOW
+                              WriteIIC560(BRIGHT_FRM_HW_LI, (usBFMovingWidth)&0xFF);
+                              WriteIIC560(BRIGHT_FRM_HW_HI, (usBFMovingWidth)>>8);            
+              #else
+                              WriteIIC560(BRIGHT_FRM_HW_LI, (PanelWidth/2)&0xFF);
+                              WriteIIC560(BRIGHT_FRM_HW_HI, (PanelWidth/2)>>8);
+              #endif
+                              WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);            
+                              WriteIIC560(BRIGHT_FRM_VH_LI, PanelHeight&0xff);
+                              WriteIIC560(BRIGHT_FRM_VH_HI, PanelHeight>>8);
+              #else
+ 734   2                      WriteIIC560(BRIGHT_FRM_HS_LI, 0x00);
+ 735   2                      WriteIIC560(BRIGHT_FRM_HS_HI, 0x00);
+ 736   2              #ifdef BF_MOVING_WINDOW
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 13  
+
+ 737   2                      WriteIIC560(BRIGHT_FRM_HW_LI, (usBFMovingWidth)&0xFF);
+ 738   2                      WriteIIC560(BRIGHT_FRM_HW_HI, (usBFMovingWidth)>>8);            
+ 739   2              #else
+                              WriteIIC560(BRIGHT_FRM_HW_LI, (H_ActiveTab[ucResolution]/2)&0xFF);
+                              WriteIIC560(BRIGHT_FRM_HW_HI, (H_ActiveTab[ucResolution]/2)>>8);
+                      #endif
+ 743   2                      WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+ 744   2                      WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);            
+ 745   2                      WriteIIC560(BRIGHT_FRM_VH_LI, V_ActiveTab[ucResolution]&0xFF);
+ 746   2                      WriteIIC560(BRIGHT_FRM_VH_HI, V_ActiveTab[ucResolution]>>8);
+ 747   2      #endif
+ 748   2              }
+ 749   1              else if (type == BF_WINDOW_RIGHTSIZE)
+ 750   1              {
+ 751   2      #if defined(BF_RF_DISPLAY)
+                              WriteIIC560(BRIGHT_FRM_HS_LI, (PanelWidth/2)&0xFF);
+                              WriteIIC560(BRIGHT_FRM_HS_HI, (PanelWidth/2)>>8);
+                              WriteIIC560(BRIGHT_FRM_HW_LI, (PanelWidth/2)&0xFF);
+                              WriteIIC560(BRIGHT_FRM_HW_HI, (PanelWidth/2)>>8);
+                              WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+                              WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);            
+                              WriteIIC560(BRIGHT_FRM_VH_LI, PanelHeight&0xff);
+                              WriteIIC560(BRIGHT_FRM_VH_HI, PanelHeight>>8);
+              #else
+ 761   2                      WriteIIC560(BRIGHT_FRM_HS_LI, (H_ActiveTab[ucResolution]/2)&0xFF);
+ 762   2                      WriteIIC560(BRIGHT_FRM_HS_HI, (H_ActiveTab[ucResolution]/2)>>8);
+ 763   2                      WriteIIC560(BRIGHT_FRM_HW_LI, (H_ActiveTab[ucResolution]/2)&0xFF);
+ 764   2                      WriteIIC560(BRIGHT_FRM_HW_HI, (H_ActiveTab[ucResolution]/2)>>8);
+ 765   2                      WriteIIC560(BRIGHT_FRM_VS_LI, 0x00);
+ 766   2                      WriteIIC560(BRIGHT_FRM_VS_HI, 0x00);            
+ 767   2                      WriteIIC560(BRIGHT_FRM_VH_LI, V_ActiveTab[ucResolution]&0xFF);
+ 768   2                      WriteIIC560(BRIGHT_FRM_VH_HI, V_ActiveTab[ucResolution]>>8);
+ 769   2      #endif
+ 770   2              }
+ 771   1              
+ 772   1      }
+ 773          
+ 774          void BF_MovingWindow()
+ 775          {
+ 776   1              if ( ucBFMovingTimer )
+ 777   1              {
+ 778   2                      ucBFMovingTimer = 0;
+ 779   2                      BF_SetWindowSize(BF_WINDOW_LEFTSIZE);
+ 780   2                      if ( bBFMovingDir==0 && (++usBFMovingWidth > (H_ActiveTab[ucResolution]*7/10)) )
+ 781   2                              bBFMovingDir = 1;
+ 782   2                      else if ( bBFMovingDir==1 && (--usBFMovingWidth < (H_ActiveTab[ucResolution]*3/10)) )
+ 783   2                              bBFMovingDir = 0;
+ 784   2              }
+ 785   1      }
+ 786          
+ 787                  
+ 788          void BF_SetSaturation(unsigned char sat)
+ 789          {
+ 790   1              WriteIIC560(0x3C8, sat);        
+ 791   1      }
+ 792          void BF_SetHue(unsigned char hue)
+ 793          {
+ 794   1              WriteIIC560(0x3C7, hue);
+ 795   1      }
+ 796          
+ 797          void BF_SetSharpness(unsigned char shp)
+ 798          {
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 14  
+
+ 799   1              if ( shp <1 || shp > 31 )       return;
+ 800   1              if ( shp > 16 )
+ 801   1                      WriteIIC560(BK_H_SHAP_CTRL, BK_H_ASRP|(shp-16));
+ 802   1              else
+ 803   1                      WriteIIC560(BK_H_SHAP_CTRL, BK_H_ASRP|(32-shp));
+ 804   1      }
+ 805          
+ 806          void BF_SetYPeaking(unsigned char yp)
+ 807          {
+ 808   1              if (yp == 0)
+ 809   1              {
+ 810   2                      WriteIIC560(0x3A0, 0x00);
+ 811   2              }
+ 812   1              else
+ 813   1              {
+ 814   2                      WriteIIC560(0x3A0, 0x01);       
+ 815   2                      yp = (yp << 2) & 0x0C;
+ 816   2                      WriteIIC560(0x3A1, yp); 
+ 817   2              }
+ 818   1      }
+ 819          
+ 820          void BF_SetPreACEMode(unsigned char mode)
+ 821          {
+ 822   1              static code unsigned char PresetACCMode[][17] =
+ 823   1              {
+ 824   1                      {  3, 21, 38, 56, 74, 91,109,126,145,162,180,198,215,233,251,255},      // Mode 1 // Std 1
+ 825   1                      {  3,  7, 27, 47, 67, 87,107,127,147,167,187,207,227,247,251,255},      // Mode 2 // Std 2
+ 826   1                      { 15, 28, 41, 56, 71, 88,106,125,145,164,182,199,214,229,242,255},      // Mode 3 // S
+ 827   1                      { 15, 31, 52, 71, 88,103,117,130,141,153,167,182,199,218,239,255},      // Mode 4 // -S
+ 828   1                      { 11, 24, 37, 50, 64, 79, 94,109,125,142,159,177,195,215,240,255},      // Mode 5 // Sunshine Mode
+ 829   1                      { 20, 40, 59, 77, 95,112,129,145,161,176,190,204,218,231,243,255},      // Mode 6 // Night Mode
+ 830   1                      { 15, 31, 47, 63, 79, 95,111,127,143,159,175,191,207,223,239,255},      // Default Mode : 1:1 Linear
+ 831   1              };  
+ 832   1              unsigned char i, tmpReg;
+ 833   1      #if !NT68665
+ 834   1              unsigned char volatile *pBus;
+ 835   1      #endif      
+ 836   1              tmpReg = ReadIIC560(0x3B1) & 0x0E;
+ 837   1              if (ucCurBFW == BF_WINDOW_2) tmpReg |= 0x20; 
+ 838   1                  
+ 839   1              tmpReg |= 0x50;  // Write Gamma
+ 840   1              WriteIIC560(0x3B1,tmpReg);
+ 841   1      #if NT68665
+                      WriteIIC560(0x3B2,0x00);
+                      WriteIIC560(0x3B2,0x00);
+                      for(i = 0; i < ACE_PARTITIONS; i++){
+                              WriteIIC560(0x3B2,(((unsigned short)PresetACCMode[mode][i]+1)<<2)&0xFF);
+                              WriteIIC560(0x3B2,(((unsigned short)PresetACCMode[mode][i]+1)<<2)>>8);
+                      }
+              #else
+ 849   1              SC_RegPage = 0x03;
+ 850   1              pBus = &SC_ACE_DATA_PORT;
+ 851   1              *pBus = 0x00;
+ 852   1              *pBus = 0x00;
+ 853   1              for(i = 0; i < ACE_PARTITIONS; i++){
+ 854   2                      *pBus = (((unsigned short)PresetACCMode[mode][i]+1) <<2 ) & 0xFF;
+ 855   2                      *pBus = (((unsigned short)PresetACCMode[mode][i]+1) << 2) >> 8;
+ 856   2              }
+ 857   1              
+ 858   1      #endif
+ 859   1              // Update I-Gamma
+ 860   1              WriteIIC560(0x3B1,tmpReg | 0x90);
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 15  
+
+ 861   1      
+ 862   1              Sleep(100);
+ 863   1              BF_EnableACEMode();
+ 864   1      }
+ 865          
+ 866          void BF_UpdateHistogram(void)
+ 867          {
+ 868   1          unsigned char tmpReg = 0;
+ 869   1          
+ 870   1      //      BF_EnableACEMode();
+ 871   1              if((ReadIIC560(0x3B1) & 0x01) != 0) return;
+ 872   1              if(ucCurBFW == BF_WINDOW_2) tmpReg |= 0x20; 
+ 873   1      //    WriteIIC560(0x3B0,0x08);
+ 874   1          WriteIIC560(0x3B1,tmpReg|0x01);
+ 875   1      }
+ 876          
+ 877          
+ 878          void BF_GetHistogram(void)
+ 879          {
+ 880   1              unsigned char i, tmpHis1, tmpHis2, tmpHis3;
+ 881   1      #if !NT68665
+ 882   1              unsigned char volatile *pBus;
+ 883   1      #endif
+ 884   1          while ((ReadIIC560(0x3B1) & 0x01) != 0){
+ 885   2                      if ((IsBackLightOn() == FALSE) || (bVideoMuted == TRUE)) return;
+ 886   2          }
+ 887   1      
+ 888   1              // Read Histograms //
+ 889   1              ulCurHisgrmTotal = 0;
+ 890   1      #if NT68665
+                      WriteIIC560(0x3B2,0x00);
+                      WriteIIC560(0x3B2,0x00);
+                 for(i = 0; i < ACE_PARTITIONS; i++){
+                      tmpHis1 = ReadIIC560(0x3B2);
+                      tmpHis2 = ReadIIC560(0x3B2);
+                      tmpHis3 = ReadIIC560(0x3B2);
+                      ulCurHisgrm[i]  = ((unsigned long)tmpHis3 << 16);
+                      ulCurHisgrm[i] += ((unsigned long)tmpHis2 <<  8);
+                      ulCurHisgrm[i] += (unsigned long)tmpHis1;
+                      ulCurHisgrmTotal += ulCurHisgrm[i];
+              //      printf("%d %ld\n\r",(unsigned short)i, ulCurHisgrm[i]);
+                      }
+              #else
+ 904   1              SC_RegPage = 0x03;
+ 905   1              pBus = &SC_ACE_DATA_PORT;
+ 906   1              *pBus = 0x00;
+ 907   1              *pBus = 0x00;
+ 908   1          for(i = 0; i < ACE_PARTITIONS; i++){
+ 909   2              tmpHis1 = *pBus;
+ 910   2              tmpHis2 = *pBus;
+ 911   2              tmpHis3 = *pBus;
+ 912   2              ulCurHisgrm[i]  = ((unsigned long)tmpHis3 << 16);
+ 913   2              ulCurHisgrm[i] += ((unsigned long)tmpHis2 <<  8);
+ 914   2              ulCurHisgrm[i] += (unsigned long)tmpHis1;
+ 915   2              ulCurHisgrmTotal += ulCurHisgrm[i];
+ 916   2      //      printf("%d %ld\n\r",(unsigned short)i, ulCurHisgrm[i]);
+ 917   2              }
+ 918   1      #endif
+ 919   1      //      printf("%ld\n\r", ulCurHisgrmTotal);
+ 920   1      }
+ 921          
+ 922          code unsigned char YinYoutTab[][16] =
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 16  
+
+ 923          {       //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15
+ 924                  { 4, 4, 6, 6, 8, 8,10,10,10,10, 8, 8, 6, 6, 4, 4,}, //0,  // 0 
+ 925                  { 4, 4, 6, 6, 8, 8,10,10,10,10, 8, 8, 6, 6, 4, 4,}, //1,  // 1*5120
+ 926                  { 4, 4, 6, 6, 8, 8,10,10,10,10, 8, 8, 6, 6, 4, 4,}, //2,  // 2*5120
+ 927                  { 4, 4, 6, 6, 8, 8,10,10,10,10, 8, 8, 6, 6, 4, 4,}, //3,  // 3*5120
+ 928                  { 4, 4, 6, 6, 8, 8,10,10,10,10, 8, 8, 6, 6, 4, 4,}, //4,  // 4*5120
+ 929                  { 4, 4, 8, 8, 8, 8,10,10,10,10, 8, 8, 8, 8, 4, 4,}, //5,  // 5*5120
+ 930                  { 4, 4, 8, 8, 8, 8,10,10,10,10, 8, 8, 8, 8, 4, 4,}, //6,  // 6*5120
+ 931                  { 4, 4, 8, 8, 8, 8,10,10,10,10, 8, 8, 8, 8, 4, 4,}, //7,  // 7*5120
+ 932                  { 6, 6, 8, 8, 8, 8,10,10,10,10, 8, 8, 8, 8, 6, 6,}, //8,  // 8*5120
+ 933                  { 8, 8, 8, 8, 8, 8,10,10,10,10, 8, 8, 8, 8, 8, 8,}, //9,  // 9*5120
+ 934                  {10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,}, //10, //10*5120
+ 935                  {11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,}, //11, //11*5120
+ 936                  {12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,}, //12, //12*5120
+ 937                  {13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,}, //13, //13*5120
+ 938                  {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,}, //14, //14*5120
+ 939                  {15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,}, //15, //15*5120
+ 940                  {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16}, //16, // 1*81920
+ 941                  {16,16,17,17,17,17,17,17,17,17,17,17,17,17,16,16}, //17, // 1*81920+ 2*5120
+ 942                  {16,16,18,18,18,18,18,18,18,18,18,18,18,18,16,16}, //18, // 1*81920+ 4*5120
+ 943                  {16,16,19,19,19,19,19,19,19,19,19,19,19,19,16,16}, //19, // 1*81920+ 6*5120
+ 944                  {16,16,20,20,20,20,20,20,20,20,20,20,20,20,16,16}, //20, // 1*81920+ 8*5120
+ 945                  {16,16,21,21,21,21,21,21,21,21,21,21,21,21,16,16}, //21, // 1*81920+10*5120
+ 946                  {16,16,22,22,22,22,22,22,22,22,22,22,22,22,16,16}, //22, // 1*81920+12*5120
+ 947                  {16,16,23,23,23,23,23,23,23,23,23,23,23,23,16,16}, //23, // 1*81920+14*5120
+ 948                  {16,16,24,24,24,24,24,24,24,24,24,24,24,24,16,16}, //24, // 2*81920
+ 949                  {16,16,25,25,25,25,25,25,25,25,25,25,25,25,16,16}, //25, // 2*81920+4*5120
+ 950                  {16,16,26,26,26,26,26,26,26,26,26,26,26,26,16,16}, //26, // 2*81920+8*5120
+ 951                  {16,16,27,27,27,27,27,27,27,27,27,27,27,27,16,16}, //27, // 2*81920+12*5120
+ 952                  {16,16,28,28,28,28,28,28,28,28,28,28,28,28,16,16}, //28, // 2*81920+16*5120
+ 953                  {16,16,29,29,29,29,29,29,29,29,29,29,29,29,16,16}, //29, // 2*81920+20*5120
+ 954                  {16,16,30,30,30,30,30,30,30,30,30,30,30,30,16,16}, //30, // 2*81920+24*5120
+ 955                  {16,16,31,31,31,31,31,31,31,31,31,31,31,31,16,16}, //31, // 2*81920+28*5120
+ 956                  {16,16,32,32,32,32,32,32,32,32,32,32,32,32,16,16}, //32, // 2*81920+32*5120
+ 957          };
+ 958          
+ 959          
+ 960          void BF_SetDymACEMode(unsigned char reset)
+ 961          {
+ 962   1      #define OVERALL    1024
+ 963   1      
+ 964   1      #define LOWERBOUND_0 58
+ 965   1      #define LOWERBOUND_1 58
+ 966   1      #define LOWERBOUND_2 58
+ 967   1      #define LOWERBOUND_3 58
+ 968   1      #define LOWERBOUND_4 58
+ 969   1      #define LOWERBOUND_5 58
+ 970   1      #define LOWERBOUND_6 58
+ 971   1      #define LOWERBOUND_7 58
+ 972   1      #define LOWERBOUND_8 58
+ 973   1      #define LOWERBOUND_9 58
+ 974   1      #define LOWERBOUND_A 58
+ 975   1      #define LOWERBOUND_B 58
+ 976   1      #define LOWERBOUND_C 58
+ 977   1      #define LOWERBOUND_D 58
+ 978   1      #define LOWERBOUND_E 58
+ 979   1      #define LOWERBOUND_F 58
+ 980   1      #define LOWERBOUND   (LOWERBOUND_0 + LOWERBOUND_1 + LOWERBOUND_2 + LOWERBOUND_3 + \
+ 981   1                            LOWERBOUND_4 + LOWERBOUND_5 + LOWERBOUND_6 + LOWERBOUND_7 + \
+ 982   1                            LOWERBOUND_8 + LOWERBOUND_9 + LOWERBOUND_A + LOWERBOUND_B + \
+ 983   1                            LOWERBOUND_C + LOWERBOUND_D + LOWERBOUND_E + LOWERBOUND_F)
+ 984   1      
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 17  
+
+ 985   1      #define UPPERBOUND_0 72
+ 986   1      #define UPPERBOUND_1 72
+ 987   1      #define UPPERBOUND_2 80
+ 988   1      #define UPPERBOUND_3 80
+ 989   1      #define UPPERBOUND_4 80
+ 990   1      #define UPPERBOUND_5 80
+ 991   1      #define UPPERBOUND_6 80
+ 992   1      #define UPPERBOUND_7 80
+ 993   1      #define UPPERBOUND_8 80
+ 994   1      #define UPPERBOUND_9 80
+ 995   1      #define UPPERBOUND_A 80
+ 996   1      #define UPPERBOUND_B 80
+ 997   1      #define UPPERBOUND_C 80
+ 998   1      #define UPPERBOUND_D 80
+ 999   1      #define UPPERBOUND_E 72
+1000   1      #define UPPERBOUND_F 72
+1001   1      #define UPPERBOUND   (UPPERBOUND_0 + UPPERBOUND_1 + UPPERBOUND_2 + UPPERBOUND_3 + \
+1002   1                            UPPERBOUND_4 + UPPERBOUND_5 + UPPERBOUND_6 + UPPERBOUND_7 + \
+1003   1                            UPPERBOUND_8 + UPPERBOUND_9 + UPPERBOUND_A + UPPERBOUND_B + \
+1004   1                            UPPERBOUND_C + UPPERBOUND_D + UPPERBOUND_E + UPPERBOUND_F)
+1005   1      
+1006   1              float fICurv[ACE_PARTITIONS];
+1007   1              float fICurvTotal;
+1008   1              unsigned short usTmp, usVarSum;
+1009   1              unsigned char i, tmpReg;
+1010   1      #if !NT68665
+1011   1              unsigned char volatile *pBus;
+1012   1      #endif      
+1013   1      
+1014   1              static xdata unsigned short usPrvHisgrm[ACE_PARTITIONS] = {0};
+1015   1              static xdata unsigned char  ucIsHisgrmDiff = FALSE;
+1016   1      
+1017   1      #ifdef BF_SMOOTH_AUTOACE
+1018   1      #if ACE_PARTITIONS == 16
+1019   1              static unsigned short usCurICurv[ACE_PARTITIONS] = {0x0040, 0x0040, 0x0040, 0x0040, 
+1020   1                                                                  0x0040, 0x0040, 0x0040, 0x0040, 
+1021   1                                                                  0x0040, 0x0040, 0x0040, 0x0040, 
+1022   1                                                                  0x0040, 0x0040, 0x0040, 0x0040};
+1023   1      #elif ACE_PARTITIONS == 8
+                      static unsigned short usCurICurv[ACE_PARTITIONS] = {0x0080, 0x0080, 0x0080, 0x0080, 
+                                                                          0x0080, 0x0080, 0x0080, 0x0080};
+              #else
+                      static unsigned short usCurICurv[ACE_PARTITIONS] = {0x0100, 0x0100, 0x0100, 0x0100};
+              #endif
+1029   1      #endif
+1030   1      
+1031   1      //#ifndef BF_SMOOTH_AUTOACE
+1032   1      //      BF_UpdateHistogram();
+1033   1      //#endif
+1034   1      
+1035   1              if (reset)
+1036   1              {
+1037   2                      tmpReg = 0;
+1038   2                      if (ucCurBFW == BF_WINDOW_2) tmpReg |= 0x20; 
+1039   2              WriteIIC560(0x3B1,tmpReg|0x01);
+1040   2                  for(i = 0; i < ACE_PARTITIONS; i++)
+1041   2                  {
+1042   3                      usPrvHisgrm[i] = 0;
+1043   3      #ifdef BF_SMOOTH_AUTOACE
+1044   3                      usCurICurv[i] = 0x0040;
+1045   3      #endif
+1046   3                      }
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 18  
+
+1047   2              }
+1048   1      
+1049   1          while ((ReadIIC560(0x3B1) & 0x01) != 0)
+1050   1          {
+1051   2                      if ((IsBackLightOn() == FALSE) || (bVideoMuted == TRUE)) return;
+1052   2          }
+1053   1      
+1054   1              if (ulCurHisgrmTotal == 0) return;
+1055   1      
+1056   1          for(i = 0; i < ACE_PARTITIONS; i++)
+1057   1          {
+1058   2      //#ifdef BF_SMOOTH_AUTOACE
+1059   2                      usVarSum = (unsigned short)(ulCurHisgrm[i]>>8);
+1060   2                      if (abs(usPrvHisgrm[i]-usVarSum) > 64)
+1061   2                      {
+1062   3                              usPrvHisgrm[i] = usVarSum;
+1063   3                              ucIsHisgrmDiff = TRUE;
+1064   3                      }
+1065   2      //#endif                
+1066   2              //printf("%ld",ulCurHisgrm[i]);
+1067   2              //printf("\n\r");
+1068   2              }
+1069   1              
+1070   1      //#ifdef BF_SMOOTH_AUTOACE      
+1071   1              if (ucIsHisgrmDiff == FALSE) return;
+1072   1      //#endif
+1073   1      
+1074   1      #ifdef BF_DYNAMIC_ARRAY
+1075   1              fICurvTotal = 0;
+1076   1              for(i = 0; i < ACE_PARTITIONS; i++)
+1077   1              {
+1078   2                      unsigned short m;
+1079   2                      m = ulCurHisgrm[i]/5120;
+1080   2                      if (m > 64)
+1081   2                              m = 32;
+1082   2                      else if (m > 32)
+1083   2                              m = 24 + (m-32)/4;
+1084   2                      else if (m > 16)
+1085   2                              m = 16 + (m-16)/2;
+1086   2                      //printf("i:%d H:%ld m:%d y:%d\n\r",(unsigned short)i,ulCurHisgrm[i],m,(unsigned short)YinYoutTab[m][i])
+             -;
+1087   2                      fICurv[i] = YinYoutTab[m][i]+16;
+1088   2                      fICurvTotal += fICurv[i];
+1089   2                      //printf("CAL(%d): %d\n\r", (unsigned short)i, (unsigned short)fICurv[i]);
+1090   2              }
+1091   1      #else   
+                      // Calculate new weighting by histogram.
+                      for(i = 0; i < ACE_PARTITIONS; i++)
+                      {
+                              fICurv[i] = ((float)OVERALL - LOWERBOUND)*ulCurHisgrm[i]/ulCurHisgrmTotal + LOWERBOUND_0 + 0.5;
+                              //printf("CAL(%d): %d\n\r", (unsigned short)i, (unsigned short)fICurv[i]);
+                      }       
+              
+              #if ACE_PARTITIONS == 16
+                      usVarSum = 0;
+                      for(i = 6; i < 10; i++)
+                              usVarSum = usVarSum + fICurv[i];
+                      usVarSum = (usVarSum+2) / 4;        
+                      for(i = 6; i < 10; i++)
+                              fICurv[i] = usVarSum;
+              #elif ACE_PARTITIONS == 8
+                      usVarSum = 0;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 19  
+
+                      for(i = 3; i < 5; i++)
+                              usVarSum = usVarSum + fICurv[i];
+                      usVarSum = (usVarSum+1) / 2;
+                      for(i = 3; i < 5; i++)
+                              fICurv[i] = usVarSum;
+              #endif
+              #endif
+1115   1      
+1116   1      #ifdef BF_SMOOTH_AUTOACE
+1117   1      
+1118   1      #ifdef BF_DYNAMIC_ARRAY
+1119   1              fICurvTotal = 1024/fICurvTotal;
+1120   1              for(i = 1; i < ACE_PARTITIONS; i++)
+1121   1                      fICurv[i] = fICurv[i]*fICurvTotal;
+1122   1      #endif
+1123   1      
+1124   1              usVarSum = 0;
+1125   1              for (i = 0; i < ACE_PARTITIONS; i++)
+1126   1              {
+1127   2                      usTmp = (unsigned short)fICurv[i];
+1128   2                      if (usCurICurv[i] > usTmp)
+1129   2                      {
+1130   3                              usVarSum = usCurICurv[i] - usTmp + usVarSum;
+1131   3                              if ((usCurICurv[i] - usTmp) > 3)
+1132   3                                      fICurv[i] = usCurICurv[i] - 3;
+1133   3                              else
+1134   3                                      fICurv[i] = usTmp;
+1135   3                      }
+1136   2                      else
+1137   2                      {
+1138   3                              usVarSum = usTmp - usCurICurv[i] + usVarSum;
+1139   3                              if ((usTmp - usCurICurv[i]) > 3)
+1140   3                                      fICurv[i] = usCurICurv[i] + 3;
+1141   3                              else
+1142   3                                      fICurv[i] = usTmp;
+1143   3                      }
+1144   2                      //printf("NEW(%d): %d\n\r", (unsigned short)i, (unsigned short)usCurICurv[i]);          
+1145   2              }
+1146   1      
+1147   1              usVarSum = usVarSum / ACE_PARTITIONS;
+1148   1              if (usVarSum == 0) 
+1149   1              {
+1150   2                      ucIsHisgrmDiff = FALSE;
+1151   2                      return;
+1152   2              }
+1153   1      
+1154   1              usCurICurv[0] = fICurv[0];
+1155   1              for(i = 1; i < ACE_PARTITIONS; i++)
+1156   1              {
+1157   2                      usCurICurv[i] = fICurv[i];
+1158   2                      fICurv[i] = fICurv[i] + fICurv[i-1];
+1159   2                      //printf("IG(%d): %d\n\r", (unsigned short)i, (unsigned short)usCurICurv[i]);
+1160   2              }
+1161   1      #else
+                      for(i = 1; i < ACE_PARTITIONS; i++)
+                      {
+                              fICurv[i] = fICurv[i] + fICurv[i-1];
+                              //printf("IG(%d): %d\n\r", (unsigned short)i, (unsigned short)usCurICurv[i]);
+                      }
+              #ifdef BF_DYNAMIC_ARRAY
+                      fICurvTotal = 1024/fICurvTotal;
+                      for(i = 1; i < ACE_PARTITIONS; i++){
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 20  
+
+                              fICurv[i] = fICurv[i]*fICurvTotal;
+                              //printf("IG(%d): %d\n\r", (unsigned short)i, (unsigned short)fICurv[i]);
+                      }
+              #endif
+                      ucIsHisgrmDiff = FALSE;
+              #endif
+1176   1      
+1177   1              // Write I-Gamma //
+1178   1              tmpReg = ReadIIC560(0x3B1) & 0x0E;
+1179   1              if (ucCurBFW == BF_WINDOW_2) tmpReg |= 0x20; 
+1180   1              tmpReg |= 0x50;
+1181   1              WriteIIC560(0x3B1,tmpReg);
+1182   1      #if NT68665
+                      WriteIIC560(0x3B2,0x00);
+                      WriteIIC560(0x3B2,0x00);
+                      for(i = 0; i<ACE_PARTITIONS; i++){
+                              usTmp = (unsigned short)fICurv[i];
+                              WriteIIC560(0x3B2,usTmp&0xFF);
+                              WriteIIC560(0x3B2,usTmp>>8);
+                      }
+              #else
+1191   1              SC_RegPage = 0x03;
+1192   1              pBus = &SC_ACE_DATA_PORT;
+1193   1              *pBus = 0x00;
+1194   1              *pBus = 0x00;
+1195   1              for(i = 0; i<ACE_PARTITIONS; i++){
+1196   2                      usTmp = (unsigned short)fICurv[i];
+1197   2                      *pBus = (unsigned char)(usTmp & 0xFF);
+1198   2                      *pBus = (unsigned char)(usTmp >> 8);
+1199   2              }
+1200   1      #endif
+1201   1              // Update I-Gamma
+1202   1              WriteIIC560(0x3B1,tmpReg | 0x90);
+1203   1          
+1204   1              BF_EnableACEMode();
+1205   1      }
+1206          
+1207          #ifdef BF_DYNAMIC_BACKLIGHT
+1208          void BF_SetDymBacklight(void)
+1209          {
+1210   1              unsigned char i;
+1211   1              unsigned char ucTmpDynBk;
+1212   1              float    fCurBK;
+1213   1      #if BFDYNBK_TYPE == BFDYNBK_TYPE_4
+                      unsigned long  ulHisTotal;
+              #endif
+1216   1              static unsigned char ucUpdateBK = FALSE;
+1217   1      
+1218   1          //if ((ReadIIC560(0x3B1) & 0x01) != 0) return;
+1219   1              if (ulCurHisgrmTotal == 0) return;
+1220   1      
+1221   1      #if BFDYNBK_TYPE == BFDYNBK_TYPE_1
+                      for(i = ACE_PARTITIONS-1; i > 0; i--)
+                              if (ulCurHisgrm[i] != 0) break;
+                      if (i < 2)
+                              ucTmpDynBk = ucMinBrightness;
+                      else
+                              ucTmpDynBk = ucBrightness;
+              #elif BFDYNBK_TYPE == BFDYNBK_TYPE_2
+                      for(i = ACE_PARTITIONS-1; i > 0; i--)
+                              if (ulCurHisgrm[i] != 0) break;
+                      if (i > 13) i = 15; // This is for 16 ACE area
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 21  
+
+                      ucTmpDynBk = ((float)ucBrightness*i/(ACE_PARTITIONS-1) + 0.5);
+              #elif BFDYNBK_TYPE == BFDYNBK_TYPE_3
+1234   1      //      printf("BFDYNBK_TYPE_3=%ld,%ld\r\n",(unsigned long)ulCurHisgrmTotal,(unsigned long)ulCurHisgrm[0]);
+1235   1              i = 0; // Dummy for removing waring
+1236   1      #if     ACE_PARTITIONS == 16
+1237   1              fCurBK = (float)(ulCurHisgrmTotal - ulCurHisgrm[0] - ulCurHisgrm[1])/ulCurHisgrmTotal;
+1238   1              //
+1239   1      //      printf("fCurBK=%f\r\n",fCurBK);
+1240   1              
+1241   1      //      if(fCurBK > 0.45){
+1242   1      //              fCurBK = 1;
+1243   1      //      }
+1244   1              if(fCurBK > 0.48){//0.48
+1245   2                      fCurBK = 1;
+1246   2      //              LED_GrnOn();
+1247   2              }
+1248   1              else if(fCurBK > 0.35){//0.35
+1249   2                      return;
+1250   2              }
+1251   1              else{
+1252   2      //              LED_GrnOn();
+1253   2              }
+1254   1      
+1255   1      #else
+                      fCurBK = (float)(ulCurHisgrmTotal - ulCurHisgrm[0])/ulCurHisgrmTotal;
+              #endif
+1258   1              ucTmpDynBk = fCurBK*(ucMaxBrightness-ucMinBrightness)+ ucMinBrightness;
+1259   1      #elif BFDYNBK_TYPE == BFDYNBK_TYPE_4
+                      i = 0; // Dummy for removing waring
+              #if     ACE_PARTITIONS == 16
+                      fCurBK = (float)(ulCurHisgrmTotal - ulCurHisgrm[0] - ulCurHisgrm[1])/ulCurHisgrmTotal;
+              #else
+                      fCurBK = (float)(ulCurHisgrmTotal - ulCurHisgrm[0])/ulCurHisgrmTotal;
+              #endif
+                      ucTmpDynBk = fCurBK*(ucMaxBrightness-ucMinBrightness)+ ucMinBrightness;
+              #endif
+1268   1              
+1269   1              if(ucTmpDynBk != ucNewDynBk){
+1270   2                      ucNewDynBk = ucTmpDynBk;
+1271   2                      if(ucNewDynBk < ucMinBrightness ) ucNewDynBk = ucMinBrightness;
+1272   2                      else if(ucNewDynBk > ucMaxBrightness) ucNewDynBk = ucMaxBrightness;
+1273   2      #if BFDYNBK_TYPE == BFDYNBK_TYPE_1
+                              usBF_DYMBK_Timer_10ms = 250;
+              #endif
+1276   2              }
+1277   1              
+1278   1              //printf("i:%d NewBK:%d\n\r", (unsigned short)i, (unsigned short)ucNewDynBk);
+1279   1              
+1280   1      #if BFDYNBK_TYPE == BFDYNBK_TYPE_1
+                      if ((i > 1) || ((i < 2) && (usBF_DYMBK_Timer_10ms == 0)))
+                      {
+              #endif
+1284   1      
+1285   1              if ((abs(iCurDynBk-ucNewDynBk) < 10) && (ucUpdateBK == FALSE))return;
+1286   1      
+1287   1      #if BFDYNBK_TYPE == BFDYNBK_TYPE_4
+                      fCurBK = fCurBK*100;
+                      if (fCurBK > 80)
+                      {
+                              if (iCurDynBk == ucBrightness) return;
+                              SetBrightness();
+                              ucUpdateBK = FALSE;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 22  
+
+                              //printf("1: SetBrightness: %d\n\r", (unsigned short)ucBrightness);
+                              return;
+                      }
+                      
+                      ulHisTotal = ulCurHisgrmTotal;
+                      for(i = ACE_PARTITIONS-1; i > ((ACE_PARTITIONS-1)/2); i--)
+                              ulHisTotal = ulHisTotal - ulCurHisgrm[i];
+                      fCurBK = (float)ulHisTotal/ulCurHisgrmTotal;
+                      fCurBK = fCurBK*100;
+                      if (fCurBK < 70)
+                      {
+                              if (iCurDynBk == ucBrightness) return;
+                              SetBrightness();
+                              ucUpdateBK = FALSE;
+                              //printf("2: SetBrightness: %d\n\r", (unsigned short)ucBrightness);
+                              return;
+                      }
+              #endif
+1312   1      
+1313   1              ucUpdateBK = TRUE;
+1314   1              if (iCurDynBk != ucNewDynBk)
+1315   1              {
+1316   2      //#ifdef BF_SMOOTH_AUTOACE
+1317   2                      if (abs(iCurDynBk-ucNewDynBk) < ((ucMaxBrightness-ucMinBrightness)>>2) )        //100
+1318   2                      {
+1319   3                              if (iCurDynBk < ucNewDynBk)
+1320   3                              {
+1321   4                                      iCurDynBk++;
+1322   4                                      if (iCurDynBk > ucNewDynBk) iCurDynBk = ucNewDynBk;
+1323   4                              }
+1324   3                              else
+1325   3                              {
+1326   4                                      iCurDynBk--;
+1327   4                                      if (iCurDynBk < ucNewDynBk) iCurDynBk = ucNewDynBk;
+1328   4                              }
+1329   3                      }
+1330   2                      else
+1331   2                      {
+1332   3                              if (iCurDynBk < ucNewDynBk)
+1333   3                              {
+1334   4                                      iCurDynBk = ucNewDynBk;
+1335   4                                      ucUpdateBK = FALSE;
+1336   4                              }
+1337   3                              else
+1338   3                              {
+1339   4                                      //iCurDynBk = (iCurDynBk + ucNewDynBk)/2;
+1340   4                                      iCurDynBk -= ((ucMaxBrightness-ucMinBrightness)>>2);    //50
+1341   4                              }
+1342   3                      }
+1343   2      //#else
+1344   2      //              iCurDynBk = ucNewDynBk;
+1345   2      //              ucUpdateBK = FALSE;
+1346   2      //#endif
+1347   2              
+1348   2                      ucTmpDynBk = ucBrightness;
+1349   2                      ucBrightness = iCurDynBk;
+1350   2                      SetBrightness();
+1351   2                      ucBrightness = ucTmpDynBk;
+1352   2                      //printf("DynBK:%d BR:%d\n\r", iCurDynBk, (unsigned short)ucBrightness);
+1353   2              }
+1354   1              else
+1355   1                      ucUpdateBK = FALSE;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 23  
+
+1356   1      
+1357   1      #if BFDYNBK_TYPE == BFDYNBK_TYPE_1
+                      }
+              #endif
+1360   1      }
+1361          #endif
+1362          
+1363          void BF_EnableACEMode(void)
+1364          {
+1365   1              unsigned char tmpReg;
+1366   1      
+1367   1              tmpReg = ReadIIC560(0x3B0);
+1368   1              // Enable I-Gamma
+1369   1      #if (NT68670 || NT68670B || NT68167 || NT68667)
+1370   1              if (ucCurBFW == BF_WINDOW_2) 
+1371   1      #else
+                      if (ucCurBFW == BF_WINDOW_1) 
+              #endif  
+1374   1                      tmpReg |= 0x01; 
+1375   1              else
+1376   1                      tmpReg |= 0x02; 
+1377   1      
+1378   1      #if    ACE_PARTITIONS == 16
+1379   1                      tmpReg |= 0x08; 
+1380   1      #elif  ACE_PARTITIONS == 8
+                              tmpReg |= 0x04; 
+              #endif
+1383   1      
+1384   1      #if (NT68670 || NT68670B || NT68167 || NT68667) // seperate for 665 is too slow at 070713
+1385   1              WriteIIC560(0x3B0,tmpReg);
+1386   1      #else
+                      WriteIIC_WaitV(SCALER_I2C_ADDR, 0x3B0, tmpReg);
+              #endif  
+1389   1      }
+1390          
+1391          void BF_DisableACEMode(void)
+1392          {
+1393   1              unsigned char tmpReg;
+1394   1      
+1395   1              tmpReg = ReadIIC560(0x3B0);
+1396   1              // Disable I-Gamma
+1397   1      #if (NT68670 || NT68670B || NT68167 || NT68667)
+1398   1              if (ucCurBFW == BF_WINDOW_2) 
+1399   1      #else
+                      if (ucCurBFW == BF_WINDOW_1) 
+              #endif  
+1402   1                      tmpReg &= ~BIT_0; 
+1403   1              else
+1404   1                      tmpReg &= ~BIT_1; 
+1405   1      
+1406   1              WriteIIC560(0x3B0,tmpReg);
+1407   1      }
+1408          
+1409          // Color Related
+1410          void BFEnhanceColor(void) 
+1411          {
+1412   1              switch(ucBFColorMode) {
+1413   2              case BF_FTMODE_1:
+1414   2              ucBFFTMore = 0x4C;
+1415   2                      ucBFGreenMore = 0x8F;
+1416   2                      ucBFBlueMore = 0x87;
+1417   2                      WriteIIC560(0x3CC,0xE1);  //enable HH,HS
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 24  
+
+1418   2                      break;
+1419   2              case BF_FTMODE_2:
+1420   2                      ucBFFTMore = 0x00;  //0x80
+1421   2                      ucBFGreenMore = 0xA6;
+1422   2                      ucBFBlueMore = 0x80;
+1423   2                      WriteIIC560(0x3CC,0xE1);  //enable HH,HS
+1424   2                      break;
+1425   2              case BF_FTMODE_3:
+1426   2                      ucBFFTMore = 0x00;  //0x80
+1427   2                      ucBFGreenMore = 0x80;
+1428   2                      ucBFBlueMore = 0xA6;
+1429   2                      WriteIIC560(0x3CC,0xE1);  //enable HH,HS
+1430   2                      break;
+1431   2              case BF_FTMODE_USR:
+1432   2                      ucBFFTMore    = Read24C16(EPADDR_BF_FT_FT);
+1433   2                      ucBFGreenMore = Read24C16(EPADDR_BF_FT_GREEN);
+1434   2                      ucBFBlueMore  = Read24C16(EPADDR_BF_FT_BLUE);
+1435   2                      WriteIIC560(0x3CC,0xE1);  //enable HH,HS        
+1436   2                      break;
+1437   2              case BF_FTMODE_OFF: //normal
+1438   2                      ucBFFTMore = 0x00;      //0x80
+1439   2                      ucBFGreenMore = 0x80;
+1440   2                      ucBFBlueMore = 0x80;
+1441   2                      WriteIIC560(0x3CC,0xE0);  //disable HH,HS
+1442   2                      break;
+1443   2              }
+1444   1      
+1445   1              BFCorrectFleshTone();
+1446   1              BFEnhanceGreen();
+1447   1              BFEnhanceBlue();
+1448   1              
+1449   1      //      if (  ucBFColorMode==BF_FTMODE_2)
+1450   1      //      {
+1451   1      //              BFEnhanceMag(); 
+1452   1      //              SetContrastRGB();
+1453   1      //      }
+1454   1      }
+1455          
+1456          
+1457          void BFCorrectFleshTone(void) 
+1458          {
+1459   1              unsigned char Temp;
+1460   1              xdata unsigned short i;
+1461   1              
+1462   1              //Temp = ReadIIC560(0x3CC) & 0xFD;
+1463   1          //WriteIIC560(0x3CC,Temp);
+1464   1              ////flesh tone
+1465   1          //i = ucBFFTMore;
+1466   1              //i = 0x80 + (i/12);
+1467   1          //WriteIIC560(0x3CD,0x01);
+1468   1              //WriteIIC560(0x3CE,0x00);
+1469   1              //WriteIIC560(0x3CF,i);
+1470   1              //WriteIIC560(0x3CC,Temp | 0x02);
+1471   1          //i = ucBFFTMore;
+1472   1              //i = (i* 5)/12;
+1473   1          //WriteIIC560(0x3CC,Temp);
+1474   1              //WriteIIC560(0x3CD,0x01);
+1475   1              //WriteIIC560(0x3CE,0x02);
+1476   1              //WriteIIC560(0x3CF,i);
+1477   1              //WriteIIC560(0x3CC,Temp | 0x02);
+1478   1      
+1479   1              i = (unsigned short)ucBFFTMore*48/255;
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 25  
+
+1480   1              Temp = ReadIIC560(0x3CC) & 0xFD;
+1481   1          WriteIIC560(0x3CC,Temp);
+1482   1          WriteIIC560(0x3CD,0x01);
+1483   1              WriteIIC560(0x3CE,0x00);
+1484   1              WriteIIC560(0x3CF,i/2);
+1485   1              WriteIIC560(0x3CE,0x01);
+1486   1              WriteIIC560(0x3CF,i*3/4);
+1487   1              WriteIIC560(0x3CE,0x02);
+1488   1              WriteIIC560(0x3CF,i);
+1489   1              WriteIIC560(0x3CE,0x03);
+1490   1              WriteIIC560(0x3CF,i*3/4);
+1491   1              WriteIIC560(0x3CC,Temp | 0x02);
+1492   1      }
+1493          
+1494          /*
+1495          void BFEnhanceMag(void) 
+1496          {
+1497                  unsigned char Temp;
+1498          
+1499                  Temp = ReadIIC560(0x3CC) & 0xFD;
+1500          
+1501              WriteIIC560(0x3CC,Temp); 
+1502                  WriteIIC560(0x3CD,0x02);
+1503                  WriteIIC560(0x3CE,0x00);
+1504          
+1505                  WriteIIC560(0x3CF,0x7a);
+1506                  WriteIIC560(0x3CF,0x88);
+1507              WriteIIC560(0x3CC,Temp | 0x02);
+1508          
+1509          }
+1510          */
+1511          void BFEnhanceGreen(void) 
+1512          {
+1513   1              unsigned char Temp;
+1514   1              xdata unsigned short i;
+1515   1      
+1516   1              Temp = ReadIIC560(0x3CC) & 0xFD;
+1517   1              //green/blue enhance
+1518   1          WriteIIC560(0x3CC,Temp); 
+1519   1              WriteIIC560(0x3CD,0x02);
+1520   1              WriteIIC560(0x3CE,0x07);
+1521   1              i = ucBFGreenMore;
+1522   1              i = (i>>1)+0x40;
+1523   1          WriteIIC560(0x3CF,i);
+1524   1          WriteIIC560(0x3CF,ucBFGreenMore);
+1525   1              WriteIIC560(0x3CF,i);
+1526   1          WriteIIC560(0x3CC,Temp | 0x02);
+1527   1      }
+1528          
+1529          void BFEnhanceBlue(void) 
+1530          {
+1531   1              unsigned char Temp;
+1532   1              xdata unsigned short i;
+1533   1              
+1534   1              Temp = ReadIIC560(0x3CC) & 0xFD;
+1535   1              //green/blue enhance
+1536   1          WriteIIC560(0x3CC,Temp); 
+1537   1              WriteIIC560(0x3CD,0x02);
+1538   1              WriteIIC560(0x3CE,0x0F);
+1539   1              i = ucBFBlueMore;
+1540   1              i = (i>>1)+0x40;
+1541   1              WriteIIC560(0x3CF,i);
+C51 COMPILER V8.12   BFCONTROL                                                             11/09/2015 19:43:39 PAGE 26  
+
+1542   1          WriteIIC560(0x3CF,ucBFBlueMore);
+1543   1              WriteIIC560(0x3CF,i);
+1544   1              WriteIIC560(0x3CC,Temp | 0x02);
+1545   1      }
+1546          
+1547          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4787    ----
+   CONSTANT SIZE    =    761    ----
+   XDATA SIZE       =     66     119
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =      1    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

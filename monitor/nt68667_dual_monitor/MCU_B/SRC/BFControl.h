@@ -1,0 +1,308 @@
+#ifndef __LF_CONTROL_H__
+#define __LF_CONTROL_H__
+
+enum LFMode
+{
+	LF_MODE_OFFICE_WORK,
+//	LF_MODE_Internet,
+	LF_MODE_ImageViewing,
+	LF_MODE_Entertainment,
+#ifdef __LF_CUSTOM_MODE__
+	LF_MODE_CUSTOM,
+#else
+	LF_MODE_Economic,
+#endif
+	LF_MODE_OFF,
+	
+	LF_MODE_NUMBER
+};
+
+enum LFAction 
+{
+	LFConfirm,
+	LFOpen,
+	LFUp,
+	LFDown,
+	LFRight,
+	LFLeft
+} ;
+
+enum LF_ACC_Mode
+{
+	LF_ACC_MODE_1,
+	LF_ACC_MODE_2,
+	LF_ACC_MODE_3,
+	LF_ACC_MODE_4,
+	LF_ACC_MODE_5,
+	LF_ACC_MODE_6,
+	LF_ACC_AUTO,
+	LF_ACC_OFF,
+	LF_ACC_NUM_ACC
+};
+
+enum LF_OD_MODE
+{
+	LF_OD_MODE_OFF,
+	LF_OD_MODE_LOW,
+	LF_OD_MODE_MEDIUM,
+	LF_OD_MODE_HIGH,
+	LF_OD_NUM_MODE
+};
+
+enum BF_ACC_Mode
+{
+	BF_ACC_MODE_1,
+	BF_ACC_MODE_2,
+	BF_ACC_MODE_3,
+	BF_ACC_MODE_4,
+	BF_ACC_AUTO,
+	BF_ACC_OFF,
+	BF_ACC_NUM_ACC,
+	BF_ACC_LINEAR = 6	
+};
+
+enum BF_FTMODE
+{
+	BF_FTMODE_1,
+	BF_FTMODE_2,
+	BF_FTMODE_3,
+	BF_FTMODE_USR,
+	BF_FTMODE_OFF,
+	BF_FTMODE_NUM
+};
+
+enum BF_YP
+{
+	BF_YP_OFF,
+	BF_YP_ON,
+	BF_YP_NUM
+};
+
+//
+#define LF_MIN_LUMINANCE_OFFICE_WORK            	MIN_BRIGHTNESS	//DefaultMinBrightness
+#define LF_MIN_LUMINANCE_IMAGE_VIEWING         	MIN_BRIGHTNESS	//DefaultMinBrightness
+#define LF_MIN_LUMINANCE_ENTERTAINMENT         	MIN_BRIGHTNESS	//DefaultMinBrightness
+#define LF_MIN_LUMINANCE_ECONOMIC               	MIN_BRIGHTNESS	//DefaultMinBrightness
+#define LF_MIN_LUMINANCE_OFF                    		MIN_BRIGHTNESS	//DefaultMinBrightness
+
+#define LF_MAX_LUMINANCE_OFFICE_WORK       	MAX_BRIGHTNESS	//DefaultMaxBrightness
+#define LF_MAX_LUMINANCE_IMAGE_VIEWING		MAX_BRIGHTNESS	//DefaultMaxBrightness
+#define LF_MAX_LUMINANCE_ENTERTAINMENT        	MAX_BRIGHTNESS	//DefaultMaxBrightness
+#define LF_MAX_LUMINANCE_ECONOMIC             	MAX_BRIGHTNESS	//DefaultMaxBrightness
+#define LF_MAX_LUMINANCE_OFF                    		MAX_BRIGHTNESS	//DefaultMaxBrightness
+
+#define LF_MIN_CONTRAST_OFFICE_WORK		MIN_CONTRAST	//DefaultMinContrast
+#define LF_MIN_CONTRAST_IMAGE_VIEWING		MIN_CONTRAST    //DefaultMinContrast
+#define LF_MIN_CONTRAST_ENTERTAINMENT		MIN_CONTRAST    //    DefaultMinContrast
+#define LF_MIN_CONTRAST_ECONOMIC			MIN_CONTRAST	//DefaultMinContrast
+#define LF_MIN_CONTRAST_OFF					MIN_CONTRAST    //    DefaultMinContrast
+#define LF_MAX_CONTRAST_OFFICE_WORK		80	//    158
+#define LF_MAX_CONTRAST_IMAGE_VIEWING		80	//    158
+#define LF_MAX_CONTRAST_ENTERTAINMENT		80	//    158
+#define LF_MAX_CONTRAST_ECONOMIC			80	//    158
+//#define LF_MAX_CONTRAST_VIDEO_PLAYBACK		80	//    158
+//#define LF_MAX_CONTRAST_CUSTOM			80	//	158
+#define LF_MAX_CONTRAST_OFF				MAX_CONTRAST	//DefaultMaxContrast
+
+#define LF_MIN_COLORSAT_OFFICE_WORK			    0x00
+#define LF_MIN_COLORSAT_ECONOMIC			    0x00
+#define LF_MIN_COLORSAT_IMAGE_VIEWING		    0x00
+#define LF_MIN_COLORSAT_VIDEO_PLAYBACK		    0x00
+#define LF_MIN_COLORSAT_ENTERTAINMENT				    0x00
+#define LF_MIN_COLORSAT_CUSTOM				    0x00
+#define LF_MIN_COLORSAT_OFF					    0x00
+#define LF_MAX_COLORSAT_OFFICE_WORK			    0xff
+#define LF_MAX_COLORSAT_ECONOMIC			    0xff
+#define LF_MAX_COLORSAT_IMAGE_VIEWING		    0xff
+#define LF_MAX_COLORSAT_VIDEO_PLAYBACK		    0xff
+#define LF_MAX_COLORSAT_ENTERTAINMENT				    0xff
+#define LF_MAX_COLORSAT_CUSTOM				    0xff
+#define LF_MAX_COLORSAT_OFF					    0xff
+
+#define LF_MIN_SHARP_OFFICE_WORK			    0x01
+#define LF_MIN_SHARP_ECONOMIC			        0x01
+#define LF_MIN_SHARP_IMAGE_VIEWING		        0x01
+#define LF_MIN_SHARP_VIDEO_PLAYBACK		        0x01
+#define LF_MIN_SHARP_ENTERTAINMENT			 0x01
+#define LF_MIN_SHARP_CUSTOM				        0x01
+#define LF_MIN_SHARP_OFF					    	0x01
+#define LF_MAX_SHARP_OFFICE_WORK			    0x1f
+#define LF_MAX_SHARP_ECONOMIC			        0x1f
+#define LF_MAX_SHARP_IMAGE_VIEWING		        0x1f
+#define LF_MAX_SHARP_VIDEO_PLAYBACK		        0x1f
+#define LF_MAX_SHARP_ENTERTAINMENT			    0x1f
+#define LF_MAX_SHARP_CUSTOM				        0x1f
+#define LF_MAX_SHARP_OFF					    0x1f
+
+//
+#define LF_DEFAULT_COLORTEMP_OFFICE_WORK		COLOR_6500<<4
+#define LF_DEFAULT_COLORTEMP_IMAGE_VIEWING		COLOR_6500<<4
+#define LF_DEFAULT_COLORTEMP_ENTERTAINMENT		COLOR_7500<<4
+#define LF_DEFAULT_COLORTEMP_ECONOMIC			COLOR_6500<<4
+//#define LF_DEFAULT_COLORTEMP_VIDEO_PLAYBACK	COLOR_6500<<4
+//#define LF_DEFAULT_COLORTEMP_CUSTOM			COLOR_6500<<4
+#define LF_DEFAULT_COLORTEMP_OFF				COLOR_6500<<4
+
+#define LF_DEFAULT_LUMINANCE_OFFICE_WORK		((LF_MAX_LUMINANCE_OFFICE_WORK-LF_MIN_LUMINANCE_OFFICE_WORK)*70/100 + LF_MIN_LUMINANCE_OFFICE_WORK)
+#define LF_DEFAULT_LUMINANCE_IMAGE_VIEWING		LF_MAX_LUMINANCE_IMAGE_VIEWING
+#define LF_DEFAULT_LUMINANCE_ENTERTAINMENT		LF_MAX_LUMINANCE_ENTERTAINMENT
+#define LF_DEFAULT_LUMINANCE_ECONOMIC			((LF_MAX_LUMINANCE_ECONOMIC-LF_MIN_LUMINANCE_ECONOMIC)*70/100 + LF_MIN_LUMINANCE_ECONOMIC)
+//#define LF_DEFAULT_LUMINANCE_VIDEO_PLAYBACK	((LF_MAX_LUMINANCE_VIDEO_PLAYBACK-LF_MIN_LUMINANCE_VIDEO_PLAYBACK)*90/100 + LF_MIN_LUMINANCE_VIDEO_PLAYBACK)
+//#define LF_DEFAULT_LUMINANCE_CUSTOM			    LF_MAX_LUMINANCE_CUSTOM
+#define LF_DEFAULT_LUMINANCE_OFF				LF_MAX_LUMINANCE_OFF
+
+#define LF_DEFAULT_CONTRAST_OFFICE_WORK			MID_CONTRAST	//DefaultMidContrast
+#define LF_DEFAULT_CONTRAST_IMAGE_VIEWING		MID_CONTRAST	//DefaultMidContrast //(DefaultMidContrast+(LF_MAX_CONTRAST_IMAGE_VIEWING-DefaultMidContrast)*40/100)
+#define LF_DEFAULT_CONTRAST_ENTERTAINMENT		MID_CONTRAST	//DefaultMidContrast
+#define LF_DEFAULT_CONTRAST_ECONOMIC			MID_CONTRAST	//DefaultMidContrast //(DefaultMidContrast+(LF_MAX_CONTRAST_ECONOMIC-DefaultMidContrast)*20/100)
+//#define LF_DEFAULT_CONTRAST_VIDEO_PLAYBACK	MID_CONTRAST	//DefaultMidContrast //(DefaultMidContrast+(LF_MAX_CONTRAST_VIDEO_PLAYBACK-DefaultMidContrast)*60/100)
+//#define LF_DEFAULT_CONTRAST_CUSTOM			MID_CONTRAST	//DefaultMidContrast
+#define LF_DEFAULT_CONTRAST_OFF					MID_CONTRAST	//DefaultMidContrast				
+
+#define LF_DEFAULT_COLOR_OFFICE_WORK			128
+#define LF_DEFAULT_COLOR_IMAGE_VIEWING			160
+#define LF_DEFAULT_COLOR_ENTERTAINMENT			160
+#define LF_DEFAULT_COLOR_ECONOMIC				128
+//#define LF_DEFAULT_COLOR_VIDEO_PLAYBACK		160
+//#define LF_DEFAULT_COLOR_CUSTOM				128
+#define LF_DEFAULT_COLOR_OFF					128
+
+#define LF_DEFAULT_HUE_OFFICE_WORK				0x00
+#define LF_DEFAULT_HUE_IMAGE_VIEWING			0x83
+#define LF_DEFAULT_HUE_ENTERTAINMENT			0x02
+#define LF_DEFAULT_HUE_ECONOMIC					0x00
+//#define LF_DEFAULT_HUE_VIDEO_PLAYBACK			0x83
+//#define LF_DEFAULT_HUE_CUSTOM					0x00
+#define LF_DEFAULT_HUE_OFF						0x00
+
+#define LF_DEFAULT_SHARPNESS_OFFICE_WORK		18
+#define LF_DEFAULT_SHARPNESS_IMAGE_VIEWING		14
+#define LF_DEFAULT_SHARPNESS_ENTERTAINMENT		20//18
+#define LF_DEFAULT_SHARPNESS_ECONOMIC			16
+//#define LF_DEFAULT_SHARPNESS_VIDEO_PLAYBACK		1
+//#define LF_DEFAULT_SHARPNESS_CUSTOM				0
+#define LF_DEFAULT_SHARPNESS_OFF				16	//0x10
+
+#define LF_DEFAULT_YPEAK_OFFICE_WORK			0
+#define LF_DEFAULT_YPEAK_IMAGE_VIEWING			1
+#define LF_DEFAULT_YPEAK_ENTERTAINMENT			1
+#define LF_DEFAULT_YPEAK_ECONOMIC				0
+//#define LF_DEFAULT_YPEAK_VIDEO_PLAYBACK			1
+//#define LF_DEFAULT_YPEAK_CUSTOM					0
+#define LF_DEFAULT_YPEAK_OFF					0
+
+#define LF_DEFAULT_ACE_OFFICE_WORK				LF_ACC_OFF
+#define LF_DEFAULT_ACE_IMAGE_VIEWING			LF_ACC_MODE_5
+#define LF_DEFAULT_ACE_ENTERTAINMENT			LF_ACC_MODE_3	//LF_ACC_AUTO	//LF_ACC_MODE_4
+#define LF_DEFAULT_ACE_ECONOMIC					LF_ACC_OFF
+//#define LF_DEFAULT_ACE_VIDEO_PLAYBACK			LF_ACC_MODE_4
+//#define LF_DEFAULT_ACE_CUSTOM					LF_ACC_OFF    
+#define LF_DEFAULT_ACE_OFF						LF_ACC_OFF
+
+#define LF_DEFAULT_FT_OFFICE_WORK				BF_FTMODE_OFF
+#define LF_DEFAULT_FT_IMAGE_VIEWING				BF_FTMODE_1
+#define LF_DEFAULT_FT_ENTERTAINMENT				BF_FTMODE_OFF
+#define LF_DEFAULT_FT_ECONOMIC					BF_FTMODE_OFF	//BF_FTMODE_1
+//#define LF_DEFAULT_FT_VIDEO_PLAYBACK			BF_FTMODE_1
+//#define LF_DEFAULT_FT_CUSTOM					BF_FTMODE_OFF
+#define LF_DEFAULT_FT_OFF						BF_FTMODE_OFF
+
+#define LF_DEFAULT_OD_OFFICE_WORK				LF_OD_MODE_LOW
+#define LF_DEFAULT_OD_IMAGE_VIEWING				LF_OD_MODE_OFF
+#define LF_DEFAULT_OD_ENTERTAINMENT				LF_OD_MODE_HIGH
+#define LF_DEFAULT_OD_ECONOMIC					LF_OD_MODE_OFF
+//#define LF_DEFAULT_OD_VIDEO_PLAYBACK			LF_OD_MODE_MEDIUM
+//#define LF_DEFAULT_OD_CUSTOM					LF_OD_MODE_OFF
+#define LF_DEFAULT_OD_OFF						LF_OD_MODE_OFF
+
+#define LF_DEFAULT_DBC_OFFICE_WORK				OFF
+#define LF_DEFAULT_DBC_IMAGE_VIEWING			OFF
+#define LF_DEFAULT_DBC_ENTERTAINMENT			ON
+#define LF_DEFAULT_DBC_ECONOMIC					OFF
+//#define LF_DEFAULT_DBC_VIDEO_PLAYBACK			ON
+//#define LF_DEFAULT_DBC_CUSTOM					OFF
+#define LF_DEFAULT_DBC_OFF						OFF
+
+
+
+
+void LFEnableSettings(void);
+
+void LFMenuControl(enum LFAction act);
+
+void LFLoadInitState(void);
+void LFResetData(void);
+void LFSetMinMax(unsigned char index);
+
+void LFSetCustom(void);
+void LFResetCustom(unsigned char act);
+
+void LFSetColorTemp(void);
+void LFSetSaturation(void);
+void LFSetHue(void);
+void LFSetSharpness(void);
+void LFSetYPeak(void);
+void LFSetACEMode(void);
+void LFEnableOD(void);
+void LFDisableOD(void);
+void LFSetODMode(void);
+
+void LFLeaveDemoMode(unsigned char k);
+void LFEnterDemoMode(unsigned char k);
+
+// BrightFrame Related Parameters
+enum BF_WINDOW
+{
+	BF_WINDOW_1 = 1,
+	BF_WINDOW_2
+};
+enum BF_WINDOW_SIZE
+{
+	BF_WINDOW_FULLSCREEN,
+	BF_WINDOW_LEFTSIZE,
+	BF_WINDOW_RIGHTSIZE
+};
+
+void BF_Init(void);
+void BF_EnableWindow(enum BF_WINDOW bfw);
+void BF_DisableWindow(enum BF_WINDOW bfw);
+void BF_SetActiveWindow(enum BF_WINDOW bfw);
+void BF_SetWindowSize(unsigned char type);
+void BF_MovingWindow();
+void BF_SetHue(unsigned char hue);
+void BF_SetSaturation(unsigned char sat);
+void BF_SetSharpness(unsigned char shp);
+void BF_SetYPeaking(unsigned char yp);
+
+void BF_UpdateHistogram(void);
+void BF_GetHistogram(void);
+void BF_SetPreACEMode(unsigned char mode);
+void BF_SetDymACEMode(unsigned char reset);
+void BF_SetDymBacklight(void);
+
+void BF_EnableACEMode(void);
+void BF_DisableACEMode(void);
+
+void BFEnhanceColor(void);
+void BFCorrectFleshTone(void);
+void BFEnhanceGreen(void);
+void BFEnhanceBlue(void);
+void BFEnhanceMag(void);
+
+void BF_CE_FTDown(void);
+void BF_CE_FTUp(void);
+void BF_CE_GreenDown(void);
+void BF_CE_GreenUp(void);
+void BF_CE_BlueDown(void);
+void BF_CE_BlueUp(void);
+
+
+//
+//#define BF_RF_DISPLAY		// BF window reference to display timing
+
+#define BF_DYNAMIC_ARRAY
+#define BF_SMOOTH_AUTOACE
+#define BF_DYNAMIC_ACC_TIME 5
+
+
+#endif //__LF_CONTROL_H__

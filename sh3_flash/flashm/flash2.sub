@@ -1,0 +1,18 @@
+input   boot.obj                       
+input   vector.obj                     
+input   inter.obj                      
+input   main.obj                       
+input   comm.obj                       
+input   sci.obj                        
+input   29fxxx.obj                     
+input   int_asm.obj                    
+library C:\DEVELOP\SH3\BIN\..\lib\shc3npb.lib   
+output  flash2.abs                     
+print   flash2.map                     
+rom     (D,R)                          
+start   start(00000000)                
+start   int100(00000100)               
+start   int400(00000400)               
+start   int600,P,C,D(00000600)         
+start   R,B(0C100000)                  
+exit                                   

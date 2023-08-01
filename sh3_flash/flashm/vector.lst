@@ -1,0 +1,335 @@
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:31  PAGE    1
+
+************ OBJECT LISTING ************
+
+FILE NAME: vector.c
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+P                         ; File vector.c  , Line 113      ; block
+    00000000              _int100:                         ; function: int100
+                                                           ; frame size=0
+                          ; File vector.c  , Line 114      ; block
+                          ; File vector.c  , Line 115      ; for
+    00000000 A000                   BRA         L294
+    00000002 0009                   NOP
+    00000004              L295:                             
+    00000004              L294:                             
+    00000004 AFFE                   BRA         L295
+    00000006 0009                   NOP
+                          ; File vector.c  , Line 116      ; block
+                          ; File vector.c  , Line 118      ; block
+    00000008              _int400:                         ; function: int400
+                                                           ; frame size=0
+                          ; File vector.c  , Line 119      ; block
+                          ; File vector.c  , Line 120      ; for
+    00000008 A000                   BRA         L296
+    0000000A 0009                   NOP
+    0000000C              L297:                             
+    0000000C              L296:                             
+    0000000C AFFE                   BRA         L297
+    0000000E 0009                   NOP
+                          ; File vector.c  , Line 121      ; block
+                          ; File vector.c  , Line 123      ; block
+    00000010              _vec:                            ; function: vec
+                                                           ; frame size=8
+    00000010 4F22                   STS.L       PR,@-R15
+    00000012 7FFC                   ADD         #-4,R15
+                          ; File vector.c  , Line 124      ; block
+                          ; File vector.c  , Line 127      ; expression statement
+    00000014 931F                   MOV.W       L298,R3    ; H'FE40
+    00000016 D210                   MOV.L       L298+2,R2  ; H'A4000000
+    00000018 6022                   MOV.L       @R2,R0
+    0000001A 303C                   ADD         R3,R0
+    0000001C 4009                   SHLR2       R0
+    0000001E 4009                   SHLR2       R0
+    00000020 4001                   SHLR        R0
+    00000022 C97F                   AND         #127,R0
+    00000024 2F02                   MOV.L       R0,@R15
+                          ; File vector.c  , Line 130      ; expression statement
+    00000026 0202                   STC         SR,R2
+    00000028 D10C                   MOV.L       L298+6,R1  ; H'EFFFFF0F
+    0000002A 2219                   AND         R1,R2
+    0000002C 4008                   SHLL2       R0
+    0000002E D30C                   MOV.L       L298+10,R3 ; _int_pri
+    00000030 033E                   MOV.L       @(R0,R3),R3
+    00000032 4308                   SHLL2       R3
+    00000034 4308                   SHLL2       R3
+    00000036 323C                   ADD         R3,R2
+    00000038 420E                   LDC         R2,SR
+                          ; File vector.c  , Line 131      ; expression statement
+    0000003A 62F2                   MOV.L       @R15,R2
+    0000003C 4208                   SHLL2       R2
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:31  PAGE    2
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000003E D009                   MOV.L       L298+14,R0 ; _vect_table
+    00000040 032E                   MOV.L       @(R0,R2),R3
+    00000042 430B                   JSR         @R3
+    00000044 0009                   NOP
+                          ; File vector.c  , Line 132      ; expression statement
+    00000046 0102                   STC         SR,R1
+    00000048 D307                   MOV.L       L298+18,R3 ; H'10000000
+    0000004A 213B                   OR          R3,R1
+    0000004C 410E                   LDC         R1,SR
+                          ; File vector.c  , Line 133      ; block
+    0000004E 7F04                   ADD         #4,R15
+    00000050 4F26                   LDS.L       @R15+,PR
+    00000052 000B                   RTS
+    00000054 0009                   NOP
+    00000056              L298:                             
+    00000056 FE40                   .DATA.W     H'FE40
+    00000058 A4000000               .DATA.L     H'A4000000
+    0000005C EFFFFF0F               .DATA.L     H'EFFFFF0F
+    00000060 <00000000>             .DATA.L     _int_pri
+    00000064 <00000000>             .DATA.L     _vect_table
+    00000068 10000000               .DATA.L     H'10000000
+C   00000000              _vect_table:                     ; static: vect_table
+    00000000 <00000000>             .DATA.L     _nmi
+    00000004 00000000               .DATA.L     H'00000000
+    00000008 <00000000>             .DATA.L     _irl15,_irl14,_irl13,_irl12,_irl11,_irl10,_irl9,_irl8,_irl7,_irl6,_irl5,_irl4,_irl3,
+             <00000000> +                       _irl2,_irl1
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+    00000044 00000000               .DATA.L     H'00000000
+    00000048 <00000000>             .DATA.L     _tuni0,_tuni1,_tuni2,_ticpi2,_ati,_pri,_cui,_eri,_rxi,_txi,_tei,_iti,_rcmi,_rovi
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+    00000080 0000000000             .DATA.L     H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000
+             0000000000   
+             0000000000   
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:31  PAGE    3
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+             0000000000   
+             00000000     
+    00000098 <00000000>             .DATA.L     _irq4,_irq5
+             <00000000>   
+    000000A0 0000000000             .DATA.L     H'00000000,H'00000000
+             000000       
+    000000A8 <00000000>             .DATA.L     _pint0,_pint8
+             <00000000>   
+    000000B0 0000000000             .DATA.L     H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000
+             0000000000   
+             0000000000   
+             0000000000   
+             00000000     
+    000000C8 <00000000>             .DATA.L     _dei0,_dei1,_dei2,_dei3,_eri1,_rxi1,_bri1,_txi1,_eri2,_rxi2,_bri2,_txi2,_adi
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+             <00000000>   
+    000000FC              _int_pri:                        ; static: int_pri
+    000000FC 0000000F00             .DATA.L     H'0000000F,H'00000000,H'0000000F,H'0000000E,H'0000000D,H'0000000C,H'0000000B,
+             0000000000 +                       H'0000000A,H'00000009,H'00000008,H'00000007,H'00000006,H'00000005,H'00000004,
+             000F000000 +                       H'00000003,H'00000002,H'00000001,H'00000000,H'0000000A,H'00000000,H'00000000,
+             0E0000000D +                       H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,
+             0000000C00 +                       H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,
+             00000B0000 +                       H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,
+             000A000000 +                       H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,
+             0900000008 +                       H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,H'00000000,
+             0000000700 +                       H'00000000,H'00000000,H'00000007,H'00000007,H'00000007,H'00000007,H'00000000
+             0000060000   
+             0005000000   
+             0400000003   
+             0000000200   
+             0000010000   
+             0000000000   
+             0A00000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:31  PAGE    4
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0000000000   
+             0700000007   
+             0000000700   
+             0000070000   
+             0000         
+B   00000000              _pointer:                        ; static: pointer
+    00000000 00000004               .RES.L      1
+    00000004              _stack:                          ; static: stack
+    00000004 000000A0               .RES.L      40
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:31  PAGE    1
+
+
+******** STATISTICS INFORMATION ********
+
+
+********** ERROR INFORMATION ***********
+
+NUMBER OF ERRORS:           0
+NUMBER OF WARNINGS:         0
+
+
+
+
+******* SOURCE LINE INFORMATION ********
+
+COMPILED SOURCE LINE:      133
+
+
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION (P):                               0000006C Byte(s)
+CONSTANT SECTION (C):                               000001F8 Byte(s)
+DATA     SECTION (D):                               00000000 Byte(s)
+BSS      SECTION (B):                               000000A4 Byte(s)
+
+ TOTAL PROGRAM SIZE: 00000308 Byte(s)
+
+
+
+********** LABEL INFORMATION ***********
+
+NUMBER OF EXTERNAL REFERENCE SYMBOLS:           47
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:           7
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:            59
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** COMMAND PARAMETER ***
+
+
+  /op=0 /cpu=SH3 /endian=b /define=_SHC3_ /show=ob,noso /list vector.c 
+

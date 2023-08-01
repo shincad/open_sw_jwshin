@@ -1,0 +1,211 @@
+C51 COMPILER V7.03   SRGB                                                                  12/21/2006 16:55:07 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE SRGB
+OBJECT MODULE PLACED IN .\BIN\sRGB.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\sRGB.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\sRG
+                    -B.lst) OBJECT(.\BIN\sRGB.obj)
+
+stmt level    source
+
+   1          #include "IIC.H"
+   2          #include "Scaler.H"
+   3          #include "MyDef.H"
+   4          #include "RAM.H"
+   5          #include <stdio.h>
+   6          
+   7          code int rgb2yuv[3][3]={
+   8                  {  0x041B,  0x0810,  0x0191 },
+   9                  { -0x025F, -0x04A7,  0x0707 },
+  10                  {  0x0707, -0x05E2,  -0x0124 } 
+  11          };
+  12          
+  13          code int yuv2rgb[3][3]={
+  14                  {  0x12A1,  0x0000,  0x1989 }, 
+  15                  {  0x12A1, -0x0644, -0x0D01 }, 
+  16                  {  0x12A1,  0x2046,  0x0000 }
+  17          };
+  18          
+  19          code int sincos_tbl[65]={
+  20                  0x0000,0x0064,0x00C9,0x012D,0x0191,0x01F5,0x0259,0x02BC,0x031F,0x0381,
+  21                  0x03E3,0x0444,0x04A5,0x0505,0x0564,0x05C2,0x061F,0x067B,0x06D7,0x0731,
+  22                  0x078A,0x07E3,0x083A,0x088F,0x08E3,0x0937,0x0988,0x09D8,0x0A26,0x0A73,
+  23                  0x0ABF,0x0B08,0x0B50,0x0B97,0x0BDB,0x0C1E,0x0C5E,0x0C9D,0x0CDA,0x0D15,
+  24                  0x0D4D,0x0D85,0x0DB9,0x0DEC,0x0E1C,0x0E4B,0x0E77,0x0EA1,0x0EC8,0x0EEE,
+  25                  0x0F10,0x0F31,0x0F4F,0x0F6C,0x0F85,0x0F9C,0x0FB1,0x0FC4,0x0FD4,0x0FE1,
+  26                  0x0FEC,0x0FF5,0x0FFB,0x0FFE,0x1000
+  27          };
+  28          
+  29          #if 1 
+  30          int sine(unsigned char alpha)
+  31          {
+  32   1              unsigned char value = alpha & 0x3f;
+  33   1              switch (alpha & 0xC0){
+  34   2              case 0x00:
+  35   2                  return( sincos_tbl[value ]);
+  36   2                      break;
+  37   2              case 0x40:
+  38   2                  return( sincos_tbl[(64 - value) ]);
+  39   2                      break;
+  40   2              case 0x80:
+  41   2                  return(-sincos_tbl[value ]);
+  42   2                      break;
+  43   2              case 0xC0:
+  44   2                  return(-sincos_tbl[(64 - value) ]);
+  45   2                      break;
+  46   2          }
+  47   1      }
+  48          
+  49          int cosine(unsigned char alpha)
+  50          {
+  51   1          return (sine(alpha + 64));
+  52   1      }
+  53          
+  54          void product(int *first, int * second, int *result)
+C51 COMPILER V7.03   SRGB                                                                  12/21/2006 16:55:07 PAGE 2   
+
+  55          {
+  56   1      unsigned char i,j,k;
+  57   1      long res;
+  58   1              for ( i=0;i<3;i++){
+  59   2                      for ( j=0;j<3;j++){
+  60   3                      res = 0;
+  61   3                              for ( k=0;k<3;k++){
+  62   4                                      res += (long)*(first + i*3 + k) * (long)*(second + k*3 + j);
+  63   4                      }
+  64   3                      //*(result + i*3 + j) = ((res)>>12);
+  65   3                      *(result + i*3 + j) = ((res + 2048)>>12);
+  66   3                      }
+  67   2              }
+  68   1      }
+  69          
+  70          void sRGB(Byte Contrast,Byte RedGain,Byte GreenGain,Byte BlueGain)
+  71          {
+  72   1      xdata Byte i,j;
+  73   1      xdata Word ss,hh;
+  74   1      xdata short temp,gain[3];
+  75   1      xdata short result[3][3];
+  76   1      xdata short adjust[3][3];
+  77   1      xdata short UVrotated[3][3];
+  78   1      xdata short UserPrefContrast;
+  79   1      #define Saturation 50
+  80   1      #define Tint 50
+  81   1      
+  82   1              gain[0] = (Word)(RedGain+0x80);//((Word)RedGain << 1) + 56;
+  83   1              gain[1] = (Word)(GreenGain+0x80);//((Word)GreenGain<< 1) + 56;
+  84   1              gain[2] = (Word)(BlueGain+0x80);//((Word)BlueGain<< 1) + 56;
+  85   1      //      gain[0] = (Word)(RedGain);//((Word)RedGain << 1) + 56;
+  86   1      //      gain[1] = (Word)(GreenGain);//((Word)GreenGain<< 1) + 56;
+  87   1      //      gain[2] = (Word)(BlueGain);//((Word)BlueGain<< 1) + 56;
+  88   1      
+  89   1              //ss = ((Word)Saturation * 256 + 50) / 100;
+  90   1              //hh = (((Word)Tint * 256 + 50) / 100) - 128;
+  91   1              if(FuncBuf[pVIDEOSOURCE] < 3){
+  92   2                      ss = ((Word)FuncBuf[pSATURATION] * 256 + 50) / 100;
+  93   2                      hh = (((Word)FuncBuf[pTINT] * 256 + 50) / 100) - 128;
+  94   2              }
+  95   1              else{
+  96   2                      ss = 220;               // +jwshin 050728
+  97   2                      hh = 0;
+  98   2                      }
+  99   1      
+ 100   1              UserPrefContrast = (Word)(Contrast * 25) / 10;
+ 101   1              //UserPrefContrast = (Word)Contrast;
+ 102   1              for(i=0; i<3; i++){
+ 103   2                      UVrotated[i][0] = 0;
+ 104   2              }
+ 105   1              for(i=0; i<3; i++){
+ 106   2                      UVrotated[0][i] = 0;
+ 107   2              }
+ 108   1              
+ 109   1              UVrotated[1][1] = (((((long)ss<<5) * (long)cosine(hh))+2048)>>12);
+ 110   1              UVrotated[1][2] = (((((long)ss<<5) * (long)sine(hh)  )+2048)>>12);
+ 111   1              UVrotated[2][1] = (((-(long)sine(hh)*((long)ss<<5))+2048)>>12);
+ 112   1              UVrotated[2][2] = ((( (long)cosine(hh)*((long)ss<<5))+2048)>>12);
+ 113   1              product(&UVrotated[0][0], &rgb2yuv[0][0], &adjust[0][0]);
+ 114   1              
+ 115   1              for(i=0; i<3; i++){
+ 116   2                      adjust[0][i] =((((long)rgb2yuv[0][i]*((long)UserPrefContrast << 5))+2048)>>12);
+C51 COMPILER V7.03   SRGB                                                                  12/21/2006 16:55:07 PAGE 3   
+
+ 117   2              }
+ 118   1              
+ 119   1              product(&yuv2rgb[0][0],&adjust[0][0],&result[0][0]);
+ 120   1              
+ 121   1              for(i=0; i<3; i++){
+ 122   2                      WriteIIC563(0x1d0,((i * 2) + 0x21));
+ 123   2                      for(j=0; j<3; j++){
+ 124   3                              temp = (((((long)(result[i][j]+8)>>4)*((long)gain[i]<<4))+2048)>>12);
+ 125   3                              if(temp < 0){
+ 126   4                                      temp = temp ^ 0xffff;
+ 127   4                                      temp +=1 ;
+ 128   4                                      temp |= 0xf400;
+ 129   4                              }
+ 130   3                              WriteWordIIC563((0x1d1+(j*2)),temp);
+ 131   3                      }
+ 132   2              }
+ 133   1              WriteIIC563(0x1d0,0x2d);
+ 134   1      }
+ 135          #else
+              void sRGB(Byte Contrast,Byte RedGain,Byte GreenGain,Byte BlueGain)
+              {
+              #define Saturation 50
+              #define Tint            50
+                      xdata Byte i,j;
+                      xdata Word ss,hh;
+                      xdata short temp,gain[3];
+                      xdata short UserPrefContrast;
+                      code Byte arry[3][3]={
+                                                                      {1,0,0},
+                                                                      {0,1,0},
+                                                                      {0,0,1}
+                                                                };
+                      gain[0] = (Word)(RedGain + 0x80);//((Word)RedGain << 1) + 56;
+                      gain[1] = (Word)(GreenGain + 0x80);//((Word)GreenGain<< 1) + 56;
+                      gain[2] = (Word)(BlueGain + 0x80);//((Word)BlueGain<< 1) + 56;
+              
+                      ss = ((Word)Saturation * 256 + 50) / 100;
+                      hh = (((Word)Tint * 256 + 50) / 100) - 128;
+              
+                      //UserPrefContrast = (Word)(Contrast * 25) / 10;
+                      UserPrefContrast = (Word)Contrast * 256 /100;
+                      for(i=0; i<3; i++){
+                              //if(SCRev > 2) //C version srgb dithering
+                                      WriteIIC563(0x1d0,((i * 2) + 0x21));
+                              //else                  //A and B version srgb dithering
+                              //      WriteIIC563(0x1d0,((i * 2) + 0x31));
+                              for(j=0; j<3; j++){
+                                      temp = ((((long)(UserPrefContrast)*((long)gain[i]<<5))+2048)>>12)*(long)arry[i][j];
+                                      if(temp < 0){
+                                              temp = temp ^ 0xffff;
+                                              temp +=1 ;
+                                              temp |= 0xf400;
+                                      }
+                                      WriteWordIIC563((0x1d1+(j*2)),temp);
+                              }
+                      }
+                      //if(SCRev > 2) //C version srgb dithering
+                              WriteIIC563(0x1d0,0x2d);
+                      //else                  //A and B version srgb dithering
+                      //      WriteIIC563(0x1d0,0x3d);
+              }
+              
+C51 COMPILER V7.03   SRGB                                                                  12/21/2006 16:55:07 PAGE 4   
+
+              #endif
+ 180          
+ 181          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1041    ----
+   CONSTANT SIZE    =    166    ----
+   XDATA SIZE       =   ----      70
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      20
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

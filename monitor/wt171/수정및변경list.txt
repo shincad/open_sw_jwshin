@@ -1,0 +1,277 @@
+**********************************************
+	수정 및 변경 항목 리스트
+**********************************************
+
+2003-08-13,14
+
+1. Video 화면 비율 Full 변경 
+	- v 높이를 기준으로 h를 늘림(4:3비율)
+
+2. PanelMinVTotal 변경 ->1110	: 출력 v freq.=60hz로...
+
+3. overlay value 변경	: {번지,값}
+	{0x52,235}	//old:0xff
+	{0x53,225}	//old:0xf0
+	{0x54,210}	//old:0xff
+	
+
+	
+	
+2003-08-18
+
+1. tv menu 변경
+	- SPC : tools에서-> picture 맨 아랫쪽으로 (btc 수정 요청사항 8/18)
+
+2. pc osd 위치조정 
+	- 가로방향과 세로방향 증감비율 같도록 변경
+
+3. pip 위치조정 menu
+	- 현 (바형식에서 -> 상중하, 좌중우) 텍스트 형식으로	(현재 이전의 원래 처음 디자인 했을 때로 돌아감)
+
+4. (리모콘) wide
+	- 리모콘 스펙 변경에 의해 기능 추가: video mode 화면에서 리모콘에 의한 wide기능.
+	
+5. TV osd menu
+	- video OSD에서 tv화면이 아닐때는 tv menu 비활성화 되도록.
+	
+
+
+	
+2003-08-19
+
+1. pc OSD 색변경(검정색-> 진청색): 검정색이 별로라는 의견이 있어서 임시로 변경해 봄.
+
+2. tv메뉴에서 main icon을 아래로 선택후 또는 값조정후 메뉴키로 상위메뉴로 돌아갔을 경우
+   현재 아이콘 선택 안되는 문제 (메뉴아이콘 위치조정하면서 나타난 현상임.) -> 수정.
+ 
+3. wide osd icon 작성/추가 적용
+
+4. pip icon 표시변경 : TV -> PIP
+
+5. (리모콘) pip off시  pip H/V position, pip zoom을 누르면 작동하는 것 
+	-> pip on시에만 동작하도록 변경.
+
+6. (리모콘) spc기능이 pc상에서도 되는것
+	-> pc mode에서는 pip가 있을때만 동작하도록 변경.
+
+7. (리모콘) pip도중 spc등.. osd menu on되어있을때  pip on->off시 osd char.가 안없어짐 
+	-> 없어지도록 수정.
+	
+8. pip blending 기능추가.
+
+9. video - ntsc/pal 전환시 이상했던 부분(pal 부분) 수정
+
+
+
+
+2003-08-20
+
+1. video wide 관련 변경 
+	- full<->4:3시 위치이동때문에 좀 이상하게 보이는 현상 보이지 않기 위해 인버터를 꺼줌.
+	- pal position 수정
+	
+2. PIP video wide
+	- pal 입력시 안맞던 문제 변경.
+	
+3. pip background 보완
+
+4. pip 위치이동/크기조정/소스변경/on off 시 나타는 깜박임 증상들 수정.
+
+
+
+
+
+2003-08-22
+
+1. (리모콘) wide key 조정후 바로 ch up/down key로 채널변화 안되는 현상 수정.
+	
+2. pc menu 에서 pip 리모콘 동작
+	- osd on시 pip 리모콘 동작 막아 놓은것을 osd off 시키면서 동작 되도록 수정.
+	  (pip on/off, zoom, h/v position)
+	  
+3. pc menu에서 pip aspect ratio 변경시 키누른후 pip 창비율이 변화후 osd 변화되던 현상.
+	- 변경키 조작후 바로 osd 바뀌고 pip aspect ratio가 바뀌게 수정.
+	
+4. (리모콘) pip aspact ratio 기능 완료.
+
+5. osd menu on 시 garbage value display
+	- 볼륨/서브표시창 표시상태에서 메뉴키 누르면 가끔 나타나는 쓰레기값 나타나는 문제 수정.
+	
+6. video(ntsc) full aspact ratio
+	- 튜닝 : 약간 상하로 타원모양인 것을 원으로 바로잡음.
+	
+7. TV menu
+	-tool menu icon 선택할 때 osd좌우로 한줄정도 노이즈가 생기던 현상 제거.
+	
+	
+	
+2003-08-23
+
+1. country select에서 나라선택시 선택라인 색깔지정 오류수정.
+
+2. 어제 받은 화일과 통합.(메뉴 관련 함수 많은 변화 있음)
+	
+
+
+2003-08-25
+
+1. tv(video)에서 전원을 끌때 화면이 먼저 꺼지고 osd는 나중에 사라지던 현상
+	- osd 먼저 없애고, 화면 나중에 끄도록 수정.
+
+2. tv(video) 신호 없을 때
+	- Av1, Av2 로 표시
+	
+3. sel_key 동작
+	- (리모콘) : osd on 상태에서 동작 안되던 것을 osd off시키고 동작되도록 수정.
+	- (PC)osd key button : osd on 상태에서 동작 안되던 것을 osd off시키고 동작되도록 수정.
+	
+2003-08-26
+
+1. dpms
+	- pip on시 dpms후 정상복귀하면 전상태 유지.
+	
+2. dos mode
+	- 720*400 <-> 640*400 변경 메뉴/기능 추가.
+	
+
+
+2003-08-27
+
+1. dos mode
+	- [640*350],[640*400/720*400] mode detect function.
+	- osd menu상 표시 변경(640*400/720*400 -> 640/720 mode)
+	
+2. pip position
+	- 각 모드별로 위치이동 : 루틴 수정 (입력에 대해 적용된 것을 출력에 관해 적용으로 수정)
+		ModeList[CurrentMode].IHAW	->	PanelHerizontalsize
+		ModeList[CurrentMode].IVAW	->      PanelVerticalsize
+
+3. factory default setting 후 auto configration 추가.
+
+
+
+
+2003-08-28
+
+Nfren-tech source_smpark0827.zip 버그
+1. tv menu에서의 osd/sub osd/message noise 제거.
+2. power saving message에 bordering되는 것을 안되게 수정.
+3. 채널 변경시 깜박이는 현상과 border 깜박임 수정.
+4. 스테레오 방송 채널에서 안되는 채널로 변경시 스테레오 표시되는 현상 -> 수정안함./NFREN TEK에 통보함. 2003-08-29  수정
+
+
+
+2003-08-29
+
+1. 리모콘 PIP 조정방법 수정
+	- H position : (좌->우) -> (좌<->우)
+	- V position : (상->하) -> (상<->하)
+	- Zoom : (대->소) -> (대<->소)
+	
+	
+	
+2003-09-01
+
+1. Burning mode 추가 (select key 4초 이상 누르면 동작)
+2. (리모콘) sleep 기능 실제 동작 
+	- 내부에 값 적용이 안되 있는 것을 적용 시킴.
+	
+	
+2003-09-08
+
+1. Tv/Av 메뉴 분리.
+2. (리모콘) pre-ch, Tv일때만 동작하도록 변경.
+
+
+2003-09-16
+
+1. OSD 표시변경 : volume osd
+	- volume osd에 bordering 추가.
+	- background window(black) 추가.
+	
+2. font file을 volume osd에 bordering 가능하도록 수정.
+
+
+2003-09-17
+
+1. Hue(Tint) 메뉴바
+	- 값조절시, 50: 파랑색, 50이하: 빨강색, 50이상: 녹색. 으로 변하도록 수정.
+	
+	
+	
+2003-09-24
+
+1. DPMS
+	- pip on상태에서 Dsub 제거로 dpms상태일때, 정상 복귀할때 전상태 유지 안되던 문제 수정.
+	
+	
+2003-09-26
+
+1. LG17" (LM170E01)
+	- Dclk 계산치 변경.
+		-> qunta적용된 기존소스를 lg17에 적용될때 dclock영향으로 반짝이는 노이즈 발생하여 변경.
+		
+
+2003-10-04
+
+1. LG:DCLK변경시 문제점
+	- 비디오에서 빠른동영상 일때 끊혀보임.(dclk계산식:*92->*102로 환원)
+	
+	
+2003-10-06
+1. Recall()
+	- 메시지 표시상태에서 재동작 방지.
+	
+	
+2003-10-09
+
+1. wide 17.1" 추가
+	->video part 4:3 zoom이외 완료.
+	
+2003-10-10
+
+1. wide 17.1
+	- 4:3 출력.
+	-ntsc/pal 호환.
+	
+	---> 정상/wide 17" -> 4:3/16:9/full mode 완료.
+	
+	
+	
+2003-10-16
+
+1. pip size/wide/source 전환시 매끄럽지 않은 점, pip버그 외 다수...
+
+
+2003-10-17
+
+1. CT2 종료.
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+2003-10-20
+
+1. 요청사항
+(Sent: Friday, October 17, 2003 8:12 PM)
+앤프랜텍- DPMS mode 혹은 signal cable 을 제거시 pip 동작은 계속되고, key 및 Remomcon 이 동작되도록 수정을 바랍니다.
+	이 사항은 Mega vision 데모시 나왔던 문제점으로 Customer 요청사항입니다.
+	: pip 동작시에는 dpms로 전환을 안하고 계속 pip는 동작하도록 변경요청.
+	(#define PipDpmsON)
+	
+	- 변경.
+	- pip on후 전원리셋시 전상태 기억 못하던 문제 수정.(2003-10-21)
+	- 2003-10-22 : pip(dpms) off후  dpms 처리, 이외 버그수정(앞의 내용과 관련된 키동작)
+	
+	
+	
+	
+2004-01-20 
+
+1. 폰트-> ntsc/pal 분리(define로..)
+	- code영역 메모리 부족 해결위해
+	
+2. FeildToggleLine - pip tearing 방지
+
+3. pip/viodeo main 
+	-ntsc/pal H-Total 변경. : 동영상의 움직임 부자연스러움 해결위해.

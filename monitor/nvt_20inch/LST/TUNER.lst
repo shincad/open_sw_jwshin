@@ -1,0 +1,1538 @@
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE TUNER
+OBJECT MODULE PLACED IN .\BIN\TUNER.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\TUNER.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\TU
+                    -NER.lst) OBJECT(.\BIN\TUNER.obj)
+
+stmt level    source
+
+   1          #include "TUNER.H"
+   2          #include "IIC.H"
+   3          #include "8051.H"
+   4          #include <stdio.h>
+   5          #include "MyDef.H"
+   6          #include "MCU.H"
+   7          #include "RAM.H"
+   8          #include "OSD.H"
+   9          #include "TW990x.H"
+  10          #include "F63xREG.H"
+  11          #include "Scaler.h"
+  12          #include "UserAdj.h"
+  13          #include "Rom_map.h"
+  14          #include "Tuner_tab.h"
+  15          /*
+  16          //US181
+  17          code unsigned short CatvTabUSA[125]={
+  18           //stepcode 50khz
+  19                  0x094c,0x07e4,0x085c,0x08d4,0x099c,0x0a14,0x1144,0x11bc,0x1234,0x12ac,
+  20                  0x1324,0x139c,0x1414,0x0d0c,0x0d84,0x0dfc,0x0e74,0x0eec,0x0f64,0x0fdc,
+  21                  0x1054,0x10cc,0x148c,0x1504,0x157c,0x15f4,0x166c,0x16e4,0x175c,0x17d4,
+  22                  0x184c,0x18c4,0x193c,0x19b4,0x1a2c,0x1aa4,0x1b1c,0x1b94,0x1c0c,0x1c84,
+  23                  0x1cfc,0x1d74,0x1dec,0x1e64,0x1edc,0x1f54,0x1fcc,0x2044,0x20bc,0x2134,
+  24                  0x21ac,0x2224,0x229c,0x2314,0x238c,0x2404,0x247c,0x24f4,0x256c,0x25e4,
+  25                  0x265c,0x26d4,0x274c,0x27c4,0x283c,0x28b4,0x292c,0x29a4,0x2a1c,0x2a94,
+  26                  0x2b0c,0x2b84,0x2bfc,0x2c74,0x2cec,0x2d64,0x2ddc,0x2e54,0x2ecc,0x2f44,
+  27                  0x2fbc,0x3034,0x30ac,0x3124,0x319c,0x3214,0x328c,0x3304,0x337c,0x33f4,
+  28                  0x346c,0x34e4,0x355c,0x35d4,0x0ab4,0x0b2c,0x0ba4,0x0c1c,0x0c94,0x364c,
+  29                  0x36c4,0x373c,0x37b4,0x382c,0x38a4,0x391c,0x3994,0x3a0c,0x3a84,0x3afc,
+  30                  0x3b74,0x3bec,0x3c64,0x3cdc,0x3d54,0x3dcc,0x3e44,0x3ebc,0x3f34,0x3fac,
+  31                  0x4024,0x409c,0x4114,0x418c,0x4204
+  32          };
+  33          
+  34          code unsigned short AirtvTabUSA[68]={
+  35                  0x07e4,0x085c,0x08d4,0x099c,0x0a14,0x1144,0x11bc,0x1234,0x12ac,0x1324,
+  36                  0x139c,0x1414,0x2864,0x28dc,0x2954,0x29cc,0x2a44,0x2abc,0x2b34,0x2bac,
+  37                  0x2c24,0x2c9c,0x2d14,0x2d8c,0x2e04,0x2e7c,0x2ef4,0x2f6c,0x2fe4,0x305c,
+  38                  0x30d4,0x314c,0x31c4,0x323c,0x32b4,0x332c,0x33a4,0x341c,0x3494,0x350c,
+  39                  0x3584,0x35fc,0x3674,0x36ec,0x3764,0x37dc,0x3854,0x38cc,0x3944,0x39bc,
+  40                  0x3a34,0x3aac,0x3b24,0x3b9c,0x3c14,0x3c8c,0x3d04,0x3d7c,0x3df4,0x3e6c,
+  41                  0x3ee4,0x3f5c,0x3fd4,0x404c,0x40c4,0x413c,0x41b4,0x422c
+  42          };
+  43          
+  44          //JAPAN
+  45          code unsigned int CatvTabJPN[63] = {
+  46                  //PIF:58.75
+  47                  0x0BB8,0x0C30,0x0CA8,0x11F8,0x1270,0x12E8,0x1360,0x13B0,0x1428,0x14A0,
+  48                  0x1518,0x1590,0x0D20,0x0D98,0x0E10,0x0E88,0x0F00,0x0F78,0x0FF0,0x1068,
+  49                  0x10E0,0x1180,0x1608,0x16A8,0x1720,0x1798,0x1810,0x1860,0x18D8,0x1950,
+  50                  0x19C8,0x1A40,0x1AB8,0x1B30,0x1BA8,0x1C20,0x1C98,0x1D10,0x1D88,0x1E00,
+  51                  0x1E78,0x1EF0,0x1F68,0x1FE0,0x2058,0x20D0,0x2148,0x21C0,0x2238,0x22B0,
+  52                  0x2328,0x23A0,0x2418,0x2490,0x2508,0x2580,0x25F8,0x2670,0x26E8,0x2760,
+  53                  0x27D8,0x2850,0x28C8
+  54          };
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 2   
+
+  55          
+  56          code unsigned int AirtvTabJPN[62]={
+  57                  //PIF:58.75
+  58                  0x0BB8,0x0C30,0x0CA8,0x11F8,0x1270,0x12E8,0x1360,0x13B0,0x1428,0x14A0,
+  59                  0x1518,0x1590,0x2968,0x29E0,0x2A58,0x2AD0,0x2B48,0x2BC0,0x2C38,0x2CB0,
+  60                  0x2D28,0x2DA0,0x2E18,0x2E90,0x2F08,0x2F80,0x2FF8,0x3070,0x30E8,0x3160,
+  61                  0x31D8,0x3250,0x32C8,0x3340,0x33B8,0x3430,0x34A8,0x3520,0x3598,0x3610,
+  62                  0x3688,0x3700,0x3778,0x37F0,0x3868,0x38E0,0x3958,0x39D0,0x3A48,0x3AC0,
+  63                  0x3B38,0x3BB0,0x3C28,0x3CA0,0x3D18,0x3D90,0x3E08,0x3E80,0x3EF8,0x3F70,
+  64                  0x3FE8,0x4060
+  65          };
+  66          //CCIR
+  67          code unsigned short CatvTabCCIR[106]={
+  68                  0x06cf,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0a17,0x0aa3,0x0b43,0x0bcf,
+  69                  0x0c5b,0x0ce7,0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,
+  70                  0x11d3,0x125f,0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,
+  71                  0x174b,0x17d7,0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,
+  72                  0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,
+  73                  0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,0x273b,0x27db,0x287b,0x291b,
+  74                  0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,0x2e1b,0x2ebb,0x2f5b,
+  75                  0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,0x345b,0x34fb,0x359b,
+  76                  0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,0x3a9b,0x3b3b,0x3bdb,
+  77                  0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,0x40db,0x417b,0x421b,
+  78                  0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+  79          };
+  80          code unsigned short AirtvTabCCIR[68]={
+  81                  0x06cf,0x075b,0x07e7,0x10bb,0x1147,0x11d3,0x125f,0x12eb,0x1377,0x1403,
+  82                  0x148f,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x27db,
+  83                  0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,0x2e1b,
+  84                  0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,0x345b,
+  85                  0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,0x3a9b,
+  86                  0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,0x40db,
+  87                  0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+  88          };
+  89          
+  90          //SECAM L FRANCE  from micro
+  91          code unsigned short CatvTabFRA[41]={    //030424
+  92                  0x0c29,0x0d19,0x0e09,0x0ef9,0x0fe9,0x10d9,0x11c9,0x12b9,0x13a9,0x1499,
+  93                  0x1589,0x1679,0x1769,0x1859,0x1949,0x1a39,0x0000,0x0000,0x0000,0x0000,
+  94                  0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,
+  95                  0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,
+  96                  0x273b,
+  97          };
+  98          code unsigned short AirtvTabFRA[70]={           
+  99                  0x0000,0x0701,0x0760,0x07a1,0x10ca,0x116a,0x120a,0x12aa,0x134a,0x13ea,
+ 100                  0x11d3,0x1147,0x125f,0x1377,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ 101                  0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+ 102                  0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+ 103                  0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+ 104                  0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+ 105                  0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db,0x467b,
+ 106          };
+ 107          
+ 108          //PAL B/G  Italy
+ 109          code unsigned short CatvTabITA[55]={    //
+ 110                  0x06CF,0x075B,0x07E7,0x0873,0x08FF,0x098B,0x0B43,0x0BCF,0x0C5B,0x0CE7,
+ 111                  //48.25,
+ 112                  0x0D73,0x0DFF,0x0E8B,0x0F17,0x0FA3,0x102F,0x10BB,0x1147,0x11D3,0x125F,
+ 113                  0x12EB,0x1377,0x1402,0x148E,0x151A,0x15A6,0x1632,0x16BE,0x174A,0x17D6,
+ 114                  0x1862,0x18EE,0x197A,0x1A06,0x1ABA,0x1B5A,0x1BFA,0x1C9A,0x1D3A,0x1DDA,
+ 115                  0x1E7A,0x1F1A,0x1FBA,0x205A,0x20FA,0x219A,0x223A,0x22DA,0x237A,0x241A,
+ 116                  0x24BA,0x255A,0x25FA,0x269A,0x273A
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 3   
+
+ 117          };
+ 118          
+ 119          
+ 120          code unsigned short AirtvTabITA[69]={   
+ 121                  0x073D,0x07E7,0x0977,0x10BB,0x1165,0x1273,0x12C3,0x1377,0x1402,0x148E,
+ 122                  //53.75
+ 123                  0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ 124                  0x27DA,0x287A,0x291A,0x29BA,0x2A5A,0x2AFA,0x2B9A,0x2C3A,0x2CDA,0x2D7A,
+ 125                  0x2E1A,0x2EBA,0x2F5A,0x2FFA,0x309A,0x313A,0x31DA,0x327A,0x331A,0x33BA,
+ 126                  0x345A,0x34FA,0x359A,0x363A,0x36DA,0x377A,0x381A,0x38BA,0x395A,0x39FA,
+ 127                  0x3A9A,0x3B3A,0x3BDA,0x3C7A,0x3D1A,0x3DBA,0x3E5A,0x3EFA,0x3F9A,0x403B,
+ 128                  0x40DB,0x417B,0x421B,0x42BB,0x435B,0x43FB,0x449B,0x453B,0x45DB
+ 129                  //791.25
+ 130          };
+ 131          //PAL B/G Australia
+ 132          code unsigned short CatvTabAUS[67]={    //
+ 133                  0x06cf,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0b43,0x0bcf,0x0c5b,0x0ce7,
+ 134                  //48.25
+ 135                  0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,0x11d3,0x125f,
+ 136                  0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,0x174b,0x17d7,
+ 137                  0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,
+ 138                  0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,
+ 139                  0x24bb,0x255b,0x25fb,0x269b,0x273b,0x0a17,0x0aa3,0x06a7,0x0783,0x080f,
+ 140                  0x09c7,0x0a7b,0x0b07,0x0dd7,0x1363,0x13ef,0x147b 
+ 141          };
+ 142          
+ 143          code unsigned short AirtvTabAUS[75]={   
+ 144                  0x0783,0x080f,0x09c7,0x0a7b,0x0b07,0x10bb,0x1147,0x11c3,0x125f,0x1363,
+ 145                  //57.25
+ 146                  0x13ef,0x147b,0x06a7,0x0dd7,0x25bf,0x0000,0x0000,0x0000,0x0000,0x27db,
+ 147                  0x2867,0x28f3,0x297f,0x2a0b,0x2a97,0x2b23,0x2baf,0x2c3b,0x2cc7,0x2d53,
+ 148                  0x2ddf,0x2e6b,0x2ef7,0x2f83,0x300f,0x309b,0x3127,0x31b3,0x323f,0x32cb,
+ 149                  0x3357,0x33e3,0x346f,0x34fb,0x3587,0x3613,0x369f,0x372b,0x37b7,0x3843,
+ 150                  0x38cf,0x395b,0x39e7,0x3a73,0x3aff,0x3b8b,0x3c17,0x3ca3,0x3d2f,0x3dbb,
+ 151                  0x3e47,0x3ed3,0x3f5f,0x3feb,0x4077,0x4103,0x418f,0x421b,0x42a7,0x287b,
+ 152                  0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b
+ 153          };
+ 154          //UK  PAL I //
+ 155          code unsigned short CatvTabGBR[55]={
+ 156                  0x06CF,0x075B,0x07E7,0x0873,0x08FF,0x098B,0x0B43,0x0BCF,0x0C5B,0x0CE7,
+ 157                  //48.25,55.25
+ 158                  0x0D73,0x0DFF,0x0E8B,0x0F17,0x0FA3,0x102F,0x10BB,0x1147,0x11D3,0x125F,
+ 159                  0x12EB,0x1377,0x1402,0x148E,0x151A,0x15A6,0x1632,0x16BE,0x174A,0x17D6,
+ 160                  0x1862,0x18EE,0x197A,0x1A06,0x1ABA,0x1B5A,0x1BFA,0x1C9A,0x1D3A,0x1DDA,
+ 161                  0x1E7A,0x1F1A,0x1FBA,0x205A,0x20FA,0x219A,0x223A,0x22DA,0x237A,0x241A,
+ 162                  0x24BA,0x255A,0x25FA,0x269A,0x273A,
+ 163                  //431.2,
+ 164          };
+ 165          code unsigned short AirtvTabGBR[68]={
+ 166                  0x06CF,0x075B,0x07E7,0x10BB,0x1147,0x11D3,0x125F,0x12EB,0x1377,0x1402,
+ 167                  //48.25, 55.25,  62.25, 175.25
+ 168                  0x148E,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x27DA,
+ 169                  0x287A,0x291A,0x29BA,0x2A5A,0x2AFA,0x2B9A,0x2C3A,0x2CDA,0x2D7A,0x2E1A,
+ 170                  0x2EBA,0x2F5A,0x2FFA,0x309A,0x313A,0x31DA,0x327A,0x331A,0x33BA,0x345A,
+ 171                  0x34FA,0x359A,0x363A,0x36DA,0x377A,0x381A,0x38BA,0x395A,0x39FA,0x3A9A,
+ 172                  0x3B3A,0x3BDA,0x3C7A,0x3D1A,0x3DBA,0x3E5A,0x3EFA,0x3F9A,0x403B,0x40DB,
+ 173                  0x417B,0x421B,0x42BB,0x435B,0x43FB,0x449B,0x453B,0x45DB,
+ 174                  //838.25,
+ 175          };
+ 176          
+ 177          //RUSSIA SECAM D/K from micro
+ 178          code unsigned short CatvTabRUS[41]={
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 4   
+
+ 179                  0x0b1b,0x0bbb,0x0c5b,0x0cfb,0x0d9b,0x0e3b,0x0edb,0x0f7b,0x101b,0x151b,
+ 180                  0x15bb,0x165b,0x16ce,0x179b,0x183b,0x18db,0x197b,0x1a1b,0x1abb,0x0000,
+ 181                  0x0000,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,0x1e7b,0x1f1b,0x1fbb,0x205b,
+ 182                  0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,0x24bb,0x255b,0x25fb,0x269b,
+ 183                  0x273b
+ 184          };
+ 185          code unsigned short AirtvTabRUS[69]={
+ 186                  0x06ed,0x07ab,0x0913,0x09b3,0x0a53,0x10bb,0x115b,0x11fb,0x129b,0x133b,
+ 187                  0x13db,0x147b,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ 188                  0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+ 189                  0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+ 190                  0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+ 191                  0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+ 192                  0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db
+ 193          };
+ 194          //NEW ZEALAND PAL B/G  
+ 195          code unsigned short AirtvTabNZL[73]={
+ 196          0x0693,0x075b,0x07e7,0x10bb,0x1147,0x11d3,0x125f,0x12eb,0x1377,0x1403,
+ 197          0x148f,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ 198          0x27db,0x287b,0x291b,0x29bb,0x2a5b,0x2afb,0x2b9b,0x2c3b,0x2cdb,0x2d7b,
+ 199          0x2e1b,0x2ebb,0x2f5b,0x2ffb,0x309b,0x313b,0x31db,0x327b,0x331b,0x33bb,
+ 200          0x345b,0x34fb,0x359b,0x363b,0x36db,0x377b,0x381b,0x38bb,0x395b,0x39fb,
+ 201          0x3a9b,0x3b3b,0x3bdb,0x3c7b,0x3d1b,0x3dbb,0x3e5b,0x3efb,0x3f9b,0x403b,
+ 202          0x40db,0x417b,0x421b,0x42bb,0x435b,0x43fb,0x449b,0x453b,0x45db,0x0873,
+ 203          0x08ff,0x098b,0x06cf
+ 204          };
+ 205          
+ 206          code unsigned short CatvTabNZL[58]={
+ 207                  0x0693,0x075b,0x07e7,0x0873,0x08ff,0x098b,0x0b43,0x0bcf,0x0c5b,0x0ce7,
+ 208                  0x0d73,0x0dff,0x0e8b,0x0f17,0x0fa3,0x102f,0x10bb,0x1147,0x11d3,0x125f,
+ 209                  0x12eb,0x1377,0x1403,0x148f,0x151b,0x15a7,0x1633,0x16bf,0x174b,0x17d7,
+ 210                  0x1863,0x18ef,0x197b,0x1a07,0x1abb,0x1b5b,0x1bfb,0x1c9b,0x1d3b,0x1ddb,
+ 211                  0x1e7b,0x1f1b,0x1fbb,0x205b,0x20fb,0x219b,0x223b,0x22db,0x237b,0x241b,
+ 212                  0x24bb,0x255b,0x25fb,0x269b,0x273b,0x0a17,0x0aa3,0x06cf
+ 213          };
+ 214          
+ 215          //US181,Japan,CCIR,CCET,UK,CHINA
+ 216          code unsigned short *CATV_TAB[]={
+ 217                  CatvTabCCIR,CatvTabFRA,CatvTabITA,CatvTabGBR,CatvTabAUS,CatvTabNZL,CatvTabRUS,CatvTabUSA,CatvTabJPN
+ 218          };
+ 219          code unsigned short *AIR_TAB[]={
+ 220                  AirtvTabCCIR,AirtvTabFRA,AirtvTabITA,AirtvTabGBR,AirtvTabAUS,AirtvTabNZL,AirtvTabRUS,AirtvTabUSA,AirtvTab
+             -JPN
+ 221          };
+ 222          */
+ 223          code unsigned char ChannelLimitTab[]={
+ 224          //TV_Min,TV_Max,TV_Total,CATV_Min,CATV_Max,CATV_Total
+ 225                  2,69,68,2,107,106,      //CCIR PAL B/G from current
+ 226                  1,70,70,1,41,41,        //FRANCE SECAM L/L' from micro
+ 227                  1,69,69,1,55,55,        //ITALY PAL B/G
+ 228                  1,68,68,1,55,55,        //UK PAL I from btc
+ 229                  1,75,75,1,67,67,        //AUSTRALIA PAL B/G
+ 230                  1,73,73,1,58,58,        //NEW ZEALAND PAL B/G 
+ 231                  1,69,69,1,41,41,        //RUSSIA SECAM D/K from micro
+ 232                  2,69,68,1,125,125,      //US181 from current
+ 233                  1,62,62,1,63,63,        //Japan from current
+ 234          //      2,69,68,78,128,51,      //CCET
+ 235          //      1,67,67,1,96,96,        //China
+ 236          };
+ 237          
+ 238          code unsigned char MaskTab1[8]={
+ 239                  0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 5   
+
+ 240          };
+ 241          
+ 242          code unsigned char MaskTab2[8]={
+ 243                  0xfe,0xfd,0xfb,0xf7,0xef,0xdf,0xbf,0x7f
+ 244          };
+ 245          
+ 246          void ChannelUp(void)
+ 247          {
+ 248   1      unsigned char i,j,k,l,m;
+ 249   1              ForceToBackground(0,0,0);
+ 250   1              AUDIO_MUTE();
+ 251   1              if((Read24C16(ep_Input_CH_Sys) & 0x80)== 0){
+ 252   2                      i = Read24C16(0x209);
+ 253   2                      for(j=0; j<TV_Total; j++){
+ 254   3                              if(++i > TV_Max)
+ 255   3                                      i = TV_Min;
+ 256   3                              k = (i - TV_Min) / 8;
+ 257   3                              l = (i - TV_Min) % 8;
+ 258   3                              m = Read24C16(0x280+k);
+ 259   3                              if((m & MaskTab1[l]) != 0){
+ 260   4                                      break;
+ 261   4                              }
+ 262   3                      }
+ 263   2                      //Write24C16(0xdf,i);
+ 264   2              }
+ 265   1              else{
+ 266   2                      i = Read24C16(0x209);
+ 267   2                      for(j=0; j<CATV_Total; j++){
+ 268   3                              if(++i > CATV_Max)
+ 269   3                                      i = CATV_Min;
+ 270   3                              k = (i - CATV_Min) / 8;
+ 271   3                              l = (i - CATV_Min) % 8;
+ 272   3                              m = Read24C16(0x290+k);
+ 273   3                              if((m & MaskTab1[l]) != 0){
+ 274   4                                      break;
+ 275   4                              }
+ 276   3                      }
+ 277   2                      //Write24C16(0xdf,i);
+ 278   2              }
+ 279   1              ChBuffer = i;
+ 280   1              WriteWordIIC563(0x0cc,ChannelColor);
+ 281   1      //      ShowSource_Video();
+ 282   1      //      ShowValue(1,ChBuffer);
+ 283   1              ChannelSel(ChBuffer);
+ 284   1              Write24C16(0x209,ChBuffer);
+ 285   1              DisplaySource(cTV);
+ 286   1              OsdTimer = 3 * 100;
+ 287   1              SetDisplayNormal_Video();
+ 288   1      //      if(AudioMute == 0){
+ 289   1      //              AUDIO_On();
+ 290   1      //      }
+ 291   1      }
+ 292          
+ 293          void ChannelDown(void)
+ 294          {
+ 295   1      unsigned char i,j,k,l,m;
+ 296   1              ForceToBackground(0,0,0);
+ 297   1              AUDIO_MUTE();
+ 298   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 299   2                      i = Read24C16(0x209);
+ 300   2                      for(j=0; j<TV_Total; j++){
+ 301   3                              if(--i < TV_Min)
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 6   
+
+ 302   3                                      i = TV_Max;
+ 303   3                              k = (i - TV_Min) / 8;
+ 304   3                              l = (i - TV_Min) % 8;
+ 305   3                              m = Read24C16(0x280+k);
+ 306   3                              if((m & MaskTab1[l]) != 0){
+ 307   4                                      break;
+ 308   4                              }
+ 309   3                      }
+ 310   2                      //Write24C16(0x209,i);
+ 311   2              }
+ 312   1              else{
+ 313   2                      i = Read24C16(0x209);
+ 314   2                      for(j=0; j<CATV_Total; j++){
+ 315   3                              if(--i < CATV_Min)
+ 316   3                                      i = CATV_Max;
+ 317   3                              k = (i - CATV_Min) / 8;
+ 318   3                              l = (i - CATV_Min) % 8;
+ 319   3                              m = Read24C16(0x290+k);
+ 320   3                              if((m & MaskTab1[l]) != 0){
+ 321   4                                      break;
+ 322   4                              }
+ 323   3                      }
+ 324   2                      //Write24C16(0x209,i);
+ 325   2              }
+ 326   1              ChBuffer = i;
+ 327   1              WriteWordIIC563(0x0cc,ChannelColor);
+ 328   1      //      ShowSource_Video();
+ 329   1      //      ShowValue(1,ChBuffer);
+ 330   1              ChannelSel(ChBuffer);
+ 331   1              Write24C16(0x209,ChBuffer);
+ 332   1              DisplaySource(cTV);
+ 333   1              OsdTimer = 3 * 100;
+ 334   1              SetDisplayNormal_Video();
+ 335   1      //      if(AudioMute == 0){
+ 336   1      //              AUDIO_On();
+ 337   1      //      }       
+ 338   1      }
+ 339          
+ 340          /*
+ 341          void ManualChannelUp(void)
+ 342          {
+ 343          unsigned char i,j,k,l,m;
+ 344                  ForceToBackground(0);
+ 345                  AUDIO_MUTE();
+ 346                  if(Read24C16(0xe3) == 0){
+ 347                          i = Read24C16(0x209);
+ 348                          for(j=0; j<TV_Total; j++){
+ 349                                  if(++i > TV_Max)
+ 350                                          i = TV_Min;
+ 351                                  k = (i - TV_Min) / 8;
+ 352                                  l = (i - TV_Min) % 8;
+ 353                                  m = Read24C16(0x380+k);
+ 354                                  if((m & MaskTab1[l]) != 0){
+ 355                                          break;
+ 356                                  }
+ 357                          }
+ 358                          //Write24C16(0x209,i);
+ 359                  }
+ 360                  else{
+ 361                          i = Read24C16(0x209);
+ 362                          for(j=0; j<CATV_Total; j++){
+ 363                                  if(++i > CATV_Max)
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 7   
+
+ 364                                          i = CATV_Min;
+ 365                                  k = (i - CATV_Min) / 8;
+ 366                                  l = (i - CATV_Min) % 8;
+ 367                                  m = Read24C16(0x390+k);
+ 368                                  if((m & MaskTab1[l]) != 0){
+ 369                                          break;
+ 370                                  }
+ 371                          }
+ 372                          //Write24C16(0x209,i);
+ 373                  }
+ 374                  ChBuffer = i;
+ 375                  ManualChannelSel(ChBuffer);
+ 376                  Write24C16(0x209,ChBuffer);
+ 377                  Timer2 = 500;
+ 378                  SetDisplayNormal();
+ 379                  //if((flag3 & BIT_4) == 0){
+ 380                          //AUDIO_On();
+ 381                  //}
+ 382          }
+ 383          */
+ 384          /*
+ 385          void ManualChannelDown(void)
+ 386          {
+ 387          unsigned char i,j,k,l,m;
+ 388                  ForceToBackground(0);
+ 389                  AUDIO_MUTE();
+ 390                  if(Read24C16(0xe3) == 0){
+ 391                          i = Read24C16(0xdf);
+ 392                          for(j=0; j<TV_Total; j++){
+ 393                                  if(--i < TV_Min)
+ 394                                          i = TV_Max;
+ 395                                  k = (i - TV_Min) / 8;
+ 396                                  l = (i - TV_Min) % 8;
+ 397                                  m = Read24C16(0x380+k);
+ 398                                  if((m & MaskTab1[l]) != 0){
+ 399                                          break;
+ 400                                  }
+ 401                          }
+ 402                          //Write24C16(0xdf,i);
+ 403                  }
+ 404                  else{
+ 405                          i = Read24C16(0xdf);
+ 406                          for(j=0; j<CATV_Total; j++){
+ 407                                  if(--i < CATV_Min)
+ 408                                          i = CATV_Max;
+ 409                                  k = (i - CATV_Min) / 8;
+ 410                                  l = (i - CATV_Min) % 8;
+ 411                                  m = Read24C16(0x390+k);
+ 412                                  if((m & MaskTab1[l]) != 0){
+ 413                                          break;
+ 414                                  }
+ 415                          }
+ 416                          //Write24C16(0xdf,i);
+ 417                  }
+ 418                  ChBuffer = i;
+ 419                  ManualChannelSel(ChBuffer);
+ 420                  Write24C16(0xdf,ChBuffer);
+ 421                  Timer2 = 500;
+ 422                  SetDisplayNormal();
+ 423          }
+ 424          */
+ 425          
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 8   
+
+ 426          void ProgUp(void)
+ 427          {
+ 428   1      unsigned char i,j,k,l,m;
+ 429   1              ForceToBackground(0,0,0);
+ 430   1              AUDIO_MUTE();
+ 431   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 432   2                      i = Read24C16(0x207);// current PR. NO.
+ 433   2                      for(j=0; j<128; j++){
+ 434   3                              if(++i > 128)
+ 435   3                                      i = 1;
+ 436   3                              k = (i - 1) / 8;
+ 437   3                              l = (i - 1) % 8;
+ 438   3                              m = Read24C16(0x280+k);
+ 439   3                              if((m & MaskTab1[l]) != 0){
+ 440   4                                      PR_ChBuffer = Read24C16(0x100+(i - 1));
+ 441   4                                      break;
+ 442   4                              }
+ 443   3                      }
+ 444   2                      //Write24C16(0x209,i);
+ 445   2              }
+ 446   1              else{
+ 447   2                      i = Read24C16(0x207);// current PR. NO.
+ 448   2                      for(j=0; j<128; j++){
+ 449   3                              if(++i > 128)
+ 450   3                                      i = 1;
+ 451   3                              k = (i - 1) / 8;
+ 452   3                              l = (i - 1) % 8;
+ 453   3                              m = Read24C16(0x290+k);
+ 454   3                              if((m & MaskTab1[l]) != 0){
+ 455   4                                      PR_ChBuffer = Read24C16(0x180+(i - 1));
+ 456   4                                      break;
+ 457   4                              }
+ 458   3                      }
+ 459   2                      //Write24C16(0xdf,i);
+ 460   2              }
+ 461   1              PRBuffer = i;
+ 462   1              WriteWordIIC563(0x0cc,ChannelColor);
+ 463   1      //      ShowValue(1,PRBuffer);
+ 464   1      //      ChannelSel(PR_ChBuffer);
+ 465   1              Write24C16(0x207,PRBuffer);
+ 466   1      //      Timer2 = 500;
+ 467   1              SetDisplayNormal_Video();
+ 468   1      //      if(AudioMute == 0){
+ 469   1      //              AUDIO_On();
+ 470   1      //      }
+ 471   1      }
+ 472          
+ 473          
+ 474          void ProgDown(void)
+ 475          {
+ 476   1      unsigned char i,j,k,l,m;
+ 477   1              ForceToBackground(0,0,0);
+ 478   1              AUDIO_MUTE();
+ 479   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 480   2                      i = Read24C16(0x207);// current PR. NO.
+ 481   2                      for(j=0; j<128; j++){
+ 482   3                              if(--i < 1)
+ 483   3                                      i = 128;
+ 484   3                              k = (i - 1) / 8;
+ 485   3                              l = (i - 1) % 8;
+ 486   3                              m = Read24C16(0x280+k);
+ 487   3                              if((m & MaskTab1[l]) != 0){
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 9   
+
+ 488   4                                      PR_ChBuffer = Read24C16(0x100+(i - 1));
+ 489   4                                      break;
+ 490   4                              }
+ 491   3                      }
+ 492   2                      //Write24C16(0xdf,i);
+ 493   2              }
+ 494   1              else{
+ 495   2                      i = Read24C16(0x207);// current PR. NO.
+ 496   2                      for(j=0; j<128; j++){
+ 497   3                              if(--i < 1)
+ 498   3                                      i = 128;
+ 499   3                              k = (i - 1) / 8;
+ 500   3                              l = (i - 1) % 8;
+ 501   3                              m = Read24C16(0x290+k);
+ 502   3                              if((m & MaskTab1[l]) != 0){
+ 503   4                                      PR_ChBuffer = Read24C16(0x180+(i - 1));
+ 504   4                                      break;
+ 505   4                              }
+ 506   3                      }
+ 507   2                      //Write24C16(0xdf,i);
+ 508   2              }
+ 509   1              PRBuffer = i;
+ 510   1              WriteWordIIC563(0x0cc,ChannelColor);
+ 511   1      //      ShowValue(1,PRBuffer);
+ 512   1      //      ChannelSel(PR_ChBuffer);
+ 513   1              Write24C16(0x207,PRBuffer);
+ 514   1      //      Timer2 = 500;
+ 515   1              SetDisplayNormal_Video();
+ 516   1      //      if(AudioMute == 0){
+ 517   1      //              AUDIO_On();
+ 518   1      //      }       
+ 519   1      }
+ 520          
+ 521          
+ 522          unsigned char CheckChMask(void)
+ 523          {
+ 524   1      unsigned char k,l,m;
+ 525   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 526   2                      k = (ChBuffer - TV_Min) / 8;
+ 527   2                      l = (ChBuffer - TV_Min) % 8;
+ 528   2                      m = Read24C16(0x280+k);
+ 529   2                      if((m & MaskTab1[l]) != 0){
+ 530   3                              return 1;
+ 531   3                      }
+ 532   2                      else{
+ 533   3                              return 0;
+ 534   3                      }
+ 535   2              }
+ 536   1              else{
+ 537   2                      k = (ChBuffer - CATV_Min) / 8;
+ 538   2                      l = (ChBuffer - CATV_Min) % 8;
+ 539   2                      m = Read24C16(0x290+k);
+ 540   2                      if((m & MaskTab1[l]) != 0){
+ 541   3                              return 1;
+ 542   3                      }
+ 543   2                      else{
+ 544   3                              return 0;
+ 545   3                      }
+ 546   2              }
+ 547   1      }
+ 548          
+ 549          void ChannelMask(unsigned char value)
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 10  
+
+ 550          {
+ 551   1      unsigned char k,l,m;
+ 552   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 553   2                      k = (ChBuffer - TV_Min) / 8;
+ 554   2                      l = (ChBuffer - TV_Min) % 8;
+ 555   2                      m = Read24C16(0x280+k);
+ 556   2                      if(value == 0){
+ 557   3                              m &= MaskTab2[l];
+ 558   3                              Write24C16(0x280+k,m);
+ 559   3                      }
+ 560   2                      else{
+ 561   3                              m |= MaskTab1[l];
+ 562   3                              Write24C16(0x280+k,m);
+ 563   3                      }
+ 564   2              }
+ 565   1              else{
+ 566   2                      k = (ChBuffer - CATV_Min) / 8;
+ 567   2                      l = (ChBuffer - CATV_Min) % 8;
+ 568   2                      m = Read24C16(0x290+k);
+ 569   2                      if(value == 0){
+ 570   3                              m &= MaskTab2[l];
+ 571   3                              Write24C16(0x290+k,m);
+ 572   3                      }
+ 573   2                      else{
+ 574   3                              m |= MaskTab1[l];
+ 575   3                              Write24C16(0x290+k,m);
+ 576   3                      }
+ 577   2              }
+ 578   1      
+ 579   1      
+ 580   1      
+ 581   1      }
+ 582          void ChannelSel(unsigned char ch)
+ 583          {
+ 584   1      unsigned short *p,Ch_Status,PR_Status;
+ 585   1      //      printf("ChannelSel=%d\r\n",(unsigned short)ch);
+ 586   1              ChSystem = Read24C16(ep_Input_CH_Sys) & 0x7F;
+ 587   1              if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+ 588   2                      Ch_Status = Read24C16(0x245);
+ 589   2      
+ 590   2                      if(Ch_Status == ch)
+ 591   2                              ;
+ 592   2                      else
+ 593   2                              Write24C16(0x245, Ch_Status);
+ 594   2              
+ 595   2              }else{
+ 596   2                      PR_Status = Read24C16(0x245);
+ 597   2                      if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0)
+ 598   2                              ChBuffer = Read24C16(0x100+(PR_Status - 1));
+ 599   2                      else            ChBuffer = Read24C16(0x180+(PR_Status - 1));
+ 600   2                      if(ChBuffer == ch)
+ 601   2                              ;
+ 602   2                      else
+ 603   2                              Write24C16(0x245, PR_Status);   
+ 604   2              }
+ 605   1      //              printf("ChBuffer1=0x%x\r\n",(Word)ChBuffer);
+ 606   1      
+ 607   1              if((Read24C16(ep_Input_CH_Sys) & 0x80) == 0){
+ 608   2                      if(ch < TV_Min){
+ 609   3                              ch = TV_Min;
+ 610   3                              ChBuffer = ch;
+ 611   3                      }
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 11  
+
+ 612   2                      else if(ch > TV_Max){
+ 613   3                              ch = TV_Max;
+ 614   3                              ChBuffer = ch;
+ 615   3                      }
+ 616   2                      ch = ch - TV_Min;
+ 617   2                      p = AIR_TAB[ChSystem] + ch;
+ 618   2                      DevNum = *p;
+ 619   2                      FuncBuf[pCHFINETUNE] = Read24C16(0x100+ch);
+ 620   2      //              printf("FuncBuf[pCHFINETUNE]5=0x%x\r\n",(Word)FuncBuf[pCHFINETUNE]);
+ 621   2      //              printf("TV_Min=0x%x\r\n",(Word)TV_Min);
+ 622   2      //              printf("TV_Max=0x%x\r\n",(Word)TV_Max);
+ 623   2      //              printf("Read24C16(0x100+ch)=0x%x\r\n",(Word)(0x100+ch));
+ 624   2                      DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+ 625   2              }
+ 626   1              else{
+ 627   2                      if(ch < CATV_Min){
+ 628   3                              ch = CATV_Min;
+ 629   3                              ChBuffer = ch;
+ 630   3                      }
+ 631   2                      else if(ch > CATV_Max){
+ 632   3                              ch = CATV_Max;
+ 633   3                              ChBuffer = ch;
+ 634   3                      }
+ 635   2                      ch = ch - CATV_Min;
+ 636   2                      p = CATV_TAB[ChSystem] + ch;
+ 637   2                      DevNum = *p;
+ 638   2      //              printf("FuncBuf[pCHFINETUNE]6=0x%x\r\n",(Word)FuncBuf[pCHFINETUNE]);
+ 639   2                      FuncBuf[pCHFINETUNE] = Read24C16(0x180+ch);
+ 640   2                      DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+ 641   2              }
+ 642   1      //      if((flag3 & BIT_0) == 0x01){
+ 643   1      //              printf("PreSet No Video\r\n");
+ 644   1      //      }
+ 645   1      //      printf("Before SetTuner\r\n");
+ 646   1              SetTuner();
+ 647   1      //      printf("After SetTuner\r\n");
+ 648   1              Sleep(200);//500
+ 649   1      //      printf("Select channel\r\n");
+ 650   1      //      Sleep(500);
+ 651   1      }
+ 652          /*
+ 653          void ManualChannelSel(unsigned char ch)
+ 654          {
+ 655          unsigned short *p;
+ 656                  if(Read24C16(0xe3) == 0){
+ 657                          if(ch < TV_Min){
+ 658                                  ch = TV_Min;
+ 659                                  ChBuffer = ch;
+ 660                          }
+ 661                          else if(ch > TV_Max){
+ 662                                  ch = TV_Max;
+ 663                                  ChBuffer = ch;
+ 664                          }
+ 665                          ch = ch - TV_Min;
+ 666                          p = AIR_TAB[ChSystem] + ch;
+ 667                          DevNum = *p;
+ 668                          FineTune = Read24C16(0x400+ch);
+ 669                          DevNum = DevNum + FineTune - 50;
+ 670                  }
+ 671                  else{
+ 672                          if(ch < CATV_Min){
+ 673                                  ch = CATV_Min;
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 12  
+
+ 674                                  ChBuffer = ch;
+ 675                          }
+ 676                          else if(ch > CATV_Max){
+ 677                                  ch = CATV_Max;
+ 678                                  ChBuffer = ch;
+ 679                          }
+ 680                          ch = ch - CATV_Min;
+ 681                          p = CATV_TAB[ChSystem] + ch;
+ 682                          DevNum = *p;
+ 683                          FineTune = Read24C16(0x480+ch);
+ 684                          DevNum = DevNum + FineTune - 50;
+ 685                  }
+ 686                  //if((flag3 & BIT_0) == 0x01){
+ 687                  //      printf("PreSet No Video\r\n");
+ 688                  //}
+ 689                  SetTuner();
+ 690                  Sleep(200);//500
+ 691          //      Sleep(500);
+ 692          }
+ 693          */
+ 694          void SetTuner(void)
+ 695          {
+ 696   1      unsigned char i,j,k;
+ 697   1              i = (unsigned char)(DevNum >> 8);
+ 698   1              j = (unsigned char)DevNum;
+ 699   1              if(TunerBrand == 0){    //Philips
+ 700   2                              if(DevNum < VHF_NT){ //Low
+ 701   3                                      k=0x01; 
+ 702   3                              }
+ 703   2                              else{
+ 704   3                                      if(DevNum < UHF_NT) //High
+ 705   3                                              k=0x02;
+ 706   3                                      else                            //UHF
+ 707   3                                              k=0x08;
+ 708   3                              }
+ 709   2      
+ 710   2      
+ 711   2              }
+ 712   1              
+ 713   1              else{                                   //LG
+ 714   2      /*              if(DevNum < VHF_PAL){
+ 715   2                              k=0x01;
+ 716   2                      }
+ 717   2                      else{
+ 718   2                              if(DevNum < UHF_PAL)
+ 719   2                                      k=0x02;
+ 720   2                              else
+ 721   2                                      k=0x08;
+ 722   2                      }
+ 723   2      */
+ 724   2                      ChSystem = CH_USA;
+ 725   2      
+ 726   2                      if(ChSystem==CH_USA)
+ 727   2                      {
+ 728   3      //              printf("Tunerbrand =>1\r\n");
+ 729   3                              if(DevNum < VHF_NT){
+ 730   4                                      k=0xa0; 
+ 731   4                              }
+ 732   3                              else{
+ 733   4                                      if(DevNum < UHF_NT)
+ 734   4                                              k=0x90;
+ 735   4                                      else
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 13  
+
+ 736   4                                              k=0x30;
+ 737   4                              }
+ 738   3                      }
+ 739   2                      if(ChSystem==CH_JPN)
+ 740   2                      {
+ 741   3                              if(DevNum < VHF_NT_JAP){
+ 742   4                                      //k=0xa0; 
+ 743   4                                      k=0x01; 
+ 744   4                              }
+ 745   3                              else{
+ 746   4                                      if(DevNum < UHF_NT_JAP)
+ 747   4                                              //k=0x90;
+ 748   4                                              k=0x02;
+ 749   4                                      else
+ 750   4                                              //k=0x30;
+ 751   4                                              k=0x08;
+ 752   4                              }
+ 753   3                      }
+ 754   2      
+ 755   2                      if((ChSystem==CH_CCIR)||(ChSystem==CH_ITA)||(ChSystem==CH_GBR)||(ChSystem==CH_AUS)||(ChSystem==CH_NZL)||
+             -(ChSystem==CH_RUS))//PAL 
+ 756   2                      {
+ 757   3                              if(DevNum < VHF_PAL){
+ 758   4                                      k=0xa1; 
+ 759   4                              }
+ 760   3                              else{
+ 761   4                                      if(DevNum < UHF_PAL)
+ 762   4                                              k=0x91;
+ 763   4                                      else
+ 764   4                                              k=0x31;
+ 765   4                              }
+ 766   3                      }
+ 767   2                      if(ChSystem==CH_FRA)//SECAM L
+ 768   2                      {
+ 769   3                              if(DevNum < 0x08be)//SECAM L' under 73Mhz
+ 770   3                                      k=0xa2; 
+ 771   3                              else{
+ 772   4                                      if(DevNum < VHF_PAL){
+ 773   5                                              k=0xa3; 
+ 774   5                                      }
+ 775   4                                      else{
+ 776   5                                              if(DevNum < UHF_PAL)
+ 777   5                                                      k=0x93;
+ 778   5                                              else
+ 779   5                                                      k=0x33;
+ 780   5                                      }
+ 781   4                              }
+ 782   3                      }
+ 783   2              }
+ 784   1              WriteTuner(i,j,k);
+ 785   1              j = 0;
+ 786   1              for(k=0; k<0xff; k++){
+ 787   2                      i = ReadTuner();
+ 788   2                      if((i & BIT_6) != 0){  //When loop is phase locked
+ 789   3                              if(++j > 0x10){
+ 790   4                                      break;
+ 791   4                              }
+ 792   3                      }
+ 793   2                      else{
+ 794   3                              j = 0;
+ 795   3                      }
+ 796   2              }
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 14  
+
+ 797   1      
+ 798   1      }
+ 799          
+ 800          
+ 801          
+ 802          void WriteTuner(unsigned char DivH,unsigned char DivL,unsigned char Band)
+ 803          {
+ 804   1              IIC_Stop();
+ 805   1              IIC_Delay();
+ 806   1              
+ 807   1              IIC_Start();
+ 808   1              WriteByte(TunerAddr);
+ 809   1              IIC_ACK();
+ 810   1              WriteByte(DivH);
+ 811   1      //      printf("DivH=%x\r\n",(unsigned short)DivH);
+ 812   1              IIC_ACK();
+ 813   1              WriteByte(DivL);
+ 814   1      //      printf("DivL=%x\r\n",(unsigned short)DivL);
+ 815   1              IIC_ACK();
+ 816   1              WriteByte(StepCode);
+ 817   1      //      printf("StepCode=%x\r\n",(unsigned short)StepCode);
+ 818   1              IIC_ACK();
+ 819   1              WriteByte(Band);
+ 820   1      //      printf("Band=%x\r\n",(unsigned short)Band);
+ 821   1              MasterNACK();
+ 822   1              IIC_Stop();
+ 823   1              
+ 824   1      }
+ 825          unsigned char ReadTuner(void)
+ 826          {
+ 827   1      
+ 828   1      unsigned char value;
+ 829   1              IIC_Stop();
+ 830   1              IIC_Delay();
+ 831   1      
+ 832   1              IIC_Start();
+ 833   1      /* transmit data */
+ 834   1              WriteByte(TunerAddr+1);
+ 835   1              IIC_ACK();
+ 836   1              value=ReadByte();
+ 837   1      /* no ack */
+ 838   1              ISDA = 1;               /* SDA=1 */
+ 839   1              SetISCL();              /* SCL=1 */
+ 840   1              IIC_Delay();
+ 841   1              ISCL = 0;               /* SCL=0 */
+ 842   1              IIC_Delay();
+ 843   1      /* stop bit */
+ 844   1              IIC_Stop();
+ 845   1              return(value);
+ 846   1      }
+ 847          
+ 848          
+ 849          void ScanChannel(void)
+ 850          {
+ 851   1              unsigned char i,k,l,m,/*percent,*/AFTOK_Flag,SyncCheckOk,FineTuneValue,RoutineExit,KeyPadBuffer;
+ 852   1              unsigned short value,*p;
+ 853   1              unsigned char PrNo,PrQuo,PrRes,PrSta;//Program Number, Quotient,Residue,Status
+ 854   1      
+ 855   1              ChSystem = Read24C16(0x208) & 0x7F;
+ 856   1      //      printf("ChSystem=%d\r\n",(unsigned short)ChSystem);
+ 857   1              //if((ChSystem==5)||(ChSystem==6))
+ 858   1              if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 15  
+
+ 859   2                      ScanChannelNtsc();
+ 860   2      //      printf("ScanChannelNtsc\r\n");
+ 861   2              }
+ 862   1              else{
+ 863   2      
+ 864   2              PrNo = 0;
+ 865   2      //      WriteWordIIC563(0x0cc,TextColor);
+ 866   2              if((Read24C16(0x208) & 0x80) == 0){
+ 867   3      //              printf("TV_Min=0x%x,TV_Max=0x%x\r\n",(unsigned short)TV_Min,(unsigned short)TV_Max);
+ 868   3                      for(i=TV_Min; i<TV_Max+1; i++){
+ 869   4      //                      printf("for i=0x%x\r\n",(unsigned short)i);
+ 870   4                              Write24C16(0x100+i-TV_Min,50);//for CH Edit reset
+ 871   4      //                      ShowValue(1,i);
+ 872   4      //                      ShowSliderBar(6,8, i);
+ 873   4                              p = AIR_TAB[ChSystem] + i-TV_Min;
+ 874   4                              if(*p == 0){            //check dummy data
+ 875   5                                      k = (i - TV_Min) / 8;
+ 876   5                                      l = (i - TV_Min) % 8;
+ 877   5                                      m = Read24C16(0x280+k);
+ 878   5                                      m = m & MaskTab2[l];    //no sync
+ 879   5                                      Write24C16(0x280+k,m);  //save no sync status in eeprom
+ 880   5                                      continue;       // skip for dummy
+ 881   5                              }
+ 882   4                              else ;
+ 883   4                              ChannelSel(i);
+ 884   4                              Timer3 = 20;//20*10ms = 200ms
+ 885   4                              while(Timer3 != 0){
+ 886   5                      
+ 887   5                                      if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){      //IR POWER    
+ 888   6                                              RoutineExit = 1;
+ 889   6                                              Osd_Off();                                                 
+ 890   6                                              PowerStatus = 0;        //power off
+ 891   6                                              Write24C16(ep_Status,StatusFlag);
+ 892   6      //                                      if((flag3 & BIT_0) != 0){                                  
+ 893   6      //                                              Write24C16(0xcd,0x00);  //disable burn in mode         
+ 894   6      //                                              flag3 &= ~BIT_0;                                       
+ 895   6      //                                      }                                                          
+ 896   6                                              PowerSaving();                                             
+ 897   6      //                                      LED_RedOff();                                              // -jwshin 051101
+ 898   6                                              LED_GrnOff();                                              
+ 899   6                                              break;                                                     
+ 900   6                                      }                                                               
+ 901   5                              }
+ 902   4                              if(Timer3 != 0){
+ 903   5                                      if(FuncBuf[pVIDEOSOURCE]> cTV){                 
+ 904   6                                              PRBuffer = Read24C16(0x207);
+ 905   6      //                                      ShowValue(1,PRBuffer);
+ 906   6      //                                      ShowSliderBar(6,8,PRBuffer);
+ 907   6                                              ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+ 908   6                                              ChannelSel(ChBuffer);
+ 909   6                                              Write24C16(0x207,PRBuffer);
+ 910   6                                      }
+ 911   5                                      break;
+ 912   5                              }
+ 913   4                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;
+ 914   4                              k = (i - TV_Min) / 8;
+ 915   4                              l = (i - TV_Min) % 8;
+ 916   4                              m = Read24C16(0x280+k);
+ 917   4      
+ 918   4                              if((value & 0x48) != 0x48){
+ 919   5      //no sync
+ 920   5                                      SyncCheckOk = 0;
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 16  
+
+ 921   5                              }
+ 922   4                              else{
+ 923   5      //sync ok
+ 924   5                                      SyncCheckOk = 1;
+ 925   5      
+ 926   5                              }
+ 927   4                              if(SyncCheckOk==0){     // no sync
+ 928   5                                      FineTuneValue = 0;
+ 929   5                                      while(SyncCheckOk==0){
+ 930   6      
+ 931   6                                              //check low range under/upper 2.5MHz
+ 932   6                                              Write24C16(0x100+i-TV_Min,FineTuneValue);
+ 933   6                                              ChannelSel(i);
+ 934   6                                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+ 935   6                                      // for exit or pwr-key
+ 936   6                                              Timer3 = 20;//20*10ms = 200ms
+ 937   6                                              while(Timer3 != 0){
+ 938   7                                                      
+ 939   7                                                      if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){      //IR POWER                             
+ 940   8                                                              RoutineExit = 1;
+ 941   8                                                              Osd_Off();                                                 
+ 942   8                                                              PowerStatus = 0;        //power off
+ 943   8                                                              Write24C16(ep_Status,StatusFlag);
+ 944   8              //                                              if((flag3 & BIT_0) != 0){                                  
+ 945   8              //                                                      Write24C16(0xcd,0x00);  //disable burn in mode         
+ 946   8              //                                                      flag3 &= ~BIT_0;                                       
+ 947   8              //                                              }                                                          
+ 948   8                                                              PowerSaving();                                             
+ 949   8      //                                                      LED_RedOff();                                              // -jwshin 051101
+ 950   8                                                              LED_GrnOff();                                              
+ 951   8                                                              break;                                                     
+ 952   8                                                      }                                                               
+ 953   7                                              }
+ 954   6                                              if(Timer3 != 0){
+ 955   7                                                      if(FuncBuf[pVIDEOSOURCE] > cTV){                                
+ 956   8                                                              PRBuffer = Read24C16(0x207);
+ 957   8      //                                                      ShowValue(1,PRBuffer);
+ 958   8      //                                                      ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+ 959   8                                                              ChannelSel(ChBuffer);
+ 960   8                                                              Write24C16(0x207,PRBuffer);
+ 961   8                                                      }
+ 962   7                                                      break;
+ 963   7                                              }                               
+ 964   6                                              if((value & 0x48) != 0x48)
+ 965   6                                                      FineTuneValue+=10;
+ 966   6                                              else            SyncCheckOk = 1;
+ 967   6                                              if(FineTuneValue>80){
+ 968   7                                                      m = m & MaskTab2[l];    //no sync
+ 969   7                                                      break;  // exit while   
+ 970   7                                              }
+ 971   6                                      }
+ 972   5                                      if(SyncCheckOk==1){     // sync ok
+ 973   6                                              SyncCheckOk = 0;
+ 974   6                                              AFTOK_Flag = AFT(i);
+ 975   6                                              if(AFTOK_Flag){
+ 976   7                                                      m = m | MaskTab1[l];
+ 977   7                                                      ChBuffer = i;
+ 978   7                                                      //Program base
+ 979   7                                                      if(++PrNo > 128)
+ 980   7                                                              PrNo = 1;
+ 981   7                                                      PRBuffer = PrNo;
+ 982   7                                                      PrQuo = (PrNo - 1) / 8;
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 17  
+
+ 983   7                                                      PrRes = (PrNo - 1) % 8;
+ 984   7                                                      PrSta = Read24C16(0x280+PrQuo);
+ 985   7                                                      PrSta = PrSta | MaskTab1[PrRes];
+ 986   7                                                      Write24C16(0x280+PrQuo,PrSta);//PR mask
+ 987   7                                                      Write24C16(0x207,PRBuffer);
+ 988   7                                                      Write24C16(0x100+(PRBuffer - 1),ChBuffer);//PR ch memory
+ 989   7                                              }
+ 990   6                                              else
+ 991   6                                                      m = m & MaskTab2[l];
+ 992   6                                      }
+ 993   5                              }
+ 994   4                              else{
+ 995   5                                      AFTOK_Flag = AFT(i);
+ 996   5                                      if(AFTOK_Flag){
+ 997   6                                              m = m | MaskTab1[l];
+ 998   6                                              ChBuffer = i;
+ 999   6                                              //Program base
+1000   6                                              if(++PrNo > 128)
+1001   6                                                      PrNo = 1;
+1002   6                                              PRBuffer = PrNo;
+1003   6                                              PrQuo = (PrNo - 1) / 8;
+1004   6                                              PrRes = (PrNo - 1) % 8;
+1005   6                                              PrSta = Read24C16(0x280+PrQuo);
+1006   6                                              PrSta = PrSta | MaskTab1[PrRes];
+1007   6                                              Write24C16(0x280+PrQuo,PrSta);//PR mask
+1008   6                                              Write24C16(0x100+(PRBuffer - 1),ChBuffer);//PR ch memory
+1009   6                                      }
+1010   5                                      else
+1011   5                                              m = m & MaskTab2[l];                                    
+1012   5                              }
+1013   4                              Write24C16(0x280+k,m);
+1014   4      
+1015   4                              if(RoutineExit == 1) return;
+1016   4      
+1017   4                      }//end for
+1018   3                      if(FuncBuf[pVIDEOSOURCE]> cTV){         
+1019   4                              PRBuffer = Read24C16(0x207);
+1020   4      //                      ShowValue(1,PRBuffer);
+1021   4      //                      ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+1022   4                              ChannelSel(ChBuffer);
+1023   4                              Write24C16(0x207,PRBuffer);
+1024   4                      }else   ;                       
+1025   3              }
+1026   2              else{
+1027   3                      for(i=CATV_Min; i<CATV_Max+1; i++){
+1028   4                              Write24C16(0x280+i-CATV_Min,50);//happyks 030110 for CH Edit reset
+1029   4                              p = CATV_TAB[ChSystem] + i-CATV_Min;
+1030   4                      if(*p == 0){            //heck dummy data
+1031   5                              k = (i - CATV_Min) / 8;
+1032   5                              l = (i - CATV_Min) % 8;
+1033   5                              m = Read24C16(0x290+k);
+1034   5                              m = m & MaskTab2[l];                    
+1035   5                              Write24C16(0x290+k,m);                  
+1036   5                              continue;       // skip for dummy
+1037   5                              }
+1038   4                      else 
+1039   4                              ;                       
+1040   4                              ChannelSel(i);
+1041   4                              Timer3 = 20;//20*10ms = 200ms
+1042   4                              while(Timer3 != 0){
+1043   5                                      
+1044   5                                      if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){      //IR POWER                             
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 18  
+
+1045   6                                              RoutineExit = 1;
+1046   6                                              Osd_Off();                                                 
+1047   6                                              PowerStatus = 0;        //power off
+1048   6                                              Write24C16(ep_Status,StatusFlag);
+1049   6      //                                      if((flag3 & BIT_0) != 0){                                  
+1050   6      //                                              Write24C16(0xcd,0x00);  //disable burn in mode         
+1051   6      //                                              flag3 &= ~BIT_0;                                       
+1052   6      //                                      }                                                          
+1053   6                                              PowerSaving();                                             
+1054   6      //                                      LED_RedOff();                                              // -jwshin 051101
+1055   6                                              LED_GrnOff();                                              
+1056   6                                              break;                                                     
+1057   6                                      }                                                               
+1058   5                              }
+1059   4                              if(Timer3 != 0){
+1060   5                                      if(FuncBuf[pVIDEOSOURCE] > cTV){                                                                
+1061   6                                              PRBuffer = Read24C16(0x207);
+1062   6      //                                      ShowValue(1,PRBuffer);
+1063   6      //                                      ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+1064   6                                              ChannelSel(ChBuffer);
+1065   6                                              Write24C16(0x207,PRBuffer);
+1066   6                                      }                                       
+1067   5                                      break;
+1068   5                              }
+1069   4      
+1070   4                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+1071   4                              k = (i - CATV_Min) / 8;
+1072   4                              l = (i - CATV_Min) % 8;
+1073   4                              m = Read24C16(0x290+k);
+1074   4                              if((value & 0x48) != 0x48){
+1075   5      //no sync
+1076   5                                      SyncCheckOk = 0;
+1077   5                              }
+1078   4                              else{
+1079   5      //sync ok
+1080   5                                      SyncCheckOk = 1;
+1081   5                              }
+1082   4                              if(SyncCheckOk==0){     // no sync
+1083   5                                      FineTuneValue = 0;
+1084   5                                      while(SyncCheckOk==0){
+1085   6                                              //check low range under/upper 2.5MHz
+1086   6                                              Write24C16(0x180+i-CATV_Min,FineTuneValue);
+1087   6                                              ChannelSel(i);
+1088   6                                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+1089   6                              ///////////////////////////////////////////////////////////
+1090   6                              
+1091   6                              Timer3 = 20;//20*10ms = 200ms
+1092   6                              while(Timer3 != 0){
+1093   7                                      
+1094   7                                      if((KeyBuffer == 0x90) || (KeyPadBuffer == vkPOWER)){   //IR POWER                             
+1095   8                                              RoutineExit = 1;
+1096   8                                              Osd_Off();                                                 
+1097   8                                              PowerStatus = 0;        //power off
+1098   8                                              Write24C16(ep_Status,StatusFlag);
+1099   8      //                                      if((flag3 & BIT_0) != 0){                                  
+1100   8      //                                              Write24C16(0xcd,0x00);  //disable burn in mode         
+1101   8      //                                              flag3 &= ~BIT_0;                                       
+1102   8      //                                      }                                                          
+1103   8                                              PowerSaving();                                             
+1104   8      //                                      LED_RedOff();                                              // -jwshin 051101
+1105   8                                              LED_GrnOff();                                              
+1106   8                                              break;                                                     
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 19  
+
+1107   8                                      }                                                               
+1108   7                              }
+1109   6                              if(Timer3 != 0){
+1110   7                                      if(FuncBuf[pVIDEOSOURCE] > cTV){                                
+1111   8                                              PRBuffer = Read24C16(0x207);
+1112   8      //                                      ShowValue(1,PRBuffer);
+1113   8                                              ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+1114   8                                              ChannelSel(ChBuffer);
+1115   8                                              Write24C16(0x207,PRBuffer);
+1116   8                                      }
+1117   7                                      break;
+1118   7                              }                               
+1119   6                                              if((value & 0x48) != 0x48)
+1120   6                                                      FineTuneValue+=10;
+1121   6                                              else            SyncCheckOk = 1;
+1122   6                                              if(FineTuneValue>80){
+1123   7                                                      m = m & MaskTab2[l];    //no sync
+1124   7                                                      break;  // exit while   
+1125   7                                              }
+1126   6                                      }
+1127   5                                      if(SyncCheckOk==1){     // sync ok
+1128   6                                              SyncCheckOk = 0;
+1129   6                                              AFTOK_Flag = AFT(i);
+1130   6                                              if(AFTOK_Flag){
+1131   7                                                      m = m | MaskTab1[l];
+1132   7                                                      ChBuffer = i;
+1133   7                                                      //Program base
+1134   7                                                      if(++PrNo > 128)
+1135   7                                                              PrNo = 1;
+1136   7                                                      PRBuffer = PrNo;
+1137   7                                                      PrQuo = (PrNo - 1) / 8;
+1138   7                                                      PrRes = (PrNo - 1) % 8;
+1139   7                                                      PrSta = Read24C16(0x290+PrQuo);
+1140   7                                                      PrSta = PrSta | MaskTab1[PrRes];
+1141   7                                                      Write24C16(0x290+PrQuo,PrSta);//PR mask
+1142   7                                                      Write24C16(0x180+(PRBuffer - 1),ChBuffer);//PR ch memory
+1143   7                                              }
+1144   6                                              else
+1145   6                                                      m = m & MaskTab2[l];
+1146   6                                      }
+1147   5                              }
+1148   4                              else{
+1149   5                                      AFTOK_Flag = AFT(i);
+1150   5                                      if(AFTOK_Flag){
+1151   6                                              m = m | MaskTab1[l];
+1152   6                                              ChBuffer = i;
+1153   6                                      }
+1154   5                                      else
+1155   5                                              m = m & MaskTab2[l];                                    
+1156   5                              }                       
+1157   4                              Write24C16(0x290+k,m);
+1158   4                              if(RoutineExit == 1) return;
+1159   4                      }
+1160   3                      if(FuncBuf[pVIDEOSOURCE] > cTV){                                
+1161   4                              PRBuffer = Read24C16(0x207);
+1162   4      //                      ShowValue(1,PRBuffer);
+1163   4                              ChBuffer = Read24C16(0x180+(PRBuffer - 1));
+1164   4                              ChannelSel(ChBuffer);
+1165   4                              Write24C16(0x207,PRBuffer);
+1166   4                      }
+1167   3                      else ;
+1168   3              }
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 20  
+
+1169   2              }
+1170   1      }
+1171          
+1172          void ScanChannelNtsc(void)
+1173          {
+1174   1      unsigned char i,k,l,m,percent,RoutineExit;//,KeyPadBuffer;
+1175   1      //,AFTOK_Flag;
+1176   1      unsigned short value;
+1177   1      //      printf("OSD_Type=%d\r\n",(unsigned short)OSD_Type);
+1178   1              WriteWordIIC563(0x0cc,TextColor);
+1179   1              if((Read24C16(0x208) & 0x80) == 0){  // Air TV
+1180   2      //      printf("TV_Min=%d,TV_Max=%d\r\n",(unsigned short)TV_Min,(unsigned short)TV_Max);
+1181   2                      for(i=TV_Min; i<TV_Max+1; i++){
+1182   3                              Write24C16(0x100+i-TV_Min,50);//
+1183   3                              ChannelSel(i);
+1184   3                              percent = (unsigned short)i * 100/ TV_Max;
+1185   3                              FuncMax =100;
+1186   3                              FuncMin = 0;
+1187   3                              ShowValue(MAINMENU_BAR_ADDR+9,BAR_COLOR,percent);
+1188   3                              ShowBar(MAINMENU_BAR_ADDR, BAR_COLOR, TV_Min, TV_Max,i);
+1189   3      //                      ShowSliderBar(6,8,percent);
+1190   3      //                      ShowValue(1,percent);
+1191   3      
+1192   3                              Timer3 = 20;//20*10ms = 200ms
+1193   3                              while(Timer3 != 0){
+1194   4                                      
+1195   4                                      if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){      //IR POWER                             
+1196   5                                              RoutineExit = 1;
+1197   5                                              Osd_Off();                                                 
+1198   5                                              PowerStatus = 0;        //power off
+1199   5                                              Write24C16(ep_Status,StatusFlag);
+1200   5      //                                      if((flag3 & BIT_0) != 0){                                  
+1201   5      //                                              Write24C16(0xcd,0x00);  //disable burn in mode         
+1202   5      //                                              flag3 &= ~BIT_0;                                       
+1203   5      //                                      }                                                          
+1204   5                                              PowerSaving();                                             
+1205   5      //                                      LED_RedOff();                                              // -jwshin 051101
+1206   5                                              LED_GrnOff();                                              
+1207   5                                              break;                                                     
+1208   5                                      }                                                               
+1209   4                              }
+1210   3                              if(Timer3 != 0){
+1211   4                                      if(FuncBuf[pVIDEOSOURCE] > cTV){
+1212   5      //                                      ShowSource();
+1213   5                                              ChannelSel(ChBuffer);
+1214   5                                              Write24C16(0x209,ChBuffer);
+1215   5                                      }
+1216   4                                      break;
+1217   4                              }
+1218   3                              value =ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+1219   3                              k = (i - TV_Min) / 8;
+1220   3                              l = (i - TV_Min) % 8;
+1221   3                              m = Read24C16(0x280+k);
+1222   3      
+1223   3                              if((value & 0x48) != 0x48){
+1224   4      //no sync
+1225   4                                      m = m & MaskTab2[l];
+1226   4                              }
+1227   3                              else{
+1228   4      //sync ok
+1229   4                                              m = m | MaskTab1[l];
+1230   4                                              ChBuffer = i;
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 21  
+
+1231   4                              }
+1232   3                              Write24C16(0x280+k,m);
+1233   3                              if(RoutineExit == 1) return; 
+1234   3                              
+1235   3                      }
+1236   2                      if(FuncBuf[pVIDEOSOURCE] > cTV){
+1237   3                              ChannelSel(ChBuffer);
+1238   3                              Write24C16(0x209,ChBuffer);
+1239   3                      }else   ;
+1240   2              }
+1241   1              else{   // CATV case
+1242   2      //      printf("i=CATV_Min; i<CATV_Max\r\n");
+1243   2                      for(i=CATV_Min; i<CATV_Max+1; i++){
+1244   3                              Write24C16(0x180+i-CATV_Min,50);//happyks 030110 for CH Edit reset
+1245   3                              ChannelSel(i);
+1246   3                              percent = (unsigned short)i * 100/ CATV_Max;
+1247   3                              FuncMax =100;
+1248   3                              FuncMin = 0;
+1249   3                              ShowValue(MAINMENU_BAR_ADDR+9,BAR_COLOR,percent);
+1250   3                              ShowBar(MAINMENU_BAR_ADDR, BAR_COLOR, CATV_Min, CATV_Max,i);
+1251   3      //                      ShowSliderBar(6,8,percent);
+1252   3      //                      ShowValue(1,percent);
+1253   3                              Timer3 = 20;//20*10ms = 200ms
+1254   3                              while(Timer3 != 0){
+1255   4                                      
+1256   4                                      if((KeyBuffer == 0x90) || (KeyBuffer == vkPOWER)){      //IR POWER                             
+1257   5                                              RoutineExit = 1;
+1258   5                                              Osd_Off();                                                 
+1259   5                                              PowerStatus = 0;        //power off
+1260   5                                              Write24C16(ep_Status,StatusFlag);
+1261   5      //                                      if((flag3 & BIT_0) != 0){                                  
+1262   5      //                                              Write24C16(0xcd,0x00);  //disable burn in mode         
+1263   5      //                                              flag3 &= ~BIT_0;                                       
+1264   5      //                                      }                                                          
+1265   5                                              PowerSaving();                                             
+1266   5      //                                      LED_RedOff();                                              // -jwshin 051101
+1267   5                                              LED_GrnOff();                                              
+1268   5                                              break;                                                     
+1269   5                                      }                                                               
+1270   4                              }
+1271   3                              if(Timer3 != 0){
+1272   4                                      if(FuncBuf[pVIDEOSOURCE] > cTV){                                
+1273   5      //                                      ShowSource();
+1274   5                                              ChannelSel(ChBuffer);
+1275   5                                              Write24C16(0x209,ChBuffer);
+1276   5                                      }
+1277   4                                      break;
+1278   4                              }
+1279   3      
+1280   3                              value = ReadIIC(TW990x_Addr,TW99_CSTATUS)&0xef;;
+1281   3                              k = (i - CATV_Min) / 8;
+1282   3                              l = (i - CATV_Min) % 8;
+1283   3                              m = Read24C16(0x290+k);
+1284   3                              if((value & 0x48) != 0x48){
+1285   4      //no sync
+1286   4                                      m = m & MaskTab2[l];
+1287   4                              }
+1288   3                              else{
+1289   4      //sync ok
+1290   4                                              m = m | MaskTab1[l];
+1291   4                                              ChBuffer = i;
+1292   4                              }
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 22  
+
+1293   3                              Write24C16(0x290+k,m);
+1294   3                              if(RoutineExit == 1) return; 
+1295   3                      }
+1296   2                      if(FuncBuf[pVIDEOSOURCE] > cTV){                
+1297   3      //                      ShowSource();
+1298   3                              ChannelSel(ChBuffer);
+1299   3                              Write24C16(0x209,ChBuffer);
+1300   3                      }else   ;                       
+1301   2              }
+1302   1      }
+1303          
+1304          unsigned char AFT(unsigned char ch)
+1305          {
+1306   1      unsigned char i,j,AFTOK_Flag,TestFlag;
+1307   1      unsigned short *p;
+1308   1      
+1309   1              AFTOK_Flag=0x00; 
+1310   1              i=0x00; 
+1311   1              TestFlag=0x00;
+1312   1              TestFlag |= BIT_0;      // just 1 test
+1313   1              
+1314   1              if((Read24C16(0x208) & 0x80) == 0){
+1315   2                      if(ch < TV_Min){
+1316   3                              ch = TV_Min;
+1317   3                              ChBuffer = ch;
+1318   3                      }
+1319   2                      else if(ch > TV_Max){
+1320   3                              ch = TV_Max;
+1321   3                              ChBuffer = ch;
+1322   3                      }
+1323   2                      ch = ch - TV_Min;
+1324   2                      p = AIR_TAB[ChSystem] + ch;
+1325   2                      DevNum = *p;
+1326   2                      FuncBuf[pCHFINETUNE] = Read24C16(0x100+ch);
+1327   2                      DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+1328   2              }
+1329   1              else{
+1330   2                      if(ch < CATV_Min){
+1331   3                              ch = CATV_Min;
+1332   3                              ChBuffer = ch;
+1333   3                      }
+1334   2                      else if(ch > CATV_Max){
+1335   3                              ch = CATV_Max;
+1336   3                              ChBuffer = ch;
+1337   3                      }
+1338   2                      ch = ch - CATV_Min;
+1339   2                      p = CATV_TAB[ChSystem] + ch;
+1340   2                      DevNum = *p;
+1341   2                      FuncBuf[pCHFINETUNE] = Read24C16(0x180+ch);
+1342   2                      DevNum = DevNum + FuncBuf[pCHFINETUNE] - 50;
+1343   2              }
+1344   1              while(AFTOK_Flag==0x00){
+1345   2                      SetTuner();//오직 DevNum만을 받아서  pll setting처리한다.
+1346   2                      Sleep(100);//500
+1347   2                      i = ReadTuner();
+1348   2                      if( TestFlag == BIT_0 ) {       // just 1 test
+1349   3                              if ( (i&0x07) != 0x02 ){
+1350   4                                      TestFlag = 0x01&(~0x01);
+1351   4                                      SetTuner();
+1352   4                                      i=ReadTuner();  
+1353   4                              }
+1354   3                      }
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 23  
+
+1355   2                      switch( (i&0x07) ){
+1356   3                              case AFT_LOW:   // need + over 3step
+1357   3                                      if(FuncBuf[pCHFINETUNE]<97) {FuncBuf[pCHFINETUNE]+=4;DevNum +=4;}
+1358   3                                      break;
+1359   3                              case AFT_LNEAR: // near but need +
+1360   3                                      if(FuncBuf[pCHFINETUNE]<100) {FuncBuf[pCHFINETUNE]+=1;DevNum +=1;}      
+1361   3                                      break;                  
+1362   3                              case AFT_OK:    // FINE TUNE OK 
+1363   3                                      AFTOK_Flag=0x01;
+1364   3                                      break;                  
+1365   3                              case AFT_HNEAR: // near but need -                              
+1366   3                                      if(FuncBuf[pCHFINETUNE]!=0) {FuncBuf[pCHFINETUNE]-=1;DevNum -=1;}
+1367   3                                      break;                  
+1368   3                              case AFT_HIGH:  // need - over 3step                            
+1369   3                                      if(FuncBuf[pCHFINETUNE]>4) {FuncBuf[pCHFINETUNE]-=4;DevNum -=4;}
+1370   3                              default:
+1371   3                                      break;
+1372   3                      }
+1373   2                      if((++j > 14)||(AFTOK_Flag==0x01))
+1374   2                               break; 
+1375   2              }
+1376   1              if((Read24C16(0x208) & 0x80) == 0){
+1377   2                      if(AFTOK_Flag==0x01){ // AFT OK 
+1378   3                              Write24C16(0x100+ch,FuncBuf[pCHFINETUNE]);
+1379   3                              return AFTOK_Flag;      
+1380   3                      }
+1381   2                      else{           // AFT Fail 
+1382   3                              Write24C16(0x100+ch,50);
+1383   3                              return AFTOK_Flag;
+1384   3                      }
+1385   2              }
+1386   1              else{           
+1387   2                      if(AFTOK_Flag==0x01){ // AFT OK 
+1388   3                              Write24C16(0x180+ch,FuncBuf[pCHFINETUNE]);//happyks
+1389   3                              return AFTOK_Flag;      
+1390   3                      }
+1391   2                      else{           // AFT Fail 
+1392   3                              Write24C16(0x180+ch,50);//happyks
+1393   3                              return AFTOK_Flag;
+1394   3                      }       
+1395   2              }
+1396   1      }
+1397          
+1398          void LoadChLimit(void)
+1399          {
+1400   1      unsigned char i;
+1401   1              ChSystem = Read24C16(ep_Input_CH_Sys) & 0x7F;
+1402   1              i = ChSystem * 6;
+1403   1              ChBuffer = Read24C16(0x209);
+1404   1              TV_Min = ChannelLimitTab[i];
+1405   1              TV_Max = ChannelLimitTab[i+1];
+1406   1              TV_Total = ChannelLimitTab[i+2];
+1407   1              CATV_Min = ChannelLimitTab[i+3];
+1408   1              CATV_Max = ChannelLimitTab[i+4];
+1409   1              CATV_Total = ChannelLimitTab[i+5];
+1410   1              if((Read24C16(ep_Input_CH_Sys) & 0x80)==0){
+1411   2                      if(ChBuffer < TV_Min){
+1412   3                              ChBuffer = TV_Min;
+1413   3                              //Write24C16(0xdf,ChBuffer);
+1414   3                      }
+1415   2                      if(ChBuffer > TV_Max){
+1416   3                              ChBuffer = TV_Max;
+C51 COMPILER V7.03   TUNER                                                                 12/21/2006 16:55:09 PAGE 24  
+
+1417   3                              //Write24C16(0xdf,ChBuffer);
+1418   3                      }
+1419   2              }
+1420   1              else{
+1421   2                      if(ChBuffer < CATV_Min){
+1422   3                              ChBuffer = CATV_Min;
+1423   3                              //Write24C16(0xdf,ChBuffer);
+1424   3                      }
+1425   2                      if(ChBuffer > CATV_Max){
+1426   3                              ChBuffer = CATV_Max;
+1427   3                              //Write24C16(0xdf,ChBuffer);
+1428   3                      }
+1429   2              }
+1430   1      }
+1431          /*
+1432          void LoadPRLimit(void)
+1433          {
+1434          //PR_TV_Max = 100;
+1435          unsigned char i,j,k,l,m;
+1436                  if(Read24C16(0xe3) == 0){
+1437                          i = 1;
+1438                          for(j=0; j<127; j++){
+1439                                  if(++i > 128)
+1440                                          i = 1;
+1441                                  k = (i - 1) / 8;
+1442                                  l = (i - 1) % 8;
+1443                                  m = Read24C16(0x500+k);
+1444                                  if((m & MaskTab1[l]) != 0){
+1445                                          PR_TV_Max = i;//(i - 1);
+1446                                          //break;
+1447                                  }
+1448                          }
+1449                  }
+1450                  else{
+1451                          i = 1;
+1452                          for(j=0; j<127; j++){
+1453                                  if(++i > 128)
+1454                                          i = 1;
+1455                                  k = (i - 1) / 8;
+1456                                  l = (i - 1) % 8;
+1457                                  m = Read24C16(0x510+k);
+1458                                  if((m & MaskTab1[l]) == 1){
+1459                                          PR_CATV_Max = i;//(i - 1);
+1460                                          //break;
+1461                                  }
+1462                          }
+1463                  }
+1464          
+1465          }
+1466          */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4042    ----
+   CONSTANT SIZE    =     70    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      75
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,439 @@
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE MCU
+OBJECT MODULE PLACED IN .\BIN\MCU.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\MCU.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\MCU.lst) OBJECT(.\BIN\MCU.obj)
+
+line level    source
+
+   1          #include "OSD.H"
+   2          #include "8051.H"
+   3          #include "RAM.H"
+   4          #include "MCU.H"
+   5          //#include "MyDef.H"
+   6          #include "NT686xx_MCU_REG.H"
+   7          #include "NVRAM.H"
+   8          #include "DDC_Ci.H"
+   9          //#include <stdio.h>
+  10          #include "Board.H"
+  11          #include "Mis.H"
+  12          #include "IIC.H"
+  13          #include "BFControl.H"
+  14          #include "smartbright.H"
+  15          #include "NT686xx_SC_REG.H"
+  16          #include "Scaler.H"
+  17          #if FE2P_LIB==ON
+                      #if NT68167
+                              #include "fe2p_nt68167 v1.1.h"
+                      #elif NT68667
+                              #include "fe2p_nt68667.h"
+                      #endif
+              #endif
+  24          
+  25          code unsigned char SystemRegTab[]={
+  26                  PORTA_DEFAULT_OUT,      // PortA
+  27                  PORTB_DEFAULT_OUT,      // PortB
+  28                  PORTC_DEFAULT_OUT,      // PortC
+  29                  PORTD_DEFAULT_OUT,      // PortD
+  30                  PORTE_DEFAULT_OUT,      // PortE
+  31                  PORTA_DEFAULT_DIR,      // RDPA_REG
+  32                  PORTB_DEFAULT_DIR,      // RDPB_REG 
+  33                  PORTC_DEFAULT_DIR,      // RDPC_REG
+  34                  PORTD_DEFAULT_DIR,      // RDPD_REG
+  35                  PORTE_DEFAULT_DIR,      // RDPE_REG
+  36                  DEFAULT_CLRWDT,         // CLRWDT
+  37                  DEFAULT_ADC_CON,        // ADC_CON
+  38                  DEFAULT_ADC0_REG,       // ADC0_REG
+  39                  DEFAULT_ADC1_REG,       // ADC1_REG
+  40                  DEFAULT_ADC2_REG,       // ADC2_REG
+  41                  DEFAULT_ADC3_REG,       // ADC3_REG
+  42                  DEFAULT_PWMEN_1_0,      // PWM0/1 Enable
+  43                  DEFAULT_PWMEN_9_2,      // PWM2...9 Enable
+  44                  DEFAULT_PWM0,           // PWM0 Brightness (Panel IDX)
+  45                  DEFAULT_PWM1,           // PWM1
+  46                  DEFAULT_PWM2,           // PWM2
+  47                  DEFAULT_PWM3,           // PWM3 
+  48                  DEFAULT_PWM4,           // PWM4
+  49                  DEFAULT_PWM5,           // PWM5 
+  50                  DEFAULT_PWM6,           // PWM6 Volume
+  51                  DEFAULT_PWM7,           // PWM7
+  52                  DEFAULT_PWM8,           // PWM8
+  53                  DEFAULT_PWM9,           // PWM9
+  54                  DEFAULT_DDC_CTRL_0,     // DDC_CTRL_0
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 2   
+
+  55                  DEFAULT_DDC_ADDR_0,     // DDC_ADDR_0
+  56                  DEFAULT_DDC_CTRL_1,     // DDC_CTRL_1
+  57                  DEFAULT_DDC_ADDR_1,     // DDC_ADDR_1
+  58                  DEFAULT_INT_SRC,        // INT_SRC
+  59                  DEFAULT_INTEXT_FLG,     // INTEXT_FLG/CLR
+  60                  DEFAULT_INTEXT_EN,      // INTEXT_EN
+  61          };
+  62          
+  63          
+  64          
+  65          void InitMCU(void)
+  66          {
+  67   1      unsigned char *p;
+  68   1      unsigned char i,k;
+  69   1      CLRWDT = DEFAULT_CLRWDT;
+  70   1      
+  71   1              k = sizeof(SystemRegTab);
+  72   1              p = &PortA;
+  73   1              for(i=0; i<k; i++){
+  74   2                      *p = SystemRegTab[i];
+  75   2                      p++;
+  76   2              }
+  77   1      
+  78   1              ucPowerStatus = 0xff;
+  79   1      
+  80   1      
+  81   1      #if NT68167
+              MCUINIT:
+                      ucLoopTimer_10ms = 100;
+                      while(ucLoopTimer_10ms != 0){
+                      if((SC_HW_RST & SC_LOSS) != 0){
+                          SC_HW_RST = SC_LOSS | PBUS_EN;
+                          SC_HW_RST = PBUS_EN;
+                                      ucLoopTimer_10ms = 10;
+                      }
+                      else{
+                          SC_HW_RST = PBUS_EN;
+                          SC_HW_RST = PBUS_EN | SC_RST;
+                          break;
+                      }
+                  }
+              
+              #if NT68167
+                      #if _167_VERSION_C
+                              LDO_ADJ = LDO_ADJ | BIT7 | BIT3;
+                              CURR_ADJ2 = CURR_ADJ2 & 0xCF;
+                      #endif
+              #endif
+              
+                      WriteIIC560(0x000, REG_F000);   // Turn On ADC power
+                      WriteIIC560(0x102, REG_F102);   // DPLL power & DPLL power
+                      //Samuel-2008-05-21, Change MCU Speed, No Bypass
+                      //WriteIIC560(0xB04, REG_FB04); // MCU PLL by pass
+                      WriteIIC560(0xB40, REG_FB40);   // MPLL max. range
+                      WriteIIC560(0xB43, REG_FB43);   // MPLL VCO swing
+              
+                      if ( REG_F000 !=ReadIIC560(0x000) || REG_F102 !=ReadIIC560(0x102) || ReadIIC560(0xB40) != REG_FB40 || Rea
+             -dIIC560(0xB43) != REG_FB43)
+                              goto  MCUINIT;
+              #endif
+ 114   1                              
+ 115   1      
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 3   
+
+ 116   1      #if NT68667
+ 117   1              HDCP_MUX = 0x00;        //NT68667 HDCP issue
+ 118   1              SC_SR = 0x01;           //LcdLink through D-Sub
+ 119   1      #endif
+ 120   1              
+ 121   1              StartDDCCI();
+ 122   1      
+ 123   1              // set timer 0
+ 124   1      #if NT68167
+                              TL0 = (65536-T0_Speed)%256;
+                              TH0 = (65536-T0_Speed)/256;
+              #else
+ 128   1              #if CoreSpeed == 0x36
+                              TL0 = (65536-3000)%256;                 //1mS for (36MHz) CPU
+                              TH0 = (65536-3000)/256;
+                      #else
+ 132   1                      TL0 = (65536-2000)%256;                 //1mS for (24MHz) CPU
+ 133   1              TH0 = (65536-2000)/256;
+ 134   1              #endif
+ 135   1      #endif
+ 136   1              TCON &= 0xcf;
+ 137   1              TCON |= 0x10;
+ 138   1      
+ 139   1      // set timer 1
+ 140   1      //      TL1 = 256-(2*24*1000000/384/9600);
+ 141   1      //      TH1 = 256-(2*24*1000000/384/9600);
+ 142   1      #if NT68167
+              //      CPU_CLK = (CoreSpeed<<4)|FAST_SPI;
+                      CPU_CLK = (CoreSpeed<<4);
+              
+                      TL1 = 256-(2*CoreSpeed*12*1000000/384/4800);
+                      TH1 = 256-(2*CoreSpeed*12*1000000/384/4800);
+              #else
+ 149   1      #if CoreSpeed == 0x36
+                      CPU_CLK = CoreSpeed;
+                      TL1 = 256-(2*36*1000000/384/4800);
+                      TH1 = 256-(2*36*1000000/384/4800);
+              #else
+ 154   1                      CPU_CLK = CoreSpeed;
+ 155   1              TL1 = 256-(2*24*1000000/384/4800);
+ 156   1              TH1 = 256-(2*24*1000000/384/4800);
+ 157   1      #endif
+ 158   1      #endif
+ 159   1      
+ 160   1              TCON &= 0x3f;
+ 161   1              TCON |= 0x40;
+ 162   1      
+ 163   1              SCON = 0x52;    //ENABLE RS232 9bit uart mode2, 
+ 164   1              TMOD = 0x21;    //Set Timer0 = 16-bit timer for system , Set usTimer1_1ms = 8-bit timer auto load for RS232
+ 165   1              PCON = 0x80;    //rs232 bourate double
+ 166   1      
+ 167   1      // set interrupt
+ 168   1              ucDDCCiTxOut = 0;
+ 169   1              ucDDCCiTxIn = 0;
+ 170   1              ucDDCCiRxIn = 0;
+ 171   1              ucDDCCiRxOut = 0;
+ 172   1              ucDDCCiTxChecksum = 0;
+ 173   1              ucDDCCiRxChecksum = 0;
+ 174   1              SendNullCmd(DDCCI_ADDR);
+ 175   1      //      rwbuf = 0;
+ 176   1      //      abuf = 0;
+ 177   1      
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 4   
+
+ 178   1              ucUARTTxIn = 0;
+ 179   1              ucUARTTxOut = 0;
+ 180   1              ucUARTRxOut = 0;
+ 181   1              ucUARTRxIn = 0;
+ 182   1      
+ 183   1      //      NewMode = 0;
+ 184   1              Set_usTimer1_1ms(0);
+ 185   1              ucTimer10ms = 0;
+ 186   1              Set_usOSDTimer_10ms(0);
+ 187   1              Set_usOSD2Timer_10ms(0);                                // +jwshin 120302
+ 188   1              ucLoopTimer_10ms = 0;
+ 189   1              ucSyncStableTimer_10ms = 0;
+ 190   1              Set_usWarningMsgTimer_1s(0);
+ 191   1              ucTime2RepeatKey = 0;
+ 192   1              ucLEDTimer_10ms = 0;
+ 193   1              ucTimer1000ms = 0;
+ 194   1              usPOTTimerS_900 = 0;
+ 195   1              ucNoSigTimer = 3;                                       // +jwshin 111213
+ 196   1              //ucPOTTimerM_4 = 0;
+ 197   1              ucTime2Backlight = 0;
+ 198   1              ucBF_Status = 0;
+ 199   1      
+ 200   1      #if FE2P_LIB==ON
+                      //Fe2p Initial value
+                      feSave = 0;
+                      feValid_Block = 0;
+                      feSave_Timer = 0;
+                      FE2P_ClearBuffer();
+              #endif
+ 207   1      
+ 208   1              IE = 0x97;
+ 209   1              Sleep(40);
+ 210   1              
+ 211   1      #if NT68667
+ 212   1              WriteIIC560(0x143,0x87);
+ 213   1              WriteIIC560(0x144,0x01);
+ 214   1              WriteIIC560(0x146,0xb3);
+ 215   1      #endif
+ 216   1              
+ 217   1      #if NT68167
+                      if ( REG_F000!=ReadIIC560(0x000) || REG_F102 !=ReadIIC560(0x102) || ReadIIC560(0xB40) != REG_FB40 || Read
+             -IIC560(0xB43) != REG_FB43 ) {bExitSysLoop=TRUE; return; }
+              #endif
+ 220   1      #if FE2P_LIB==ON
+                      FE2P_LoadToSram();
+              #endif
+ 223   1      
+ 224   1      
+ 225   1      //------------------ +jwshin 111214
+ 226   1      WriteIIC560(GPIO_CTRL,0x30);                    // PWMA,PWMB Enable...
+ 227   1      
+ 228   1      
+ 229   1      #ifndef Use24C02
+ 230   1      //      #if (!PBusProtocol)
+ 231   1      //              IIC_Release();
+ 232   1      //      #endif
+ 233   1      //      NVRAM_Flag=1;
+ 234   1              
+ 235   1      #if NT68167
+                      LoadDDCData(1);
+              #else
+ 238   1                      #if DUAL_MODE==ON
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 5   
+
+ 239   1                              LoadDDCData(1);         //digital ddc
+ 240   1                      #endif
+ 241   1                      
+ 242   1                      LoadDDCData(2);         //analog ddc
+ 243   1      #endif
+ 244   1      #endif
+ 245   1      
+ 246   1      //^^
+ 247   1      
+ 248   1      //check +5Vcc   
+ 249   1              ucLoopTimer_10ms = 100;
+ 250   1              while(ucLoopTimer_10ms != 0){
+ 251   2                      ADC_CON = DEFAULT_ADC_CON;              //Channel;  // Start AD Convert
+ 252   2      
+ 253   2                      WaitADConversion();
+ 254   2                      
+ 255   2                      if ( IsAC_PowerOff() ) {
+ 256   3                              ucLoopTimer_10ms = 100;
+ 257   3                      }
+ 258   2                      Check_DDC_Update();
+ 259   2              }
+ 260   1      //CVDD RESET
+ 261   1      //      p = &RDPD_REG;
+ 262   1      //      *p= *p | BIT_2; 
+ 263   1      
+ 264   1      //      printf("Check +5V ok\r\n")
+ 265   1              printf("MCU Init\r\n");
+ 266   1      
+ 267   1              Sleep(50);
+ 268   1      
+ 269   1      /*
+ 270   1      #if (!PBusProtocol)
+ 271   1              ResetOff();
+ 272   1              Sleep(2);
+ 273   1              ResetOn();
+ 274   1              Sleep(12);
+ 275   1              ResetOff();
+ 276   1              Sleep(12);
+ 277   1      #endif
+ 278   1      */
+ 279   1              CLRWDT = DEFAULT_CLRWDT;
+ 280   1      
+ 281   1      bPowerSaveFlag=0;                               // +jwshin 120228       
+ 282   1      bInSync = 0;
+ 283   1      bBGMode = 0;
+ 284   1      bKeyChanged = 0;
+ 285   1      bVideoMuted = 0;
+ 286   1      bModeChanged = 0;
+ 287   1      bForceToSleep = 0;
+ 288   1      //bIsDPMS = 0;
+ 289   1      bExitSysLoop = 0;
+ 290   1                    
+ 291   1      bOptAbort = 0;
+ 292   1      bShowNoSync = 0;
+ 293   1      bShowDiscon = 0;
+ 294   1      bShowOutRange = 0;
+ 295   1      bShowOutRange85 = 0;
+ 296   1      //bSOG2nd = 0;
+ 297   1      bShowNoInput = 0;
+ 298   1      bDDCUpdate = 0;
+ 299   1      
+ 300   1      bFactoryMode = 0;
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 6   
+
+ 301   1      bOutOfRange = 0;
+ 302   1      //bStatusReport = 0;
+ 303   1      bOutOfLimit = 0;
+ 304   1      bPOTUpdate = 0;
+ 305   1      bPowerKeyFlag = 0;
+ 306   1      bIsInterlaced = 0;
+ 307   1      bDDCCmdUpdate = 0;
+ 308   1      
+ 309   1      bSyncFlag = 0;
+ 310   1      bIsFRCMode = 0;
+ 311   1      bIsNonFullScreen = 0;
+ 312   1      //bIsBurnInEnabled = 0; 
+ 313   1      bIsSyncConfirmed = 0;
+ 314   1      //bIsOSDLocked = 0;//2006-12-05 -
+ 315   1      //bIsNewMode = 0;
+ 316   1      bGLEDState = 0;
+ 317   1      bIsLEDFlashing = 0;
+ 318   1      
+ 319   1      //bLFLEDState = 0;
+ 320   1      //bIsLFLEDFlashing = 0;
+ 321   1      ucIsLFDemoMode = 0;
+ 322   1      
+ 323   1      bFactoryModeType = 0;  
+ 324   1      //bOSDReady = 0;
+ 325   1      //bOSDInfoChange = 0;
+ 326   1      bDCReset = 0;
+ 327   1      bAC1stOn = 1;
+ 328   1      
+ 329   1      //bShowNotAvailable=0;
+ 330   1      bSwitchSource = 0;
+ 331   1      bStatusReport = 0;
+ 332   1      
+ 333   1              ucCurKey = IGNORE_KEY;
+ 334   1              ucOSDLvl1_Cursor= 0;
+ 335   1              ucOSDLvl2_Cursor = 0;
+ 336   1              ucOSDLvl3_Cursor = 0;
+ 337   1              ucOSDType = OSDOFF;
+ 338   1              ucSavePointer = svNONE;
+ 339   1              ucNewControlValue = 0xff;
+ 340   1              
+ 341   1              ucSignalType = 0;
+ 342   1      
+ 343   1              usTmpHSync = 0xffff;
+ 344   1              usTmpVSync = 0xffff;
+ 345   1              Set_usPoSvTimer(500);
+ 346   1              ucModeNumber = 0xff;
+ 347   1      
+ 348   1      #if PanelID == CMO_M190E5_L0E  //neo 060811
+                      bScalerOutput = 0;
+              #endif
+ 351   1      
+ 352   1      #ifdef ANTI_ESD
+              
+                      ucESDSaveD1=0;
+                      ucESDSaveD2=0;
+                      ucESDSaveD3=0;
+                      ucESDSaveD4=0;
+                      ucESDSaveF1=0;
+              
+              #endif
+ 361   1      
+ 362   1      #if _SmartBright_ == ON
+C51 COMPILER V8.12   MCU                                                                   11/09/2015 19:43:40 PAGE 7   
+
+                      usBrightCounter = 0;
+                      ulBrightV = 0;
+                      ucTempBrightADC = 0;
+                      bSaveSmartBright = 0;
+              #endif
+ 368   1      
+ 369   1              bShowAging = 0;
+ 370   1      #ifdef GREEN_POWER
+ 371   1              ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+ 372   1      #endif
+ 373   1      
+ 374   1      //^^
+ 375   1      
+ 376   1      }
+ 377          
+ 378          
+ 379          
+ 380          void StartDDCCI(void)
+ 381          {
+ 382   1              IIC0_ADDR = DDCCI_ADDR;
+ 383   1              IIC0_ADDR = DDCCI_ADDR | ENIIC;
+ 384   1              IIC0INT_CLR = 0xff;
+ 385   1              IIC0_INT_EN = 0xf8;
+ 386   1      #if(!NT68167)
+ 387   1              IIC1_ADDR = DDCCI_ADDR;
+ 388   1              IIC1_ADDR = DDCCI_ADDR | ENIIC;
+ 389   1              IIC1INT_CLR = 0xff;
+ 390   1              IIC1_INT_EN = 0xf8;
+ 391   1      #endif
+ 392   1      }
+ 393          
+ 394          void StopDDCCI(void)
+ 395          {
+ 396   1              IIC0_ADDR = 0x00;
+ 397   1      #if(!NT68167)
+ 398   1              IIC1_ADDR = 0x00;
+ 399   1      #endif
+ 400   1      }
+ 401          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    478    ----
+   CONSTANT SIZE    =     46    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

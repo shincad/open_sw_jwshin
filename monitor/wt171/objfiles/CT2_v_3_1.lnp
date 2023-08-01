@@ -1,0 +1,29 @@
+"..\objfiles\EEPROMVal.obj",
+"..\objfiles\GeneralRam.obj",
+"..\objfiles\Inputdetect.obj",
+"..\objfiles\Keydetect.obj",
+"..\objfiles\main.obj",
+"..\objfiles\PeriDevice_set.obj",
+"..\objfiles\power.obj",
+"..\objfiles\modetable.obj",
+"..\objfiles\scaler_set.obj",
+"..\objfiles\SCALERVal.obj",
+"..\objfiles\MTV230_interrupt.obj",
+"..\objfiles\MTV230_I2C.obj",
+"..\objfiles\AD9883.obj",
+"..\objfiles\MTV230OSD.obj",
+"..\objfiles\remocon.obj",
+"..\objfiles\InternalOSD.obj",
+"..\objfiles\MTV230xfr.obj",
+"..\objfiles\Keymenu.obj",
+"..\objfiles\BTC_OSDMENU.obj",
+"..\objfiles\AutoDisplayadjust.obj",
+"..\objfiles\INT_EXTOSD.obj",
+"..\objfiles\TW990x.obj",
+"..\objfiles\Tuner.obj",
+"..\objfiles\Tools.obj",
+"..\objfiles\SProcessor.obj" 
+TO "..\objfiles\CT2_v_3_1" 
+PRINT("..\lstfiles\CT2_v_3_1.m51") NOLINES IXREF 
+RAMSIZE(256) 
+XDATA( 0X0800-0X0AFF )

@@ -1,0 +1,340 @@
+Date : 110602
+Schematic에 맞게 Green LED Port 수정.
+Board.c
+--------------------------------------
+
+Date : 120223
+LED On/Off Reverse 
+BackLight Port Reverse
+PanelPowerOn은 그대로 유지.
+Board.c
+--------------------------------------
+
+Date : 120223
+Button_En_SelA() / Button_En_SelB() 추가
+Board.c
+--------------------------------------
+
+Date : 120223
+RGB_SW1_RGB2() / RGB_SW1_RGB1() 추가
+Board.c
+--------------------------------------
+
+Date : 120223
+SEL1_GrnOn() / SEL1_GrnOff() / SEL2_GrnOn() / SEL2_GrnOff() 추가
+Board.c
+--------------------------------------
+
+Date : 120228
+bPowerSaveFlag 추가
+Board.c
+--------------------------------------
+
+Date : 120302
+NoSignal에서의 Mode 전환 화면을 위한 Timer
+usOSD2Timer_10ms 추가 (Timer Routine도 추가)
+int.c
+--------------------------------------
+
+Date : 111213
+NosigTimer
+ucNoSigTimer 추가
+int.c
+--------------------------------------
+
+Date : 120223
+PortC & BIT_2 ---> Power Key Check 추가
+Button_Select_A() / Button_Select_B() 추가
+keypad.c
+--------------------------------------
+
+Date : 120223
+KeyTemp1 = 0x08/ 0x09 추가.   Button SEL A/Button SEL B Key Value.
+keypad.c
+--------------------------------------
+
+Date : 111208
+FactoryKey 입력일 때, EEPROM Init..
+keypad.c
+--------------------------------------
+
+Date : 120228
+bVideoMuted == TRUE 일 경우 확인 안함.. Remark 처리
+keypad.c
+--------------------------------------
+
+Date : 120227
+PowerSaving 모드에서는 Power Key를 제외한 나머지 키는 전부 Disable
+if(ucCurKey != POWER_KEY)
+keypad.c
+--------------------------------------
+
+Date : 120224
+Power Off 일 때, SEL A/B LED 도 Turn Off
+keypad.c
+--------------------------------------
+
+Date : 120227
+No Signal 일 때, AUTO_KEY Disable
+else if(bInSync==FALSE) 
+keypad.c
+--------------------------------------
+
+Date : 120223
+BUTTON_SEL_KEY_A / BUTTON_SEL_KEY_B 추가
+keypad.c
+--------------------------------------
+
+Date : 120302
+Set_usOSD2Timer_10ms(0) 초기화
+mcu.c
+--------------------------------------
+
+Date : 111213
+ucNoSigTimer = 3    (3초)
+mcu.c
+--------------------------------------
+
+Date : 111214
+WriteIIC560(GPIO_CTRL,0x30);  // PWMA, PWMB Enable...
+mcu.c
+--------------------------------------
+
+Date : 120228
+bPowerSaveFlag = 0 초기화
+mcu.c
+--------------------------------------
+
+Date : 120302
+ucOSDType 이 POWER_ON_LOGO일 때의 처리 부분을 추가
+else if(ucOSDType == POWER_ON_LOGO)
+mis.c
+--------------------------------------
+
+Date : 111213
+신호가 없을 경우, LED Flicking을 위한 Routine 추가
+GrnLEDFlick()
+mis.c
+--------------------------------------
+
+Date : 120302
+Set_usOSD2Timer_10ms / Get_usOSD2Timer_10ms 추가
+mis.c
+--------------------------------------
+
+Date : 111213
+신호가 없을 경우의 LED Flicking 및 메시지 부분 수정
+if((bInSync==FALSE) || (ucLoopTimer_10ms == 0))
+modehandle.c
+--------------------------------------
+
+Date : 111213
+신호가 있을 경우 진입 Routine 확인 및 수정
+if(bModeChanged == TRUE)
+modehandle.c
+--------------------------------------
+
+Date : 111213
+현재의 모드를 Display
+ShowSourceMsg();
+modehandle.c
+--------------------------------------
+
+Date : 111209
+신호가 없을 경우 진입 대기 및 메시지 부분 수정
+else if(ucModeNumber > 0x80)
+modehandle.c
+--------------------------------------
+
+Date : 120224
+POWER_ON_LOGO 일 때, 메시지 문구 수정
+if(ucOSDType == POWER_ON_LOGO)
+osd.c
+--------------------------------------
+
+Date : 111214
+Language 부분 사용하지 않기 때문에 전부 Remark
+osd.c
+--------------------------------------
+
+Date : 120224
+ShowMonSelMsg / ShowRGBStatus / ShowSourceMsg 등 추가 및 수정
+osd.c
+--------------------------------------
+
+Date : 111209
+No Signal 에서 RGB 1인지 RGB 2 인지 구분 하기 위해, 모드 감시 및 메시지 수정
+osd.c
+--------------------------------------
+
+Date : 120228
+Mute 시 완벽한 음 차단을 위해 PWM Value 강제로 Write
+WriteIIC560(PWM0_LCNT,0xff);
+WriteIIC560(PWM0_HCNT,0);
+osd_key.c
+--------------------------------------
+
+Date : 120228
+Mute Off 시 차단된 음을 회복하기 위해 다시 PWM Value 복귀
+ucVolume = Read24C16(EPADDR_VOLUME);
+WriteIIC560(PWM0_LCNT,(255 - ((unsigned short)ucVolume * 255 / 100)));
+WriteIIC560(PWM0_HCNT,((unsigned short)ucVolume * 255 / 100));
+osd_key.c
+--------------------------------------
+
+Date : 120228 / 120313
+화면 전환 후 메시지 Time을 조절하기 위해, Routine 수정 및 Timer Value 수정
+osd_key.c
+--------------------------------------
+
+Date : 120224 / 120313
+화면 전환이 가능하도록, Swithing Routine을 이용해 routine 구현  / Timer Value도 조절
+else if(ucOSDType == POWER_ON_LOGO)
+osd_key.c
+--------------------------------------
+
+Date : 120224
+모니터 선택용 Display 추가
+osd_tab.c
+--------------------------------------
+
+Date : 111313 / 120302
+Timer 변수 선언 
+usOSD2Timer_10ms / ucNoSigTimer / NoSigTogg / bPowerSaveFlag
+ram.c
+--------------------------------------
+
+Date : 120223
+EEPROM Value 부분 선언 및 값 저장 부분 수정
+EPADDR_BUTTON_STATUS / EPADDR_RGB_SW1 
+rom_map.c
+--------------------------------------
+
+Date : 111214
+SetBrightness 사용 시, WriteIIC560(PWM_CTRL1,0x00) 초기화
+scaler.c
+--------------------------------------
+
+Date : 120223
+INV_INVERTOR Define 
+scaler.c
+--------------------------------------
+
+Date : 120228
+PowerSaving Routine으로 진입했을 경우, 완벽한 음 차단을 위해, PWM Value 강제 Write
+scaler.c
+--------------------------------------
+
+Date : 120302
+ScalerDown 시, SoundControl을 위해, GPIO 부분은 Power Down 안함.
+// WriteIIC560(GPIO_CTRL,0x0c);	  Remark 처리
+scaler.c
+--------------------------------------
+
+Date : 111214
+Volume 제어를 위해 Routine 수정
+scaler.c
+--------------------------------------
+
+Date : 111213
+자동 설정 후, OSD 깨짐 증상을 방지하기 위해, OSD Off Function 호출
+OSD_OFF()
+useradj.c
+--------------------------------------
+
+Date : 120223
+초기 LoadModeIndependentSettings 호출할 때, RGB1/RGB2를 판단하기 위해, EEPROM 읽어서 판단하는 Routine 추가
+if(Read24C16(EPADDR_BUTTON_STATUS)) 				// 1이면, A Select..
+useradj.c
+--------------------------------------
+
+Date : 111206
+Port 부분 제어를 위해 수정
+sbit ISCL / sbit ICDA 
+8051.h
+--------------------------------------
+
+Date : 110414
+24c02 eeprom을 사용하지 않으므로, #define Use24C02 Remark
+Board.h
+--------------------------------------
+
+Date : 120223
+PWM Port Define 수정
+#define DEFAULT_PWMEN_9_2  BITS_TO_BYTE(DIS, DIS, DIS,DIS,DIS,DIS,DIS,DIS)
+board.h
+--------------------------------------
+
+Date : 110418
+IsAC_PowerOff() 사용하지 않으므로 0으로 Define
+board.h
+--------------------------------------
+
+Date : 120223
+Button 감시를 위해, Button_Select_A() / Button_Select_B() Define
+board.h
+--------------------------------------
+
+Date : 120223
+PORTA Define을 위해 수정
+#define PORTA_DEFAULT_DIR  BITS_TO_BYTE(OUT,  OUT,   OUT,   IN,  IN,   OUT,   OUT,   OUT )			// +jwshin 120223
+board.h
+--------------------------------------
+
+Date : 111206
+24C16 EEPROM을 사용하므로, FE2P_LIB OFF로 함.
+mydef.h
+--------------------------------------
+
+Date : 111207
+SmartBright OFF
+mydef.h
+--------------------------------------
+
+Date : 110602
+Enable_OD   OFF
+mydef.h
+--------------------------------------
+
+Date : 111207
+OSD Button 재배치를 위해, Value를 전부 변경함
+#define AUTO_KEY	0x01
+mydef.h
+--------------------------------------
+
+Date : 111208
+PWMA Port 사용
+#define _USE_PWM_B_
+mydef.h
+--------------------------------------
+
+Date : 120223
+NVRAM Table에 EPADDR_BUTTON_STATUS / EPADDR_RGB_SW1  부분 추가
+nvram.h
+--------------------------------------
+
+Date : 110414
+17인치 Panel에 맞게 Panel Value 변경함
+panel.h
+--------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

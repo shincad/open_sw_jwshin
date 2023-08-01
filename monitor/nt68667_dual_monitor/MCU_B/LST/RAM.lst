@@ -1,0 +1,404 @@
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE RAM
+OBJECT MODULE PLACED IN .\BIN\RAM.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\RAM.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelNa
+                    -me=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\RAM.lst) OBJECT(.\BIN\RAM.obj)
+
+line level    source
+
+   1          #include "RAM.H"
+   2          
+   3          idata unsigned short usTimer1_1ms;
+   4          idata unsigned char     ucTimer10ms;
+   5          idata unsigned short usPoSvTimer;
+   6          idata unsigned char ucLoopTimer_10ms;
+   7          idata unsigned char ucSyncStableTimer_10ms;
+   8          idata unsigned short usWarningMsgTimer_1s;
+   9          idata unsigned short usOSDTimer_10ms;
+  10          idata unsigned short usOSD2Timer_10ms;                  // +jwshin 120302
+  11          idata unsigned char     ucSyncSourceTimer;
+  12          idata unsigned char     ucTimer1000ms;
+  13          idata unsigned short    usPOTTimerS_900;
+  14          idata unsigned char     ucPOTTimerM_4;
+  15          idata unsigned long ulPOTTimerH;
+  16          idata unsigned char ucTime2Backlight;
+  17          idata unsigned char ucOutOfRangeTimer;
+  18          idata unsigned char ucLEDTimer_10ms;
+  19          idata unsigned char ucBestMesgTimer;
+  20          bit bWillShowBestMesg;
+  21          bit bSetGreenPower;
+  22          idata unsigned char ucPurelyBlackCounter;
+  23          
+  24          idata unsigned char ucNoSigTimer;                                                       // +jwshin 111213
+  25          
+  26          bit bB_Screen_ReverseFlag;                                                                                      // +jwshin 120224
+  27          bit bCopy_Flag;                                                                                                                         // +jwshin 120224
+  28          bit bRGB_SW_Flag;                                                                                                                       // +jwshin 120224
+  29          
+  30          idata unsigned short usHSync;
+  31          idata unsigned short usVSync;
+  32          idata unsigned short usTmpHSync;
+  33          idata unsigned short usTmpVSync;
+  34          idata unsigned char ucHVPolarity;       
+  35          idata unsigned char ucTmpHVPol;
+  36          
+  37          idata unsigned short usVTotal;
+  38          idata unsigned short usActiveH;
+  39          
+  40          
+  41          //idata unsigned char   ucPowerStatus_old;
+  42          idata unsigned char     ucPowerStatus;
+  43          idata unsigned char     ucModeNumber;
+  44          idata unsigned char     ucSignalType;
+  45          idata unsigned char     ucSource;
+  46          
+  47          idata unsigned char ucCurrentDVIClk;
+  48          idata unsigned long ulDispHfreq;
+  49          idata unsigned long ulDotClk;
+  50          idata unsigned long ulHfreqCounter;
+  51          idata unsigned char ucResolution;
+  52          
+  53          
+  54          idata unsigned char     ucCurKey;
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 2   
+
+  55          idata unsigned char     ucPrevKey;
+  56          idata unsigned char     ucTime2RepeatKey;
+  57          xdata unsigned char RepeatCounter;
+  58          xdata unsigned char KeyTemp1,KeyTemp2;
+  59          
+  60          
+  61          idata bit NoSigTogg;                                            // +jwshin 111213
+  62          
+  63          idata bit bPowerSaveFlag;                               // +jwshin 120228
+  64          
+  65          idata bit bInSync;
+  66          idata bit bBGMode;
+  67          idata bit bKeyChanged;
+  68          idata bit bVideoMuted;
+  69          idata bit bModeChanged;
+  70          idata bit bForceToSleep;
+  71          idata bit bExitSysLoop;
+  72                      
+  73          idata bit bOptAbort;
+  74          idata bit bOutOfLimit;
+  75          idata bit bShowNoSync;
+  76          idata bit bShowDiscon;
+  77          idata bit bShowOutRange;
+  78          idata bit bShowOutRange85;
+  79          idata bit bShowNoInput;
+  80          idata bit bShowAging;
+  81          idata bit bSwitchSource;
+  82          idata bit bDDCUpdate;
+  83          
+  84          //idata bit bIsNewMode;                 
+  85          idata bit bIsLEDFlashing;       
+  86          idata bit bGLEDState;
+  87          //idata bit bLFLEDState;
+  88          //idata bit bIsLFLEDFlashing;
+  89          
+  90          idata bit bFactoryMode;
+  91          idata bit bOutOfRange;
+  92          idata bit bStatusReport;
+  93          idata bit bPOTUpdate;   
+  94          idata bit bPowerKeyFlag;
+  95          idata bit bIsInterlaced;
+  96          idata bit bDDCCmdUpdate;
+  97          
+  98          idata bit bSyncFlag;            
+  99          idata bit bIsFRCMode;           
+ 100          idata bit bIsNonFullScreen; 
+ 101          idata bit bIsBurnInEnabled; 
+ 102          idata bit bIsSyncConfirmed; 
+ 103          idata bit bIsDDCCiSupported;
+ 104          
+ 105          
+ 106          
+ 107          idata bit bFactoryModeType;
+ 108          idata bit bDDC_Ci_Channel;
+ 109          
+ 110          //idata bit bOSDReady;
+ 111          //idata bit bOSDInfoChange;             // write Resolution info. when modechange
+ 112          idata bit bDCReset;
+ 113          idata bit bAC1stOn;
+ 114          #ifdef MODE_OFFSET
+              idata bit bOffsetDown;
+              #endif
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 3   
+
+ 117          #if PanelID == CMO_M190E5_L0E  //neo 060811
+              idata bit bScalerOutput;
+              #endif
+ 120          
+ 121          xdata unsigned char     ucLanguage;
+ 122          
+ 123          #if 0
+              xdata unsigned char ucSharpness;
+              xdata unsigned char ucSaturation;
+              xdata unsigned char ucTint;
+              #endif
+ 128          
+ 129          xdata unsigned char ucBrightness;
+ 130          xdata unsigned char ucContrast;
+ 131          xdata unsigned char     ucMaxBrightness;
+ 132          xdata unsigned char     ucMinBrightness;
+ 133          xdata unsigned char     ucMaxContrast;
+ 134          xdata unsigned char     ucMidContrast;
+ 135          xdata unsigned char     ucMinContrast;
+ 136          
+ 137          
+ 138          xdata unsigned char ucPanelIDX; // jerry
+ 139          
+ 140          #if 0
+              xdata unsigned char ucBrightness9300K;
+              xdata unsigned char ucContrast9300K;
+              xdata unsigned char ucBrightness6500K;
+              xdata unsigned char ucContrast6500K;
+              #endif
+ 146          xdata unsigned char ucBrightnessUser;
+ 147          xdata unsigned char ucContrastUser;
+ 148          xdata unsigned char ucBrightnesssRGB;
+ 149          xdata unsigned char ucContrastsRGB;
+ 150          
+ 151          xdata unsigned char ucR_Gain;
+ 152          xdata unsigned char ucG_Gain;
+ 153          xdata unsigned char ucB_Gain;
+ 154          xdata unsigned char ucR_Gain9300K;
+ 155          xdata unsigned char ucG_Gain9300K;
+ 156          xdata unsigned char ucB_Gain9300K;
+ 157          xdata unsigned char ucR_Gain6500K;
+ 158          xdata unsigned char ucG_Gain6500K;
+ 159          xdata unsigned char ucB_Gain6500K;
+ 160          xdata unsigned char ucR_GainsRGB;
+ 161          xdata unsigned char ucG_GainsRGB;
+ 162          xdata unsigned char ucB_GainsRGB;
+ 163          xdata unsigned char ucR_GainUser;
+ 164          xdata unsigned char ucG_GainUser;
+ 165          xdata unsigned char ucB_GainUser;
+ 166          xdata unsigned char ucR_Gain5000K;
+ 167          xdata unsigned char ucG_Gain5000K;
+ 168          xdata unsigned char ucB_Gain5000K;
+ 169          xdata unsigned char ucR_Gain7500K;
+ 170          xdata unsigned char ucG_Gain7500K;
+ 171          xdata unsigned char ucB_Gain7500K;
+ 172          xdata unsigned char ucR_Gain8200K;
+ 173          xdata unsigned char ucG_Gain8200K;
+ 174          xdata unsigned char ucB_Gain8200K;
+ 175          xdata unsigned char ucR_Gain11500K;
+ 176          xdata unsigned char ucG_Gain11500K;
+ 177          xdata unsigned char ucB_Gain11500K;
+ 178          
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 4   
+
+ 179          xdata unsigned char ucR_ADC_Gain;
+ 180          xdata unsigned char ucG_ADC_Gain;
+ 181          xdata unsigned char ucB_ADC_Gain;
+ 182          xdata unsigned char ucR_ADC_Offset;
+ 183          xdata unsigned char ucG_ADC_Offset;
+ 184          xdata unsigned char ucB_ADC_Offset;
+ 185          xdata unsigned char ucBlackLevel;
+ 186          xdata unsigned char ucBkOffset[3];
+ 187          
+ 188          
+ 189          
+ 190          xdata enum _SaveItem_   ucSavePointer;
+ 191          
+ 192          
+ 193          xdata unsigned char ucOSDXPos;
+ 194          xdata unsigned char ucOSDYPos;
+ 195          xdata unsigned char ucTransparency;
+ 196          idata unsigned char ucOSDTimer;
+ 197          idata bit bIsOSDLocked;         
+ 198          //idata bit bIsSWLocked;
+ 199          idata bit bResolutionNot;
+ 200          idata bit bSmartResponse;
+ 201          idata bit bSmartContrast;
+ 202          idata bit PixelOrbit;
+ 203          xdata unsigned char ucSizeType;
+ 204          
+ 205          xdata unsigned char ucADCPhase;
+ 206          xdata unsigned char ucADCCPhase100Pa;
+ 207          xdata unsigned short usHTotal;
+ 208          xdata unsigned short usMinClk;
+ 209          xdata unsigned short usMaxClk;
+ 210          xdata unsigned short usHPStart;
+ 211          xdata unsigned short usMaxHP;
+ 212          xdata unsigned char ucMinHP;
+ 213          //xdata unsigned short usReferenceHP; // For 50% Phase // Jude 03/15/2005
+ 214          xdata unsigned short usVPStart;
+ 215          xdata unsigned char ucMaxVP;
+ 216          xdata unsigned char ucMinVP;
+ 217          xdata unsigned char ucVPOffset;
+ 218          xdata unsigned short usPanelVBackPorch;
+ 219          
+ 220          
+ 221          idata unsigned char     ucDDCCiTxChecksum;
+ 222          idata unsigned char     ucDDCCiRxChecksum;
+ 223          
+ 224          idata unsigned char ucDDCCiTxOut;
+ 225          idata unsigned char ucDDCCiTxIn;
+ 226          idata unsigned char ucDDCCiRxIn;
+ 227          idata unsigned char ucDDCCiRxOut;
+ 228          xdata unsigned char     ucDDCCiTxBuffer[DDCCi_BUFFER_SIZE];
+ 229          xdata unsigned char     ucDDCCiRxBuffer[DDCCi_BUFFER_SIZE];
+ 230          
+ 231          //
+ 232          xdata unsigned char TempData;
+ 233          xdata unsigned char TempValue;
+ 234          
+ 235          
+ 236          xdata unsigned char ucBGColor;
+ 237          xdata unsigned short usOSDMovingX;
+ 238          xdata unsigned short usOSDMovingY;
+ 239          idata unsigned char ucStrAlignment;
+ 240          idata unsigned char ucStrWidth;
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 5   
+
+ 241          idata unsigned char ucFontLen;
+ 242          idata unsigned short usFontIndex;
+ 243          idata unsigned short usFontBuffer[FONT_BUFFER_SIZE];
+ 244          xdata unsigned char ucOSDWidth;
+ 245          xdata unsigned char ucOSDHeight;
+ 246          
+ 247          
+ 248          
+ 249          xdata unsigned char ucColorTemperature;
+ 250          
+ 251          idata unsigned char ucUARTTxIn;
+ 252          idata unsigned char ucUARTTxOut;
+ 253          idata unsigned char ucUARTRxOut;
+ 254          idata unsigned char ucUARTRxIn;
+ 255          xdata unsigned char ucUARTTxBuffer[UART_TX_BUFFER_SIZE];
+ 256          xdata unsigned char ucUARTRxBuffer[UART_RX_BUFFER_SIZE];
+ 257          xdata unsigned char ucIsTransDisabled;
+ 258          xdata unsigned char ucNewControlValue;
+ 259          
+ 260          
+ 261          idata unsigned char ucRegPage;
+ 262          
+ 263          
+ 264          
+ 265          xdata unsigned char ucSerialNum[SN_TOTAL_LEN];
+ 266          
+ 267          
+ 268          
+ 269          xdata unsigned char ucVolume;
+ 270          idata bit bStandalone;
+ 271          idata bit bMute;
+ 272          
+ 273          
+ 274          
+ 275          // LF
+ 276          
+ 277          
+ 278          xdata unsigned long  ulCurHisgrmTotal;
+ 279          xdata unsigned long  ulCurHisgrm[ACE_PARTITIONS];
+ 280          
+ 281          xdata unsigned char ucLFMode;
+ 282          xdata unsigned char ucPrevLFMode;
+ 283          xdata unsigned char ucIsLFDemoMode;
+ 284          xdata unsigned char ucLFLuminance;
+ 285          xdata unsigned char ucLFContrast;
+ 286          xdata unsigned char ucLFColor;
+ 287          xdata unsigned char ucLFHue;
+ 288          xdata unsigned char ucLFSharpness;
+ 289          xdata unsigned char ucLFCusACCMode;
+ 290          xdata unsigned char ucLFYPeakEN;
+ 291          xdata unsigned char *pLFCurAdj;
+ 292          xdata unsigned char ucLFMaxAdj;
+ 293          xdata unsigned char ucLFMinAdj;
+ 294          
+ 295          xdata unsigned char ucBFColorMode;
+ 296          xdata unsigned char ucBFFTMore;
+ 297          xdata unsigned char ucBFGreenMore;
+ 298          xdata unsigned char ucBFBlueMore;
+ 299          
+ 300          // BF
+ 301          xdata unsigned char ucBFMode;
+ 302          //xdata unsigned char ucIsBF;
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 6   
+
+ 303          idata unsigned short usBFTimer_10ms;
+ 304          idata unsigned short usBF_HIS_Timer1_10ms;
+ 305          idata unsigned short usBF_HIS_Timer2_10ms;
+ 306          idata unsigned short usBF_DYMBK_Timer_10ms;
+ 307          
+ 308          xdata unsigned char ucBFWSize;
+ 309          #ifndef BF_MOVING_WINDOW
+              idata unsigned char ucLFDemoTimer;
+              #endif
+ 312          xdata unsigned char ucDynBKMode;
+ 313          xdata int iCurDynBk;
+ 314          xdata unsigned char ucNewDynBk;
+ 315          
+ 316          #ifdef BF_MOVING_WINDOW
+ 317          xdata unsigned short usBFMovingWidth;
+ 318          idata bit bBFMovingDir;
+ 319          xdata unsigned char ucBFMovingTimer;
+ 320          #endif
+ 321          
+ 322          
+ 323          
+ 324          #ifdef ANTI_ESD
+              idata unsigned char ucESDSaveD1;
+              idata unsigned char ucESDSaveD2;
+              idata unsigned char ucESDSaveD3;
+              idata unsigned char ucESDSaveD4;
+              
+              idata unsigned char ucESDSaveF1;
+              #endif
+ 332          
+ 333          
+ 334          
+ 335          //xdata unsigned char wflag;
+ 336          
+ 337          idata bit bAutoClockResult;
+ 338          xdata unsigned char mode_k;
+ 339          xdata float maxPhase,temp_phase;
+ 340          idata unsigned char ucBF_Status;
+ 341          
+ 342          
+ 343          
+ 344          //      THEFT DETERRENCE
+ 345          xdata unsigned char ucTD_ACMode;
+ 346          xdata unsigned char ucTD_Timeout;
+ 347          xdata unsigned short usTD_PinCodeL;
+ 348          xdata unsigned short usTD_PinCodeH;
+ 349          xdata unsigned char ucTD_State;
+ 350          xdata unsigned char ucTD_TimeoutS;
+ 351          idata bit bShowTheftOSD;
+ 352          xdata unsigned char ucTD_PinFailedCount;
+ 353          xdata unsigned char ucTD_PinFailedTimer;
+ 354          
+ 355          
+ 356          
+ 357          xdata unsigned char ucRGB_OFFSET;
+ 358          xdata unsigned char ucBrightnessLevel;
+ 359          xdata unsigned char ucSaturation;
+ 360          xdata unsigned char ucTint;
+ 361          #if FE2P_LIB==ON
+              //Fe2p 2006/10/31 Alvin
+              idata bit feSave;
+              xdata unsigned char feValid_Block;
+C51 COMPILER V8.12   RAM                                                                   04/16/2014 18:12:28 PAGE 7   
+
+              xdata unsigned short feSave_Timer;
+              xdata unsigned char Fe2pBuf[2048] _at_ Fe2pBufAddr;
+              #endif
+ 368          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    377    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =    125    ----
+   BIT SIZE         =     53    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,240 @@
+#include "RAM.H"
+#include "OSD.H"
+
+unsigned char bdata flag1;
+sbit NoSyncFlag		= flag1^0;
+sbit ForceToBack 	= flag1^1;
+sbit ChangeKey 		= flag1^2;
+sbit VideoMute 		= flag1^3; 
+sbit MessageShow	= flag1^4;
+sbit DecoderICEn		= flag1^5;
+sbit NewMode		= flag1^6;
+sbit GTmodeEn		= flag1^7;
+
+unsigned char bdata flag2;
+sbit Abort			= flag2^0;
+sbit PowerDown		= flag2^1;
+sbit KeyLock		= flag2^2;
+sbit OsdEnable		= flag2^3;
+sbit FastMuteEnable	= flag2^4;
+sbit Interlance		= flag2^5;
+sbit SaveDDC1		= flag2^6;
+sbit SaveDDC0		= flag2^7;
+
+unsigned char bdata VideoFlag;
+sbit VideoIntLance	= VideoFlag^7;	
+sbit VideoUnlock	= VideoFlag^6;
+sbit Video_60Hz		= VideoFlag^5;
+sbit ColorDetected	= VideoFlag^0;
+
+bit BlueScreen;
+bit MonoVideo;
+bit VideoOK;
+bit BypassSOG;
+bit EndMute;
+bit NonFullScreen;
+bit BackLightTimerEn;
+//bit KeyRepeat;
+bit LightEn;
+bit ScalerMode;
+bit NoSigTogg;						// +jwshin 051101
+
+unsigned char bdata StatusFlag;
+sbit PowerStatus	= StatusFlag^0;
+sbit BurnInMode		= StatusFlag^1;
+sbit FactMode		= StatusFlag^2;
+sbit OsdLock		= StatusFlag^3;
+sbit AudioMute		= StatusFlag^4;
+sbit AutoSetting	= StatusFlag^5;
+sbit TextMode		= StatusFlag^6;
+sbit EconomyMode	= StatusFlag^7;
+
+//unsigned char bdata MiscFlag;
+//sbit LightEn		= StatusFlag^0;
+//sbit ScalerMode		= StatusFlag^1;
+
+idata unsigned short	NoSigTimer;			// +jwshin 051101 Nosignal timer Value added.
+idata unsigned char 	T0_INT_CNT;
+idata unsigned short	OsdTimer;
+idata unsigned char		LocalTimer;
+idata unsigned short	PowerTimer;
+idata unsigned short	RepeatTimer;
+idata unsigned char	DDCTimer;
+idata unsigned char	SaveTimer;
+idata unsigned char	VideoTimer;
+idata unsigned char	BurnInTimer;
+idata unsigned char	MuteTimer;
+idata unsigned char	T0_10ms_Cnt;
+idata unsigned char	T0_1ms_Cnt;
+xdata unsigned long	BackLightTimer;
+idata unsigned char	KeyRepeatCnt;
+
+
+//xdata unsigned char	DVI_Clock;		// +jwshin 061013
+
+idata unsigned short	H_SYNC;
+idata unsigned short 	V_SYNC;
+idata unsigned short 	H_SYNC_Temp;
+idata unsigned short 	V_SYNC_Temp;
+idata unsigned short 	VTotal;
+idata unsigned short	H_Act;
+idata unsigned char	ResolutionPtr;
+idata unsigned char	ChangeMode;
+idata unsigned char	HV_Pol;
+idata unsigned char	HV_Pol_Temp;
+idata unsigned char	RegPage;		
+idata unsigned char	ModePoint;
+idata unsigned char	KeyBuffer;
+idata unsigned char	PrevKey;
+idata unsigned char	FuncPtr;
+idata unsigned char	SavePointer;
+idata unsigned char	SyncMode;
+idata unsigned char	OutOfRange;
+idata unsigned char 	DigitalPtr;
+idata unsigned char 	Timer1;
+idata unsigned char 	Timer2;
+idata unsigned char 	Timer3;
+/////////////////////Jason Choi
+idata unsigned char rwbuf;
+idata unsigned short abuf;
+idata unsigned char dbuf;
+///0 = Separate H & V
+///1= H+V
+///2= Sync on green
+///3= DVI
+xdata unsigned short FuncBuf[42];
+xdata unsigned short Hresolution;
+xdata unsigned short Vresolution;
+xdata unsigned short FuncMax;
+xdata unsigned short FuncMin;
+xdata unsigned short ClockBase;
+xdata unsigned short HPositionBase;
+xdata unsigned char BackPtr;
+xdata unsigned char TvMode;
+xdata unsigned char TempPtr;
+xdata unsigned char VideoSourcePtr;
+xdata unsigned char MaxItem;
+xdata unsigned char BackItem;
+xdata unsigned char UserModePtr;
+xdata unsigned char BurnInPattern;
+idata unsigned char TempPhase;
+xdata unsigned char SCRev;
+CONTROL_DEF xdata MenuPtr;
+xdata unsigned char UserModeRefReso;
+xdata unsigned char SCFactor;
+xdata unsigned char VideoStandard;
+///////////////////////////////// Jason Choi
+xdata unsigned char CmdTxPtr1;
+xdata unsigned char CmdTxPtr2;
+xdata unsigned char CmdRxPtr1;
+xdata unsigned char CmdRxPtr2;
+xdata unsigned char	CmdTxBuffer[128];
+xdata unsigned char	CmdRxBuffer[128];
+////////////////////////////////
+
+xdata unsigned char ChBuffer;
+xdata unsigned char TV_Min;
+xdata unsigned char TV_Max;
+xdata unsigned char TV_Total;
+xdata unsigned char CATV_Min;
+xdata unsigned char CATV_Max;
+xdata unsigned char CATV_Total;
+xdata unsigned char PRBuffer;//Program NO. buffer
+xdata unsigned char PR_ChBuffer;//Program NO.CH. buffer 
+xdata unsigned char PR_TV_Max;
+xdata unsigned char PR_CATV_Max;
+xdata unsigned char ChSystem; 
+xdata unsigned char ChNumCnt; 
+
+//for CCD
+xdata unsigned char  VChip_Data[2];
+xdata unsigned short Non_VChip_Count;
+xdata unsigned char  VChip_Block;
+xdata unsigned char  VChip_Password[4];
+xdata unsigned char  VChip_ChangePassword[4];
+xdata unsigned char  VChip_Confirm;
+xdata unsigned char  VChip_RatingSelected;
+xdata unsigned char  VChip_AcquisitionMPAA;
+	//0x01://MPAA_G
+	//0x02://MPAA_PG
+	//0x03://MPAA_PG13
+	//0x04://MPAA_R
+	//0x05://MPAA_NC17
+	//0x06://MPAA_X
+	//0x07://MPAA_NR
+xdata unsigned char  VChip_AcquisitionTV;
+	//0x01://TV_Y
+	//0x02://TV_Y7
+	//0x03://TV_G
+	//0x04://TV_PG
+	//0x05://TV_14
+	//0x06://TV_MA
+xdata unsigned char  VChip_AcquisitionTVFVVSLD;
+	//BIT_1://TV_Y7_FV
+	//BIT_2://TV_V
+	//BIT_3://TV_S
+	//BIT_4://TV_L
+	//BIT_5://TV_D
+xdata unsigned char  ResetPasswordBuff;
+xdata unsigned char  ResetData[7];
+xdata unsigned short VChip_Timer;
+xdata unsigned short DevNum;
+//xdata unsigned char  Bass;
+//xdata unsigned char  Treble;
+xdata unsigned char  RatingMAPP;
+	//0x01://MPAA_G
+	//0x02://MPAA_PG
+	//0x03://MPAA_PG13
+	//0x04://MPAA_R
+	//0x05://MPAA_NC17
+	//0x06://MPAA_X
+	//0x07://MPAA_NR
+xdata unsigned char  RatingTV;
+	//0x01://TV_Y
+	//0x02://TV_Y7
+	//0x03//TV_Y7_FV
+	//0x04://TV_G
+	//0x05://TV_PG
+	//0x06://TV_14
+	//0x07://TV_MA
+xdata unsigned char  RatingTVFVVSLD;
+	//BIT_1://
+	//BIT_2://TV_V
+	//BIT_3://TV_S
+	//BIT_4://TV_L
+	//BIT_5://TV_D
+
+xdata unsigned short IR_Timer;	
+xdata unsigned char IR_Status;
+xdata unsigned char cntIR_Data;
+xdata unsigned char IR_Status;
+xdata unsigned long IR_Data;
+xdata unsigned long IR_Data_buffer;
+xdata unsigned char IR_Pre_KeyBuffer;
+xdata unsigned char IR_KeyTemp;
+xdata unsigned char IR_WaitTimer;
+xdata unsigned char IR_RepeatTimer;
+xdata unsigned short IR_Number;
+xdata unsigned char IR_Number_cnt;	
+bit bIR_Change;
+bit bIR_Active;
+bit bIR_flag;
+
+bit Violence;
+bit Sexual;
+bit Lang;
+bit Dialogue;
+bit CaptionFlag;
+
+bit VPXinit;
+bit VideoFlagTW;
+bit SyncFlag;
+bit VideoCheck;
+bit AirCableFlag;
+bit ChAdd_Del;
+bit OSDZoomFlag;
+bit TVSignalNormalFlag;
+bit VideoTest;
+
+bit MonTogg;
+bit RGBStatus;

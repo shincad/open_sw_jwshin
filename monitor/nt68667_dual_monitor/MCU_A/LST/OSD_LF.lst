@@ -1,0 +1,187 @@
+C51 COMPILER V8.12   OSD_LF                                                                11/09/2015 19:43:37 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OSD_LF
+OBJECT MODULE PLACED IN .\BIN\OSD_LF.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\OSD_LF.c LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mode
+                    -lName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\OSD_LF.lst) OBJECT(.\BIN\OSD_LF.obj)
+
+line level    source
+
+   1          #include "OSD_Tab.H"
+   2          #include "osd.H"
+   3          #include "OSD_LF.H"
+   4          #include "ram.H"
+   5          #include "NT686xx_MCU_REG.H"
+   6          #include "NT686xx_SC_REG.H"
+   7          #include "scaler.H"
+   8          #include "modeHandle.H"
+   9          #include <stdio.H>
+  10          #include <string.H>
+  11          #include "BFControl.H"
+  12          #include "MIS.H"
+  13          
+  14          
+  15          /*****************************************************************************
+  16                                          Light Frame OSD
+  17           *****************************************************************************/
+  18          
+  19          void ShowLFMainMenu(void)
+  20          {
+  21   1      unsigned char i;
+  22   1              ucOSDType = LF_MAIN_MENU;
+  23   1              
+  24   1              OsdInit(LF_OSD_WIDTH,LF_OSD_HIGHT);
+  25   1              
+  26   1              ShowTitleGradient();
+  27   1              usFontIndex = 32;
+  28   1              ucStrAlignment = 2;
+  29   1              ucStrWidth = ucOSDWidth;
+  30   1              WriteArialFont(BrightModeStrTab);
+  31   1              WriteXY_String(0,0,1);
+  32   1      
+  33   1              ucStrAlignment = 0;
+  34   1              for(i=0; i<NUM_LF_MODE; i++){
+  35   2                      WriteArialFont(LTMItemStrTab[ucLanguage * NUM_LF_MODE + i]);
+  36   2                      WriteXY_String(0, 3, i*2+4);
+  37   2              }
+  38   1              
+  39   1              SelectLFMITM();
+  40   1      
+  41   1              OSD_ON();
+  42   1              
+  43   1      }
+  44          
+  45          
+  46          #ifndef BF_MOVING_WINDOW
+              static idata unsigned char ucLFDemoDir;
+              static idata unsigned char ucLFDemoPos;
+              static idata unsigned char ucTimer2ShowBKStatus;
+              #endif
+  51          void ShowLFDemoOSD(void)
+  52          {
+  53   1              unsigned short OSD_RBx,OSD_RBy;
+  54   1              OSD_RBx = 0x58;
+C51 COMPILER V8.12   OSD_LF                                                                11/09/2015 19:43:37 PAGE 2   
+
+  55   1              OSD_RBy = (PanelHeight - (LF_CHAR_Height * 3 * 2));
+  56   1              ucOSDType = LFDEMO;
+  57   1      #if PanelWidth==1680
+                      ucOSDWidth = 43;
+              #else
+  60   1              ucOSDWidth = 35;
+  61   1      #endif
+  62   1              ucStrAlignment = 0;
+  63   1              //usFontIndex = 1;
+  64   1              usFontIndex = 0x90;
+  65   1              
+  66   1              WriteIIC560(OSD_CTRL1,0x00);
+  67   1              WriteIIC560(WIN_SEL,0x00);
+  68   1              Sleep(20);
+  69   1              WriteIIC560(VHGLOB_ZMRNG,0xAA);
+  70   1              WriteIIC560(OSD_ZOOM_CTL,0x03);
+  71   1      
+  72   1              WriteWordIIC560(OSD_HS_LI,OSD_RBx);
+  73   1              WriteIIC560(OSD_HW,ucOSDWidth-1);
+  74   1      
+  75   1              WriteWordIIC560(OSD_VS_LI,OSD_RBy);
+  76   1              WriteIIC560(OSD_VH,1);
+  77   1              
+  78   1              WriteWordIIC560(OSD_FC_ATTR_LSB,LFDemoStrColor);
+  79   1              WaitSetup(4);
+  80   1              ClearOSD();
+  81   1              
+  82   1              if(ucLFMode == LF_MODE_OFF){
+  83   2                      WriteArialFont(LF_DEMO_StrTab[0]);
+  84   2                      WriteXY_String(1,0,1);
+  85   2              }
+  86   1              else{
+  87   2                      WriteArialFont(LF_DEMO_StrTab[2]);
+  88   2                      WriteXY_String(1,0,1);
+  89   2              }
+  90   1      
+  91   1              WriteArialFont(LF_DEMO_StrTab[3]);
+  92   1      #if PanelWidth==1680
+                      WriteXY_String(1,33,1);
+              #else
+  95   1              WriteXY_String(1,21,1);
+  96   1      #endif
+  97   1              
+  98   1              OSD_ON();
+  99   1      
+ 100   1              //
+ 101   1      #ifndef BF_MOVING_WINDOW
+                      ucLFDemoDir = 0;
+                      ucLFDemoPos = 0x58;
+                      ucLFDemoTimer = 100;
+                      ucTimer2ShowBKStatus = 20;
+              #endif
+ 107   1      }
+ 108          
+ 109          #ifdef BF_MOVING_WINDOW
+ 110          /*
+ 111          void ShowBKStatus(void)
+ 112          {
+ 113                  if (ucLFDemoTimer != 0) return;
+ 114                  ucLFDemoTimer = 10;
+ 115                  if (ucTimer2ShowBKStatus == 0)
+ 116                  {
+C51 COMPILER V8.12   OSD_LF                                                                11/09/2015 19:43:37 PAGE 3   
+
+ 117                          ucTimer2ShowBKStatus = 20;
+ 118                          ShowNum(0,15,1, ((float)(iCurDynBk - ucMinBrightness) * 100 / (ucMaxBrightness - ucMinBrightness) + 0.5)
+             -);
+ 119                  }
+ 120                  else
+ 121                          ucTimer2ShowBKStatus--;
+ 122          }
+ 123          */
+ 124          #else
+              void MoveLFDemoOSD(void)
+              {
+                      if (ucLFDemoTimer != 0) return;
+                      ucLFDemoTimer = 10;
+                      if (ucTimer2ShowBKStatus == 0)
+                      {
+                              ucTimer2ShowBKStatus = 20;
+                              ShowNum(0,15,1, ((float)(iCurDynBk - ucMinBrightness) * 100 / (ucMaxBrightness - ucMinBrightness) + 0.5)
+             -);
+                      }
+                      else
+                              ucTimer2ShowBKStatus--;
+                      if (ucLFDemoDir == 0)
+                      {
+                              ucLFDemoPos++;
+                              if (ucLFDemoPos > 0xb0) 
+                              {
+                                      ucLFDemoPos = 0xb0;
+                                      ucLFDemoDir = 1;
+                              }
+                      }
+                      else
+                      {
+                              ucLFDemoPos--;
+                              if (ucLFDemoPos > 0xb0) 
+                              {
+                                      ucLFDemoPos = 0x00;
+                                      ucLFDemoDir = 0;
+                              }
+                      }
+              
+                      WriteWordIIC560(OSD_HS_LI, (unsigned short)ucLFDemoPos);
+              }
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    350    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       5
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,396 @@
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     1
+PROGRAM NAME =
+
+    1                               1     ;/****************************************************************************/
+    2                               2     ;/*                                                                          */
+    3                               3     ;/*      Startup Code                                                        */
+    4                               4     ;/*                                                                          */
+    5                               5     ;/*          Copyright   :: Phoenix Information Technology                   */
+    6                               6     ;/*          Cpu         :: SH3                                              */
+    7                               7     ;/*          Language    :: SHC                                              */
+    8                               8     ;/*          File Name   :: rom_asm.src                                      */
+    9                               9     ;/*                                                                          */
+   10                              10     ;/****************************************************************************/
+   11                              11     
+   12                              12             .cpu    SH3
+   13                              13     
+   14                              14     ;/*=========================== External Symbols =============================*/
+   15                              15     
+   16                              16             .import         _int100,_int400,_vec,_boot
+   17                              17     
+   18                              18     ;/*============================ Global Symbols ==============================*/
+   19                              19     
+   20                              20             .export         startup,ill_prog,tlb_prog,int_prog
+   21                              21     
+   22                              22     ;/*============================= Program Area ================================*/
+   23                              23     
+   24 00000000                     24             .section start,code,align=4     ;/* Startup */
+   25                              25     
+   26 00000000                     26             .align 2
+   27 00000000                     27     startup:
+   28 00000000 DF01                28             mov.l   Stack,r15
+   29 00000002 D002                29             mov.l   Boot,r0
+   30 00000004 402B                30             jmp     @r0
+   31 00000006 0009                31             nop
+   32                              32     
+   33 00000008                     33             .align 4
+   34 00000008 0CFFFFF0            34     Stack:  .data.l H'0cfffff0              ;/* Stack Pointer Init Value */
+   35 0000000C 00000000            35     Boot:   .data.l (_boot + H'a0000000)    ;/* C Start Function (Non-Cache Area )*/
+   36                              36     
+   37 00000000                     37             .section int100,code,align=4    ;/* General Exception Event 1 */
+   38                              38     
+   39 00000000                     39     ill_prog:
+   40 00000000 4F33                40             stc.l   ssr,@-sp                ;/* Register PUSH */
+   41 00000002 4F43                41             stc.l   spc,@-sp
+   42                              42     
+   43 00000004 2F06                43             mov.l   r0,@-sp
+   44 00000006 2F16                44             mov.l   r1,@-sp
+   45 00000008 2F26                45             mov.l   r2,@-sp
+   46 0000000A 2F36                46             mov.l   r3,@-sp
+   47 0000000C 2F46                47             mov.l   r4,@-sp
+   48 0000000E 2F56                48             mov.l   r5,@-sp
+   49 00000010 2F66                49             mov.l   r6,@-sp
+   50 00000012 2F76                50             mov.l   r7,@-sp
+   51 00000014 2F86                51             mov.l   r8,@-sp
+   52 00000016 2F96                52             mov.l   r9,@-sp
+   53 00000018 2FA6                53             mov.l   r10,@-sp
+   54 0000001A 2FB6                54             mov.l   r11,@-sp
+   55 0000001C 2FC6                55             mov.l   r12,@-sp
+   56 0000001E 2FD6                56             mov.l   r13,@-sp
+   57 00000020 2FE6                57             mov.l   r14,@-sp
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     2
+PROGRAM NAME =
+
+   58                              58     
+   59 00000022 0012                59             stc     gbr,r0
+   60 00000024 2F06                60             mov.l   r0,@-sp
+   61 00000026 0022                61             stc     vbr,r0
+   62 00000028 2F06                62             mov.l   r0,@-sp
+   63 0000002A 000A                63             sts     mach,r0
+   64 0000002C 2F06                64             mov.l   r0,@-sp
+   65 0000002E 001A                65             sts     macl,r0
+   66 00000030 2F06                66             mov.l   r0,@-sp
+   67 00000032 002A                67             sts     pr,r0
+   68 00000034 2F06                68             mov.l   r0,@-sp
+   69                              69     
+   70 00000036 4F83                70             stc.l   r0_bank,@-sp
+   71 00000038 4F93                71             stc.l   r1_bank,@-sp
+   72 0000003A 4FA3                72             stc.l   r2_bank,@-sp
+   73 0000003C 4FB3                73             stc.l   r3_bank,@-sp
+   74 0000003E 4FC3                74             stc.l   r4_bank,@-sp
+   75 00000040 4FD3                75             stc.l   r5_bank,@-sp
+   76 00000042 4FE3                76             stc.l   r6_bank,@-sp
+   77 00000044 4FF3                77             stc.l   r7_bank,@-sp
+   78                              78     
+   79 00000046 D014                79             mov.l   L_ILL_PROG,r0
+   80 00000048 400B                80             jsr     @r0                     ;/* Jump */
+   81 0000004A 0009                81             nop
+   82                              82     
+   83 0000004C 4FF7                83             ldc.l   @sp+,r7_bank            ;/* Register POP */
+   84 0000004E 4FE7                84             ldc.l   @sp+,r6_bank
+   85 00000050 4FD7                85             ldc.l   @sp+,r5_bank
+   86 00000052 4FC7                86             ldc.l   @sp+,r4_bank
+   87 00000054 4FB7                87             ldc.l   @sp+,r3_bank
+   88 00000056 4FA7                88             ldc.l   @sp+,r2_bank
+   89 00000058 4F97                89             ldc.l   @sp+,r1_bank
+   90 0000005A 4F87                90             ldc.l   @sp+,r0_bank
+   91                              91     
+   92 0000005C 60F6                92             mov.l   @sp+,r0
+   93 0000005E 402A                93             lds     r0,pr
+   94 00000060 60F6                94             mov.l   @sp+,r0
+   95 00000062 401A                95             lds     r0,macl
+   96 00000064 60F6                96             mov.l   @sp+,r0
+   97 00000066 400A                97             lds     r0,mach
+   98 00000068 60F6                98             mov.l   @sp+,r0
+   99 0000006A 402E                99             ldc     r0,vbr
+  100 0000006C 60F6               100             mov.l   @sp+,r0
+  101 0000006E 401E               101             ldc     r0,gbr
+  102                             102     
+  103 00000070 6EF6               103             mov.l   @sp+,r14
+  104 00000072 6DF6               104             mov.l   @sp+,r13
+  105 00000074 6CF6               105             mov.l   @sp+,r12
+  106 00000076 6BF6               106             mov.l   @sp+,r11
+  107 00000078 6AF6               107             mov.l   @sp+,r10
+  108 0000007A 69F6               108             mov.l   @sp+,r9
+  109 0000007C 68F6               109             mov.l   @sp+,r8
+  110 0000007E 67F6               110             mov.l   @sp+,r7
+  111 00000080 66F6               111             mov.l   @sp+,r6
+  112 00000082 65F6               112             mov.l   @sp+,r5
+  113 00000084 64F6               113             mov.l   @sp+,r4
+  114 00000086 63F6               114             mov.l   @sp+,r3
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     3
+PROGRAM NAME =
+
+  115 00000088 62F6               115             mov.l   @sp+,r2
+  116 0000008A 61F6               116             mov.l   @sp+,r1
+  117 0000008C 60F6               117             mov.l   @sp+,r0
+  118                             118     
+  119 0000008E 4F47               119             ldc.l   @sp+,spc
+  120 00000090 4F37               120             ldc.l   @sp+,ssr
+  121                             121     
+  122 00000092 002B               122             rte
+  123 00000094 0009               123             nop
+  124                             124     
+  125 00000098                    125             .align  4
+  126 00000098 00000000           126     L_ILL_PROG:     .data.l _int100
+  127                             127     
+  128                             128     
+  129 00000000                    129             .section int400,code,align=4    ;/* General Exception Event 2 */
+  130                             130     
+  131 00000000                    131     tlb_prog:
+  132 00000000 4F33               132             stc.l   ssr,@-sp                ;/* Register PUSH */
+  133 00000002 4F43               133             stc.l   spc,@-sp
+  134                             134     
+  135 00000004 2F06               135             mov.l   r0,@-sp
+  136 00000006 2F16               136             mov.l   r1,@-sp
+  137 00000008 2F26               137             mov.l   r2,@-sp
+  138 0000000A 2F36               138             mov.l   r3,@-sp
+  139 0000000C 2F46               139             mov.l   r4,@-sp
+  140 0000000E 2F56               140             mov.l   r5,@-sp
+  141 00000010 2F66               141             mov.l   r6,@-sp
+  142 00000012 2F76               142             mov.l   r7,@-sp
+  143 00000014 2F86               143             mov.l   r8,@-sp
+  144 00000016 2F96               144             mov.l   r9,@-sp
+  145 00000018 2FA6               145             mov.l   r10,@-sp
+  146 0000001A 2FB6               146             mov.l   r11,@-sp
+  147 0000001C 2FC6               147             mov.l   r12,@-sp
+  148 0000001E 2FD6               148             mov.l   r13,@-sp
+  149 00000020 2FE6               149             mov.l   r14,@-sp
+  150                             150     
+  151 00000022 0012               151             stc     gbr,r0
+  152 00000024 2F06               152             mov.l   r0,@-sp
+  153 00000026 0022               153             stc     vbr,r0
+  154 00000028 2F06               154             mov.l   r0,@-sp
+  155 0000002A 000A               155             sts     mach,r0
+  156 0000002C 2F06               156             mov.l   r0,@-sp
+  157 0000002E 001A               157             sts     macl,r0
+  158 00000030 2F06               158             mov.l   r0,@-sp
+  159 00000032 002A               159             sts     pr,r0
+  160 00000034 2F06               160             mov.l   r0,@-sp
+  161                             161     
+  162 00000036 4F83               162             stc.l   r0_bank,@-sp
+  163 00000038 4F93               163             stc.l   r1_bank,@-sp
+  164 0000003A 4FA3               164             stc.l   r2_bank,@-sp
+  165 0000003C 4FB3               165             stc.l   r3_bank,@-sp
+  166 0000003E 4FC3               166             stc.l   r4_bank,@-sp
+  167 00000040 4FD3               167             stc.l   r5_bank,@-sp
+  168 00000042 4FE3               168             stc.l   r6_bank,@-sp
+  169 00000044 4FF3               169             stc.l   r7_bank,@-sp
+  170                             170     
+  171 00000046 D014               171             mov.l   L_TLB_PROG,r0
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     4
+PROGRAM NAME =
+
+  172 00000048 400B               172             jsr     @r0                     ;/* Jump */
+  173 0000004A 0009               173             nop
+  174                             174     
+  175 0000004C 4FF7               175             ldc.l   @sp+,r7_bank            ;/* Register POP */
+  176 0000004E 4FE7               176             ldc.l   @sp+,r6_bank
+  177 00000050 4FD7               177             ldc.l   @sp+,r5_bank
+  178 00000052 4FC7               178             ldc.l   @sp+,r4_bank
+  179 00000054 4FB7               179             ldc.l   @sp+,r3_bank
+  180 00000056 4FA7               180             ldc.l   @sp+,r2_bank
+  181 00000058 4F97               181             ldc.l   @sp+,r1_bank
+  182 0000005A 4F87               182             ldc.l   @sp+,r0_bank
+  183                             183     
+  184 0000005C 60F6               184             mov.l   @sp+,r0
+  185 0000005E 402A               185             lds     r0,pr
+  186 00000060 60F6               186             mov.l   @sp+,r0
+  187 00000062 401A               187             lds     r0,macl
+  188 00000064 60F6               188             mov.l   @sp+,r0
+  189 00000066 400A               189             lds     r0,mach
+  190 00000068 60F6               190             mov.l   @sp+,r0
+  191 0000006A 402E               191             ldc     r0,vbr
+  192 0000006C 60F6               192             mov.l   @sp+,r0
+  193 0000006E 401E               193             ldc     r0,gbr
+  194                             194     
+  195 00000070 6EF6               195             mov.l   @sp+,r14
+  196 00000072 6DF6               196             mov.l   @sp+,r13
+  197 00000074 6CF6               197             mov.l   @sp+,r12
+  198 00000076 6BF6               198             mov.l   @sp+,r11
+  199 00000078 6AF6               199             mov.l   @sp+,r10
+  200 0000007A 69F6               200             mov.l   @sp+,r9
+  201 0000007C 68F6               201             mov.l   @sp+,r8
+  202 0000007E 67F6               202             mov.l   @sp+,r7
+  203 00000080 66F6               203             mov.l   @sp+,r6
+  204 00000082 65F6               204             mov.l   @sp+,r5
+  205 00000084 64F6               205             mov.l   @sp+,r4
+  206 00000086 63F6               206             mov.l   @sp+,r3
+  207 00000088 62F6               207             mov.l   @sp+,r2
+  208 0000008A 61F6               208             mov.l   @sp+,r1
+  209 0000008C 60F6               209             mov.l   @sp+,r0
+  210                             210     
+  211 0000008E 4F47               211             ldc.l   @sp+,spc
+  212 00000090 4F37               212             ldc.l   @sp+,ssr
+  213                             213     
+  214 00000092 002B               214             rte
+  215 00000094 0009               215             nop
+  216                             216     
+  217 00000098                    217             .align  4
+  218 00000098 00000000           218     L_TLB_PROG:     .data.l _int400
+  219                             219     
+  220 00000000                    220             .section int600,code,align=4    ;/* INT Handler */
+  221                             221     
+  222 00000000                    222     int_prog:
+  223 00000000 4F33               223             stc.l   ssr,@-sp                ;/*Register PUSH */
+  224 00000002 4F43               224             stc.l   spc,@-sp
+  225                             225     
+  226 00000004 2F06               226             mov.l   r0,@-sp
+  227 00000006 2F16               227             mov.l   r1,@-sp
+  228 00000008 2F26               228             mov.l   r2,@-sp
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     5
+PROGRAM NAME =
+
+  229 0000000A 2F36               229             mov.l   r3,@-sp
+  230 0000000C 2F46               230             mov.l   r4,@-sp
+  231 0000000E 2F56               231             mov.l   r5,@-sp
+  232 00000010 2F66               232             mov.l   r6,@-sp
+  233 00000012 2F76               233             mov.l   r7,@-sp
+  234 00000014 2F86               234             mov.l   r8,@-sp
+  235 00000016 2F96               235             mov.l   r9,@-sp
+  236 00000018 2FA6               236             mov.l   r10,@-sp
+  237 0000001A 2FB6               237             mov.l   r11,@-sp
+  238 0000001C 2FC6               238             mov.l   r12,@-sp
+  239 0000001E 2FD6               239             mov.l   r13,@-sp
+  240 00000020 2FE6               240             mov.l   r14,@-sp
+  241                             241     
+  242 00000022 0012               242             stc     gbr,r0
+  243 00000024 2F06               243             mov.l   r0,@-sp
+  244 00000026 0022               244             stc     vbr,r0
+  245 00000028 2F06               245             mov.l   r0,@-sp
+  246 0000002A 000A               246             sts     mach,r0
+  247 0000002C 2F06               247             mov.l   r0,@-sp
+  248 0000002E 001A               248             sts     macl,r0
+  249 00000030 2F06               249             mov.l   r0,@-sp
+  250 00000032 002A               250             sts     pr,r0
+  251 00000034 2F06               251             mov.l   r0,@-sp
+  252                             252     
+  253 00000036 4F83               253             stc.l   r0_bank,@-sp
+  254 00000038 4F93               254             stc.l   r1_bank,@-sp
+  255 0000003A 4FA3               255             stc.l   r2_bank,@-sp
+  256 0000003C 4FB3               256             stc.l   r3_bank,@-sp
+  257 0000003E 4FC3               257             stc.l   r4_bank,@-sp
+  258 00000040 4FD3               258             stc.l   r5_bank,@-sp
+  259 00000042 4FE3               259             stc.l   r6_bank,@-sp
+  260 00000044 4FF3               260             stc.l   r7_bank,@-sp
+  261                             261     
+  262 00000046 D014               262             mov.l   L_INT_PROG,r0
+  263 00000048 400B               263             jsr     @r0                     ;/*Jump */
+  264 0000004A 0009               264             nop
+  265                             265     
+  266 0000004C 4FF7               266             ldc.l   @sp+,r7_bank            ;/* Register POP */
+  267 0000004E 4FE7               267             ldc.l   @sp+,r6_bank
+  268 00000050 4FD7               268             ldc.l   @sp+,r5_bank
+  269 00000052 4FC7               269             ldc.l   @sp+,r4_bank
+  270 00000054 4FB7               270             ldc.l   @sp+,r3_bank
+  271 00000056 4FA7               271             ldc.l   @sp+,r2_bank
+  272 00000058 4F97               272             ldc.l   @sp+,r1_bank
+  273 0000005A 4F87               273             ldc.l   @sp+,r0_bank
+  274                             274     
+  275 0000005C 60F6               275             mov.l   @sp+,r0
+  276 0000005E 402A               276             lds     r0,pr
+  277 00000060 60F6               277             mov.l   @sp+,r0
+  278 00000062 401A               278             lds     r0,macl
+  279 00000064 60F6               279             mov.l   @sp+,r0
+  280 00000066 400A               280             lds     r0,mach
+  281 00000068 60F6               281             mov.l   @sp+,r0
+  282 0000006A 402E               282             ldc     r0,vbr
+  283 0000006C 60F6               283             mov.l   @sp+,r0
+  284 0000006E 401E               284             ldc     r0,gbr
+  285                             285     
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     6
+PROGRAM NAME =
+
+  286 00000070 6EF6               286             mov.l   @sp+,r14
+  287 00000072 6DF6               287             mov.l   @sp+,r13
+  288 00000074 6CF6               288             mov.l   @sp+,r12
+  289 00000076 6BF6               289             mov.l   @sp+,r11
+  290 00000078 6AF6               290             mov.l   @sp+,r10
+  291 0000007A 69F6               291             mov.l   @sp+,r9
+  292 0000007C 68F6               292             mov.l   @sp+,r8
+  293 0000007E 67F6               293             mov.l   @sp+,r7
+  294 00000080 66F6               294             mov.l   @sp+,r6
+  295 00000082 65F6               295             mov.l   @sp+,r5
+  296 00000084 64F6               296             mov.l   @sp+,r4
+  297 00000086 63F6               297             mov.l   @sp+,r3
+  298 00000088 62F6               298             mov.l   @sp+,r2
+  299 0000008A 61F6               299             mov.l   @sp+,r1
+  300 0000008C 60F6               300             mov.l   @sp+,r0
+  301                             301     
+  302 0000008E 4F47               302             ldc.l   @sp+,spc
+  303 00000090 4F37               303             ldc.l   @sp+,ssr
+  304                             304     
+  305 00000092 002B               305             rte
+  306 00000094 0009               306             nop
+  307                             307     
+  308 00000098                    308             .align  4
+  309 00000098 00000000           309     L_INT_PROG:     .data.l _vec
+  310                             310     
+  311                             311     ;/*===========================================================*/
+  312                             312     
+  313 00000000                    313             .section D,data,align=4
+  314 00000000                    314             .section R,data,align=4
+  315 00000000                    315             .section B,data,align=4
+  316 00000000                    316             .section C,data,align=4
+  317                             317     
+  318 00000000 00000000           318     __D_ROM .data.l (startof D)              ; Section D Start Address
+  319 00000004 00000000           319     __D_BGN .data.l (startof R)              ; Section R Start Address
+  320 00000008 00000000           320     __D_END .data.l (startof R) + (sizeof R) ; Section R End Address
+  321 0000000C 00000000           321     __B_BGN .data.l (startof B)              ; Section B Start Address
+  322 00000010 00000000           322     __B_END .data.l (startof B) + (sizeof B) ; Section B End Address
+  323                             323     
+  324                             324             .export __D_ROM
+  325                             325             .export __D_BGN
+  326                             326             .export __D_END
+  327                             327             .export __B_BGN
+  328                             328             .export __B_END
+  329                             329     
+  330                             330             .end
+  *****TOTAL ERRORS       0
+  *****TOTAL WARNINGS     0
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     7
+
+*** CROSS REFERENCE LIST
+
+NAME                             SECTION  ATTR VALUE             SEQUENCE
+
+B                                B        SCT  00000000    315*  321   322   322 
+Boot                             start         0000000C     29    35*
+C                                C        SCT  00000000    316*
+D                                D        SCT  00000000    313*  318 
+L_ILL_PROG                       int100        00000098     79   126*
+L_INT_PROG                       int600        00000098    262   309*
+L_TLB_PROG                       int400        00000098    171   218*
+R                                R        SCT  00000000    314*  319   320   320 
+Stack                            start         00000008     28    34*
+__B_BGN                          C        EXPT 0000000C    321*  327 
+__B_END                          C        EXPT 00000010    322*  328 
+__D_BGN                          C        EXPT 00000004    319*  325 
+__D_END                          C        EXPT 00000008    320*  326 
+__D_ROM                          C        EXPT 00000000    318*  324 
+_boot                                     IMPT 00000000     16    35 
+_int100                                   IMPT 00000000     16   126 
+_int400                                   IMPT 00000000     16   218 
+_vec                                      IMPT 00000000     16   309 
+ill_prog                         int100   EXPT 00000000     20    39*
+int100                           int100   SCT  00000000     37*
+int400                           int400   SCT  00000000    129*
+int600                           int600   SCT  00000000    220*
+int_prog                         int600   EXPT 00000000     20   222*
+start                            start    SCT  00000000     24*
+startup                          start    EXPT 00000000     20    27*
+tlb_prog                         int400   EXPT 00000000     20   131*
+*** SuperH RISC engine ASSEMBLER Ver. 4.2B ***    08/27/03 13:54:35                                                      PAGE     8
+
+*** SECTION DATA LIST
+
+SECTION                          ATTRIBUTE    SIZE             START
+
+start                            REL-CODE    000000010        
+int100                           REL-CODE    00000009C        
+int400                           REL-CODE    00000009C        
+int600                           REL-CODE    00000009C        
+D                                REL-DATA    000000000        
+R                                REL-DATA    000000000        
+B                                REL-DATA    000000000        
+C                                REL-DATA    000000014        

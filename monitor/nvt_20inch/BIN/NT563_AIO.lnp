@@ -1,0 +1,26 @@
+COMMON {".\BIN\MAIN.obj"},
+COMMON {".\BIN\IIC.obj"},
+COMMON {".\BIN\UserAdj.obj"},
+COMMON {".\BIN\F63Xreg.obj"},
+COMMON {".\BIN\MCU.obj"},
+COMMON {".\BIN\NT68F631_bank.obj"},
+COMMON {".\SRC\powerrst.LIB"},
+BANK1 {".\BIN\Rom_map.obj"},
+BANK1 {".\BIN\RAM.obj"},
+BANK1 {".\BIN\AutoAdj.obj"},
+BANK1 {".\BIN\ModeHandle.obj"},
+BANK1 {".\BIN\sRGB.obj"},
+BANK1 {".\BIN\Scaler.obj"},
+BANK2 {".\BIN\OSD_Tab2.obj"},
+BANK2 {".\BIN\OSD.obj"},
+BANK2 {".\BIN\OSD_TAB.obj"},
+BANK3 {".\BIN\TW990x.obj"},
+BANK3 {".\BIN\TUNER.obj"},
+BANK3 {".\BIN\Tuner_Tab.obj"},
+BANK3 {".\BIN\Z86229.obj"} 
+TO ".\BIN\NT563_AIO" BankArea(0x8000,0xFFFF) 
+PRINT(".\LST\NT563_AIO.m51") RAMSIZE(256) 
+B2(?CO?OSD_TAB (0x8000))
+B3(?CO?TUNER_TAB (0x8000)) 
+CODE( 0X0000-0XFFFF )
+XDATA( 0XF400-0XF6FF,0XF800-0XF9FF )

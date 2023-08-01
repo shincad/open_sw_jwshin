@@ -1,0 +1,1191 @@
+#include "MyDef.H"
+#include "F63XREG.H"
+#include "F63XDEF.H"
+#include "math.h"
+#include "stdio.h"
+#include "RAM.H"
+#include "ModeHandle.H"
+#include "UserAdj.H"
+#include "IIC.H"
+#include "Scaler.H"
+#include "MCU.H"
+#include "PANEL.H"
+#include "AutoAdj.H"
+#include "ROM_MAP.H"
+#include "TW990x.H"
+#include "Tuner.H"
+
+typedef union
+{
+	unsigned short w;
+	unsigned char b[2];
+}Union;
+
+void GetCounter(void)
+{
+	unsigned char temp;
+	Union TempFreq;
+	NoSyncFlag = 0;
+	if(ReadIIC563(0x19a) & BIT_5)	//H+V high piority
+		if(SyncMode == 0)
+			{
+			V_SYNC = 0;
+			H_SYNC = 0;
+			NoSyncFlag = 1;
+			return;
+			}
+	temp = ReadIIC563(0x19a);
+//	printf("ReadIIC563(0x19a)=0x%x\r\n",(unsigned short)temp);
+	HV_Pol = (temp & 0x03) << 4;
+	BypassSOG = 0;
+	
+	if(!(temp & BIT_6)) //Sep/Comp Hsync present
+		{
+		TempFreq.w = ReadWordIIC563(0x19b);
+		H_SYNC = (HSYNC_CLK)/TempFreq.w;
+//	printf("H_SYNC11=%d\r\n",(unsigned short)H_SYNC);
+		//H_SYNC = (143180*8)/TempFreq.w;
+		BypassSOG = 1;
+		if(H_SYNC <100)
+			{
+			H_SYNC = 0;
+			NoSyncFlag = 1;
+			}
+		}
+	else
+		{
+		if(SyncMode == 3){// Jacky 20040623 When DVI DE mode, GI_HCNT_OV alway "1"
+			#if DVImode == DEmode
+			if(ReadIIC563(0x1ab) & BIT_0)
+				{
+				TempFreq.w = ReadWordIIC563(0x19b);
+				H_SYNC = (HSYNC_CLK)/TempFreq.w;
+				//H_SYNC = (143180*8)/TempFreq.w;
+				BypassSOG = 1;
+				if(H_SYNC <100)
+					{
+					H_SYNC = 0;
+					NoSyncFlag = 1;
+					}
+				}
+			else
+				{
+				H_SYNC = 0;
+				NoSyncFlag = 1;
+				}
+			#else
+			H_SYNC = 0;
+			NoSyncFlag = 1;
+			#endif
+		}
+		else{
+			H_SYNC = 0;
+			NoSyncFlag = 1;
+		}
+		}
+	if(!(temp & BIT_7))//Sep/Comp Vsync present
+		{
+		TempFreq.w = ReadWordIIC563(0x19d);
+		V_SYNC = (VSYNC_CLK)/TempFreq.w;
+//	printf("V_SYNC11=%d\r\n",(unsigned short)V_SYNC);
+//		V_SYNC = 559300/TempFreq.w;
+		BypassSOG = 1;
+		if(V_SYNC <100)
+			{
+			V_SYNC = 0;
+			NoSyncFlag = 1;
+			}
+		}
+	else
+		{
+		V_SYNC = 0;	//over flow
+		NoSyncFlag = 1;
+		}
+	if((SyncMode == 2||SyncMode == 6) && !NoSyncFlag)
+		if(!VsyncValide())	//for SOG Vsync pulse detect
+			{
+			V_SYNC = 0;
+			H_SYNC = 0;
+			NoSyncFlag = 1;
+			}
+
+}
+
+void CheckFreq(void)
+{
+	bit UnStable;
+	Byte i,Count;
+	if(DetectIRQ() || ChangeMode>0)
+		{
+		if(SyncMode == 3)  {
+			DVIBandWidthDetection();
+		}
+		OutOfRange = 0;
+		H_SYNC_Temp = 0x5555;
+		V_SYNC_Temp = 0x5555;
+		if(!BurnInMode && !ForceToBack)
+			ForceToBackground(0,0,0);	//Set fource to background
+		Count = 0;
+		for(i=0;i<3;i++)
+			{
+			UnStable = 0;
+			GetCounter();
+			if(HV_Pol_Temp != HV_Pol)
+				UnStable = 1;
+			if(abs(H_SYNC_Temp - H_SYNC)>10)
+				UnStable = 1;
+			if(abs(V_SYNC_Temp - V_SYNC)>10)
+				UnStable = 1;
+			if(UnStable)
+				{
+				if((SyncMode == 3) && (abs(DVI_Clock - ReadIIC563(0x016)) > 2))        //Jacky 20050512 +jwshin061013
+                                        DVIBandWidthDetection(); 
+				HV_Pol_Temp = HV_Pol;
+				H_SYNC_Temp = H_SYNC;
+				V_SYNC_Temp = V_SYNC;
+				i = 0;
+				}
+			Sleep(35);		//wait for Vsync update
+			Count++;
+			if(Count > 15)	//freq unstable too long
+				{
+				V_SYNC = 0;
+				H_SYNC = 0;
+				NoSyncFlag = 1;
+				break;
+				}
+			}
+		ChangeMode = 0;
+		FastMuteEnable = 1;
+		WriteIIC563(0x1ab,0x3f);	//clear IRQ
+		WriteIIC563(0x1ac,0x1f);
+//		printf("clear IRQ\r\n");
+		
+		EndMute = 0;
+		MuteTimer = MUTE_DELAY_TIME;
+		}
+	if(NoSyncFlag)
+		{
+//		printf("NoSyncFlag\r\n");
+	
+		if(ChangeMode == 0)
+			{
+			FastMuteEnable = 0;
+			if(!BurnInMode)
+				NoSync();
+			}
+		}
+	else
+		{
+//		printf("ChangeMode=%d,EndMute=%d,MuteTimer=0x%x\r\n",(unsigned short)ChangeMode,(unsigned short)EndMute,(unsigned short)MuteTimer);
+
+		if(ChangeMode == 0 && !EndMute && MuteTimer == 0)
+			{
+//		printf("recheck frequency\r\n");
+			GetCounter();	//recheck frequency
+			if(HV_Pol_Temp != HV_Pol)
+				ChangeMode = 1;
+			if(abs(H_SYNC_Temp - H_SYNC)>10)
+				ChangeMode = 1;
+			if(abs(V_SYNC_Temp - V_SYNC)>10)
+				ChangeMode = 1;
+			EndMute = 1;
+			if(PowerDown)
+				{
+				ScalerPowerUp();
+				PowerTimer = POWER_TIME;
+				MuteTimer = 0;
+				}
+			if(BurnInMode)
+				{
+				BurnInMode = 0;
+				FactMode = 0;//jacky0316 Item41 BurnInMode
+				Write24C16(ep_Status,StatusFlag);
+				LED_GrnOn();
+//				LED_RedOff();		// -jwshin 051101
+				}
+			//FastMuteOn();
+			BackLightOff();
+	/*
+			VideoMute = 1;
+			ForceToBackground(0,0,0);	//Set fource to background
+	*/
+			Osd_Off();
+//	printf("ChangeMode=%d\r\n",(unsigned short)ChangeMode);
+	
+			if(ChangeMode == 0)
+				{
+				GetMode();
+				switch(OutOfRange)
+					{
+					case 0:
+						SetDisplayNormal();
+						//if(NewMode && SyncMode < 3)	//bypass DVI
+						//	TunePositionOnly();
+						//ShowSource();
+						break;
+					case 1:
+						SetDisplayNormal();
+						TunePositionOnly();
+						ShowMessage(MSG_OUTRANGE);
+						break;
+					case 2:
+						FastMuteEnable = 0;
+						ShowMessage(MSG_OUTRANGE);
+						break;
+					}
+				Sleep(PowerUpInvTiming);
+				//FastMuteOff();
+				BackLightOn();
+				VideoMute = 0;
+				if(NewMode && (AutoSetting == 1) && (SyncMode < 3) && (OutOfRange == 0) && (ModePoint > 18))	//bypass DVI and normal mode
+					{
+					ShowMessage(MSG_AUTOTUNE);
+					AutoTune();	
+					//Write24C16(ep_Reso_Offset + (ModePoint * 8), ResolutionPtr|0x80);
+					}
+				}
+			}
+		}
+}
+
+void GetMode(void)
+{
+	bit PolPass;
+	Byte ch;
+	Word i,Addr;
+	Union Hf,Vf;
+	ModePoint = 0;
+	UserModeRefReso = 0;
+	//------------------------------ +jwshin 060929
+
+	ch = ReadIIC563(0x020);
+	if(ReadIIC563(0x19a) & BIT_2){
+		Interlance = 1;
+		WriteIIC563(0x020,ch|BIT_2);
+		}
+	else{
+		Interlance = 0;
+		WriteIIC563(0x020,ch);
+	}
+
+	//-----------------------------
+	VTotal = (Word)(((unsigned long)H_SYNC * 1000)/ V_SYNC);
+	if(SyncMode == 0 || SyncMode == 3)
+		i = 0;
+	else
+		i = 8;
+	for(;i< ModeNum;i++)
+		{
+		Addr = ep_Mode_Data + i * 4;
+		Hf.b[0] = Read24C16(Addr++);	//check h_sync
+		Hf.b[1] = Read24C16(Addr++);
+		Vf.b[0] = Read24C16(Addr++);
+		Vf.b[1] = Read24C16(Addr);
+		PolPass = 0;
+		if(Vf.b[0] & 0x80)
+			PolPass = 1;
+		if((Vf.b[0] & 0x30) == HV_Pol)
+			PolPass = 1;
+		if(Vf.b[0] & 0x40)
+			{
+			ch = (Vf.b[0] & 0x40) >> 1;
+			ch |= ch >> 1;
+			if(ch == HV_Pol)
+				PolPass = 1;
+			}
+		if(PolPass)
+			{
+			if(i == 35 || i == 68 || i == 38 || i ==74){// Jacky 20040524 for 1024x768@60Hz and 1280x768@60Hz
+				if(abs(Hf.w - H_SYNC)<5)
+					{
+					Vf.b[0] &= 0x0f;
+					if(abs(Vf.w - V_SYNC) < 5)
+						{
+						//#if PRINT_MESSAGE
+						//	printf("Mode %d\n",(unsigned short)ModePoint);
+						//#endif
+						//if(i < 8 && !TextMode)
+						//	break;
+						//if(i >= 8)
+							break;
+						}
+					}
+			}
+			else{
+				if(abs(Hf.w - H_SYNC)<10)
+					{
+					Vf.b[0] &= 0x0f;
+					if(abs(Vf.w - V_SYNC) < 10)
+						{
+						//#if PRINT_MESSAGE
+						//	printf("Mode %d\n",(unsigned short)ModePoint);
+						//#endif
+						//if(i < 8 && !TextMode)	//graph mode stop search text mode 62~69
+						//	break;
+						//if(i >= 8)
+							break;
+						}
+					}
+			}
+			}
+		}
+	ModePoint = i;
+	//if(ModePoint < 18)
+	//	GTmodeEn = 1;
+	//else
+	//	GTmodeEn = 0;
+	
+	if(SyncMode == 6 && ModePoint == 11)	
+		if(ModePoint == 11)	//For NTSC 480P
+			ModePoint = 12;
+		else if(ModePoint == 8)	//For PAL 574i
+			ModePoint = 69;
+	if(ModePoint == ModeNum)
+		{
+//		#if PRINT_MESSAGE
+//			printf("user's mode\n");
+//		#endif
+		NewMode = 1;
+		SetUserMode();
+		}
+	else
+		NewMode = 0;
+//#if PRINT_MESSAGE
+//		printf("Mode %d\n",(unsigned short)ModePoint);
+//#endif
+	LoadModeDependentSettings();
+//	if(SyncMode < 3)
+		FuncBuf[pCONTRAST] = Read24C16(ep_Contrast);		
+//	else		
+//		FuncBuf[pCONTRAST] = Read24C16(ep_DVI_Contrast);		
+	Addr = ep_Reso_Offset + (ModePoint * 8);
+	ResolutionPtr = Read24C16(Addr);
+	if(!(ResolutionPtr & 0x80))
+		NewMode = 1;
+	ResolutionPtr &= 0x7f;
+	
+	Hresolution = H_ActiveTab[ResolutionPtr];
+	Vresolution = V_ActiveTab[ResolutionPtr];
+	//----------------------- +jwshin 061002
+	if(FuncBuf[pVIDEOSOURCE] == cYPbPr){ //YPbPr
+		if((ModePoint==9)||(ModePoint==12)||(ModePoint==67)||(ModePoint==70)){
+			switch(ModePoint){
+				case  9:  //480i
+					i = 0;
+					break;
+				case  12: //480p
+					i = 1;
+					break;
+				case  67: //720p
+					i = 2;
+					break;
+				case  70: //1080i
+					i = 3;
+					break;
+			}
+		}
+		HPositionBase = YPbPrSyncMap[i*8+2];
+		HPositionBase <<= 8;
+		HPositionBase |= YPbPrSyncMap[i*8+3];
+		ClockBase =YPbPrSyncMap[i*8+4];
+		ClockBase <<= 8;
+		ClockBase |= YPbPrSyncMap[i*8+5];	
+	}
+	else{
+		if(ModePoint < UserModeSt)
+			Addr = ModePoint * 8 + 2;
+		else{
+			UserModeRefReso = SearchEstimatedModeTables();
+			Addr = UserModeRefReso * 8 + 2;
+		}	
+
+		HPositionBase = EEP_SyncMap[Addr];
+		HPositionBase <<= 8;
+		HPositionBase |= EEP_SyncMap[Addr+1];	
+		ClockBase = EEP_SyncMap[Addr+2];
+		ClockBase <<= 8;
+		ClockBase |= EEP_SyncMap[Addr+3];	
+	}
+	//------------------------------------------
+	SetInterface();
+//	#if PRINT_MESSAGE
+//		printf("HV_Pol= %x\n",(unsigned short)HV_Pol);
+//		printf("H_SYNC= %d\n",H_SYNC);
+//		printf("V_SYNC= %d\n",V_SYNC);
+//	#endif
+	SetADC_PLL();
+	CheckDVIresolution();
+	//------------------------- +jwshin 061002
+	if(FuncBuf[pVIDEOSOURCE] == cYPbPr){
+		if((ModePoint == 9)||(ModePoint == 70)){ //480i,1080i
+			Interlance = 1;
+			WriteIIC563(0x020,0xc1|BIT_2);
+		}
+		else	{ //480p,720p
+			Interlance = 0;
+			WriteIIC563(0x020,0xc1);
+		}
+	
+	}
+	else if((FuncBuf[pVIDEOSOURCE] == cANALOG)&&(ModePoint == 70)){//1080i
+			Interlance = 1;
+			WriteIIC563(0x020,0xc1|BIT_2);
+	}
+	//--------------------------
+	if(OutOfRange < 2)
+		{
+		SetScalerMode();
+		//SetScaler();
+		if(SyncMode != 3)
+			{
+			ch = FuncBuf[pPHASE];
+			if(FuncBuf[pPHASE] != 0)
+				{
+				for(FuncBuf[pPHASE]=0; FuncBuf[pPHASE]<=ch; FuncBuf[pPHASE]++)
+					SetADC_Phase();
+				}
+			FuncBuf[pPHASE] = ch;
+			}
+		SetSharpness();
+		}
+	if(SyncMode == 3)	//DVI
+		{
+		#if DVImode == DEmode
+			FuncBuf[pVPOSITION] = 0;	//rev3
+			FuncBuf[pHPOSITION] = 0;
+			WriteWordIIC563(0x030,FuncBuf[pVPOSITION]);
+			WriteWordIIC563(0x02e,FuncBuf[pVPOSITION]);
+			WriteWordIIC563(0x030,FuncBuf[pVPOSITION]);
+			WriteWordIIC563(0x034,FuncBuf[pHPOSITION]);
+		#else
+			//if((SyncMode == 3) && ((PortD & BIT_3) != 0))	//DVI
+			AutoPosition();
+		#endif
+		}	
+	SetContrast();
+	SetInverter();
+}
+void CheckDVIresolution()
+{
+	Union Hf,Vf;
+	if(SyncMode == 3)
+		{
+		Vf.w = ReadWordIIC563(0x03e);
+		Hf.w = ReadWordIIC563(0x03c);
+		//if(Vf.w > 1024 || Hf.w > 1280)
+//		printf("Vf.w=%d\r\n",Vf.w);
+//		printf("Hf.w=%d\r\n",Hf.w);
+//		printf("V_SYNC=%d\r\n",V_SYNC);
+		
+		if(Vf.w > 1200 || Hf.w > 1600||H_SYNC < 200)//H_SYNC < 400)
+			{
+			OutOfRange = 2;
+			}
+		else
+			{
+			if((Vf.w == 1200 || Hf.w == 1600)&&(V_SYNC > 620))
+				{
+				OutOfRange = 2;
+				}
+			Hresolution = Hf.w;
+			Vresolution = Vf.w;
+			//ResolutionPtr = 0xff;
+			}
+		}
+}
+
+void SetUserMode(void)
+{
+
+/*
+code unsigned short Vt_Tab[]={
+	500,600,700,760,850,950,1050,1200
+};
+
+code unsigned char UserTimeTab[]={
+	0x00,0x7d,0x00,0x30,0x03,0x84,0x03,0x10,	//720*400  500
+	0x00,0x21,0x00,0x30,0x03,0x20,0x04,0x10,	//640x480  600
+	0x00,0x10,0x00,0x98,0x04,0x18,0x06,0x10,	//800x600  700
+	0x00,0x10,0x00,0xe0,0x06,0x72,0x0f,0x10,	//1280x720  760 (HDTV 720p)
+	0x00,0x10,0x01,0x00,0x05,0x40,0x08,0x10,	//1024x768  850
+	0x00,0x10,0x00,0xd0,0x06,0x40,0x09,0x10,	//1152x864  950
+	0x00,0x10,0x00,0xe0,0x06,0xc0,0x0c,0x10,	//1280x960  1050
+	0x00,0x10,0x00,0xf8,0x06,0x98,0x0d,0x10,	//1280x1024  1200
+	0x00,0x2e,0x01,0x30,0x0b,0xb8,0x0e,0x10		//over (1600x1200)
+};
+
+unsigned short addr;
+unsigned char i,j,k;
+	#if PRINT_MESSAGE
+		printf("Vtotal = %d\n",VTotal);
+	#endif
+	if(Interlance)
+		addr = VTotal << 1;
+	else
+		addr = VTotal;
+	j = 8;
+	for(i=0; i<8; i++)
+		{
+		if(addr < Vt_Tab[i])
+			{
+			j = i;
+			break;
+			}
+		}
+	j = j * 8;
+	ModePoint = UserModePtr;
+	UserModePtr++;
+	Write24C16(ep_User_Ptr,UserModePtr);
+	if(UserModePtr > ModeNum)
+		UserModePtr = UserModeSt;
+	#if PRINT_MESSAGE
+		printf("UserModePoint =  %d\n",(unsigned short)ModePoint);
+	#endif
+	addr = ModePoint * 8;
+	for(i=0; i<8; i++)
+		{
+		k = UserTimeTab[j];
+		Write24C16(ep_Sync_Data+addr,k);
+		#if PRINT_MESSAGE
+			printf("Data %x = %x\n",(unsigned short)i,(unsigned short)k);
+		#endif
+		addr++;
+		j++;
+		}
+	addr = ep_Mode_Data+ModePoint * 4;
+	k = H_SYNC >> 8;
+	Write24C16(addr,k);
+	addr++;
+	k = H_SYNC;
+	Write24C16(addr,k);
+	addr++;
+	k = V_SYNC >> 8;
+	k |= HV_Pol;
+	Write24C16(addr,k);
+	addr++;
+	k = V_SYNC;
+	Write24C16(addr,k);
+*/
+//----------------------------------------------------
+	Word addr;
+	Byte i,Dat;
+
+	ModePoint = UserModePtr;
+	UserModePtr++;
+	Write24C16(ep_User_Ptr,UserModePtr);
+	if(UserModePtr > ModeNum)
+		UserModePtr = UserModeSt;
+//#if PRINT_MESSAGE
+//	printf("UserModePoint =  %d\n",(unsigned short)ModePoint);
+//#endif
+	UserModeRefReso = SearchEstimatedModeTables();
+	//write range refference
+	//printf("UserModeReferencePoint =  %d\n",(unsigned short)UserModeRefReso);
+	addr = UserModeRefReso * 8;
+	//write sync data
+	addr = ep_Sync_Data + (ModePoint * 8);	
+	for(i=0; i<8; i++)
+		Write24C16(addr++,EEP_SyncMap[UserModeRefReso*8+i]);
+
+	addr = ep_Mode_Data+ModePoint * 4;
+	Dat = H_SYNC >> 8;
+	Write24C16(addr,Dat);
+	addr++;
+	Dat = H_SYNC;
+	Write24C16(addr,Dat);
+	addr++;
+	Dat = V_SYNC >> 8;
+	Dat |= HV_Pol;
+	Write24C16(addr,Dat);
+	addr++;
+	Dat = V_SYNC;
+	Write24C16(addr,Dat);
+}
+
+
+void SetInterface()
+{
+Word code InterfaceTab[]={0x000,0x008,0x102,0x023,0x021,0x196,0x012,0x072};
+	Byte code InterfaceDat[][8]={
+								{0x12,0x04,0x29,0x00,0x05,0x64,0x00,0x01},	//channel 1 sep +-
+								{0x12,0x04,0x29,0x40,0x05,0x65,0x00,0x00},	//channel 1 comp +-
+								{0x1a,0x04,0x29,0x40,0x05,0x65,0x7c,0x00},	//channel 1 SOG -
+								#if DVImode == DEmode
+								{0x12,0x04,0x03,0x01,0x05,0x24,0x00,0x01},	//DVI +-
+								#else
+								{0x12,0x04,0x03,0x09,0x05,0x94,0x00,0x01},	//DVI +-
+								#endif
+						//		{0x12,0x00,0x29,0x00,0x05,0x24,0x00,0x01},	//channel 2 sep +- //removed by Jason 
+						//		{0x12,0x00,0x29,0x40,0x05,0x25,0x00,0x00},	//channel 2 comp +-//removed by Jason 
+//								{0x1a,0x03,0x29,0xc0,0x05,0x25,0xe4,0x00},	//channel 2 SOG -
+								{0x1a,0x03,0x29,0xc0,0x05,0x25,0xb4,0x00},	//channel 2 SOG -
+	};
+	//Byte SourSel,temp,i;
+	Byte i;
+	if(!PowerDown)
+		{
+	#if PanelInterface == TCON_TO_RSDS
+			WriteIIC563(0x101,0x90);
+	#endif
+	#if PanelInterface == LVDS_TO_TCON
+			WriteIIC563(0x101,0x40);
+	#endif
+	#if PanelInterface == TTL_TO_TCON
+			WriteIIC563(0x101,0x00);
+	#endif
+	#if PanelInterface == TCON_TO_TTL
+			WriteIIC563(0x101,0x00);
+	#endif
+	// Jacky 20040906 for LVDS power up
+	WriteIIC563(0x1f5,0x06);	//disable Pull low LVDS pad	
+	WriteIIC563(0x1f7,0xc0);	//Power up LVDS buffer
+		}
+	Interlance = 0;
+
+	if(SyncMode == 3){
+		WriteIIC563(0x020,0x83);
+		 WriteIIC563(0x143,0x20);        //Power up DVI Pll  for Rev D
+	}
+	else{		
+		WriteIIC563(0x020,0x81);
+		 WriteIIC563(0x143,0xa0);        //Power down DVI Pll Rev D
+	}
+
+	for(i=0;i<8;i++)
+		{
+		if(InterfaceTab[i] == 0x102 && PowerDown)
+			WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]&0x02);
+		else if(InterfaceTab[i] == 0x021 && (HV_Pol & BIT_4))
+			WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]|BIT_7);
+		else
+			WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]);
+		Sleep(1);
+		}
+}
+
+void SyncSource(bit ForceChange)
+{
+	Byte temp,Max;
+	Bit ExitLoop;
+//	if(VideoMute || ForceChange)
+	if(NoSyncFlag || ForceChange)
+		{
+		ExitLoop = 0;
+		if(SyncMode==3) {	//DVI
+				WriteIIC563(0x01d, 0x1f);
+				SetInterface();
+		}
+		else if(FuncBuf[pVIDEOSOURCE] == cANALOG){	//Port1 Ananolg
+			Max = 2;
+			while(PowerTimer < (POWER_TIME-100) && !ExitLoop)
+				{
+				SyncMode++;
+				if(SyncMode > Max)	
+					SyncMode = 0;
+				if(SyncMode == 0)
+					{
+					SetInterface();
+					ExitLoop = 1;
+					FuncBuf[pVIDEOSOURCE] = cANALOG;
+//					#if(Message==1)
+						printf("Separate Sync1\n");
+//					#endif
+					}
+				else if(SyncMode == 1)
+					{
+					temp = ReadIIC563(0x19a);
+					if(temp & BIT_5)
+						{
+						SetInterface();
+						ExitLoop = 1;
+						FuncBuf[pVIDEOSOURCE] = cANALOG;
+//					#if PRINT_MESSAGE
+						printf("Separate Sync2\n");
+//					#endif
+						}
+					}
+				else if(SyncMode == 2 && !BypassSOG)
+					{
+					SetInterface();
+					ExitLoop = 1;
+					FuncBuf[pVIDEOSOURCE] = cANALOG;
+//					#if PRINT_MESSAGE
+						printf("Sync on green1\n");
+//					#endif
+					}
+
+				}
+		}
+		else if(FuncBuf[pVIDEOSOURCE] == cYPbPr) {	//YPbPr
+			SyncMode = 4;
+			SetInterface();
+			ExitLoop = 1;
+			FuncBuf[pVIDEOSOURCE] = cYPbPr;
+
+
+		}
+		
+//	printf("FuncBuf[pVIDEOSOURCE]=%d\r\n",(unsigned short)FuncBuf[pVIDEOSOURCE]);
+	ChangeMode = 1;
+	}
+}
+
+void NoSync(void)
+{
+	if(!VideoMute)
+	{
+		VideoMute =1;
+		MessageShow = 0;
+		//FastMuteOn();
+		BackLightOff();
+		ForceToBackground(0,0,0);	//Set fource to background
+		Osd_Off();
+		PowerTimer = POWER_TIME;
+		#if PRINT_MESSAGE
+//			printf("NoSync\n");
+		#endif
+	}
+	else
+	{
+		if((PowerTimer < (POWER_TIME-200))&&(PowerTimer > 0)&&(!MessageShow))
+		{
+			MessageShow = 1;
+			if(!FactMode)
+				ShowMessage(MSG_NOSYNC);
+			OsdTimer = PowerTimer;
+			if((PTC_REG & BIT_0) == 0)
+			{
+				Sleep(PowerUpInvTiming);
+				//FastMuteOff();
+				BackLightOn();
+			}
+		}
+	}
+}
+
+void PowerSaveingProcess()
+{
+	if(NoSyncFlag && PowerTimer == 0 && !PowerDown && !BurnInMode)
+	{
+		if(!FactMode){
+			PowerSaving();
+//			printf("FactMode\n");
+		}
+		if(FactMode){
+			BurnInMode = 1;
+			BurnInTimer = 0;
+			Osd_Off();
+		}
+		else{	//jacky0316 Item41 BurnInMode
+//			LED_GrnOff();
+//			LED_RedOn();
+		}
+	}
+	if(NoSyncFlag) {				// +jwshin 051101 Added...
+			if(NoSigTimer==0) {
+				if(NoSigTogg) {
+					LED_GrnOff();
+				}
+				else {
+					LED_GrnOn();
+				}
+				NoSigTogg^=1;
+				NoSigTimer = 50;
+			} 
+	}	
+}
+
+extern WarmUp();
+
+void SourceSelect(void)
+{
+
+//		if(VChip_Block == 1){//VChip Init
+//			WriteIIC563(0x080,0x00);
+//			VChip_Block =0;
+//		}
+//		Z86229_Init();
+	
+//?	WriteIIC(TW990x_Addr,TW99_OPFORM, 0x92);      //Output Enable  mode
+//	WriteIIC563(0x154,0x02);
+//	Source_change = 1;
+	switch(FuncBuf[pVIDEOSOURCE])
+		{
+		case cANALOG:
+			//------------------------- +jwshin 060927 각 모드 진입후 화면 깨짐을 방지하기 위해 전원 On/Off Routine 추가...
+//			PowerSaving();
+//			Sleep(10);
+//			PowerStatus = 1;	//power on
+//			BurnInMode = 0;
+//			KeyLock = 0;		// +jwshin 050812
+//			Write24C16(ep_Status,StatusFlag);
+//			WarmUp();
+			//-------------------------
+			ForceToBack = 0;
+			ScalerPowerUp();
+			Sleep(10);
+			PowerTimer = POWER_TIME;//Jason Choi
+			MessageShow = 0;
+//			AUDIO_MUTE();
+			WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+			AVDecoderSleep(); //jason Choi
+			ForceToBackground(0,0,0);
+			WriteIIC563(0x1b0,0x00);
+			H_SYNC_Temp = 0x5555;
+			V_SYNC_Temp = 0x5555;
+			LoadModeIndependentSettings();
+			SyncMode = 0;
+			InitScaler();
+//			ADC_SEL();
+			SetBrightness();
+			SetContrast();
+			LoadADC_Gain();
+			ChangeMode = 1;
+			#if PRINT_MESSAGE
+				printf("Select PC Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x03);//pc input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundRGB();
+//			AUDIO_On();
+			break;
+			
+		case cDVI:
+			//------------------------- +jwshin 060927 각 모드 진입후 화면 깨짐을 방지하기 위해 전원 On/Off Routine 추가...
+//			PowerSaving();
+//			Sleep(10);
+//			PowerStatus = 1;	//power on
+//			BurnInMode = 0;
+//			KeyLock = 0;		// +jwshin 050812
+//			Write24C16(ep_Status,StatusFlag);
+//			WarmUp();
+			//-------------------------
+			ForceToBack = 0;
+			ScalerPowerUp();
+			Sleep(10);
+			PowerTimer = POWER_TIME;//Jason Choi
+			MessageShow = 0;
+//			AUDIO_MUTE();
+			WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+			AVDecoderSleep(); //jason Choi
+			ForceToBackground(0,0,0);
+			WriteIIC563(0x1b0,0x00);
+			H_SYNC_Temp = 0x5555;
+			V_SYNC_Temp = 0x5555;
+			LoadModeIndependentSettings();
+			SyncMode = 3;
+			InitScaler();
+			SetScalerMode();
+			SetBrightness();
+			SetContrast();
+		//	LoadADC_Gain();
+			ChangeMode = 1;
+			#if PRINT_MESSAGE
+				printf("Select DVI Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x03);//pc input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundRGB();
+//			AUDIO_On();
+			break;
+
+		case cYPbPr:
+			ForceToBack = 0;//Jason Choi
+			ScalerPowerUp();
+			Sleep(10);
+			PowerTimer = POWER_TIME;//Jason Choi
+			MessageShow = 0;
+//			AUDIO_MUTE();
+			WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+			AVDecoderSleep(); //jason Choi
+			ForceToBackground(0,0,0);
+		//	WriteIIC563(0x1b0,0x00);//Jason Choi
+			H_SYNC_Temp = 0x5555;
+			V_SYNC_Temp = 0x5555;
+			LoadModeIndependentSettings();
+			SyncMode = 4;
+			InitScaler();
+//			ADC_SEL();
+			SetBrightness();
+			SetContrast();
+			LoadADC_Gain();
+			ChangeMode = 1;
+			#if PRINT_MESSAGE
+				printf("Select YPbPr Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//for YPbPr input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundComp();
+//			AUDIO_On();
+			break;
+
+		case cSVIDEO:
+			OutOfRange = 0;//Jason Choi
+			ForceToBack = 0;
+//			AUDIO_MUTE();
+			ScalerPowerUp();
+			Sleep(10);
+			InitScaler();
+//			ADC_SEL();
+			ForceToBackground(0,0,0);
+			Decoder_Init();
+			#if PRINT_MESSAGE
+				printf("Select Video 1 Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//s-video input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundVideo();
+			AUDIO_On();
+			DisplaySource(cSVIDEO);
+//			 Video_60Hz = 1;  // 60Hz detected...
+		
+//			Sleep(50);
+//			SetScalerAV();
+//			SetDisplayNormal_Video();
+			break;
+		case cCOMPOSIT:
+			OutOfRange = 0;//Jason Choi
+			ForceToBack = 0;
+//			AUDIO_MUTE();
+
+			ScalerPowerUp();
+			Sleep(10);
+			InitScaler();
+//			ADC_SEL();
+			ForceToBackground(0,0,0);
+			Decoder_Init();
+			#if PRINT_MESSAGE
+				printf("Select Video 2 Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//composite input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundVideo();
+		//	AUDIO_On();
+			DisplaySource(cCOMPOSIT);
+//			 Video_60Hz = 1;  // 60Hz detected...
+	
+//			Sleep(50);
+//			SetScalerAV();
+//			SetDisplayNormal_Video();
+			break;
+		case cTV:
+//			AUDIO_MUTE();
+			OutOfRange = 0; //Jason Choi
+			ForceToBack = 0;
+			ScalerPowerUp();
+			Sleep(10);
+			InitScaler();
+//			ADC_SEL();
+			ForceToBackground(0,0,0);
+			Decoder_Init();
+			LoadChLimit();
+			if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+				ChBuffer = Read24C16(0x209);
+				ChannelSel(ChBuffer);
+			}
+			else{
+//				LoadChLimit();
+				PRBuffer = Read24C16(0x207);
+				ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+				ChannelSel(ChBuffer);
+			}
+			#if PRINT_MESSAGE
+				printf("Select Video 2 Input\n");
+			#endif
+			WriteIIC(TDA7440D_Addr,A_InputSel,0x02);//composite input	
+			WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+			SoundTV();
+	//		AUDIO_On();
+			DisplaySource(cTV);
+//			 Video_60Hz = 1;  // 60Hz detected...
+		
+//			Sleep(50);
+//			SetScalerAV();
+//			SetDisplayNormal_Video();
+			break;		
+		};
+}
+
+
+
+
+void CheckModeChange(void)
+{
+
+	unsigned char temp;
+	if(DetectIRQ() || ChangeMode>0){
+			temp = ReadIIC563(0x1ab);
+			if((temp & 0x3c) != 0){
+				BackLightOff();
+				Abort = 1;
+				H_SYNC_Temp = 0xffff;
+				V_SYNC_Temp = 0xffff;
+			#if PRINT_MESSAGE
+//				printf("Mode change1\r\n");
+			#endif
+			}
+			
+			temp = ReadIIC563(0x19a);
+			if(((SyncMode > 0)&&(SyncMode < 3))||((SyncMode > 4)&&(SyncMode < 7))){ 	//compostive
+				if((temp & BIT_5) == 0){
+					BackLightOff();
+					Abort = 1;
+					H_SYNC_Temp = 0xffff;
+					V_SYNC_Temp = 0xffff;
+//				printf("Mode change2\r\n");
+					return;
+				}
+			}
+			else{
+				if((temp & 0x18) != 0x18){
+					BackLightOff();
+					Abort = 1;
+					H_SYNC_Temp = 0xffff;
+					V_SYNC_Temp = 0xffff;
+//				printf("Mode change3\r\n");
+					return;
+				}
+			}
+	}
+}
+
+Byte SearchEstimatedModeTables(void)
+{
+	Byte Resolution;
+	if(VTotal < 320)//486)//485)//470 )	// 720x400 Mode : Vertical Line < 470
+	{
+		if(V_SYNC < 550) 
+			Resolution = _756x574i_50Hz;
+		else 
+			Resolution = _640x480i_60Hz;
+	}
+	else if(VTotal < 488)//486)//485)//470 )	// 720x400 Mode : Vertical Line < 470
+	{
+		if(V_SYNC < 740) 
+			Resolution = _720x400_70Hz;
+		else 
+			Resolution = _720x400_70Hz;
+	}
+	else if(VTotal < 580)	// 640x480 Mode : 481 <= Vertical Line < 580
+	{
+		if(V_SYNC < 640)
+			if(SyncMode == 6)
+				Resolution = _640x480P_60Hz;
+			else
+				Resolution = _640x480_60Hz;
+		else if (V_SYNC < 690)  
+			Resolution = _640x480_67Hz;
+		else if (V_SYNC < 740)  
+			Resolution = _640x480_73Hz;
+		else
+			Resolution = _640x480_75Hz;
+	}
+	else if(VTotal < 601 ) 
+	{
+		Resolution = _720x400_70Hz;
+	}
+	else if(VTotal < 612)//610)//608)//606)	//605 ) 
+	{
+		Resolution = _720x400_70Hz;
+	}
+	else if(VTotal < 660 )	// 800x600 Mode : 604 <= Vertical Line < 660
+	{
+		if(V_SYNC < 540)  // Add this line for 640x480@50Hz
+			Resolution = _640x480_50Hz;
+		else if(V_SYNC < 580)  
+			Resolution = _800x600_56Hz;
+		else if(V_SYNC < 660)  
+			Resolution = _800x600_60Hz;
+		else if(V_SYNC < 740)  
+			Resolution = _800x600_72Hz;
+		else
+			Resolution = _800x600_75Hz;
+	}
+	else if(VTotal < 732)//720 )	// 832x624(75Hz) Mode : 660 <= Vertical Line < 720
+	{
+		if(V_SYNC < 740)  
+			Resolution = _800x600_72Hz;
+		else 
+			Resolution = _832x624_75Hz;
+	}
+	else if(VTotal < 780)//778)//770 )	// 1280x720(60Hz) Mode : 720 <= Vertical Line < 770
+	{
+		if(V_SYNC < 740) 
+			Resolution = _1280x720_60Hz;
+		else 
+			Resolution = _1024x768_75Hz;
+	}
+	else if(VTotal < 800)	// 1280x768(60Hz) Mode : 780 <= Vertical Line < 800
+	{
+		if(V_SYNC < 650) 
+			Resolution = _1280x768_60Hz;
+		else 
+			Resolution = _1024x768_72Hz;
+	}
+	else if(VTotal < 881)//878)//876)//861)	// 1024x768 Mode : 770 <= Vertical Line < 861
+	{
+		if(V_SYNC < 650)  
+			Resolution = _1024x768_60Hz;
+		else if(V_SYNC < 730)  
+			Resolution = _1024x768_70Hz;
+		else if (V_SYNC < 800) 
+			if((H_SYNC > 634)&&(H_SYNC < 644))
+				Resolution = _640x480_75Hz;		//Apple G4 PC 
+			else
+		  		Resolution = _1024x768_75Hz;
+		else 
+			Resolution = _1024x768_75Hz;
+	}
+	else if(VTotal < 932)	// 1152x864/870 Mode : 861 <= Vertical Line < 961
+	{
+		if(V_SYNC < 650) 
+			if((VTotal > 899 && VTotal < 903)/*&&( H_SYNC & (SM_SyncHnVp))*/)
+				Resolution = _1152x864_60Hz;	//Apple G4 : 901(-/+)
+			else
+				Resolution = _1152x864_60Hz;	//ATI : 895, Voodoo4 : 905, G550 : 900(+/+)
+		else if(V_SYNC < 730)  
+			Resolution = _1152x864_70Hz;
+	  	else 
+			if((H_SYNC > 679)&&(H_SYNC < 697))
+				Resolution = _1152x870_75Hz;
+			else 
+	  			Resolution = _1152x864_75Hz;
+	}
+	else if(VTotal < 975)//961)	// 1152x864/870 Mode : 861 <= Vertical Line < 961
+	{
+		if(V_SYNC < 680)
+			Resolution = _1152x900_66Hz;
+		else
+			Resolution = _1152x864_70Hz;	//ATI Rage Fury Pro
+	}
+	else if(VTotal < 1040)//1036)//1025)	// 1280x960 Mode : 960 <= Vertical Line < 1024
+	{
+		if(V_SYNC < 650)	
+			Resolution = _1280x960_60Hz;
+		else 
+			Resolution = _1280x960_75Hz;
+	}
+	else if(VTotal < 1080)// 1280x1024  Mode : 1040 <= Vertical Line < 1080
+	{
+		if(V_SYNC < 680)	
+			Resolution = _1280x1024_60Hz;
+		else if(V_SYNC < 720)	
+			Resolution = _1280x1024_70Hz;		
+		else 			
+			Resolution = _1280x1024_75Hz;
+	}
+	
+	else// 1600x1200  Mode : 1040 <= Vertical Line < 1080
+	{
+		if(V_SYNC < 680)	
+			Resolution = _1600x1200_60Hz;
+		else if(V_SYNC < 720)	
+			Resolution = _1600x1200_70Hz;		
+		else 			
+			Resolution = _1600x1200_75Hz;
+	}	
+	
+	
+	return Resolution;	
+}

@@ -1,0 +1,256 @@
+               H SERIES LINKAGE EDITOR Ver. 6.0E
+
+
+LINK COMMAND LINE
+
+LNK /subcommand=flash2.sub 
+
+
+
+LINK SUBCOMMANDS
+
+input   boot.obj                       
+input   vector.obj                     
+input   inter.obj                      
+input   main.obj                       
+input   comm.obj                       
+input   sci.obj                        
+input   29fxxx.obj                     
+input   int_asm.obj                    
+library C:\DEVELOP\SH3\BIN\..\lib\shc3npb.lib   
+output  flash2.abs                     
+print   flash2.map                     
+rom     (D,R)                          
+start   start(00000000)                
+start   int100(00000100)               
+start   int400(00000400)               
+start   int600,P,C,D(00000600)         
+start   R,B(0C100000)                  
+exit                                   
+
+
+
+               H SERIES LINKAGE EDITOR Ver. 6.0E       PAGE :     1
+
+                  ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION NAME                         START    -     END        LENGTH
+              UNIT NAME                        MODULE NAME
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+start                             H'00000000  -  H'0000000F  H'00000010
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00000000  -  H'0000000F  H'00000010
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+int100                            H'00000100  -  H'0000019B  H'0000009C
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00000100  -  H'0000019B  H'0000009C
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+int400                            H'00000400  -  H'0000049B  H'0000009C
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00000400  -  H'0000049B  H'0000009C
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+int600                            H'00000600  -  H'0000069B  H'0000009C
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00000600  -  H'0000069B  H'0000009C
+
+
+ATTRIBUTE  :   CODE  NOSHR
+
+P                                 H'0000069C  -  H'0000077F  H'000000E4
+              boot                             boot                            
+                                  H'00000780  -  H'000007EB  H'0000006C
+              vector                           vector                          
+                                  H'000007EC  -  H'00000897  H'000000AC
+              inter                            inter                           
+                                  H'00000898  -  H'00000923  H'0000008C
+              main                             main                            
+                                  H'00000924  -  H'00000F17  H'000005F4
+              comm                             comm                            
+                                  H'00000F18  -  H'000012BF  H'000003A8
+              sci                              sci                             
+                                  H'000012C0  -  H'000015FF  H'00000340
+              29fxxx                           29fxxx                          
+
+
+
+               H SERIES LINKAGE EDITOR Ver. 6.0E       PAGE :     2
+
+                  ***     LINKAGE EDITOR LINK MAP LIST      ***
+
+
+SECTION NAME                         START    -     END        LENGTH
+              UNIT NAME                        MODULE NAME
+
+* TOTAL ADDRESS *                 H'0000069C  -  H'000015FF  H'00000F64
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+C                                 H'00001600  -  H'000017F7  H'000001F8
+              vector                           vector                          
+                                  H'000017F8  -  H'0000181A  H'00000023
+              comm                             comm                            
+                                  H'0000181C  -  H'0000182C  H'00000011
+              sci                              sci                             
+                                  H'00001830  -  H'0000187F  H'00000050
+              29fxxx                           29fxxx                          
+                                  H'00001880  -  H'00001893  H'00000014
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00001600  -  H'00001893  H'00000294
+
+
+ATTRIBUTE  :   DATA  NOSHR ROM
+
+D                                 H'00001894  -  H'00001894  H'00000000
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'00001894  -  H'00001894  H'00000000
+
+
+ATTRIBUTE  :   DATA  NOSHR RAM
+
+R                                 H'0C100000  -  H'0C100000  H'00000000
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'0C100000  -  H'0C100000  H'00000000
+
+
+ATTRIBUTE  :   DATA  NOSHR
+
+B                                 H'0C100000  -  H'0C1000A3  H'000000A4
+              vector                           vector                          
+                                  H'0C1000A4  -  H'0C1001AF  H'0000010C
+              comm                             comm                            
+                                  H'0C1001B0  -  H'0C1002F7  H'00000148
+              sci                              sci                             
+                                  H'0C1002F8  -  H'0C1002FB  H'00000004
+              29fxxx                           29fxxx                          
+                                  H'0C1002FC  -  H'0C1002FC  H'00000000
+              int_asm                          int_asm                         
+
+* TOTAL ADDRESS *                 H'0C100000  -  H'0C1002FB  H'000002FC
+
+
+
+               H SERIES LINKAGE EDITOR Ver. 6.0E       PAGE :     1
+
+             ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+SYMBOL NAME                          ADDR                 TYPE
+
+_CmdString                        H'000017F8               DAT
+_SectorAddress                    H'00001830               DAT
+__29fxxx_set_offset               H'000012C0               ENT
+__B_BGN                           H'0000188C               DAT
+__B_END                           H'00001890               DAT
+__D_BGN                           H'00001884               DAT
+__D_END                           H'00001888               DAT
+__D_ROM                           H'00001880               DAT
+_adi                              H'00000894               ENT
+_ap_main                          H'00000898               ENT
+_ati                              H'0000083C               ENT
+_boot                             H'0000069C               ENT
+_bri1                             H'0000088C               ENT
+_bri2                             H'0000119E               ENT
+_cmData                           H'0C1001B0               DAT
+_cmd_buffer                       H'0C1000A4               DAT
+_cmd_buffer_pointer               H'0C100124               DAT
+_comm_init                        H'00000924               ENT
+_comm_mode                        H'0C1001A8               DAT
+_comm_proc                        H'0000096C               ENT
+_cui                              H'00000844               ENT
+_dei0                             H'00000874               ENT
+_dei1                             H'00000878               ENT
+_dei2                             H'0000087C               ENT
+_dei3                             H'00000880               ENT
+_di                               H'0000071E               ENT
+_dl_buffer                        H'0C100126               DAT
+_dl_buffer_pointer                H'0C1001A6               DAT
+_ei                               H'00000770               ENT
+_eri                              H'00000848               ENT
+_eri1                             H'00000884               ENT
+_eri2                             H'000011D4               ENT
+_flash_erase_all                  H'000013B0               ENT
+_flash_erase_proc                 H'000015B4               ENT
+_flash_write_proc                 H'000014B8               ENT
+_get_proc                         H'00001030               ENT
+_int100                           H'00000780               ENT
+_int400                           H'00000788               ENT
+_int_pri                          H'000016FC               DAT
+_irl1                             H'00000828               ENT
+_irl10                            H'00000804               ENT
+_irl11                            H'00000800               ENT
+_irl12                            H'000007FC               ENT
+_irl13                            H'000007F8               ENT
+_irl14                            H'000007F4               ENT
+_irl15                            H'000007F0               ENT
+_irl2                             H'00000824               ENT
+_irl3                             H'00000820               ENT
+_irl4                             H'0000081C               ENT
+_irl5                             H'00000818               ENT
+_irl6                             H'00000814               ENT
+
+
+
+               H SERIES LINKAGE EDITOR Ver. 6.0E       PAGE :     2
+
+             ***  LINKAGE EDITOR EXTERNALLY DEFINED SYMBOLS LIST  ***
+
+SYMBOL NAME                          ADDR                 TYPE
+
+_irl7                             H'00000810               ENT
+_irl8                             H'0000080C               ENT
+_irl9                             H'00000808               ENT
+_irq4                             H'00000864               ENT
+_irq5                             H'00000868               ENT
+_iti                              H'00000858               ENT
+_last_address                     H'0C1001AC               DAT
+_nmi                              H'000007EC               ENT
+_pint0                            H'0000086C               ENT
+_pint8                            H'00000870               ENT
+_pointer                          H'0C100000               DAT
+_pri                              H'00000840               ENT
+_rcmi                             H'0000085C               ENT
+_rec_proc                         H'00001116               ENT
+_rovi                             H'00000860               ENT
+_rxi                              H'0000084C               ENT
+_rxi1                             H'00000888               ENT
+_rxi2                             H'000011EA               ENT
+_sci_init                         H'00000F18               ENT
+_send_proc                        H'000010CC               ENT
+_set_send_data                    H'00000FD4               ENT
+_stack                            H'0C100004               DAT
+_start_mes                        H'0000181C               DAT
+_str_comp                         H'00000EA4               ENT
+_tei                              H'00000854               ENT
+_ticpi2                           H'00000838               ENT
+_tuni0                            H'0000082C               ENT
+_tuni1                            H'00000830               ENT
+_tuni2                            H'00000834               ENT
+_txi                              H'00000850               ENT
+_txi1                             H'00000890               ENT
+_txi2                             H'0000124C               ENT
+_vec                              H'00000790               ENT
+_vect_table                       H'00001600               DAT
+ill_prog                          H'00000100               DAT
+int_prog                          H'00000600               DAT
+startup                           H'00000000               DAT
+tlb_prog                          H'00000400               DAT

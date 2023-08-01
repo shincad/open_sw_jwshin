@@ -1,0 +1,2145 @@
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE MODEHANDLE
+OBJECT MODULE PLACED IN .\BIN\ModeHandle.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\ModeHandle.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,
+                    -ModelName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\ModeHandle.lst) OBJECT(.\BIN\ModeHandle.obj)
+
+line level    source
+
+   1          #include "NT686xx_MCU_REG.H"
+   2          #include "RAM.H"
+   3          #include "ModeHandle.H"
+   4          //#include "MyDef.H"
+   5          #include "UserAdj.H"
+   6          #include "NVRAM.H"
+   7          #include "Scaler.H"
+   8          #include "MCU.H"
+   9          #include "PANEL.H"
+  10          #include "AutoAdj.H"
+  11          #include "OSD.H"
+  12          #include "ROM_MAP.H"
+  13          #include <math.h>
+  14          #include "NT686xx_SC_REG.H"
+  15          #include "Board.H"
+  16          #include "Mis.H"
+  17          #include "DDC_Ci.H"
+  18          #include "8051.H"
+  19          #include "BFControl.H"
+  20          #include "HDCP.H"
+  21          
+  22          //#define PRINT(x) //printf(x)
+  23          //#define ModeDebug
+  24          
+  25          
+  26          #ifdef _NONHDCP_SOLUTION_
+  27          void NonHDCPDetection(unsigned char k);
+  28          #endif
+  29          
+  30          code unsigned char bitMask[]={
+  31                  0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,
+  32          };
+  33          code unsigned char PolTab[]={
+  34                  0x00,0x02,0x01,0x03
+  35          };
+  36          
+  37          bit GetSpecialMode(unsigned short value);
+  38          
+  39          
+  40          void Mode_Check()
+  41          {
+  42   1              if((ucPowerStatus > 0x7f)){
+  43   2                      CheckFreq();
+  44   2                      SyncSource();
+  45   2              }
+  46   1      
+  47   1              //      Check DVI signal
+  48   1              if((bForceToSleep != 0)&&(ucSignalType == sigDVI)){
+  49   2                      CheckDVI();
+  50   2              }
+  51   1      }
+  52          
+  53          void GetCounter(void)
+  54          {
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 2   
+
+  55   1      unsigned short value;
+  56   1      
+  57   1              if(usTmpHSync == 0xffff){
+  58   2                      ForceToBackground(0);   //Set fource to background
+  59   2                      SYNC_INT_DISABLE();
+  60   2                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+  61   2                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+  62   2      
+  63   2      #ifdef _NONHDCP_SOLUTION_
+  64   2                      NonHDCPDetection(0);    // Jude 2008/05/07
+  65   2      #endif
+  66   2      //              ClearNewModeLED();
+  67   2      /*      
+  68   2                      if (bLFLEDState)
+  69   2                      {
+  70   2                              BF_DisableWindow(BF_WINDOW_1);
+  71   2                              LED_LF_Off();
+  72   2                      }
+  73   2      */
+  74   2                      if (ucIsLFDemoMode) 
+  75   2                              LFLeaveDemoMode(0);
+  76   2                              
+  77   2                      //      THEFT DETERRENCE
+  78   2                      bShowTheftOSD = FALSE;
+  79   2      #if NT68167
+              //              WriteIIC560(POWER_CTRL2,0x41);
+              #else
+  82   2      
+  83   2                      if(ucSignalType == sigDVI)
+  84   2                              WriteIIC560(POWER_CTRL2,0x03);
+  85   2                      else
+  86   2                              WriteIIC560(POWER_CTRL2,0x01);
+  87   2      #endif
+  88   2      
+  89   2                      bSyncFlag = TRUE;
+  90   2                      bIsSyncConfirmed = FALSE;
+  91   2      #if PanelID == CMO_M190E5_L0E  //neo 060811
+                              ScalerOutputOFF();
+              #endif
+  94   2                      if(ucSignalType == sigSOG){
+  95   3                              if(CheckSOG() == 0)
+  96   3                                      GoToSeparateSync();
+  97   3                      }
+  98   2      
+  99   2      
+ 100   2      #if DUAL_MODE==ON
+ 101   2              #ifdef _SCDT_SOLUTION_
+ 102   2                      if ((ucSignalType == sigDVI) && ((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18))  // Jude 2008/04/30      
+ 103   2              #else
+                              if(ucSignalType == sigDVI && (ReadIIC560(DVI_STATUS) & BIT_0) != 0 )
+                      #endif
+ 106   2                      {
+ 107   3                              DVIBandWidthDetection();                        
+ 108   3              #if _ENABLE_HDCP_
+ 109   3                              CheckHDCPSyncMode();
+ 110   3              #endif
+ 111   3                      }
+ 112   2      #endif                  
+ 113   2              }
+ 114   1      
+ 115   1      // VGA/DVI Connector
+ 116   1      // Connected
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 3   
+
+ 117   1      //      if((ReadIIC560(0x1ab) & 0x3e) != 0x00){
+ 118   1              if(bSyncFlag != FALSE){
+ 119   2      
+ 120   2      #if DUAL_MODE==ON
+ 121   2              #ifdef _SCDT_SOLUTION_
+ 122   2                      if ((ucSignalType == sigDVI) && ((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18))  // Jude 2008/04/30
+ 123   2              #else
+                              if (ucSignalType == sigDVI)
+                      #endif
+ 126   2                      {
+ 127   3                              if (abs(ucCurrentDVIClk - ReadIIC560(DVI_PIXELCLK)) > 2)
+ 128   3                              {
+ 129   4                                      DVIBandWidthDetection();
+ 130   4              #if _ENABLE_HDCP_
+ 131   4                                      CheckHDCPSyncMode();
+ 132   4              #endif
+ 133   4                                      usTmpHSync = 0xffff;
+ 134   4                                      usTmpVSync = 0xffff;
+ 135   4                              }
+ 136   3                      }
+ 137   2      #endif
+ 138   2      
+ 139   2                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+ 140   2                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+ 141   2                      bInSync = TRUE;
+ 142   2      
+ 143   2      //bit0==>H_pol, bit1==>V_pol
+ 144   2                      ucHVPolarity = ReadIIC560(GI_SYNC_STATUS);
+ 145   2      //              printf("GI_SYNC_STATUS=%x\r\n",(unsigned short)ucHVPolarity);   
+ 146   2      
+ 147   2      //usHSync=xx.xKHz
+ 148   2                      if(((ucHVPolarity & BIT_6) != 0)&&(ucSignalType != sigDVI)){
+ 149   3                              usHSync = 0;            //h overflow
+ 150   3                              bInSync = FALSE;
+ 151   3                      }
+ 152   2                      else{
+ 153   3                              value = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+ 154   3      //                      printf("GI_HCNT_LI=%d\r\n",value);      
+ 155   3                              //if((value == 0x1fff)||(value == 0)){
+ 156   3                              if((value == 0x1fff)||(value < 256)){
+ 157   4                                      usHSync = 0;
+ 158   4                                      bInSync = FALSE;
+ 159   4                              }
+ 160   3                              else{
+ 161   4                                  usHSync = 960000 / value;
+ 162   4      //                              printf("usHSync %d\r\n",(unsigned short)usHSync);
+ 163   4                              }
+ 164   3                      }
+ 165   2      //usVSync=xx.xHz
+ 166   2                      if(((ucHVPolarity & BIT_7) != 0)&&(ucSignalType != sigDVI)){
+ 167   3                              usVSync = 0;            //v overflow
+ 168   3                              bInSync = FALSE;
+ 169   3                      }
+ 170   2                      else{
+ 171   3                              value = ReadWordIIC560(GI_VCNT_LI) & 0x1fff;
+ 172   3      //                      printf("GI_VCNT_LI=%d\r\n",value);
+ 173   3                              //if((value == 0x1fff)||(value == 0)){
+ 174   3                              if((value == 0x1fff)||(value < 128)){
+ 175   4                                      usVSync = 0;
+ 176   4                                      bInSync = FALSE;
+ 177   4                              }
+ 178   3                              else{
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 4   
+
+ 179   4                                      usVSync = 468750 / value;
+ 180   4      //                              printf("usVSync %d\r\n",(unsigned short)usVSync);
+ 181   4                              }
+ 182   3                      }
+ 183   2      //bit1==>H_pol, bit0==>V_pol
+ 184   2                      ucHVPolarity &= 0x03;
+ 185   2                      ucHVPolarity = PolTab[ucHVPolarity];    // V+H => H+V   
+ 186   2      //      }
+ 187   2      //      else{
+ 188   2      
+ 189   2                      switch(ucSignalType){
+ 190   3                      case sigSEP:
+ 191   3                              if((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18){
+ 192   4      //printf("sigSEP-Nosync\r\n");
+ 193   4                                      bInSync = FALSE;                                
+ 194   4                              } 
+ 195   3                              break;
+ 196   3                      case sigCOMP:
+ 197   3                      case sigSOG:
+ 198   3                              if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) == 0){
+ 199   4      //printf("sigCOMP/sigSOG-Nosync\r\n");
+ 200   4                                      bInSync = FALSE;
+ 201   4                              }
+ 202   3                              break;
+ 203   3                      case sigDVI:
+ 204   3      #ifdef _SCDT_SOLUTION_
+ 205   3                              if((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18) {       // Jude 2008/04/30
+ 206   4      #else
+                                      if((ReadIIC560(DVI_STATUS) & BIT_0) == 0){
+              #endif
+ 209   4      //printf("sigDVI-Nosync\r\n");
+ 210   4                                      bInSync = FALSE;
+ 211   4                              }
+ 212   3                              break;
+ 213   3                      }
+ 214   2      /*
+ 215   2                      if((ucSignalType > 0)&&(ucSignalType < 3)){             //compostive
+ 216   2                              if((value & BIT_5) == 0){
+ 217   2                                      flag1 &= ~BIT_0;        //no sync
+ 218   2                              }
+ 219   2                      }
+ 220   2                      else if(ucSignalType == 0){
+ 221   2                              if((value & 0x18) != 0x18){
+ 222   2                                      flag1 &= ~BIT_0;        //no sync
+ 223   2                              }
+ 224   2                      }
+ 225   2      */
+ 226   2      
+ 227   2                      if(bInSync == FALSE){                   
+ 228   3                              MCU_INT_DISABLE();
+ 229   3                              SYNC_INT_DISABLE();
+ 230   3                              //bInSync = FALSE;
+ 231   3                      }
+ 232   2      
+ 233   2              }       
+ 234   1      }
+ 235          
+ 236          void CheckFreq(void)
+ 237          {
+ 238   1      //unsigned char k,tag_value;
+ 239   1      #ifdef AUTO_OFFSET
+              unsigned char Reg0x06A;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 5   
+
+              #endif
+ 242   1      
+ 243   1              ucLoopTimer_10ms = 100;
+ 244   1              do{
+ 245   2      
+ 246   2                      GetCounter();
+ 247   2      
+ 248   2      //              if (ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source&&bBGMode&&Get_usOSDTimer_10ms()!=0)      ret
+             -urn;
+ 249   2                      if((ucOSDType == DIRECT_MENU)&&((ucOSDLvl1_Cursor == mDirect_Source)||(ucOSDLvl1_Cursor == mDirect_Volum
+             -e)))
+ 250   2                      {       //
+ 251   3                              // SHOW "SORUCE MENU" WITHOUT CARE SIGNAL CHANGED.
+ 252   3                              // EX. "NO VIDEO INPUT" OR "OUT OF RANGE"
+ 253   3                              //
+ 254   3                              return;
+ 255   3                      }
+ 256   2                      //-------------------------------
+ 257   2                      if((bInSync==FALSE) || (ucLoopTimer_10ms == 0)){
+ 258   3                              //------------------ +jwshin 111213   여기 Routine으로 진입하여... Nosync를 조사한다...
+ 259   3                              //if (ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source&&bBGMode&&Get_usOSDTimer_10ms()!=0)    re
+             -turn;
+ 260   3                              //printf("ucOSDType=%d\r\n",(unsigned short)ucOSDType);
+ 261   3                              //printf("ucOSDLvl1_Cursor %d\r\n",(unsigned short)ucOSDLvl1_Cursor);
+ 262   3                              //printf("bBGMode %d\r\n",(unsigned short)bBGMode);
+ 263   3                              //printf("usOSDTimer_10ms %d\r\n",(unsigned short)usOSDTimer_10ms);
+ 264   3                              GrnLEDFlick();                          // +jwshin 111213
+ 265   3                              NoSync();
+ 266   3                              return;
+ 267   3                      }
+ 268   2                      else{
+ 269   3                              if((bVideoMuted == TRUE)&&(bForceToSleep == FALSE)){
+ 270   4      //                      if((flag1 & BIT_3) != 0){
+ 271   4      /*                              if((ucSignalType == 2) && ((flag2 & BIT_4) == 0)){
+ 272   4                                              flag1 &= ~BIT_0;
+ 273   4                                              flag2 |= BIT_4;
+ 274   4                                              return;
+ 275   4                                      }*/             
+ 276   4                                      //printf("FROM NO SIGNAL POWERSAVING\r\n");
+ 277   4                                      ScalerPowerUp();
+ 278   4                              }
+ 279   3                      }
+ 280   2                      if(ucTmpHVPol != ucHVPolarity){
+ 281   3                              MuteScreen();
+ 282   3                              ucTmpHVPol = ucHVPolarity;
+ 283   3      #ifdef ModeDebug
+                                      printf("ucHVPolarity Change %bx\r\n",ucHVPolarity);
+              #endif
+ 286   3                      }
+ 287   2      
+ 288   2                      if(usTmpHSync > usHSync){
+ 289   3                              if((usTmpHSync - usHSync) > 3){
+ 290   4                                      MuteScreen();
+ 291   4                                      usTmpHSync = usHSync;
+ 292   4      #ifdef ModeDebug
+                                              printf("usHSync Change %d\r\n",usHSync);
+              #endif
+ 295   4                              }
+ 296   3                      }
+ 297   2                      else{
+ 298   3                              if((usHSync - usTmpHSync) > 3){
+ 299   4                                      MuteScreen();
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 6   
+
+ 300   4                                      usTmpHSync = usHSync;
+ 301   4      #ifdef ModeDebug
+                                              printf("usHSync Change %d\r\n",usHSync);
+              #endif
+ 304   4                              }
+ 305   3                      }
+ 306   2                      if(usTmpVSync > usVSync){
+ 307   3                              if((usTmpVSync - usVSync) > 3){
+ 308   4                                      MuteScreen();
+ 309   4                                      usTmpVSync = usVSync;
+ 310   4      #ifdef ModeDebug
+                                              printf("usVSync Change %d\r\n",usVSync);
+              #endif
+ 313   4                              }
+ 314   3                      }
+ 315   2                      else{
+ 316   3                              if((usVSync - usTmpVSync) > 3){
+ 317   4                                      MuteScreen();
+ 318   4                                      usTmpVSync = usVSync;
+ 319   4      #ifdef ModeDebug
+                                              printf("usVSync Change %d\r\n",usVSync);
+              #endif
+ 322   4                              }
+ 323   3                      }
+ 324   2                      if((ucSyncStableTimer_10ms < (SYNC_STABLE_TIME - 20)) && (ucSyncStableTimer_10ms > 0)){
+ 325   3      #ifdef ModeDebug
+                                      printf("CheckSyncMode\r\n");
+              #endif
+ 328   3                              CheckSyncMode();
+ 329   3                      }
+ 330   2                      else if(ucSyncStableTimer_10ms == 0){
+ 331   3                              bSyncFlag = FALSE;
+ 332   3                      }
+ 333   2              }while(ucSyncStableTimer_10ms != 0);
+ 334   1              //---------------- 신호가 있을 경우 여기로 진입...+jwshin 111213
+ 335   1              if(bModeChanged == TRUE){
+ 336   2      //              printf("MODECHANGED\r\n");                              
+ 337   2      #ifdef _NONHDCP_SOLUTION_
+ 338   2                              NonHDCPDetection(1);    // Jude 2008/05/07
+ 339   2      #endif
+ 340   2                      LED_RedOff();
+ 341   2                      LED_GrnOn();
+ 342   2                      bSyncFlag = TRUE;
+ 343   2                      if(bForceToSleep == TRUE || (ReadIIC560(ADC_POWER_UP) == 0)){   //check force to sleep
+ 344   3                              bForceToSleep = FALSE;
+ 345   3                              ScalerPowerUp();
+ 346   3                      }
+ 347   2                      bVideoMuted = FALSE;
+ 348   2                      bModeChanged = FALSE;
+ 349   2      
+ 350   2                      GetMode();
+ 351   2      //printf("0x369=%x,=%d\r\n",(unsigned short)ReadIIC560(0x369),(unsigned short)usPoSvTimer);
+ 352   2                      CheckModeChange();
+ 353   2                      if(usTmpHSync == 0xffff){
+ 354   3                              return;
+ 355   3                      }
+ 356   2                      
+ 357   2                      //-------------- +jwshin 111213   현재의 모드를 Display...
+ 358   2                      ShowSourceMsg();                                                                                
+ 359   2                      //-----------------------------
+ 360   2                      
+ 361   2      //              LoadCurrentSettingByInput(1,0);
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 7   
+
+ 362   2                      if(bOutOfLimit == FALSE){
+ 363   3                              SetDisplayNormal();
+ 364   3      
+ 365   3                              if((usVSync > V_UPPER_BOUND)){
+ 366   4                                      if(bSwitchSource){
+ 367   5                                              //bShowNotAvailable = FALSE;
+ 368   5                                              ShowSourceMsg();
+ 369   5                                              ucOSDType = OUT_RANGE2;
+ 370   5                                              Set_usWarningMsgTimer_1s(10);
+ 371   5                                              ucOutOfRangeTimer = 11;         // ShowOutOfRange85 with 10 times for each 5 secs and 60 sec interval
+ 372   5                                      }
+ 373   4                                      else{
+ 374   5                                              ShowOutOfRange85Hz();
+ 375   5                                              Set_usWarningMsgTimer_1s(60);
+ 376   5                                              ucOutOfRangeTimer = 10;         // ShowOutOfRange85 with 10 times for each 5 secs and 60 sec interval
+ 377   5                                      }
+ 378   4                                      if(usTmpHSync == 0xffff){
+ 379   5                                              MCU_INT_ENABLE();
+ 380   5                                              SYNC_INT_ENABLE();
+ 381   5                                              return;
+ 382   5                                      }
+ 383   4                                      else{
+ 384   5                                              BackLightOn();
+ 385   5                                      }
+ 386   4      
+ 387   4                                      
+ 388   4                              }                       
+ 389   3                              else{
+ 390   4      #ifdef AUTO_OFFSET
+                                              //WriteIIC560(0x1C7, 0x10);
+                                              printf("AutoOffset\r\n");
+              
+                                              Reg0x06A = ReadIIC560(JITTER_CTRL);
+                                              WriteIIC560(JITTER_CTRL,0x00);  //Analog de-jitter
+                                              bOptAbort = FALSE;
+                                              WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart - 20);
+                                              SetADC_AutoOffset();
+                                              //WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+                                              SetHP();
+                                              WriteIIC560(JITTER_CTRL,Reg0x06A);      //Analog de-jitter
+              #endif
+ 403   4                                      
+ 404   4                                      //if ( (bAC1stOn || bDCReset) && (bResolutionNot && ucModeNumber != BEST_RESULT) ) 
+ 405   4                                      //{
+ 406   4                                      //      ShowBestResultMsg();
+ 407   4                                      //}
+ 408   4                                      //else  
+ 409   4                                      if(bSwitchSource){
+ 410   5                                              //bShowNotAvailable = FALSE;
+ 411   5                                              ShowSourceMsg();
+ 412   5      //                                      BackLightOn();
+ 413   5                                      }
+ 414   4                              }
+ 415   3                      }
+ 416   2                      else{
+ 417   3                              bShowOutRange = FALSE;
+ 418   3      //                      ScalerOutputON(1);
+ 419   3                              bBGMode = FALSE;
+ 420   3                              ForceToBackground(0);
+ 421   3      
+ 422   3                              //if ( (bAC1stOn || bDCReset ) && (bResolutionNot && ucModeNumber != BEST_RESULT) )
+ 423   3                              //{
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 8   
+
+ 424   3                              //      ShowBestResultMsg();
+ 425   3                              //      OUTRRANGETimer = 800;   //480+300
+ 426   3                              //}
+ 427   3                              //else 
+ 428   3                              if(bSwitchSource){
+ 429   4                                      //bShowNotAvailable = FALSE;
+ 430   4                                      ShowSourceMsg();
+ 431   4                                      ucOSDType = OUT_RANGE;
+ 432   4                                      Set_usPoSvTimer(800);   //OUTRRANGETimer = 800; //480+300
+ 433   4                              }
+ 434   3                              else{
+ 435   4                                      ShowOutOfRangeOver();
+ 436   4                              }
+ 437   3                              
+ 438   3                              if(usTmpHSync == 0xffff){
+ 439   4                                      MCU_INT_ENABLE();
+ 440   4                                      SYNC_INT_ENABLE();
+ 441   4                                      return;
+ 442   4                              }
+ 443   3                              else{
+ 444   4                                      BackLightOn();
+ 445   4                              }
+ 446   3      
+ 447   3                      }
+ 448   2      
+ 449   2                      SetVolume();
+ 450   2                      
+ 451   2                      if((ucOSDType != OUT_RANGE)&&(ucOSDType != OUT_RANGE2)){
+ 452   3                               LFEnableSettings();                                    
+ 453   3                              ucIsLFDemoMode = Read24C16(EPADDR_LFDEMO_ONOFF);
+ 454   3      
+ 455   3                              if(ucIsLFDemoMode) LFEnterDemoMode(0);
+ 456   3      
+ 457   3                      }
+ 458   2      /*              else if(bLFLEDState){
+ 459   2                              BF_DisableWindow(BF_WINDOW_1);
+ 460   2                              LED_LF_Off();
+ 461   2                      }       
+ 462   2      */
+ 463   2                      bDCReset = FALSE;               // 2005-01-09
+ 464   2                      bAC1stOn = FALSE;
+ 465   2                      bSwitchSource = FALSE;
+ 466   2                      
+ 467   2      
+ 468   2      
+ 469   2      /////////////////////////////////////////////////
+ 470   2      #if 0
+                              if(ucSignalType == sigDVI)
+                                      ucPowerStatus = SoftPowerOnFlag | InputSourceDVI;
+                              else
+                                      ucPowerStatus = SoftPowerOnFlag & ~InputSourceDVI;
+              
+                              if(ucPowerStatus != Read24C16(EPADDR_POWER)){
+                                      Write24C16(EPADDR_POWER,ucPowerStatus);//0x04 = Power Status
+                              }
+              #endif
+ 480   2      //////////////////////////////////////////////////
+ 481   2      
+ 482   2      #if 1 
+ 483   2                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+ 484   2                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+ 485   2                      SYNC_INT_ENABLE();
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 9   
+
+ 486   2                      MCU_INT_ENABLE();
+ 487   2      #endif
+ 488   2      
+ 489   2      #ifdef BenQ_FACTORY             
+                              if((IIC0_ADDR == BenQ_ADDR)||(IIC1_ADDR == BenQ_ADDR)){ //restart Alignment
+                                      IIC0_ADDR = BenQ_ADDR;  //stop iic for Alignment busy
+                                      IIC0_ADDR = BenQ_ADDR | ENIIC;
+                                      IIC0INT_CLR = 0xff;
+                                      IIC0_INT_EN = 0xf8;
+                                      IIC1_ADDR = BenQ_ADDR;  //stop iic for Alignment busy
+                                      IIC1_ADDR = BenQ_ADDR | ENIIC;
+                                      IIC1INT_CLR = 0xff;
+                                      IIC1_INT_EN = 0xf8;
+                              }
+              #endif
+ 501   2              }
+ 502   1              else{
+ 503   2      
+ 504   2                      if((bOutOfLimit == TRUE)&&
+ 505   2                              //(OutOfRangeTimer < 480)&&(OutOfRangeTimer > 0)){
+ 506   2                              //(OUTRRANGETimer < 480)&&(OUTRRANGETimer > 0)){
+ 507   2                              (Get_usPoSvTimer() < 480)&&(Get_usPoSvTimer() > 0)){
+ 508   3                              if ( bForceToSleep == FALSE ) {
+ 509   4      //                              ScalerOutputON(1);
+ 510   4                                      ShowOutOfRangeOver();
+ 511   4                              }
+ 512   3                      }
+ 513   2              }
+ 514   1      }
+ 515          
+ 516          
+ 517          
+ 518          void GetMode(void)
+ 519          {
+ 520   1      unsigned char pol,k1,k2,ch;
+ 521   1      unsigned short value,temp,v,i;
+ 522   1      
+ 523   1      //printf("V_CHANG_CTRL=%02x\r\n",(unsigned short)ReadIIC560(V_CHANG_CTRL));
+ 524   1      #if 1
+ 525   1              ch = ReadIIC560(GPORT_CTRL);
+ 526   1      //      if((usHSync > 344)&&(usHSync < 366)&&(usVSync > 859)&&(usVSync < 881)){ //2007-05-08 ADD 1920x1080i
+ 527   1                      if(ReadIIC560(GI_SYNC_STATUS) & BIT_2){
+ 528   2                              WriteIIC560(GPORT_CTRL,((ch|BIT_2)&~BIT_6));    // BIT_6 FOR 1080i/PAT-1 QUALITY 2007-05-15
+ 529   2                              //interlace
+ 530   2                              bIsInterlaced = TRUE;
+ 531   2                              WriteIIC560(V_CHANG_CTRL, 0x24);
+ 532   2      //                      printf("Interlace mode\r\n");
+ 533   2                      }
+ 534   1                      else{
+ 535   2                              WriteIIC560(GPORT_CTRL,(ch&~BIT_2));
+ 536   2                              bIsInterlaced = FALSE;
+ 537   2      //                      printf("Non-Interlace mode\r\n");
+ 538   2              }
+ 539   1      #endif
+ 540   1      #if 1
+ 541   1              usVTotal = (unsigned short)(((unsigned long)usHSync * 1000 + (usVSync / 2))/ usVSync);
+ 542   1      #else
+                      value = ReadWordIIC560(0x19b) & 0x1fff;
+                      temp = ReadWordIIC560(0x19d) & 0x1fff;
+                      usVTotal = (unsigned short)(((float)temp * 2048 / value) + 0.5);
+              #endif
+ 547   1      
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 10  
+
+ 548   1      
+ 549   1              k1 = 0xff;
+ 550   1              k2 = 0xff;
+ 551   1              temp = 0xffff;
+ 552   1              
+ 553   1              // SPECIAL MODE
+ 554   1              mode_k = 0xff;
+ 555   1              maxPhase = 0;
+ 556   1              
+ 557   1              for(ucModeNumber=0; ucModeNumber<AMOUNT_OF_MODE; ucModeNumber++){
+ 558   2                      if(ucModeNumber < NUMBER_OF_USER_MODE){
+ 559   3      
+ 560   3                              value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVTotal;
+ 561   3                              v = EEPROM_TimingTable[(unsigned short)ucModeNumber].ucResolution;
+ 562   3                              v = V_ActiveTab[v]+8;
+ 563   3                              if ( bIsInterlaced == TRUE ) {
+ 564   4                                      value = value >> 1;
+ 565   4                              }
+ 566   3                              value = abs(usVTotal - value);
+ 567   3                              if((temp > value)&&(v < usVTotal)){
+ 568   4                                      temp = value;
+ 569   4                                      k1 = ucModeNumber;
+ 570   4                              }
+ 571   3      
+ 572   3                              value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHFreq;
+ 573   3                              if(abs(usHSync - value) < EEPROM_TimingTable[(unsigned short)ucModeNumber].ucRange){
+ 574   4                                      value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVFreq;
+ 575   4                                      if(abs(usVSync - value) < EEPROM_TimingTable[(unsigned short)ucModeNumber].ucRange){
+ 576   5      /*
+ 577   5                                                      //---------------------------------------------------------------
+ 578   5                                                      //      CHECK POLARITY ONLY WHEN LOWER RESOLUTION
+ 579   5                                                      //-----------------------------------------------------------------
+ 580   5                                                      if ( usHSync < 327 )    // 315+12
+ 581   5                                                      {
+ 582   5                                                              pol = (unsigned char)EEPROM_TimingTable[(unsigned short)ucModeNumber].ucSyncPolarity;
+ 583   5                                                              if(pol == ucHVPolarity){
+ 584   5                                                                      break;
+ 585   5                                                              }
+ 586   5                                                              else{
+ 587   5                                                                      if (ucModeNumber==2) // 640x480 //2006-02-25 640x480@60(+,+) NORMAL DISPLAY ( NOT NEW MODE )
+ 588   5                                                                              break;
+ 589   5                                                                      else
+ 590   5                                                                              k2 = ucModeNumber;
+ 591   5                                                              }
+ 592   5                                                      }
+ 593   5                                                      else
+ 594   5                                                              break;
+ 595   5      */
+ 596   5                                              value = EEPROM_TimingTable[(unsigned short)ucModeNumber].ucResolution;
+ 597   5                                      
+ 598   5                                              //---------------------------------------------------------------
+ 599   5                                              //      CHECK POLARITY ONLY WHEN LOWER RESOLUTION & SPECIAL MODE
+ 600   5                                              //-----------------------------------------------------------------
+ 601   5                                              // if(((ucSignalType == sigSEP)&&(ucModeNumber < 4))||((value == R1024x768)||(value == R1280x768)||(v
+             -alue == R1360x768))){
+ 602   5                                              if((ucSignalType == sigSEP)&&(usHSync < 327)&&(ucModeNumber != M720x576_60)){   // || ((value == R1024x
+             -768)||(value == R1280x768)||(value == R1360x768))){   // 315+12
+ 603   6                                                      pol = (unsigned char)EEPROM_TimingTable[(unsigned short)ucModeNumber].ucSyncPolarity;
+ 604   6                                                      if(pol == ucHVPolarity){
+ 605   7                                                              break;
+ 606   7                                                      }
+ 607   6                                                      else{
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 11  
+
+ 608   7      //                                                      if(ucModeNumber == T640x480_60) // 640x480      //2006-02-25 640x480@60(+,+) NORMAL DISPLAY ( NOT NEW 
+             -MODE )
+ 609   7      //                                                              break;
+ 610   7      //                                                      else
+ 611   7                                                                      k2 = ucModeNumber;
+ 612   7                                                      }
+ 613   6                                              }
+ 614   5                                              else {
+ 615   6                                                      // SPECIAL MODE
+ 616   6                                                      if(GetSpecialMode(value) == TRUE)
+ 617   6                                                      {
+ 618   7                                                              if(bOptAbort == TRUE){
+ 619   8                                                                      if(ucHVPolarity == 0x02)
+ 620   8                                                                              mode_k = M1440x900_60R;//ucModeNumber;//1440x900-R (60)
+ 621   8                                                                      else
+ 622   8                                                                              mode_k = M1440x900_60;//ucModeNumber;//1440x900 (60)
+ 623   8                                                                      ucModeNumber = mode_k;
+ 624   8                                                                      //printf("mode_Ky=%d\r\n",(unsigned short)mode_k);              
+ 625   8                                                              }
+ 626   7                                                              
+ 627   7                                                              if ( ucModeNumber==M1280x1024_60 ||ucModeNumber==M1680x1050_60) //1280x1024@60 & 1680x1050@60 & 168
+             -0x1050@60-R
+ 628   7                                                              {
+ 629   8                                                                      //printf("%d=usVTotal=%d\r\n",(unsigned short)ucModeNumber,usVTotal);
+ 630   8                                                                      if ( abs(usVTotal-EEPROM_TimingTable[(unsigned short)ucModeNumber].usVTotal) > 7 )
+ 631   8                                                                              continue;
+ 632   8                                                              }
+ 633   7      //                                                      printf("ok\r\n");
+ 634   7                                                              break; 
+ 635   7                                                      }
+ 636   6                                              }
+ 637   5      
+ 638   5                                      }
+ 639   4                              }
+ 640   3      
+ 641   3                              // SPECIAL MODE
+ 642   3                              if((mode_k != 0xff)&&(ucModeNumber == (NUMBER_OF_USER_MODE-1))){        //
+ 643   4                                      ucModeNumber = mode_k;
+ 644   4      //                              printf("ucModeNumber %d\r\n",(unsigned short)ucModeNumber);
+ 645   4                                      break;
+ 646   4                              }
+ 647   3                              
+ 648   3                      }
+ 649   2                      else{
+ 650   3                                      i = NVRAM_HS((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+ 651   3                                      value = Read24C16_Short(i);
+ 652   3                                      if(abs(usHSync - value) < 12){
+ 653   4                                              i = NVRAM_VS((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+ 654   4                                              value = Read24C16_Short(i);
+ 655   4                                              if(abs(usVSync - value) < 12){
+ 656   5                                                      i = NVRAM_POL((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+ 657   5                                                      pol = Read24C16(i);     // check ucHVPolarity
+ 658   5                                                      i = NVRAM_VTOTAL((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+ 659   5                                                      value = Read24C16_Short(i);
+ 660   5                                                      if(abs(usVTotal - value) < 3){
+ 661   6                                                              if(pol == ucHVPolarity){
+ 662   7                                                                      break;
+ 663   7                                                              }
+ 664   6                                                      }
+ 665   5                                              }
+ 666   4                                      }
+ 667   3                      }
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 12  
+
+ 668   2              }
+ 669   1      /*
+ 670   1              //------------------------------------------------------------------------------------------
+ 671   1              //      1280x768 & 1024x768 ARE SIMILAR, (-,+) =1280x768, OTHERWIASE=1024x768
+ 672   1              //------------------------------------------------------------------------------------------
+ 673   1              if( ucModeNumber==15  && ucHVPolarity==1 )
+ 674   1              {
+ 675   1                      ucModeNumber = 39;
+ 676   1              }
+ 677   1              else if ( ucModeNumber==17 && ucHVPolarity==1 )
+ 678   1              {
+ 679   1                      ucModeNumber = 40;
+ 680   1              }
+ 681   1              else
+ 682   1      */
+ 683   1      //printf("mode %d,k1=%d,k2=%d\r\n",(unsigned short)ucModeNumber,(unsigned short)k1,(unsigned short)k2);
+ 684   1              if(ucModeNumber >= AMOUNT_OF_MODE){
+ 685   2      //#ifdef ModeDebug
+ 686   2      //              printf("user's mode %d %d\r\n",(unsigned short)k1,(unsigned short)k2);
+ 687   2      //#endif
+ 688   2                      if(k2 == 0xff)
+ 689   2                              k2 = k1;
+ 690   2      
+ 691   2      #if 1
+ 692   2                      if(k2 < 2){     //dos mode
+ 693   3                              if((ucHVPolarity == 2)||(usVTotal < 400)){      //640x350 (2,3)
+ 694   4              
+ 695   4                                              k2 = 1;
+ 696   4                              }
+ 697   3                              else{   //720x400 (0,1)
+ 698   4      
+ 699   4                                              k2 = 0;
+ 700   4                              }
+ 701   3                      }
+ 702   2                      
+ 703   2                      SetUserMode(k2);
+ 704   2      //              bIsNewMode = TRUE;
+ 705   2                      
+ 706   2      #else
+                              if(k2 < 4){     //dos mode
+                                      if((ucHVPolarity == 2)||(usVTotal < 400)){      //640x350 (2,3)
+                                              if(usVSync > 750)
+                                                      k2 = 3;
+                                              else
+                                                      k2 = 2;
+                                      }
+                                      else{   //720x400 (0,1)
+                                              if(usVSync > 750)
+                                                      k2 = 1;
+                                              else
+                                                      k2 = 0;
+                                      }
+                              }
+                              
+                              //------------------------------------------------------------------------------------------
+                              //      1280x768 & 1024x768 ARE SIMILAR, (-,+) =1280x768, OTHERWIASE=1024x768 , jerry
+                              //------------------------------------------------------------------------------------------
+                              if (k2 ==17) { 
+                                      if ( ucHVPolarity == 1 )
+                                              ucModeNumber = 40;      //1280x768@75 (-,+)
+                                      else
+                                              ucModeNumber = 17;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 13  
+
+                              }
+                              else if (k2 ==15) {     
+                                      if ( ucHVPolarity == 1 )
+                                              ucModeNumber = 39;      // 1280x768@60 (-,+)
+                                      else
+                                              ucModeNumber = 15;
+                              }
+                              else
+                              {
+                                      SetUserMode(k2);
+              //                      bIsNewMode = TRUE;
+                              }
+              #endif
+ 743   2              }
+ 744   1      
+ 745   1              LoadModeDependentSettings();
+ 746   1              
+ 747   1      
+ 748   1              ucMinVP = 0;
+ 749   1              if((usVTotal - V_ActiveTab[ucResolution]) < 25)
+ 750   1                      ucMaxVP = (unsigned char)(usVTotal - V_ActiveTab[ucResolution] + 10);
+ 751   1              else
+ 752   1                      ucMaxVP = (unsigned char)(usVTotal - V_ActiveTab[ucResolution] + 15);
+ 753   1              if(ucMaxVP < usVPStart)
+ 754   1                      ucMaxVP = (unsigned char)usVPStart;
+ 755   1      
+ 756   1      //printf("Mode %d(k1=%d,k2=%d)\r\n",(unsigned short)ucModeNumber, (unsigned short)k1, (unsigned short)k2);
+ 757   1      //printf("ucHVPolarity= %x\r\n",(unsigned short)ucHVPolarity);
+ 758   1      //printf("usHSync= %d\r\n",usHSync);
+ 759   1      //printf("usVSync= %d\r\n",usVSync);
+ 760   1      //printf("ucMaxVP = %d\r\n",(unsigned short)ucMaxVP);
+ 761   1      //printf("usVTotal=%d\r\n", (unsigned short)usVTotal);
+ 762   1      //printf("usHTotal=%d\r\n", (unsigned short)usHTotal);
+ 763   1      //printf("ucResolution=%d\r\n", (unsigned short)ucResolution);
+ 764   1      
+ 765   1              if((ucResolution == R1280x1024)&&(PanelWidth == 1680)&&(PanelHeight == 1050)){
+ 766   2      #if 1
+ 767   2                      WriteIIC560(INTE_CTRL,0x09);//0x09
+ 768   2      #else
+                              WriteIIC560(INTE_CTRL,0x88);//0x09
+                              WriteIIC560(0x066,0x20);
+                              WriteIIC560(0x06c,0xc8);
+              #endif
+ 773   2              }
+ 774   1              else{
+ 775   2                      WriteIIC560(INTE_CTRL,0x09);//00
+ 776   2                      WriteIIC560(0x066,0x00);
+ 777   2                      WriteIIC560(0x06c,0x00);
+ 778   2              }
+ 779   1      //      if((H_ActiveTab[ucResolution] == PanelWidth)&&(V_ActiveTab[ucResolution] == PanelHeight))
+ 780   1      //              WriteIIC560(0x1db,0x81);
+ 781   1      //      else
+ 782   1      //              WriteIIC560(0x1db,0x83);
+ 783   1              if(ucSignalType != sigDVI){     //H/V, H+V, SOG
+ 784   2      #if NT68167
+                              WriteIIC560(POWER_CTRL2,0x69);
+              #else
+ 787   2                      WriteIIC560(POWER_CTRL2,0x28);
+ 788   2      #endif
+ 789   2                      WriteIIC560(DVI_CTRL12,0xa0);   //DVI power down
+ 790   2                      SetADC_PLL();
+ 791   2                      SetHP();
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 14  
+
+ 792   2                      SetVP();
+ 793   2      //sharpness
+ 794   2      //              WriteIIC560(BK_H_SHAP_CTRL,0x00);       //horizontal
+ 795   2      //              WriteIIC560(BK_V_SHAP_CTRL,0x00);       //vertical
+ 796   2      
+ 797   2      /*
+ 798   2      #ifdef R640_TUNE
+ 799   2                      if( H_ActiveTab[ucResolution] >=1280 || H_ActiveTab[ucResolution] == 640 )
+ 800   2                              WriteIIC560(NR_CTRL,0x7a);
+ 801   2      #else
+ 802   2                      if ( H_ActiveTab[ucResolution] >=1280 )
+ 803   2                              WriteIIC560(NR_CTRL,0x7a);
+ 804   2      #endif
+ 805   2                      else
+ 806   2      */
+ 807   2      
+ 808   2      #if PanelID==AUO_M220EW01_V0
+                              WriteIIC560(NR_CTRL,0x79);      
+                              WriteIIC560(NR_THR_CTRL1,0x43);
+                              WriteIIC560(JITTER_CTRL,0x12);                  //Analog de-jitter
+                              WriteIIC560(NR_THR_CTRL2,0x23);
+              #elif PanelID==CMO_M220Z1_L01
+                              WriteIIC560(NR_CTRL,0x7a);
+                              WriteIIC560(NR_THR_CTRL1,0x43);
+                              WriteIIC560(JITTER_CTRL,0x12);                  //Analog de-jitter
+                              WriteIIC560(NR_THR_CTRL2,0x23);
+              #else
+ 819   2                      if(H_ActiveTab[ucResolution] == PanelWidth){
+ 820   3                              WriteIIC560(NR_CTRL,0x7a);//79  
+ 821   3                              WriteIIC560(NR_THR_CTRL1,0x43);
+ 822   3                              WriteIIC560(JITTER_CTRL,0x12);                  //Analog de-jitter
+ 823   3                              WriteIIC560(NR_THR_CTRL2,0x23);
+ 824   3                      }
+ 825   2                      else{
+ 826   3                              WriteIIC560(NR_CTRL,0x79);//79  
+ 827   3                              WriteIIC560(NR_THR_CTRL1,0x43);
+ 828   3                              WriteIIC560(JITTER_CTRL,0x12);                  //Analog de-jitter
+ 829   3                              WriteIIC560(NR_THR_CTRL2,0x23);
+ 830   3                      }
+ 831   2      #endif
+ 832   2      //#if PanelID==HSD_HSD190MEN3_A
+ 833   2      //              WriteIIC560(NR_CTRL,0x79);      
+ 834   2      //              WriteIIC560(NR_THR_CTRL1,0x43);
+ 835   2      //              WriteIIC560(JITTER_CTRL,0x12);                  //Analog de-jitter
+ 836   2      //              WriteIIC560(NR_THR_CTRL2,0x13);
+ 837   2      //#else
+ 838   2      //              WriteIIC560(NR_CTRL,0x73);      
+ 839   2      //              WriteIIC560(NR_THR_CTRL1,0x43);
+ 840   2      //              WriteIIC560(JITTER_CTRL,0xd2);                  //Analog de-jitter
+ 841   2      //              WriteIIC560(NR_THR_CTRL2,0x13);
+ 842   2      //#endif
+ 843   2      #if 1   //NSTL ATI X1300 640x480 GARY NOISE
+ 844   2      /*              if(ucResolution==R640x480){
+ 845   2                              WriteIIC560(ADC_VREF_TEST,0x01);
+ 846   2                              WriteIIC560(ADC_BW_CTRL,0x00);
+ 847   2                      }
+ 848   2                      else{
+ 849   2                              WriteIIC560(ADC_VREF_TEST,0x03);
+ 850   2                              if(H_ActiveTab[ucResolution] > 1152)
+ 851   2                                      WriteIIC560(ADC_BW_CTRL,0x06);
+ 852   2                              else
+ 853   2                                      WriteIIC560(ADC_BW_CTRL,0x04);
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 15  
+
+ 854   2                      }*/
+ 855   2                      if(H_ActiveTab[ucResolution] > 1152){
+ 856   3      //                      WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+ 857   3      //                      WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+ 858   3      //                      WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+ 859   3                              WriteIIC560(ROFFSET, ucR_ADC_Offset);
+ 860   3                              WriteIIC560(GOFFSET, ucG_ADC_Offset);
+ 861   3                              WriteIIC560(BOFFSET, ucB_ADC_Offset);
+ 862   3                      }
+ 863   2                      else if(H_ActiveTab[ucResolution] > 800){
+ 864   3      //                      WriteIIC560(RGAIN_HI,ucR_ADC_Gain+4);
+ 865   3      //                      WriteIIC560(GGAIN_HI,ucG_ADC_Gain+4);
+ 866   3      //                      WriteIIC560(BGAIN_HI,ucB_ADC_Gain+4);
+ 867   3                              WriteIIC560(ROFFSET, ucR_ADC_Offset+4);
+ 868   3                              WriteIIC560(GOFFSET, ucG_ADC_Offset+4);
+ 869   3                              WriteIIC560(BOFFSET, ucB_ADC_Offset+4);
+ 870   3                      }
+ 871   2                      else{
+ 872   3      //                      WriteIIC560(RGAIN_HI,ucR_ADC_Gain+6);
+ 873   3      //                      WriteIIC560(GGAIN_HI,ucG_ADC_Gain+6);
+ 874   3      //                      WriteIIC560(BGAIN_HI,ucB_ADC_Gain+6);
+ 875   3                              WriteIIC560(ROFFSET, ucR_ADC_Offset+6);
+ 876   3                              WriteIIC560(GOFFSET, ucG_ADC_Offset+6);
+ 877   3                              WriteIIC560(BOFFSET, ucB_ADC_Offset+6);
+ 878   3                      }
+ 879   2      #endif
+ 880   2                      
+ 881   2      //              printf("AnalogTest\r\n");
+ 882   2              }
+ 883   1              else{           //DVI
+ 884   2      //              printf("Reg0x369=%x\r\n",(unsigned short)ReadIIC560(0x369));
+ 885   2      //              printf("Reg0x364=%x\r\n",(unsigned short)ReadIIC560(0x364));
+ 886   2                      WriteIIC560(JITTER_CTRL,0x00);  //DVI don't need
+ 887   2                      WriteIIC560(POWER_CTRL2,0x02);  //DVI power up
+ 888   2                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+ 889   2                      SetADC_PLL();
+ 890   2      #if DVI_MODE == DVI_DE_MODE
+ 891   2                      //usVPStart = 0;
+ 892   2                      usVPStart = 0x1e0;      //Jacky 20040908
+ 893   2                      usHPStart = 0;
+ 894   2                      WriteWordIIC560(GI_CAP_VBEGE_LI,usVPStart);             //Jacky 20040908
+ 895   2                      WriteWordIIC560(GI_CAP_VBEGO_LI,usVPStart);
+ 896   2                      WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+ 897   2      #else
+                              bOptAbort = FALSE;
+                              AutoPosition();
+              #endif
+ 901   2      //sharpness
+ 902   2      //              WriteIIC560(BK_H_SHAP_CTRL,0x00);       //horizontal
+ 903   2      //              WriteIIC560(BK_V_SHAP_CTRL,0x00);       //vertical
+ 904   2                      WriteIIC560(NR_CTRL,0x00);
+ 905   2                      WriteIIC560(NR_THR_CTRL1,0x00);
+ 906   2              }
+ 907   1      //      printf("flag3 = %x\r\n",(unsigned short)flag3);
+ 908   1              if(bOutOfLimit == FALSE){
+ 909   2      #if NT68167
+                              if(ucSignalType == sigSOG){     // AUTO OFFSET
+                                      WriteIIC560(0x1BB, 0x80);
+                                      WriteIIC560(0x1BC, 0x03);
+                              }
+              #endif
+ 915   2                      if(ucSignalType != sigDVI){
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 16  
+
+ 916   3                              SetADC_Phase();
+ 917   3      //                      SetHP();
+ 918   3      //                      SetVP();
+ 919   3                      }
+ 920   2                      SetScaler();
+ 921   2                      SetMinMax();
+ 922   2              }
+ 923   1      }
+ 924          
+ 925          void SetUserMode(unsigned char mode)
+ 926          {
+ 927   1      //code unsigned char i1600x1200Tab[]={
+ 928   1      //      0x01,0x30,0x0d,0x20,0x08,0x70,0x00,0x2e,                //over (1600x1200)
+ 929   1      //};
+ 930   1      //xdata unsigned char   DataBuffer[8];
+ 931   1      unsigned short sync_mode;//, target;    //, tmpVTotal;
+ 932   1      //unsigned char *p;
+ 933   1      //      p = &DataBuffer;
+ 934   1      #ifdef ModeDebug
+                      printf("usVTotal = %d\r\n",usVTotal);
+              #endif
+ 937   1                      ucModeNumber = Read24C16(EPADDR_USERSTART) + (NUMBER_OF_USER_MODE-1);//0x0a = user mode start point
+ 938   1                      ucModeNumber++;
+ 939   1                      if(ucModeNumber >= AMOUNT_OF_MODE){ //2004-02-07 mingyu for new mode point 0...16
+ 940   2                              ucModeNumber = NUMBER_OF_USER_MODE;
+ 941   2                      }
+ 942   1                      Write24C16(EPADDR_USERSTART,ucModeNumber - (NUMBER_OF_USER_MODE-1));//0x0a = user mode start point
+ 943   1      #ifdef ModeDebug
+                      printf("ucModeNumber =  %bd\r\n",ucModeNumber);
+                      printf("UserModePoint =  %bd\r\n",Read24C16(EPADDR_USERSTART));//0x0a = user mode start point
+              #endif
+ 947   1      
+ 948   1              sync_mode = (unsigned short)(ucModeNumber - NUMBER_OF_USER_MODE);
+ 949   1              Write24C16_Short(NVRAM_HS(sync_mode), usHSync);
+ 950   1              Write24C16_Short(NVRAM_VS(sync_mode), usVSync);
+ 951   1              Write24C16(NVRAM_POL(sync_mode), ucHVPolarity);
+ 952   1              
+ 953   1               // Double V if interlace is present // Jude 03/21/2005
+ 954   1      //      tmpVTotal = usVTotal;
+ 955   1      
+ 956   1      //      if ( bIsInterlaced == TRUE )
+ 957   1      //              tmpVTotal = usVTotal << 1;
+ 958   1      
+ 959   1              //if(usVTotal < 1200){          //under 1600x1200
+ 960   1      #if NT68167
+                      usHPStart = EEPROM_TimingTable[mode].usHStart-18;
+              #else   
+ 963   1              usHPStart = EEPROM_TimingTable[mode].usHStart;
+ 964   1      #endif
+ 965   1              usHTotal = EEPROM_TimingTable[mode].usHTotal;
+ 966   1              usVPStart = EEPROM_TimingTable[mode].usVStart;
+ 967   1              ucResolution = EEPROM_TimingTable[mode].ucResolution;
+ 968   1      
+ 969   1              // for 1280x800 mingyu
+ 970   1              if(ucResolution == R1024x768){ // 1024x768
+ 971   2      //              printf("VTotal=%d HV_Pol=%d\r\n",usVTotal,(unsigned short)ucHVPolarity);
+ 972   2      //              if((usVTotal > 816)&&((ucHVPolarity == 0x01)||(ucHVPolarity == 0x02))){ //1280x800
+ 973   2                      if(usVTotal > 815 ){    //@60
+ 974   3                              // Force time with vtotal 838 to 1024x768@70Hz // Jude 2007/05/16
+ 975   3                              if(!((abs(usVTotal - 838) < 4)&&(abs(usVSync - 700) < 11))){
+ 976   4      //                      if((usVTotal < 835) || (usVTotal > 841)){
+ 977   4                                      usHTotal = 1688;        // 1280x800
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 17  
+
+ 978   4                                      ucResolution = R1280x800;
+ 979   4                              }
+ 980   3                      }
+ 981   2              }
+ 982   1      #if 0
+                              if(ucResolution == 5){  //1024x768
+                                      if((usVTotal > 816)&&(ucHVPolarity == 0x01)){   //1280x800
+                                              usHTotal = 1688;                //preset usHTotal = 1688
+                                              ucResolution = 18;
+                                      }
+                                      else{
+                                              if((usVSync < 710)||(usVSync > 730)){//1280x768
+                                                      if((ucHVPolarity == 0x01)||(ucHVPolarity == 0x02)){     //this is 1280x768
+                                                              usHTotal = 1688;                //preset usHTotal = 1688
+                                                              ucResolution = 14;
+                                                      }
+                                              }
+                                      }
+                              }
+                              else if(ucResolution == 2){     //640x480
+              //                      if((usVSync < 690)||(usVSync > 710)){   //non 70Hz
+                                      if((abs(usVSync - 600) < 12)&&(abs(usVTotal - 517) < 3)){
+                                              if(ucHVPolarity != 0){  //this is 848x480
+                                                      usHTotal = 1088;                //preset usHTotal = 1088
+                                                      ucResolution = 15;
+                                              }
+                                      }
+                                      else if(usVSync > 710){ //non 60/70Hz
+                                              if(ucHVPolarity != 0){  //this is 848x480
+                                                      usHTotal = 1088;                //preset usHTotal = 1088
+                                                      ucResolution = 15;
+                                              }
+                                      }
+                                      else{
+                                              if((usVSync > 590)&&(usVSync < 610)&&(ucHVPolarity == 0x01)){   //60Hz
+                                                      if(usVTotal > 586){     //720x576
+                                                              usHTotal = 912;         //preset usHTotal = 912
+                                                              ucResolution = 16;
+                                                      }
+                                              }
+                                      }
+                              }
+                              else if(ucResolution == 10){    //
+                                      if((usVSync > 840) && (usVSync < 860))
+                                              if (ucHVPolarity == 3) usHTotal = 1728; // 1280x1024@85Hz // Jude 2005/04/19
+                              }
+                              else if(ucResolution == 3){     //800x600
+                                      if((usVSync > 490) && (usVSync < 510)){//50Hz
+                                              usHTotal = 864; // 720x576 // mingyu 2005/04/22
+                                              ucResolution = 16;
+                                      }
+                                      else if((ucHVPolarity == 1)&&(usVTotal > 631)){
+                                              usHTotal = 1408;        // 1088x612 // mingyu 2005/04/22
+                                              ucResolution = 17;
+                                      }
+                              }
+              #endif
+1035   1      //      }
+1036   1      /*      else{
+1037   1                      usHPStart = i1600x1200Tab[0];
+1038   1                      usHPStart <<= 8;
+1039   1                      usHPStart |= i1600x1200Tab[1];
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 18  
+
+1040   1                      usHTotal = i1600x1200Tab[4];
+1041   1                      usHTotal <<= 8;
+1042   1                      usHTotal |= i1600x1200Tab[5];
+1043   1                      usVPStart = i1600x1200Tab[6];
+1044   1                      usVPStart <<= 8;
+1045   1                      usVPStart |= i1600x1200Tab[6];
+1046   1                      ucResolution = i1600x1200Tab[2];
+1047   1              }*/
+1048   1      
+1049   1              ucADCPhase = 32;
+1050   1      
+1051   1              Write24C16_Short(NVRAM_HPSTART(ucModeNumber), usHPStart);
+1052   1              Write24C16(NVRAM_RESOLU(ucModeNumber), ucResolution);
+1053   1              Write24C16(NVRAM_PHASE(ucModeNumber), ucADCPhase);
+1054   1              Write24C16_Short(NVRAM_HTOTAL(ucModeNumber), usHTotal);
+1055   1              Write24C16_Short(NVRAM_VPSTART(ucModeNumber), usVPStart);
+1056   1      
+1057   1              Write24C16_Short(NVRAM_HTOTAL50(ucModeNumber), usHTotal);
+1058   1              //Write24C16_Short(NVRAM_HP50(ucModeNumber), usHPStart);
+1059   1      
+1060   1      
+1061   1              sync_mode = ucModeNumber - NUMBER_OF_USER_MODE;
+1062   1              Write24C16_Short(NVRAM_VTOTAL(sync_mode), usVTotal);
+1063   1      
+1064   1              
+1065   1      //      target = NVRAM_AUTOADJ_S + (ucModeNumber / 8);
+1066   1      //      sync_mode = ucModeNumber % 8;
+1067   1      //      DataBuffer[0] = Read24C16(target);
+1068   1      //      DataBuffer[0] &= ~bitMask[sync_mode];
+1069   1      //      Write24C16(target, DataBuffer[0]);
+1070   1      }
+1071          
+1072          
+1073          void SyncSource(void)
+1074          {
+1075   1      unsigned char value;
+1076   1      
+1077   1              if(bVideoMuted == TRUE){
+1078   2      
+1079   2                      if((Get_usPoSvTimer() == 0)&&(IsBackLightOn() == ON)){
+1080   3      
+1081   3                              if(bIsBurnInEnabled == FALSE){
+1082   4              //                      printf("NO SIGNAL THEN POWERSAVING\r\n");
+1083   4                                      PowerSaving();
+1084   4      //                              LED_GrnOff();                           // -jwshin 111213
+1085   4      //                              LED_RedOn();
+1086   4                                      //bIsDPMS = TRUE;
+1087   4                              }
+1088   3                              else{
+1089   4                                      OSD_OFF();                      //Factory mode
+1090   4      
+1091   4                                      Set_usPoSvTimer(300);//1500;
+1092   4                                      if(ucBGColor == 0)
+1093   4                                              value = 4;
+1094   4                                      else if(ucBGColor == 4)
+1095   4                                              value = 2;
+1096   4                                      else if(ucBGColor == 2)
+1097   4                                              value = 1;
+1098   4                                      else if(ucBGColor == 1)
+1099   4                                              value = 7;
+1100   4                                      else
+1101   4                                              value = 0;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 19  
+
+1102   4                                      //Clear fource to background
+1103   4                                      
+1104   4                                      bBGMode = FALSE;
+1105   4                                      ForceToBackground(value);       //Set fource to background
+1106   4                                      ShowAging(value);
+1107   4      //                              LED_GrnOff();                           // -jwshin 111213
+1108   4      //                              LED_RedOn();
+1109   4                                      //BackLightOn();
+1110   4                              }
+1111   3                      }
+1112   2      #if DUAL_MODE==ON
+1113   2                      else if((IsVGAconnected() == FALSE)&&(IsDVIconnected() == FALSE)){
+1114   3      #else
+                              else if(IsVGAconnected() == FALSE){
+              #endif
+1117   3      //printf("DISCONNECT\r\n");
+1118   3                              bDCReset = FALSE;
+1119   3                              
+1120   3                              if((Get_usPoSvTimer() < 480)&&(bIsBurnInEnabled == FALSE)){
+1121   4                                      if(bForceToSleep == FALSE){
+1122   5                                              if(Get_usPoSvTimer() == 0){
+1123   6                                                      ScalerPowerUp();
+1124   6                                              }
+1125   5                                              else{
+1126   6                                                      while(ucSyncStableTimer_10ms != 0){};
+1127   6      //                                              ScalerOutputON(1);
+1128   6                                                      ShowDisconnected();
+1129   6                                                      BackLightOn();
+1130   6                                                      Set_usPoSvTimer(530);   //480+100;
+1131   6                                              }
+1132   5                                      }
+1133   4                              }
+1134   3      //                      return;
+1135   3                      }
+1136   2      #if DUAL_MODE==ON
+1137   2                      else if(((IsVGAconnected() == TRUE)||(IsDVIconnected() == TRUE))&&
+1138   2      #else
+                              else if((IsVGAconnected() == TRUE)&&
+              #endif
+1141   2                                      (bShowDiscon == TRUE)){
+1142   3      //printf("NO SIGNAL FROM DISCONNECT\r\n");
+1143   3                              //preset no sync
+1144   3                              bVideoMuted = FALSE;
+1145   3                              NoSync();
+1146   3      
+1147   3                      }
+1148   2      
+1149   2      //              if ( bIsBurnInEnabled==TRUE ||  Get_usPoSvTimer() < 490 ){      //2007-03-06 490 // "SOURCE=AUTO" POWER ON 
+             -WILL GO TO VGA FIRSTLY // MAKE THE TIME OF CHANGE PORT LONGER
+1150   2                      if(bIsBurnInEnabled==TRUE ||  ucSyncSourceTimer == 0 ){ //2007-03-06 490 // "SOURCE=AUTO" POWER ON WILL 
+             -GO TO VGA FIRSTLY // MAKE THE TIME OF CHANGE PORT LONGER
+1151   3                              switch(ucSignalType){
+1152   4                              case sigSEP:            // H/V
+1153   4      //                              if(ucSource != mSource_VGA){
+1154   4                                              value = ReadIIC560(POWER_CTRL2);
+1155   4                                              WriteIIC560(POWER_CTRL2,(value | BIT_1));
+1156   4      //                                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+1157   4                                              WriteIIC560(DVI_CTRL15, 0xf3);  // IT IS NECESSARY
+1158   4                                              Sleep(10);
+1159   4      #ifdef _SCDT_SOLUTION_
+1160   4                                              if (DVIPresentDetection() == TRUE)      // Jude 2008/04/30      
+1161   4      #else
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 20  
+
+                                                      if((ReadIIC560(DVI_STATUS) & BIT_0) != 0)
+              #endif
+1164   4                                              {
+1165   5                                                      GoToDVI();
+1166   5      //                                              Sleep(200);
+1167   5                                                      break;
+1168   5                                              }
+1169   4      /*                                      if(ucSource == mSource_DVI){
+1170   4                                                      ucSignalType = sigDVI;
+1171   4                                                      break;
+1172   4                                              }*/
+1173   4      //                              }
+1174   4                                      if(CheckSOG() == 0)
+1175   4                                              GoToCompositeSync();
+1176   4                                      break;
+1177   4                                      
+1178   4                              case sigCOMP:           // H+V
+1179   4      //printf("comp%d\r\n",(unsigned short)usPoSvTimer);
+1180   4                                      GoToSeparateSync();
+1181   4                                      Sleep(10);      //      VGA FIRST AFTER AC ON    usPoSvTimer += 5; //xxx
+1182   4      //                              if ( bShowNotAvailable )        Set_usPoSvTimer(500);
+1183   4                                      break;
+1184   4                              case sigSOG:            //SOG
+1185   4      //printf("sog\r\n");
+1186   4                                      GoToCompositeSync();
+1187   4                                      break;
+1188   4                              case sigDVI:            //DVI
+1189   4      #if 1
+1190   4                                      if(ucSource!=mSource_DVI){
+1191   5                                              if(CheckSOG() == 0)
+1192   5                                                      GoToCompositeSync();
+1193   5                                      }
+1194   4                                      else{
+1195   5                                              value = ReadIIC560(POWER_CTRL2);
+1196   5                                              WriteIIC560(POWER_CTRL2,(value | BIT_1));
+1197   5      //                                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+1198   5                                              WriteIIC560(DVI_CTRL15, 0xf3);  // IT IS NECESSARY
+1199   5                                              Sleep(10);
+1200   5      
+1201   5      #ifdef _SCDT_SOLUTION_                                  
+1202   5                                              if (DVIPresentDetection() == TRUE)      // Jude 2008/04/30      
+1203   5      #else
+                                                      if((ReadIIC560(DVI_STATUS) & BIT_0) != 0)
+              #endif
+1206   5                                              {
+1207   6                                                      GoToDVI();
+1208   6                                              }
+1209   5                                              else
+1210   5                                              {
+1211   6                                                      WriteIIC560(POWER_CTRL2,(value & ~BIT_1));
+1212   6                                                      Sleep(100);     //POWER CONSUMPTION AT POWERSAVING WHILE SROURCE=DVI
+1213   6                                              }
+1214   5                                      }
+1215   4      
+1216   4      #else
+                                              if(((ReadIIC560(DVI_STATUS) & BIT_0) == 0) || (ucDVICnt == 0)){
+                                                      ucDVICnt = DVI_RETRY_COUNTER;
+                                                      if(CheckSOG() == 0)
+                                                              GoToCompositeSync();
+                                                      }
+                                              if (ucDVICnt) ucDVICnt--;
+              
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 21  
+
+                                              if (ucPowerStatus == inputDigital1)
+                                              {
+                                              }
+              #endif
+1228   4                                      break;
+1229   4                              }
+1230   3                              ucSyncSourceTimer = 25;
+1231   3                      }
+1232   2                      
+1233   2              }
+1234   1      #ifdef GREEN_POWER
+1235   1              else{
+1236   2              if((ucLFMode == LF_MODE_OFF)&&(ucDynBKMode==0)&& IsBackLightOn()){
+1237   3                              if((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) == 0){
+1238   4                                      if(ReadIIC560(GI_PHS_SDIFF_LI0) < PURE_BLACK_LEVEL){
+1239   5                                              if(ReadIIC560(GI_PHS_SDIFF_LI1) < PURE_BLACK_LEVEL){
+1240   6                                                      if(ReadIIC560(GI_PHS_SDIFF_HI0) < PURE_BLACK_LEVEL){
+1241   7                                                              if(ucPurelyBlackCounter != 0){
+1242   8                                                                      ucPurelyBlackCounter--;
+1243   8                                                              }
+1244   7                                                              else{
+1245   8                                                                      value = ucBrightness;
+1246   8                                                                      ucBrightness = GREEN_POWER_BRIGHTNESS;
+1247   8                                                                      SetBrightness();
+1248   8                                                                      ucBrightness = value;
+1249   8                                                                      ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+1250   8                                                                      bSetGreenPower = TRUE;
+1251   8                                                              }
+1252   7                                                      }
+1253   6                                                      else{
+1254   7                                                              CheckGreenPower();
+1255   7                                                      }
+1256   6                                              }
+1257   5                                              else{
+1258   6                                                      CheckGreenPower();
+1259   6                                              }
+1260   5                                      }
+1261   4                                      else{
+1262   5                                              CheckGreenPower();
+1263   5                                      }
+1264   4                                      WriteIIC560(GI_AUTO_TUNE_CTRL,0x6e);
+1265   4                              }
+1266   3                      }
+1267   2              }
+1268   1      #endif
+1269   1      #ifdef ANTI_ESD
+                      else if ( bFactoryMode == FALSE ) {
+                              
+                              // ESD ISSUE, AVOID HPLL REGISTER COULD BE RESET, jerry
+                              if ( ucTimer1000ms==0 && bOutOfLimit==FALSE &&  ucSignalType != sigDVI ) {
+              
+              #ifdef R640_TUNE
+                                      if( H_ActiveTab[ucResolution] == 640 )
+                                      usHTotal <<= 1;
+              #endif
+              
+                                      if ( ucESDSaveD1 != ReadIIC560(HPLL_FREQ_CTRL) || 
+                                      ucESDSaveD2 != ReadIIC560(HSDDS_RATIO_LI) ||
+                                      ucESDSaveD3 != ReadIIC560(HSDDS_RATIO_MI) ||
+                                      ucESDSaveD4 != ReadIIC560(HSDDS_RATIO_HI) ||
+                                      ucESDSaveF1 != ReadIIC560(DPLL_FREQ_CTRL) ||
+                                      usHTotal != ReadWordIIC560(HSDDS_DIVIDER_LI)
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 22  
+
+                                      )
+                                      {
+                                              usTmpHSync = 0xffff;
+                                      }
+              
+              #ifdef R640_TUNE
+                                      if( H_ActiveTab[ucResolution] == 640 )
+                                      usHTotal >>= 1;
+              #endif
+                              }
+              
+                      }
+              #endif
+1299   1      /*      else{
+1300   1      #if PANEL == CPT_CLAA150XP02
+1301   1              CheckDotPattern();
+1302   1      #endif
+1303   1              }*/
+1304   1      }
+1305          
+1306          #ifdef GREEN_POWER
+1307          void CheckGreenPower(void)
+1308          {
+1309   1              if(bSetGreenPower == TRUE){
+1310   2                      SetBrightness();
+1311   2                      bSetGreenPower = FALSE;
+1312   2                      ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+1313   2              }
+1314   1      }
+1315          #endif
+1316          
+1317          void CheckSyncMode(void)
+1318          {
+1319   1      unsigned char temp,value;
+1320   1      unsigned short usHSync_Bak,usVSync_Bak;
+1321   1              if(bIsSyncConfirmed == FALSE){
+1322   2      //printf("CheckSyncMode\r\n");
+1323   2                      temp = ucSignalType;
+1324   2                      usHSync_Bak = usHSync;
+1325   2                      usVSync_Bak = usVSync;
+1326   2                      switch(ucSignalType){
+1327   3                      case sigSEP:            //SeparateSync
+1328   3                              ucSignalType = sigSOG;
+1329   3                              SetInterface();
+1330   3                              Set_usTimer1_1ms(40);
+1331   3                              usHSync = 0;
+1332   3                              usVSync = 0;
+1333   3                              while(Get_usTimer1_1ms() != 0){
+1334   4                                      if(GetHsyncLevel == LOW){
+1335   5                                              usVSync++;
+1336   5                                      }
+1337   4                                      else{
+1338   5                                              usHSync++;
+1339   5                                      }
+1340   4                              }
+1341   3      #ifdef ModeDebug
+                                      printf("H2 = %d\r\n",usHSync);
+                                      printf("L2 = %d\r\n",usVSync);
+              #endif
+1345   3      //                      if((abs(usHSync_Bak-650)<15)&&(abs(usVSync_Bak-599)<12)){       //1680x1050
+1346   3                              if(((usHSync_Bak > 550)||(abs(usHSync_Bak-474)<8))&&(abs(usVSync_Bak-599)<12)){
+1347   4                                      usHSync = usHSync / 10;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 23  
+
+1348   4                                      usVSync += 20;
+1349   4                              }
+1350   3                              else{
+1351   4                                      usHSync >>= 2;
+1352   4                              }
+1353   3                              if((usHSync > usVSync)&&(usVSync > 100)){
+1354   4                                      Sleep(80);
+1355   4                                      if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+1356   5      //                                      printf("CheckSyncMode:sigSEP->sigSOG2\r\n");
+1357   5                                              break;
+1358   5                                      }
+1359   4                              }
+1360   3      //                      else{
+1361   3                                      ucSignalType = sigCOMP;
+1362   3                                      SetInterface();
+1363   3                                      Sleep(100);
+1364   3                                      value = ReadIIC560(GI_SYNC_STATUS);
+1365   3      //                              printf("0x19a = %x\r\n",(unsigned short)value);
+1366   3                                      if((value & 0xf8) != 0x38){             //SeparateSync
+1367   4                                              ucSignalType = temp;
+1368   4                                              SetInterface();
+1369   4                                              Sleep(80);
+1370   4                                              usHSync = usHSync_Bak;
+1371   4                                              usVSync = usVSync_Bak;
+1372   4      //                                      printf("CheckSyncMode:sigSEP->sigSEP\r\n");
+1373   4                                      }
+1374   3                                      else{
+1375   4      //                                      printf("CheckSyncMode:sigSEP->sigCOMP\r\n");
+1376   4                                      }
+1377   3      
+1378   3                                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+1379   3                                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+1380   3      
+1381   3      //                      }
+1382   3                              break;
+1383   3                      case sigCOMP:           //CompositeSync
+1384   3      /*                      value = ReadIIC560(0x19a);
+1385   3                              printf("0x19a = %x\r\n",(unsigned short)value);
+1386   3                              if((value & 0xf8) != 0x38){             //SeparateSync
+1387   3                                      ucSignalType = 0;
+1388   3                                      SetInterface();
+1389   3                                      printf("SeparateSync\r\n");
+1390   3                                      break;
+1391   3                              }*/
+1392   3                              ucSignalType = sigSOG;
+1393   3                              SetInterface();
+1394   3                              Set_usTimer1_1ms(40);
+1395   3                              usHSync = 0;
+1396   3                              usVSync = 0;
+1397   3                              while(Get_usTimer1_1ms() != 0){
+1398   4                                      if(GetHsyncLevel == LOW){
+1399   5                                              usVSync++;
+1400   5                                      }
+1401   4                                      else{
+1402   5                                              usHSync++;
+1403   5                                      }
+1404   4                              }
+1405   3      #ifdef ModeDebug
+                                      printf("H3 = %d\r\n",usHSync);
+                                      printf("L3 = %d\r\n",usVSync);
+              #endif
+1409   3      //                      if((abs(usHSync_Bak-650)<15)&&(abs(usVSync_Bak-599)<12)){       //1680x1050
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 24  
+
+1410   3                              if(((usHSync_Bak > 550)||(abs(usHSync_Bak-474)<8))&&(abs(usVSync_Bak-599)<12)){
+1411   4                                      usHSync = usHSync / 10;
+1412   4                                      usVSync += 20;
+1413   4                              }
+1414   3                              else{
+1415   4                                      usHSync >>= 2;
+1416   4                              }
+1417   3                              if((usHSync > usVSync)&&(usVSync > 100)){
+1418   4                                      Sleep(80);
+1419   4                                      if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+1420   5      //                                      printf("CheckSyncMode:sigCOMP->sigSOG3\r\n");
+1421   5                                              break;
+1422   5                                      }
+1423   4                              }
+1424   3      //                      else{
+1425   3                                      ucSignalType = temp;
+1426   3                                      SetInterface();
+1427   3                                      Sleep(80);
+1428   3      
+1429   3                                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+1430   3                                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+1431   3      
+1432   3                                      usHSync = usHSync_Bak;
+1433   3                                      usVSync = usVSync_Bak;
+1434   3      //                              printf("CheckSyncMode:sigCOMP->sigCOMP\r\n");
+1435   3      //                      }
+1436   3                              break;
+1437   3      /*              case 2:
+1438   3                              value = ReadIIC560(0x19a);
+1439   3                              printf("0x19a = %x\r\n",(unsigned short)value);
+1440   3                              if((value & 0xf8) != 0x38){             //SeparateSync
+1441   3                                      ucSignalType = 0;
+1442   3                                      SetInterface();
+1443   3                                      break;
+1444   3                              }
+1445   3                              break;*/
+1446   3                      }
+1447   2                      bIsSyncConfirmed = TRUE;
+1448   2              }
+1449   1      }
+1450          
+1451          void GoToSeparateSync(void)
+1452          {
+1453   1      unsigned char value;
+1454   1              value = ReadIIC560(POWER_CTRL2);
+1455   1              WriteIIC560(POWER_CTRL2,(value & ~BIT_1));      //DVI power down
+1456   1      //xxx   WriteIIC560(DVI_CTRL15, 0xb3); 
+1457   1              WriteIIC560(DVI_CTRL12,0xa0);   //DVI power down
+1458   1              ucSignalType = sigSEP;
+1459   1              SetInterface();
+1460   1              Sleep(20);
+1461   1      //      NVTprint("Separate Sync\r\n");
+1462   1      }
+1463          
+1464          void GoToCompositeSync(void)
+1465          {
+1466   1      
+1467   1      unsigned char value;
+1468   1              value = ReadIIC560(POWER_CTRL2);
+1469   1              WriteIIC560(POWER_CTRL2,(value & ~BIT_1));      //DVI power down
+1470   1      //xxx   WriteIIC560(DVI_CTRL15, 0xb3); 
+1471   1              WriteIIC560(DVI_CTRL12,0xa0);   //DVI power down
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 25  
+
+1472   1              ucSignalType = sigCOMP;
+1473   1              SetInterface();
+1474   1              Sleep(40);
+1475   1      
+1476   1      //      NVTprint("Composite Sync\r\n");
+1477   1      
+1478   1      }
+1479          
+1480          bit CheckSOG(void)
+1481          {
+1482   1      unsigned char value;
+1483   1      #if NT68167
+              float Rati;
+              #else
+1486   1      unsigned short temp,low,high;
+1487   1      #endif
+1488   1              if(ucSignalType != sigSOG){     //SOG ?         
+1489   2                      value = ReadIIC560(POWER_CTRL2);
+1490   2                      WriteIIC560(POWER_CTRL2,(value & ~BIT_1));
+1491   2      //xxx           WriteIIC560(DVI_CTRL15, 0xb3); 
+1492   2                      WriteIIC560(DVI_CTRL12,0xa0);   //DVI power down
+1493   2                      ucSignalType = sigSOG;
+1494   2                      SetInterface();
+1495   2              }
+1496   1      #if NT68167
+                      usTimer1_1ms = 40;
+                      usHSync = 0;
+                      usVSync = 0;
+                      while(usTimer1_1ms != 0){
+                              if((ReadIIC560(DVI_STATUS) & BIT_6)){
+                                      usHSync++;
+                              }
+                              else{
+                                      usVSync++;
+                              }
+                      }
+              //      printf("H1 = %d\r\n",usHSync);
+              //      printf("L1 = %d\r\n",usVSync);
+                      Rati = (float)usVSync / usHSync;
+              //      printf("Rati = %f\r\n",Rati);
+                      if ( Rati < 0.25 && Rati > 0.015 )
+                              return 1;
+                      else
+                              return 0;
+              #else
+1517   1              Set_usTimer1_1ms(40);
+1518   1              usHSync = 0;
+1519   1              usVSync = 0;
+1520   1              while(Get_usTimer1_1ms() != 0){
+1521   2                      if(GetHsyncLevel == LOW){
+1522   3                              usVSync++;
+1523   3                      }
+1524   2                      else{
+1525   3                              usHSync++;
+1526   3                      }
+1527   2              }
+1528   1      #ifdef ModeDebug
+                      printf("H1 = %d\r\n",usHSync);
+                      printf("L1 = %d\r\n",usVSync);
+              #endif
+1532   1              low = usVSync;
+1533   1              high = usHSync;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 26  
+
+1534   1      
+1535   1              usHSync >>= 2;
+1536   1              if((usHSync > usVSync)&&(usVSync > 80)){//100
+1537   2                      Sleep(80);
+1538   2                      temp = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+1539   2                  usHSync = 960000 / temp;
+1540   2                      temp = ReadWordIIC560(GI_VCNT_LI) & 0x1fff;
+1541   2                      usVSync = 468750 / temp;
+1542   2      //              if((abs(usHSync-650)<15)&&(abs(usVSync-599)<12)){       //1680x1050
+1543   2                      if(((usHSync > 550)||(abs(usHSync-474)<8))&&(abs(usVSync-599)<12)){
+1544   3                              high = high / 10;
+1545   3                              low += 20;
+1546   3                      }
+1547   2                      else{
+1548   3                              high >>= 2;
+1549   3                      }
+1550   2                      if((high > low)&&(low > 100)){
+1551   3                              if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+1552   4      #ifdef ModeDebug
+                                              printf("goto Sync on green1\r\n");
+              #endif
+1555   4                                      return 1;
+1556   4                              }
+1557   3                              else{
+1558   4                                      return 0;
+1559   4                              }
+1560   3                      }
+1561   2                      else{
+1562   3                              return 0;
+1563   3                      }
+1564   2              }
+1565   1              else{
+1566   2                      return 0;
+1567   2              }
+1568   1      #endif
+1569   1      }
+1570          
+1571          void GoToDVI(void)
+1572          {
+1573   1              WriteIIC560(POWER_CTRL2,0x02);  //DVI power up
+1574   1              WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+1575   1      //      WriteIIC560(DVI_CTRL15, 0xf3);
+1576   1              ucSignalType = sigDVI;
+1577   1              SetInterface();
+1578   1              usTmpHSync = 0xffff;
+1579   1      //      NVTprint("GoToDVI\r\n");
+1580   1      }
+1581          
+1582          void NoSync(void)
+1583          {
+1584   1              if(bVideoMuted == FALSE){
+1585   2                      SetVolume();
+1586   2                      if(bForceToSleep == TRUE){ //
+1587   3                              bForceToSleep = FALSE;
+1588   3                              ScalerPowerUp();
+1589   3                      }
+1590   2                      
+1591   2                      bOutOfLimit = FALSE;
+1592   2                      bVideoMuted = TRUE;
+1593   2                      bShowNoSync = FALSE;
+1594   2                      bShowDiscon  = FALSE;
+1595   2                      bShowOutRange = FALSE;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 27  
+
+1596   2                      //bSOG2nd = FALSE;
+1597   2                      bShowNoInput = FALSE;
+1598   2                      bOutOfRange = FALSE;
+1599   2      //              ClearNewModeLED();
+1600   2              
+1601   2                      BackLightOff();
+1602   2      //              bIsFRCMode = 0;
+1603   2                      bBGMode=FALSE;  //2007-03-07    POWERON WITH NO VIDEO WILL SHOW BLACK 
+1604   2                      ForceToBackground(0);   //Set fource to background
+1605   2                      
+1606   2                      OSD_OFF();
+1607   2      
+1608   2      //              printf("NoSync=%d\r\n",(unsigned short)ucSignalType);
+1609   2                      if((bFactoryMode == TRUE)&&(bIsBurnInEnabled == FALSE)){//BenQ: fast test
+1610   3                              Set_usPoSvTimer(100);
+1611   3                              bShowNoSync = TRUE;
+1612   3                              if(!IsBackLightOn()) BackLightOn();
+1613   3                      }
+1614   2                      else{
+1615   3                              Set_usPoSvTimer(500);
+1616   3                      }
+1617   2                      ucSyncSourceTimer = 25;
+1618   2              }
+1619   1              else if((Get_usPoSvTimer() < 300)&&(Get_usPoSvTimer() > 0)&&(bShowNoSync==FALSE)){
+1620   2      
+1621   2                      bDCReset = FALSE;
+1622   2                      
+1623   2                      if(bIsBurnInEnabled != FALSE){
+1624   3      
+1625   3                              bBGMode = FALSE;
+1626   3                              ForceToBackground(0);
+1627   3                              Sleep(20);
+1628   3                              Set_usPoSvTimer(0);
+1629   3                              bShowNoSync = TRUE;
+1630   3                              ucBGColor = 0;
+1631   3                      }
+1632   2                      else if(ucModeNumber > 0x80){           // AC power start and no sync
+1633   3      
+1634   3      //                      printf("NO SIGNAL0\r\n");       //NO SIGNAL@AC ON or SOURCE NO INPUT                    +jwshin 111209
+1635   3                              if(((Get_usWarningMsgTimer_1s() == 0)&&(bShowNoInput == TRUE))){
+1636   4      //                              ScalerOutputON(1);
+1637   4                                      ShowNoVideo();                                                          // +jwshin 111213
+1638   4                                      //ShowNoSync();
+1639   4      //                              BackLightOn();
+1640   4                                      bShowNoSync = TRUE;
+1641   4                              }
+1642   3                              else{                                                                                                           // 초기 신호가 없을 때는 여기로 진입..~!
+1643   4      //                              ScalerOutputON(1);
+1644   4                                      ShowNoVideo();                          
+1645   4      //                              BackLightOn();
+1646   4                              }
+1647   3                      }
+1648   2                      else{           //no sync                                                                       // 사용 중 PC에서 신호가 안 들어 올 때~!.. +jwshin 111209
+1649   3      //                      printf("NO SIGNAL1\r\n");
+1650   3      //                      ShowNoSync();
+1651   3                                      ShowNoVideo();                                                          // +jwshin 111212
+1652   3                              //BackLightOn();
+1653   3      //                      bShowNoSync = TRUE;                                             // -jwshin 111212
+1654   3                      }
+1655   2                      
+1656   2                      if(!IsBackLightOn())
+1657   2                              BackLightOn();  // 2005-10-20
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 28  
+
+1658   2                      
+1659   2              }
+1660   1      }
+1661          
+1662          void SetMinMax(void)
+1663          {
+1664   1      unsigned short k;
+1665   1      // Set Minimum and Maximum
+1666   1                      k = Read24C16_Short(NVRAM_HTOTAL50((unsigned short)ucModeNumber));
+1667   1                      //k = Read24C16_Short(NVRAM_HTOTAL((unsigned short)ucModeNumber));
+1668   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640)  usActiveH >>= 1;
+              #endif
+1671   1      
+1672   1              usMaxHP = k - usActiveH - 20;   //w;
+1673   1      //      ucMinHP = (unsigned char)((k * 3) / 100);
+1674   1      //      if((usMaxHP - ucMinHP) < 100)
+1675   1                      ucMinHP = (unsigned char)((k * 1) / 100);
+1676   1              if(usHPStart > usMaxHP){
+1677   2                      usMaxHP = usHPStart;
+1678   2              }
+1679   1              if(usHPStart < ucMinHP){
+1680   2                      ucMinHP = usHPStart;
+1681   2              }
+1682   1              
+1683   1      //      for AutoColor : usHPStart must be larger than 20    2005-11-23 jerry
+1684   1              if ( ucMinHP < 20 ) ucMinHP = 20;
+1685   1      
+1686   1              if((usHPStart + usActiveH) < (k - 50)){
+1687   2                      usMinClk = k - 50;
+1688   2                      usMaxClk = k + 50;
+1689   2              }
+1690   1              else{
+1691   2                      usMinClk = usHPStart + usActiveH;
+1692   2                      if (usMinClk > usHTotal ) usMinClk = usHTotal;
+1693   2                      usMaxClk = usMinClk + 100;
+1694   2              }
+1695   1      
+1696   1              // For 50% HP // Jude 03/15/2005
+1697   1      #if 0   
+              //              i = NVRAM_HP50((unsigned short)ucModeNumber);
+                              usReferenceHP = Read24C16_Short(NVRAM_HP50((unsigned short)ucModeNumber));
+              #endif
+1701   1      
+1702   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640) usActiveH <<= 1;
+              #endif
+1705   1              GetHmask();
+1706   1      //      printf("usMaxHP=%d\r\n",usMaxHP);
+1707   1      //      printf("ucMinHP=%d\r\n",(unsigned short)ucMinHP);
+1708   1      //      printf("k(usHTotal)=%d\r\n",k);
+1709   1      //      printf("usMinClk=%d\r\n",usMinClk);
+1710   1      //      printf("usMaxClk=%d\r\n",usMaxClk);
+1711   1      
+1712   1      }
+1713          
+1714          void CheckModeChange(void)
+1715          {
+1716   1      unsigned char value;
+1717   1      unsigned short k;
+1718   1              value = ReadIIC560(SYNC_INT_FLAG1);
+1719   1              if((value & 0x3c) != 0){
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 29  
+
+1720   2      
+1721   2                      WriteIIC560(SYNC_INT_FLAG1,0x3f);
+1722   2                      MuteScreen_1();
+1723   2                      return;
+1724   2              }
+1725   1              value = ReadIIC560(GI_SYNC_STATUS);
+1726   1              if((ucSignalType > sigSEP)&&(ucSignalType < sigDVI)){           //compostive
+1727   2                      if((value & BIT_5) == 0){
+1728   3                              MuteScreen_1();
+1729   3                              return;
+1730   3                      }
+1731   2              }
+1732   1              else if(ucSignalType == sigSEP){
+1733   2                      if((value & 0x18) != 0x18){
+1734   3                              MuteScreen_1();
+1735   3                              return;
+1736   3                      }
+1737   2              }
+1738   1              else{
+1739   2                      k = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+1740   2                      if((k == 0x1fff)||(k == 0)){
+1741   3                              MuteScreen_1();
+1742   3                      }
+1743   2              }
+1744   1      }
+1745          
+1746          void MuteScreen(void)
+1747          {
+1748   1              OSD_OFF();
+1749   1              BackLightOff();
+1750   1              
+1751   1              if(ucBGColor != 0)
+1752   1                      bBGMode = FALSE;
+1753   1      
+1754   1              ForceToBackground(0);   //Set fource to background
+1755   1              ucSyncStableTimer_10ms = SYNC_STABLE_TIME;
+1756   1              bModeChanged = TRUE;
+1757   1              SYNC_INT_DISABLE();
+1758   1              WriteIIC560(SYNC_INT_FLAG1,0x3f);
+1759   1              WriteIIC560(SYNC_INT_FLAG2,0x1f);
+1760   1      
+1761   1      #if PanelID == CMO_M190E5_L0E                                     //coffee 061027
+                    ScalerOutputOFF();
+              #endif
+1764   1      
+1765   1      }
+1766          void MuteScreen_1(void)
+1767          {
+1768   1      //printf("MuteScreen_1:Backlightoff\r\n");
+1769   1              BackLightOff();
+1770   1              WriteIIC560(OSD_CTRL1,0x00);
+1771   1              if(ucBGColor != 0)
+1772   1                      bBGMode = FALSE;
+1773   1              
+1774   1              ForceToBackground(0);   //Set fource to background
+1775   1              bOptAbort = TRUE;
+1776   1              usTmpHSync = 0xffff;
+1777   1              usTmpVSync = 0xffff;
+1778   1      #if PanelID == CMO_M190E5_L0E                                 //coffee 061027
+                    ScalerOutputOFF();
+              #endif
+1781   1      }
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 30  
+
+1782          
+1783          /*
+1784          void SetAutoAdjTag(void)
+1785          {
+1786          unsigned short addr;
+1787          unsigned char i, k;
+1788                  addr = NVRAM_AUTOADJ(ucModeNumber);
+1789                  k = ucModeNumber % 8;
+1790                  i = Read24C16(addr);                    
+1791                  Write24C16(addr, i|bitMask[k]);
+1792          }
+1793          */
+1794          //void ClearNewModeLED(void)
+1795          //{
+1796          //      if(bIsNewMode == 1){    //clear LED flash when new mode.
+1797          //              bIsNewMode = 0;
+1798          //              bIsLEDFlashing = FALSE;
+1799          //
+1800          //              if ( bGLEDState == FALSE )
+1801          //                      LED_GrnOn();
+1802          //      }
+1803          //}
+1804          
+1805          void WaitSetup(unsigned char time)
+1806          {
+1807   1              ucLoopTimer_10ms = time;                        // timeout n ms
+1808   1              while(ucLoopTimer_10ms != 0){
+1809   2                      CheckModeChange();
+1810   2              }
+1811   1      }
+1812          
+1813          
+1814          
+1815          void CheckDVI(void)
+1816          {
+1817   1      // CHECK DVI SIGNAL WHEN FORCE TO SLEEP
+1818   1      unsigned char DVI_DCLK;
+1819   1      //      if(--ucLoopCounter == 0){
+1820   1              if(Get_usOSDTimer_10ms() == 0){
+1821   2              //DVI on
+1822   2                      WriteIIC560(POWER_CTRL2,0x02);  //DVI power up
+1823   2                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+1824   2                      WriteIIC560(DVI_CTRL13,0x01);   //DVI power up
+1825   2                      WriteIIC560(DVI_CTRL14,0x00);   //DVI power up
+1826   2                      WriteIIC560(DVI_CTRL15,0xf3);   //DVI power up
+1827   2              
+1828   2                      Sleep(10);
+1829   2      
+1830   2      #ifdef _SCDT_SOLUTION_
+1831   2                      if (DVIPresentDetection() == TRUE)  { // Jude 2008/04/30
+1832   3      #else
+                              if( (ReadIIC560(DVI_STATUS) & BIT_0) != 0 ){
+              #endif
+1835   3                      //read DLCK
+1836   3                              DVI_DCLK = ReadIIC560(DVI_PIXELCLK);
+1837   3      //printf("0dvi=%d\r\n",(unsigned short)DVI_DCLK);//xxx
+1838   3                              if(abs(ucCurrentDVIClk - DVI_DCLK) > 1){
+1839   4                                      ucCurrentDVIClk = DVI_DCLK;
+1840   4                                      ucTime2Backlight = 0;
+1841   4      //                              bForceToSleep = 0;              //shampoo
+1842   4                                      bOptAbort = TRUE;
+1843   4      
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 31  
+
+1844   4                                      usTmpHSync = 0xffff;
+1845   4                                      BackLightOn();
+1846   4                                      SYNC_INT_ENABLE();
+1847   4                                      return;
+1848   4                              }
+1849   3                      //DVI off
+1850   3                              WriteIIC560(POWER_CTRL2,0x00);
+1851   3                              WriteIIC560(DVI_CTRL12,0x80);
+1852   3      //                      ucLoopCounter = 100;
+1853   3                      }
+1854   2                      else{
+1855   3      //printf("0aaalg\r\n");//xxx
+1856   3                              if ( ucSource!=mSource_DVI )//|| ucModeNumber!=0xff)
+1857   3                              {
+1858   4                                      if(CheckSOG() == 0){
+1859   5              //                              bForceToSleep = 0;              //shampoo
+1860   5                                              GoToCompositeSync();
+1861   5                                      }
+1862   4                              }
+1863   3                      }
+1864   2                      
+1865   2                      Set_usOSDTimer_10ms(50);
+1866   2              }
+1867   1      }
+1868          
+1869          
+1870          #if DUAL_MODE==ON
+1871          // Function to solve SCDT issues
+1872          // Jude 2008/04/30
+1873          //#define _SCDT_SOLUTION_
+1874          unsigned char DVIPresentDetection(void)
+1875          {
+1876   1              unsigned char  i,j;
+1877   1              unsigned char  reg0X1E7, reg0X102, reg0X143, reg0X144, reg0X146;
+1878   1              unsigned char  clk,tmp;
+1879   1              unsigned short sync;
+1880   1              if ((ReadIIC560(DVI_STATUS)& BIT_0) != 0)
+1881   1              {
+1882   2      #if 1 //ifdef _SCDT_SOLUTION_
+1883   2                      reg0X1E7 = ReadIIC560(0x1e7);
+1884   2                      WriteIIC560(0x1e7, reg0X1E7 | BIT_0);   // Enable DVI page (Page3)
+1885   2                      WriteIIC560(0x300, 0x10);
+1886   2                      WriteIIC560(0x300, 0x00);
+1887   2                      
+1888   2                      clk = 0;
+1889   2                      j = 0;
+1890   2                      for(i = 0; i < 60; i++)
+1891   2                      {
+1892   3                              tmp = ReadIIC560(0x304);
+1893   3                              if (abs(tmp-clk)<2) 
+1894   3                                      j++;
+1895   3                              else 
+1896   3                                      j = 0;
+1897   3                              clk = tmp;
+1898   3                              Sleep(1);
+1899   3                              if (j> 30) 
+1900   3                              {
+1901   4                                      if (clk < 10)  i = 60;
+1902   4                                      if (clk > 180) i = 60;
+1903   4                                      break;
+1904   4                              }
+1905   3                      }
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 32  
+
+1906   2      
+1907   2                      WriteIIC560(0x1e7, reg0X1E7);
+1908   2      
+1909   2                      if (i >= 60) return FALSE;
+1910   2              
+1911   2                      reg0X102 = ReadIIC560(POWER_CTRL2);
+1912   2                      reg0X143 = ReadIIC560(DVI_CTRL12);
+1913   2                      reg0X144 = ReadIIC560(DVI_CTRL13);
+1914   2                      reg0X146 = ReadIIC560(DVI_CTRL15);
+1915   2              
+1916   2                      tmp = ucSignalType;
+1917   2                      ucSignalType = sigDVI;
+1918   2                      WriteIIC560(POWER_CTRL2,0x02);  //DVI power up
+1919   2                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power up
+1920   2                      WriteIIC560(DVI_CTRL13, reg0X144 & ~BIT_0);
+1921   2                      WriteIIC560(DVI_CTRL15, 0xf3);
+1922   2      
+1923   2                      SetInterface();
+1924   2                      Sleep(20);
+1925   2                      sync = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+1926   2                      if((sync == 0x1fff)||(sync < 640)) 
+1927   2                      {
+1928   3                              WriteIIC560(POWER_CTRL2,reg0X102);      //DVI power up
+1929   3                              WriteIIC560(DVI_CTRL12, reg0X143);      //DVI power up
+1930   3                              WriteIIC560(DVI_CTRL13, reg0X144);
+1931   3                              WriteIIC560(DVI_CTRL15, reg0X146);
+1932   3                              ucSignalType = tmp;
+1933   3                              SetInterface();
+1934   3                              return FALSE;
+1935   3                      }
+1936   2      #endif
+1937   2                      return TRUE;
+1938   2              }
+1939   1              else
+1940   1                      return FALSE;
+1941   1      }
+1942          
+1943          
+1944          #ifdef _NONHDCP_SOLUTION_
+1945          // Function to solve the issue of snow display over non-HDCP DVI signal
+1946          // k=0 : Reset HDCP if RstCnt == 0;
+1947          // k=1 : Reset RstCnt
+1948          // Jude 2008/05/07
+1949          void NonHDCPDetection(unsigned char k)
+1950          {
+1951   1              static unsigned char  RstCnt= 0;
+1952   1              
+1953   1              if (ucSignalType != sigDVI) return;
+1954   1      
+1955   1              if (k == 0)
+1956   1              {
+1957   2                      if (RstCnt == 0)
+1958   2                      {
+1959   3                              WriteIIC560(0x368, 0x75);
+1960   3                              WriteIIC560(0x368, 0x74);
+1961   3                              RstCnt = 1;
+1962   3                              //printf("HDCP Reset during GetCounter\n\r");
+1963   3                      }
+1964   2              }
+1965   1              else
+1966   1              {
+1967   2                      RstCnt = 0;
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 33  
+
+1968   2              }
+1969   1      
+1970   1      }
+1971          #endif
+1972          
+1973          #endif
+1974          
+1975          bit GetSpecialMode(unsigned short value)
+1976          {
+1977   1      //unsigned short value;
+1978   1      //unsigned char pol;
+1979   1      //xdata float maxPhase,temp_phase;
+1980   1      
+1981   1      
+1982   1      //                                              if((ucSignalType != sigDVI)&&((value == R1024x768)||(value == R1280x768)||(value == R1360x768)
+1983   1      //                                              ||(value == R1680x1050))){      //H/V, H+V, SOG
+1984   1                                                      if((ucSignalType != sigDVI)&&(((value == R1440x900)&&(abs(usVSync-600)<12)))){  //H/V, H+V, SOG
+1985   2      
+1986   2      //                                                      printf("GetSpecialMode_ucModeNumber %d\r\n",(unsigned short)ucModeNumber);
+1987   2                                                              ucResolution = value;
+1988   2                                                              usHTotal = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHTotal;
+1989   2                                                              usHPStart = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHStart;
+1990   2                                                              usVPStart = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVStart;
+1991   2                                                              //printf("usHTotal %d\r\n",(unsigned short)usHTotal);
+1992   2                                                              ucMinVP = 0;
+1993   2                                                              ucVPOffset = 0;
+1994   2      #if NT68167
+                                                                      WriteIIC560(POWER_CTRL2,0x69);
+              #else
+1997   2                                                              WriteIIC560(POWER_CTRL2,0x28);
+1998   2      #endif
+1999   2                                                              WriteIIC560(DVI_CTRL12,0xa0);   //DVI power down
+2000   2                                                              WriteIIC560(0x0d9,32 | BIT_6);  // Jude 03/25/2005
+2001   2                                                              SetADC_Phase();
+2002   2                                                              SetADC_PLL();
+2003   2                                                              SetHP();
+2004   2                                                              SetVP();
+2005   2                                                              WriteWordIIC560(GI_CAP_HWID_LI,H_ActiveTab[ucResolution]);              // Capture V_Active
+2006   2                                                              WriteWordIIC560(GI_CAP_VLEN_LI,V_ActiveTab[ucResolution]);              // Capture H_Active
+2007   2                                                              bOptAbort = FALSE;
+2008   2                                                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+2009   2                                                              WriteIIC560(GI_HMASK_BEG,0);  // AutoPosition Pixel mask -> H
+2010   2                                                              WriteIIC560(GI_HMASK_END,ucMinHP);  // AutoPosition Pixel mask -> H
+2011   2                                                              WriteIIC560(GI_VMASK_BEG,0x00);  // AutoPosition Pixel mask -> V
+2012   2                                                              WriteIIC560(GI_VMASK_END,0x00);  // AutoPosition Pixel mask -> V
+2013   2                                                              WriteIIC560(GI_POS_THR,0x40);  // Red Noise Margin
+2014   2                                                              WriteIIC560(GI_AUTO_TUNE_CTRL,0x00);
+2015   2      
+2016   2                                                              CheckClock();
+2017   2                                                              if(bOptAbort == TRUE) { return TRUE; } //break;
+2018   2                                                              if(bAutoClockResult == TRUE){
+2019   3                                                                      temp_phase = CheckPhase();
+2020   3      //                                                              printf("temp_phase=%d\r\n", (unsigned short)temp_phase);
+2021   3                                                                      if(bOptAbort == TRUE) { return TRUE; } //break;
+2022   3                                                                      if(maxPhase < temp_phase){
+2023   4                                                                              maxPhase = temp_phase;
+2024   4                                                                              mode_k = ucModeNumber;
+2025   4      //                                                                      printf("mode_k %d\r\n",(unsigned short)mode_k);
+2026   4                                                                      }
+2027   3                                                              //      break;
+2028   3                                                              }
+2029   2                                                              else{
+C51 COMPILER V8.12   MODEHANDLE                                                            04/16/2014 18:12:32 PAGE 34  
+
+2030   3                                                                      if(mode_k == 0xff){
+2031   4                                                                              if(ucHVPolarity == 0x02)
+2032   4                                                                                      mode_k = M1440x900_60R;//ucModeNumber;  //1440x900-R (60)
+2033   4                                                                              else
+2034   4                                                                                      mode_k = M1440x900_60;//ucModeNumber;   //1440x900 (60)
+2035   4      //                                                                      printf("mode_Ky=%d\r\n",(unsigned short)mode_k);
+2036   4                                                                      }
+2037   3                                                              }
+2038   2                                                              return FALSE;   
+2039   2                                                      }
+2040   1                                                      else{
+2041   2                                                              bOptAbort = FALSE;
+2042   2                                                              return TRUE; //break;
+2043   2                                                      }
+2044   1      
+2045   1      }
+2046          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   6076    ----
+   CONSTANT SIZE    =     12    ----
+   XDATA SIZE       =      1      40
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

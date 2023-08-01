@@ -1,0 +1,1257 @@
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE MODEHANDLE
+OBJECT MODULE PLACED IN .\BIN\ModeHandle.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\ModeHandle.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\L
+                    -ST\ModeHandle.lst) OBJECT(.\BIN\ModeHandle.obj)
+
+stmt level    source
+
+   1          #include "MyDef.H"
+   2          #include "F63XREG.H"
+   3          #include "F63XDEF.H"
+   4          #include "math.h"
+   5          #include "stdio.h"
+   6          #include "RAM.H"
+   7          #include "ModeHandle.H"
+   8          #include "UserAdj.H"
+   9          #include "IIC.H"
+  10          #include "Scaler.H"
+  11          #include "MCU.H"
+  12          #include "PANEL.H"
+  13          #include "AutoAdj.H"
+  14          #include "ROM_MAP.H"
+  15          #include "TW990x.H"
+  16          #include "Tuner.H"
+  17          
+  18          typedef union
+  19          {
+  20                  unsigned short w;
+  21                  unsigned char b[2];
+  22          }Union;
+  23          
+  24          void GetCounter(void)
+  25          {
+  26   1              unsigned char temp;
+  27   1              Union TempFreq;
+  28   1              NoSyncFlag = 0;
+  29   1              if(ReadIIC563(0x19a) & BIT_5)   //H+V high piority
+  30   1                      if(SyncMode == 0)
+  31   1                              {
+  32   2                              V_SYNC = 0;
+  33   2                              H_SYNC = 0;
+  34   2                              NoSyncFlag = 1;
+  35   2                              return;
+  36   2                              }
+  37   1              temp = ReadIIC563(0x19a);
+  38   1      //      printf("ReadIIC563(0x19a)=0x%x\r\n",(unsigned short)temp);
+  39   1              HV_Pol = (temp & 0x03) << 4;
+  40   1              BypassSOG = 0;
+  41   1              
+  42   1              if(!(temp & BIT_6)) //Sep/Comp Hsync present
+  43   1                      {
+  44   2                      TempFreq.w = ReadWordIIC563(0x19b);
+  45   2                      H_SYNC = (HSYNC_CLK)/TempFreq.w;
+  46   2      //      printf("H_SYNC11=%d\r\n",(unsigned short)H_SYNC);
+  47   2                      //H_SYNC = (143180*8)/TempFreq.w;
+  48   2                      BypassSOG = 1;
+  49   2                      if(H_SYNC <100)
+  50   2                              {
+  51   3                              H_SYNC = 0;
+  52   3                              NoSyncFlag = 1;
+  53   3                              }
+  54   2                      }
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 2   
+
+  55   1              else
+  56   1                      {
+  57   2                      if(SyncMode == 3){// Jacky 20040623 When DVI DE mode, GI_HCNT_OV alway "1"
+  58   3                              #if DVImode == DEmode
+  59   3                              if(ReadIIC563(0x1ab) & BIT_0)
+  60   3                                      {
+  61   4                                      TempFreq.w = ReadWordIIC563(0x19b);
+  62   4                                      H_SYNC = (HSYNC_CLK)/TempFreq.w;
+  63   4                                      //H_SYNC = (143180*8)/TempFreq.w;
+  64   4                                      BypassSOG = 1;
+  65   4                                      if(H_SYNC <100)
+  66   4                                              {
+  67   5                                              H_SYNC = 0;
+  68   5                                              NoSyncFlag = 1;
+  69   5                                              }
+  70   4                                      }
+  71   3                              else
+  72   3                                      {
+  73   4                                      H_SYNC = 0;
+  74   4                                      NoSyncFlag = 1;
+  75   4                                      }
+  76   3                              #else
+                                      H_SYNC = 0;
+                                      NoSyncFlag = 1;
+                                      #endif
+  80   3                      }
+  81   2                      else{
+  82   3                              H_SYNC = 0;
+  83   3                              NoSyncFlag = 1;
+  84   3                      }
+  85   2                      }
+  86   1              if(!(temp & BIT_7))//Sep/Comp Vsync present
+  87   1                      {
+  88   2                      TempFreq.w = ReadWordIIC563(0x19d);
+  89   2                      V_SYNC = (VSYNC_CLK)/TempFreq.w;
+  90   2      //      printf("V_SYNC11=%d\r\n",(unsigned short)V_SYNC);
+  91   2      //              V_SYNC = 559300/TempFreq.w;
+  92   2                      BypassSOG = 1;
+  93   2                      if(V_SYNC <100)
+  94   2                              {
+  95   3                              V_SYNC = 0;
+  96   3                              NoSyncFlag = 1;
+  97   3                              }
+  98   2                      }
+  99   1              else
+ 100   1                      {
+ 101   2                      V_SYNC = 0;     //over flow
+ 102   2                      NoSyncFlag = 1;
+ 103   2                      }
+ 104   1              if((SyncMode == 2||SyncMode == 6) && !NoSyncFlag)
+ 105   1                      if(!VsyncValide())      //for SOG Vsync pulse detect
+ 106   1                              {
+ 107   2                              V_SYNC = 0;
+ 108   2                              H_SYNC = 0;
+ 109   2                              NoSyncFlag = 1;
+ 110   2                              }
+ 111   1      
+ 112   1      }
+ 113          
+ 114          void CheckFreq(void)
+ 115          {
+ 116   1              bit UnStable;
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 3   
+
+ 117   1              Byte i,Count;
+ 118   1              if(DetectIRQ() || ChangeMode>0)
+ 119   1                      {
+ 120   2                      if(SyncMode == 3)  {
+ 121   3                              DVIBandWidthDetection();
+ 122   3                      }
+ 123   2                      OutOfRange = 0;
+ 124   2                      H_SYNC_Temp = 0x5555;
+ 125   2                      V_SYNC_Temp = 0x5555;
+ 126   2                      if(!BurnInMode && !ForceToBack)
+ 127   2                              ForceToBackground(0,0,0);       //Set fource to background
+ 128   2                      Count = 0;
+ 129   2                      for(i=0;i<3;i++)
+ 130   2                              {
+ 131   3                              UnStable = 0;
+ 132   3                              GetCounter();
+ 133   3                              if(HV_Pol_Temp != HV_Pol)
+ 134   3                                      UnStable = 1;
+ 135   3                              if(abs(H_SYNC_Temp - H_SYNC)>10)
+ 136   3                                      UnStable = 1;
+ 137   3                              if(abs(V_SYNC_Temp - V_SYNC)>10)
+ 138   3                                      UnStable = 1;
+ 139   3                              if(UnStable)
+ 140   3                                      {
+ 141   4                                      if((SyncMode == 3) && (abs(DVI_Clock - ReadIIC563(0x016)) > 2))        //Jacky 20050512 +jwshin061013
+ 142   4                                              DVIBandWidthDetection(); 
+ 143   4                                      HV_Pol_Temp = HV_Pol;
+ 144   4                                      H_SYNC_Temp = H_SYNC;
+ 145   4                                      V_SYNC_Temp = V_SYNC;
+ 146   4                                      i = 0;
+ 147   4                                      }
+ 148   3                              Sleep(35);              //wait for Vsync update
+ 149   3                              Count++;
+ 150   3                              if(Count > 15)  //freq unstable too long
+ 151   3                                      {
+ 152   4                                      V_SYNC = 0;
+ 153   4                                      H_SYNC = 0;
+ 154   4                                      NoSyncFlag = 1;
+ 155   4                                      break;
+ 156   4                                      }
+ 157   3                              }
+ 158   2                      ChangeMode = 0;
+ 159   2                      FastMuteEnable = 1;
+ 160   2                      WriteIIC563(0x1ab,0x3f);        //clear IRQ
+ 161   2                      WriteIIC563(0x1ac,0x1f);
+ 162   2      //              printf("clear IRQ\r\n");
+ 163   2                      
+ 164   2                      EndMute = 0;
+ 165   2                      MuteTimer = MUTE_DELAY_TIME;
+ 166   2                      }
+ 167   1              if(NoSyncFlag)
+ 168   1                      {
+ 169   2      //              printf("NoSyncFlag\r\n");
+ 170   2              
+ 171   2                      if(ChangeMode == 0)
+ 172   2                              {
+ 173   3                              FastMuteEnable = 0;
+ 174   3                              if(!BurnInMode)
+ 175   3                                      NoSync();
+ 176   3                              }
+ 177   2                      }
+ 178   1              else
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 4   
+
+ 179   1                      {
+ 180   2      //              printf("ChangeMode=%d,EndMute=%d,MuteTimer=0x%x\r\n",(unsigned short)ChangeMode,(unsigned short)EndMut
+             -e,(unsigned short)MuteTimer);
+ 181   2      
+ 182   2                      if(ChangeMode == 0 && !EndMute && MuteTimer == 0)
+ 183   2                              {
+ 184   3      //              printf("recheck frequency\r\n");
+ 185   3                              GetCounter();   //recheck frequency
+ 186   3                              if(HV_Pol_Temp != HV_Pol)
+ 187   3                                      ChangeMode = 1;
+ 188   3                              if(abs(H_SYNC_Temp - H_SYNC)>10)
+ 189   3                                      ChangeMode = 1;
+ 190   3                              if(abs(V_SYNC_Temp - V_SYNC)>10)
+ 191   3                                      ChangeMode = 1;
+ 192   3                              EndMute = 1;
+ 193   3                              if(PowerDown)
+ 194   3                                      {
+ 195   4                                      ScalerPowerUp();
+ 196   4                                      PowerTimer = POWER_TIME;
+ 197   4                                      MuteTimer = 0;
+ 198   4                                      }
+ 199   3                              if(BurnInMode)
+ 200   3                                      {
+ 201   4                                      BurnInMode = 0;
+ 202   4                                      FactMode = 0;//jacky0316 Item41 BurnInMode
+ 203   4                                      Write24C16(ep_Status,StatusFlag);
+ 204   4                                      LED_GrnOn();
+ 205   4      //                              LED_RedOff();           // -jwshin 051101
+ 206   4                                      }
+ 207   3                              //FastMuteOn();
+ 208   3                              BackLightOff();
+ 209   3              /*
+ 210   3                              VideoMute = 1;
+ 211   3                              ForceToBackground(0,0,0);       //Set fource to background
+ 212   3              */
+ 213   3                              Osd_Off();
+ 214   3      //      printf("ChangeMode=%d\r\n",(unsigned short)ChangeMode);
+ 215   3              
+ 216   3                              if(ChangeMode == 0)
+ 217   3                                      {
+ 218   4                                      GetMode();
+ 219   4                                      switch(OutOfRange)
+ 220   4                                              {
+ 221   5                                              case 0:
+ 222   5                                                      SetDisplayNormal();
+ 223   5                                                      //if(NewMode && SyncMode < 3)   //bypass DVI
+ 224   5                                                      //      TunePositionOnly();
+ 225   5                                                      //ShowSource();
+ 226   5                                                      break;
+ 227   5                                              case 1:
+ 228   5                                                      SetDisplayNormal();
+ 229   5                                                      TunePositionOnly();
+ 230   5                                                      ShowMessage(MSG_OUTRANGE);
+ 231   5                                                      break;
+ 232   5                                              case 2:
+ 233   5                                                      FastMuteEnable = 0;
+ 234   5                                                      ShowMessage(MSG_OUTRANGE);
+ 235   5                                                      break;
+ 236   5                                              }
+ 237   4                                      Sleep(PowerUpInvTiming);
+ 238   4                                      //FastMuteOff();
+ 239   4                                      BackLightOn();
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 5   
+
+ 240   4                                      VideoMute = 0;
+ 241   4                                      if(NewMode && (AutoSetting == 1) && (SyncMode < 3) && (OutOfRange == 0) && (ModePoint > 18))    //bypass 
+             -DVI and normal mode
+ 242   4                                              {
+ 243   5                                              ShowMessage(MSG_AUTOTUNE);
+ 244   5                                              AutoTune();     
+ 245   5                                              //Write24C16(ep_Reso_Offset + (ModePoint * 8), ResolutionPtr|0x80);
+ 246   5                                              }
+ 247   4                                      }
+ 248   3                              }
+ 249   2                      }
+ 250   1      }
+ 251          
+ 252          void GetMode(void)
+ 253          {
+ 254   1              bit PolPass;
+ 255   1              Byte ch;
+ 256   1              Word i,Addr;
+ 257   1              Union Hf,Vf;
+ 258   1              ModePoint = 0;
+ 259   1              UserModeRefReso = 0;
+ 260   1              //------------------------------ +jwshin 060929
+ 261   1      
+ 262   1              ch = ReadIIC563(0x020);
+ 263   1              if(ReadIIC563(0x19a) & BIT_2){
+ 264   2                      Interlance = 1;
+ 265   2                      WriteIIC563(0x020,ch|BIT_2);
+ 266   2                      }
+ 267   1              else{
+ 268   2                      Interlance = 0;
+ 269   2                      WriteIIC563(0x020,ch);
+ 270   2              }
+ 271   1      
+ 272   1              //-----------------------------
+ 273   1              VTotal = (Word)(((unsigned long)H_SYNC * 1000)/ V_SYNC);
+ 274   1              if(SyncMode == 0 || SyncMode == 3)
+ 275   1                      i = 0;
+ 276   1              else
+ 277   1                      i = 8;
+ 278   1              for(;i< ModeNum;i++)
+ 279   1                      {
+ 280   2                      Addr = ep_Mode_Data + i * 4;
+ 281   2                      Hf.b[0] = Read24C16(Addr++);    //check h_sync
+ 282   2                      Hf.b[1] = Read24C16(Addr++);
+ 283   2                      Vf.b[0] = Read24C16(Addr++);
+ 284   2                      Vf.b[1] = Read24C16(Addr);
+ 285   2                      PolPass = 0;
+ 286   2                      if(Vf.b[0] & 0x80)
+ 287   2                              PolPass = 1;
+ 288   2                      if((Vf.b[0] & 0x30) == HV_Pol)
+ 289   2                              PolPass = 1;
+ 290   2                      if(Vf.b[0] & 0x40)
+ 291   2                              {
+ 292   3                              ch = (Vf.b[0] & 0x40) >> 1;
+ 293   3                              ch |= ch >> 1;
+ 294   3                              if(ch == HV_Pol)
+ 295   3                                      PolPass = 1;
+ 296   3                              }
+ 297   2                      if(PolPass)
+ 298   2                              {
+ 299   3                              if(i == 35 || i == 68 || i == 38 || i ==74){// Jacky 20040524 for 1024x768@60Hz and 1280x768@60Hz
+ 300   4                                      if(abs(Hf.w - H_SYNC)<5)
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 6   
+
+ 301   4                                              {
+ 302   5                                              Vf.b[0] &= 0x0f;
+ 303   5                                              if(abs(Vf.w - V_SYNC) < 5)
+ 304   5                                                      {
+ 305   6                                                      //#if PRINT_MESSAGE
+ 306   6                                                      //      printf("Mode %d\n",(unsigned short)ModePoint);
+ 307   6                                                      //#endif
+ 308   6                                                      //if(i < 8 && !TextMode)
+ 309   6                                                      //      break;
+ 310   6                                                      //if(i >= 8)
+ 311   6                                                              break;
+ 312   6                                                      }
+ 313   5                                              }
+ 314   4                              }
+ 315   3                              else{
+ 316   4                                      if(abs(Hf.w - H_SYNC)<10)
+ 317   4                                              {
+ 318   5                                              Vf.b[0] &= 0x0f;
+ 319   5                                              if(abs(Vf.w - V_SYNC) < 10)
+ 320   5                                                      {
+ 321   6                                                      //#if PRINT_MESSAGE
+ 322   6                                                      //      printf("Mode %d\n",(unsigned short)ModePoint);
+ 323   6                                                      //#endif
+ 324   6                                                      //if(i < 8 && !TextMode)        //graph mode stop search text mode 62~69
+ 325   6                                                      //      break;
+ 326   6                                                      //if(i >= 8)
+ 327   6                                                              break;
+ 328   6                                                      }
+ 329   5                                              }
+ 330   4                              }
+ 331   3                              }
+ 332   2                      }
+ 333   1              ModePoint = i;
+ 334   1              //if(ModePoint < 18)
+ 335   1              //      GTmodeEn = 1;
+ 336   1              //else
+ 337   1              //      GTmodeEn = 0;
+ 338   1              
+ 339   1              if(SyncMode == 6 && ModePoint == 11)    
+ 340   1                      if(ModePoint == 11)     //For NTSC 480P
+ 341   1                              ModePoint = 12;
+ 342   1                      else if(ModePoint == 8) //For PAL 574i
+ 343   1                              ModePoint = 69;
+ 344   1              if(ModePoint == ModeNum)
+ 345   1                      {
+ 346   2      //              #if PRINT_MESSAGE
+ 347   2      //                      printf("user's mode\n");
+ 348   2      //              #endif
+ 349   2                      NewMode = 1;
+ 350   2                      SetUserMode();
+ 351   2                      }
+ 352   1              else
+ 353   1                      NewMode = 0;
+ 354   1      //#if PRINT_MESSAGE
+ 355   1      //              printf("Mode %d\n",(unsigned short)ModePoint);
+ 356   1      //#endif
+ 357   1              LoadModeDependentSettings();
+ 358   1      //      if(SyncMode < 3)
+ 359   1                      FuncBuf[pCONTRAST] = Read24C16(ep_Contrast);            
+ 360   1      //      else            
+ 361   1      //              FuncBuf[pCONTRAST] = Read24C16(ep_DVI_Contrast);                
+ 362   1              Addr = ep_Reso_Offset + (ModePoint * 8);
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 7   
+
+ 363   1              ResolutionPtr = Read24C16(Addr);
+ 364   1              if(!(ResolutionPtr & 0x80))
+ 365   1                      NewMode = 1;
+ 366   1              ResolutionPtr &= 0x7f;
+ 367   1              
+ 368   1              Hresolution = H_ActiveTab[ResolutionPtr];
+ 369   1              Vresolution = V_ActiveTab[ResolutionPtr];
+ 370   1              //----------------------- +jwshin 061002
+ 371   1              if(FuncBuf[pVIDEOSOURCE] == cYPbPr){ //YPbPr
+ 372   2                      if((ModePoint==9)||(ModePoint==12)||(ModePoint==67)||(ModePoint==70)){
+ 373   3                              switch(ModePoint){
+ 374   4                                      case  9:  //480i
+ 375   4                                              i = 0;
+ 376   4                                              break;
+ 377   4                                      case  12: //480p
+ 378   4                                              i = 1;
+ 379   4                                              break;
+ 380   4                                      case  67: //720p
+ 381   4                                              i = 2;
+ 382   4                                              break;
+ 383   4                                      case  70: //1080i
+ 384   4                                              i = 3;
+ 385   4                                              break;
+ 386   4                              }
+ 387   3                      }
+ 388   2                      HPositionBase = YPbPrSyncMap[i*8+2];
+ 389   2                      HPositionBase <<= 8;
+ 390   2                      HPositionBase |= YPbPrSyncMap[i*8+3];
+ 391   2                      ClockBase =YPbPrSyncMap[i*8+4];
+ 392   2                      ClockBase <<= 8;
+ 393   2                      ClockBase |= YPbPrSyncMap[i*8+5];       
+ 394   2              }
+ 395   1              else{
+ 396   2                      if(ModePoint < UserModeSt)
+ 397   2                              Addr = ModePoint * 8 + 2;
+ 398   2                      else{
+ 399   3                              UserModeRefReso = SearchEstimatedModeTables();
+ 400   3                              Addr = UserModeRefReso * 8 + 2;
+ 401   3                      }       
+ 402   2      
+ 403   2                      HPositionBase = EEP_SyncMap[Addr];
+ 404   2                      HPositionBase <<= 8;
+ 405   2                      HPositionBase |= EEP_SyncMap[Addr+1];   
+ 406   2                      ClockBase = EEP_SyncMap[Addr+2];
+ 407   2                      ClockBase <<= 8;
+ 408   2                      ClockBase |= EEP_SyncMap[Addr+3];       
+ 409   2              }
+ 410   1              //------------------------------------------
+ 411   1              SetInterface();
+ 412   1      //      #if PRINT_MESSAGE
+ 413   1      //              printf("HV_Pol= %x\n",(unsigned short)HV_Pol);
+ 414   1      //              printf("H_SYNC= %d\n",H_SYNC);
+ 415   1      //              printf("V_SYNC= %d\n",V_SYNC);
+ 416   1      //      #endif
+ 417   1              SetADC_PLL();
+ 418   1              CheckDVIresolution();
+ 419   1              //------------------------- +jwshin 061002
+ 420   1              if(FuncBuf[pVIDEOSOURCE] == cYPbPr){
+ 421   2                      if((ModePoint == 9)||(ModePoint == 70)){ //480i,1080i
+ 422   3                              Interlance = 1;
+ 423   3                              WriteIIC563(0x020,0xc1|BIT_2);
+ 424   3                      }
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 8   
+
+ 425   2                      else    { //480p,720p
+ 426   3                              Interlance = 0;
+ 427   3                              WriteIIC563(0x020,0xc1);
+ 428   3                      }
+ 429   2              
+ 430   2              }
+ 431   1              else if((FuncBuf[pVIDEOSOURCE] == cANALOG)&&(ModePoint == 70)){//1080i
+ 432   2                              Interlance = 1;
+ 433   2                              WriteIIC563(0x020,0xc1|BIT_2);
+ 434   2              }
+ 435   1              //--------------------------
+ 436   1              if(OutOfRange < 2)
+ 437   1                      {
+ 438   2                      SetScalerMode();
+ 439   2                      //SetScaler();
+ 440   2                      if(SyncMode != 3)
+ 441   2                              {
+ 442   3                              ch = FuncBuf[pPHASE];
+ 443   3                              if(FuncBuf[pPHASE] != 0)
+ 444   3                                      {
+ 445   4                                      for(FuncBuf[pPHASE]=0; FuncBuf[pPHASE]<=ch; FuncBuf[pPHASE]++)
+ 446   4                                              SetADC_Phase();
+ 447   4                                      }
+ 448   3                              FuncBuf[pPHASE] = ch;
+ 449   3                              }
+ 450   2                      SetSharpness();
+ 451   2                      }
+ 452   1              if(SyncMode == 3)       //DVI
+ 453   1                      {
+ 454   2                      #if DVImode == DEmode
+ 455   2                              FuncBuf[pVPOSITION] = 0;        //rev3
+ 456   2                              FuncBuf[pHPOSITION] = 0;
+ 457   2                              WriteWordIIC563(0x030,FuncBuf[pVPOSITION]);
+ 458   2                              WriteWordIIC563(0x02e,FuncBuf[pVPOSITION]);
+ 459   2                              WriteWordIIC563(0x030,FuncBuf[pVPOSITION]);
+ 460   2                              WriteWordIIC563(0x034,FuncBuf[pHPOSITION]);
+ 461   2                      #else
+                                      //if((SyncMode == 3) && ((PortD & BIT_3) != 0)) //DVI
+                                      AutoPosition();
+                              #endif
+ 465   2                      }       
+ 466   1              SetContrast();
+ 467   1              SetInverter();
+ 468   1      }
+ 469          void CheckDVIresolution()
+ 470          {
+ 471   1              Union Hf,Vf;
+ 472   1              if(SyncMode == 3)
+ 473   1                      {
+ 474   2                      Vf.w = ReadWordIIC563(0x03e);
+ 475   2                      Hf.w = ReadWordIIC563(0x03c);
+ 476   2                      //if(Vf.w > 1024 || Hf.w > 1280)
+ 477   2      //              printf("Vf.w=%d\r\n",Vf.w);
+ 478   2      //              printf("Hf.w=%d\r\n",Hf.w);
+ 479   2      //              printf("V_SYNC=%d\r\n",V_SYNC);
+ 480   2                      
+ 481   2                      if(Vf.w > 1200 || Hf.w > 1600||H_SYNC < 200)//H_SYNC < 400)
+ 482   2                              {
+ 483   3                              OutOfRange = 2;
+ 484   3                              }
+ 485   2                      else
+ 486   2                              {
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 9   
+
+ 487   3                              if((Vf.w == 1200 || Hf.w == 1600)&&(V_SYNC > 620))
+ 488   3                                      {
+ 489   4                                      OutOfRange = 2;
+ 490   4                                      }
+ 491   3                              Hresolution = Hf.w;
+ 492   3                              Vresolution = Vf.w;
+ 493   3                              //ResolutionPtr = 0xff;
+ 494   3                              }
+ 495   2                      }
+ 496   1      }
+ 497          
+ 498          void SetUserMode(void)
+ 499          {
+ 500   1      
+ 501   1      /*
+ 502   1      code unsigned short Vt_Tab[]={
+ 503   1              500,600,700,760,850,950,1050,1200
+ 504   1      };
+ 505   1      
+ 506   1      code unsigned char UserTimeTab[]={
+ 507   1              0x00,0x7d,0x00,0x30,0x03,0x84,0x03,0x10,        //720*400  500
+ 508   1              0x00,0x21,0x00,0x30,0x03,0x20,0x04,0x10,        //640x480  600
+ 509   1              0x00,0x10,0x00,0x98,0x04,0x18,0x06,0x10,        //800x600  700
+ 510   1              0x00,0x10,0x00,0xe0,0x06,0x72,0x0f,0x10,        //1280x720  760 (HDTV 720p)
+ 511   1              0x00,0x10,0x01,0x00,0x05,0x40,0x08,0x10,        //1024x768  850
+ 512   1              0x00,0x10,0x00,0xd0,0x06,0x40,0x09,0x10,        //1152x864  950
+ 513   1              0x00,0x10,0x00,0xe0,0x06,0xc0,0x0c,0x10,        //1280x960  1050
+ 514   1              0x00,0x10,0x00,0xf8,0x06,0x98,0x0d,0x10,        //1280x1024  1200
+ 515   1              0x00,0x2e,0x01,0x30,0x0b,0xb8,0x0e,0x10         //over (1600x1200)
+ 516   1      };
+ 517   1      
+ 518   1      unsigned short addr;
+ 519   1      unsigned char i,j,k;
+ 520   1              #if PRINT_MESSAGE
+ 521   1                      printf("Vtotal = %d\n",VTotal);
+ 522   1              #endif
+ 523   1              if(Interlance)
+ 524   1                      addr = VTotal << 1;
+ 525   1              else
+ 526   1                      addr = VTotal;
+ 527   1              j = 8;
+ 528   1              for(i=0; i<8; i++)
+ 529   1                      {
+ 530   1                      if(addr < Vt_Tab[i])
+ 531   1                              {
+ 532   1                              j = i;
+ 533   1                              break;
+ 534   1                              }
+ 535   1                      }
+ 536   1              j = j * 8;
+ 537   1              ModePoint = UserModePtr;
+ 538   1              UserModePtr++;
+ 539   1              Write24C16(ep_User_Ptr,UserModePtr);
+ 540   1              if(UserModePtr > ModeNum)
+ 541   1                      UserModePtr = UserModeSt;
+ 542   1              #if PRINT_MESSAGE
+ 543   1                      printf("UserModePoint =  %d\n",(unsigned short)ModePoint);
+ 544   1              #endif
+ 545   1              addr = ModePoint * 8;
+ 546   1              for(i=0; i<8; i++)
+ 547   1                      {
+ 548   1                      k = UserTimeTab[j];
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 10  
+
+ 549   1                      Write24C16(ep_Sync_Data+addr,k);
+ 550   1                      #if PRINT_MESSAGE
+ 551   1                              printf("Data %x = %x\n",(unsigned short)i,(unsigned short)k);
+ 552   1                      #endif
+ 553   1                      addr++;
+ 554   1                      j++;
+ 555   1                      }
+ 556   1              addr = ep_Mode_Data+ModePoint * 4;
+ 557   1              k = H_SYNC >> 8;
+ 558   1              Write24C16(addr,k);
+ 559   1              addr++;
+ 560   1              k = H_SYNC;
+ 561   1              Write24C16(addr,k);
+ 562   1              addr++;
+ 563   1              k = V_SYNC >> 8;
+ 564   1              k |= HV_Pol;
+ 565   1              Write24C16(addr,k);
+ 566   1              addr++;
+ 567   1              k = V_SYNC;
+ 568   1              Write24C16(addr,k);
+ 569   1      */
+ 570   1      //----------------------------------------------------
+ 571   1              Word addr;
+ 572   1              Byte i,Dat;
+ 573   1      
+ 574   1              ModePoint = UserModePtr;
+ 575   1              UserModePtr++;
+ 576   1              Write24C16(ep_User_Ptr,UserModePtr);
+ 577   1              if(UserModePtr > ModeNum)
+ 578   1                      UserModePtr = UserModeSt;
+ 579   1      //#if PRINT_MESSAGE
+ 580   1      //      printf("UserModePoint =  %d\n",(unsigned short)ModePoint);
+ 581   1      //#endif
+ 582   1              UserModeRefReso = SearchEstimatedModeTables();
+ 583   1              //write range refference
+ 584   1              //printf("UserModeReferencePoint =  %d\n",(unsigned short)UserModeRefReso);
+ 585   1              addr = UserModeRefReso * 8;
+ 586   1              //write sync data
+ 587   1              addr = ep_Sync_Data + (ModePoint * 8);  
+ 588   1              for(i=0; i<8; i++)
+ 589   1                      Write24C16(addr++,EEP_SyncMap[UserModeRefReso*8+i]);
+ 590   1      
+ 591   1              addr = ep_Mode_Data+ModePoint * 4;
+ 592   1              Dat = H_SYNC >> 8;
+ 593   1              Write24C16(addr,Dat);
+ 594   1              addr++;
+ 595   1              Dat = H_SYNC;
+ 596   1              Write24C16(addr,Dat);
+ 597   1              addr++;
+ 598   1              Dat = V_SYNC >> 8;
+ 599   1              Dat |= HV_Pol;
+ 600   1              Write24C16(addr,Dat);
+ 601   1              addr++;
+ 602   1              Dat = V_SYNC;
+ 603   1              Write24C16(addr,Dat);
+ 604   1      }
+ 605          
+ 606          
+ 607          void SetInterface()
+ 608          {
+ 609   1      Word code InterfaceTab[]={0x000,0x008,0x102,0x023,0x021,0x196,0x012,0x072};
+ 610   1              Byte code InterfaceDat[][8]={
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 11  
+
+ 611   1                                                                      {0x12,0x04,0x29,0x00,0x05,0x64,0x00,0x01},      //channel 1 sep +-
+ 612   1                                                                      {0x12,0x04,0x29,0x40,0x05,0x65,0x00,0x00},      //channel 1 comp +-
+ 613   1                                                                      {0x1a,0x04,0x29,0x40,0x05,0x65,0x7c,0x00},      //channel 1 SOG -
+ 614   1                                                                      #if DVImode == DEmode
+ 615   1                                                                      {0x12,0x04,0x03,0x01,0x05,0x24,0x00,0x01},      //DVI +-
+ 616   1                                                                      #else
+                                                                              {0x12,0x04,0x03,0x09,0x05,0x94,0x00,0x01},      //DVI +-
+                                                                              #endif
+ 619   1                                                      //              {0x12,0x00,0x29,0x00,0x05,0x24,0x00,0x01},      //channel 2 sep +- //removed by Jason 
+ 620   1                                                      //              {0x12,0x00,0x29,0x40,0x05,0x25,0x00,0x00},      //channel 2 comp +-//removed by Jason 
+ 621   1      //                                                              {0x1a,0x03,0x29,0xc0,0x05,0x25,0xe4,0x00},      //channel 2 SOG -
+ 622   1                                                                      {0x1a,0x03,0x29,0xc0,0x05,0x25,0xb4,0x00},      //channel 2 SOG -
+ 623   1              };
+ 624   1              //Byte SourSel,temp,i;
+ 625   1              Byte i;
+ 626   1              if(!PowerDown)
+ 627   1                      {
+ 628   2              #if PanelInterface == TCON_TO_RSDS
+                                      WriteIIC563(0x101,0x90);
+                      #endif
+ 631   2              #if PanelInterface == LVDS_TO_TCON
+ 632   2                              WriteIIC563(0x101,0x40);
+ 633   2              #endif
+ 634   2              #if PanelInterface == TTL_TO_TCON
+                                      WriteIIC563(0x101,0x00);
+                      #endif
+ 637   2              #if PanelInterface == TCON_TO_TTL
+                                      WriteIIC563(0x101,0x00);
+                      #endif
+ 640   2              // Jacky 20040906 for LVDS power up
+ 641   2              WriteIIC563(0x1f5,0x06);        //disable Pull low LVDS pad     
+ 642   2              WriteIIC563(0x1f7,0xc0);        //Power up LVDS buffer
+ 643   2                      }
+ 644   1              Interlance = 0;
+ 645   1      
+ 646   1              if(SyncMode == 3){
+ 647   2                      WriteIIC563(0x020,0x83);
+ 648   2                       WriteIIC563(0x143,0x20);        //Power up DVI Pll  for Rev D
+ 649   2              }
+ 650   1              else{           
+ 651   2                      WriteIIC563(0x020,0x81);
+ 652   2                       WriteIIC563(0x143,0xa0);        //Power down DVI Pll Rev D
+ 653   2              }
+ 654   1      
+ 655   1              for(i=0;i<8;i++)
+ 656   1                      {
+ 657   2                      if(InterfaceTab[i] == 0x102 && PowerDown)
+ 658   2                              WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]&0x02);
+ 659   2                      else if(InterfaceTab[i] == 0x021 && (HV_Pol & BIT_4))
+ 660   2                              WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]|BIT_7);
+ 661   2                      else
+ 662   2                              WriteIIC563(InterfaceTab[i],InterfaceDat[SyncMode][i]);
+ 663   2                      Sleep(1);
+ 664   2                      }
+ 665   1      }
+ 666          
+ 667          void SyncSource(bit ForceChange)
+ 668          {
+ 669   1              Byte temp,Max;
+ 670   1              Bit ExitLoop;
+ 671   1      //      if(VideoMute || ForceChange)
+ 672   1              if(NoSyncFlag || ForceChange)
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 12  
+
+ 673   1                      {
+ 674   2                      ExitLoop = 0;
+ 675   2                      if(SyncMode==3) {       //DVI
+ 676   3                                      WriteIIC563(0x01d, 0x1f);
+ 677   3                                      SetInterface();
+ 678   3                      }
+ 679   2                      else if(FuncBuf[pVIDEOSOURCE] == cANALOG){      //Port1 Ananolg
+ 680   3                              Max = 2;
+ 681   3                              while(PowerTimer < (POWER_TIME-100) && !ExitLoop)
+ 682   3                                      {
+ 683   4                                      SyncMode++;
+ 684   4                                      if(SyncMode > Max)      
+ 685   4                                              SyncMode = 0;
+ 686   4                                      if(SyncMode == 0)
+ 687   4                                              {
+ 688   5                                              SetInterface();
+ 689   5                                              ExitLoop = 1;
+ 690   5                                              FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 691   5      //                                      #if(Message==1)
+ 692   5                                                      printf("Separate Sync1\n");
+ 693   5      //                                      #endif
+ 694   5                                              }
+ 695   4                                      else if(SyncMode == 1)
+ 696   4                                              {
+ 697   5                                              temp = ReadIIC563(0x19a);
+ 698   5                                              if(temp & BIT_5)
+ 699   5                                                      {
+ 700   6                                                      SetInterface();
+ 701   6                                                      ExitLoop = 1;
+ 702   6                                                      FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 703   6      //                                      #if PRINT_MESSAGE
+ 704   6                                                      printf("Separate Sync2\n");
+ 705   6      //                                      #endif
+ 706   6                                                      }
+ 707   5                                              }
+ 708   4                                      else if(SyncMode == 2 && !BypassSOG)
+ 709   4                                              {
+ 710   5                                              SetInterface();
+ 711   5                                              ExitLoop = 1;
+ 712   5                                              FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 713   5      //                                      #if PRINT_MESSAGE
+ 714   5                                                      printf("Sync on green1\n");
+ 715   5      //                                      #endif
+ 716   5                                              }
+ 717   4      
+ 718   4                                      }
+ 719   3                      }
+ 720   2                      else if(FuncBuf[pVIDEOSOURCE] == cYPbPr) {      //YPbPr
+ 721   3                              SyncMode = 4;
+ 722   3                              SetInterface();
+ 723   3                              ExitLoop = 1;
+ 724   3                              FuncBuf[pVIDEOSOURCE] = cYPbPr;
+ 725   3      
+ 726   3      
+ 727   3                      }
+ 728   2                      
+ 729   2      //      printf("FuncBuf[pVIDEOSOURCE]=%d\r\n",(unsigned short)FuncBuf[pVIDEOSOURCE]);
+ 730   2              ChangeMode = 1;
+ 731   2              }
+ 732   1      }
+ 733          
+ 734          void NoSync(void)
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 13  
+
+ 735          {
+ 736   1              if(!VideoMute)
+ 737   1              {
+ 738   2                      VideoMute =1;
+ 739   2                      MessageShow = 0;
+ 740   2                      //FastMuteOn();
+ 741   2                      BackLightOff();
+ 742   2                      ForceToBackground(0,0,0);       //Set fource to background
+ 743   2                      Osd_Off();
+ 744   2                      PowerTimer = POWER_TIME;
+ 745   2                      #if PRINT_MESSAGE
+ 746   2      //                      printf("NoSync\n");
+ 747   2                      #endif
+ 748   2              }
+ 749   1              else
+ 750   1              {
+ 751   2                      if((PowerTimer < (POWER_TIME-200))&&(PowerTimer > 0)&&(!MessageShow))
+ 752   2                      {
+ 753   3                              MessageShow = 1;
+ 754   3                              if(!FactMode)
+ 755   3                                      ShowMessage(MSG_NOSYNC);
+ 756   3                              OsdTimer = PowerTimer;
+ 757   3                              if((PTC_REG & BIT_0) == 0)
+ 758   3                              {
+ 759   4                                      Sleep(PowerUpInvTiming);
+ 760   4                                      //FastMuteOff();
+ 761   4                                      BackLightOn();
+ 762   4                              }
+ 763   3                      }
+ 764   2              }
+ 765   1      }
+ 766          
+ 767          void PowerSaveingProcess()
+ 768          {
+ 769   1              if(NoSyncFlag && PowerTimer == 0 && !PowerDown && !BurnInMode)
+ 770   1              {
+ 771   2                      if(!FactMode){
+ 772   3                              PowerSaving();
+ 773   3      //                      printf("FactMode\n");
+ 774   3                      }
+ 775   2                      if(FactMode){
+ 776   3                              BurnInMode = 1;
+ 777   3                              BurnInTimer = 0;
+ 778   3                              Osd_Off();
+ 779   3                      }
+ 780   2                      else{   //jacky0316 Item41 BurnInMode
+ 781   3      //                      LED_GrnOff();
+ 782   3      //                      LED_RedOn();
+ 783   3                      }
+ 784   2              }
+ 785   1              if(NoSyncFlag) {                                // +jwshin 051101 Added...
+ 786   2                              if(NoSigTimer==0) {
+ 787   3                                      if(NoSigTogg) {
+ 788   4                                              LED_GrnOff();
+ 789   4                                      }
+ 790   3                                      else {
+ 791   4                                              LED_GrnOn();
+ 792   4                                      }
+ 793   3                                      NoSigTogg^=1;
+ 794   3                                      NoSigTimer = 50;
+ 795   3                              } 
+ 796   2              }       
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 14  
+
+ 797   1      }
+ 798          
+ 799          extern WarmUp();
+ 800          
+ 801          void SourceSelect(void)
+ 802          {
+ 803   1      
+ 804   1      //              if(VChip_Block == 1){//VChip Init
+ 805   1      //                      WriteIIC563(0x080,0x00);
+ 806   1      //                      VChip_Block =0;
+ 807   1      //              }
+ 808   1      //              Z86229_Init();
+ 809   1              
+ 810   1      //?     WriteIIC(TW990x_Addr,TW99_OPFORM, 0x92);      //Output Enable  mode
+ 811   1      //      WriteIIC563(0x154,0x02);
+ 812   1      //      Source_change = 1;
+ 813   1              switch(FuncBuf[pVIDEOSOURCE])
+ 814   1                      {
+ 815   2                      case cANALOG:
+ 816   2                              //------------------------- +jwshin 060927 각 모드 진입후 화면 깨짐을 방지하기 위해 전원 On/Off Routine
+             - 추가...
+ 817   2      //                      PowerSaving();
+ 818   2      //                      Sleep(10);
+ 819   2      //                      PowerStatus = 1;        //power on
+ 820   2      //                      BurnInMode = 0;
+ 821   2      //                      KeyLock = 0;            // +jwshin 050812
+ 822   2      //                      Write24C16(ep_Status,StatusFlag);
+ 823   2      //                      WarmUp();
+ 824   2                              //-------------------------
+ 825   2                              ForceToBack = 0;
+ 826   2                              ScalerPowerUp();
+ 827   2                              Sleep(10);
+ 828   2                              PowerTimer = POWER_TIME;//Jason Choi
+ 829   2                              MessageShow = 0;
+ 830   2      //                      AUDIO_MUTE();
+ 831   2                              WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+ 832   2                              AVDecoderSleep(); //jason Choi
+ 833   2                              ForceToBackground(0,0,0);
+ 834   2                              WriteIIC563(0x1b0,0x00);
+ 835   2                              H_SYNC_Temp = 0x5555;
+ 836   2                              V_SYNC_Temp = 0x5555;
+ 837   2                              LoadModeIndependentSettings();
+ 838   2                              SyncMode = 0;
+ 839   2                              InitScaler();
+ 840   2      //                      ADC_SEL();
+ 841   2                              SetBrightness();
+ 842   2                              SetContrast();
+ 843   2                              LoadADC_Gain();
+ 844   2                              ChangeMode = 1;
+ 845   2                              #if PRINT_MESSAGE
+ 846   2                                      printf("Select PC Input\n");
+ 847   2                              #endif
+ 848   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x03);//pc input      
+ 849   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+ 850   2                              SoundRGB();
+ 851   2      //                      AUDIO_On();
+ 852   2                              break;
+ 853   2                              
+ 854   2                      case cDVI:
+ 855   2                              //------------------------- +jwshin 060927 각 모드 진입후 화면 깨짐을 방지하기 위해 전원 On/Off Routine
+             - 추가...
+ 856   2      //                      PowerSaving();
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 15  
+
+ 857   2      //                      Sleep(10);
+ 858   2      //                      PowerStatus = 1;        //power on
+ 859   2      //                      BurnInMode = 0;
+ 860   2      //                      KeyLock = 0;            // +jwshin 050812
+ 861   2      //                      Write24C16(ep_Status,StatusFlag);
+ 862   2      //                      WarmUp();
+ 863   2                              //-------------------------
+ 864   2                              ForceToBack = 0;
+ 865   2                              ScalerPowerUp();
+ 866   2                              Sleep(10);
+ 867   2                              PowerTimer = POWER_TIME;//Jason Choi
+ 868   2                              MessageShow = 0;
+ 869   2      //                      AUDIO_MUTE();
+ 870   2                              WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+ 871   2                              AVDecoderSleep(); //jason Choi
+ 872   2                              ForceToBackground(0,0,0);
+ 873   2                              WriteIIC563(0x1b0,0x00);
+ 874   2                              H_SYNC_Temp = 0x5555;
+ 875   2                              V_SYNC_Temp = 0x5555;
+ 876   2                              LoadModeIndependentSettings();
+ 877   2                              SyncMode = 3;
+ 878   2                              InitScaler();
+ 879   2                              SetScalerMode();
+ 880   2                              SetBrightness();
+ 881   2                              SetContrast();
+ 882   2                      //      LoadADC_Gain();
+ 883   2                              ChangeMode = 1;
+ 884   2                              #if PRINT_MESSAGE
+ 885   2                                      printf("Select DVI Input\n");
+ 886   2                              #endif
+ 887   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x03);//pc input      
+ 888   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+ 889   2                              SoundRGB();
+ 890   2      //                      AUDIO_On();
+ 891   2                              break;
+ 892   2      
+ 893   2                      case cYPbPr:
+ 894   2                              ForceToBack = 0;//Jason Choi
+ 895   2                              ScalerPowerUp();
+ 896   2                              Sleep(10);
+ 897   2                              PowerTimer = POWER_TIME;//Jason Choi
+ 898   2                              MessageShow = 0;
+ 899   2      //                      AUDIO_MUTE();
+ 900   2                              WriteIIC(TW990x_Addr,TW99_OPFORM, 0x86);      //Output Disable  mode
+ 901   2                              AVDecoderSleep(); //jason Choi
+ 902   2                              ForceToBackground(0,0,0);
+ 903   2                      //      WriteIIC563(0x1b0,0x00);//Jason Choi
+ 904   2                              H_SYNC_Temp = 0x5555;
+ 905   2                              V_SYNC_Temp = 0x5555;
+ 906   2                              LoadModeIndependentSettings();
+ 907   2                              SyncMode = 4;
+ 908   2                              InitScaler();
+ 909   2      //                      ADC_SEL();
+ 910   2                              SetBrightness();
+ 911   2                              SetContrast();
+ 912   2                              LoadADC_Gain();
+ 913   2                              ChangeMode = 1;
+ 914   2                              #if PRINT_MESSAGE
+ 915   2                                      printf("Select YPbPr Input\n");
+ 916   2                              #endif
+ 917   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//for YPbPr input       
+ 918   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 16  
+
+ 919   2                              SoundComp();
+ 920   2      //                      AUDIO_On();
+ 921   2                              break;
+ 922   2      
+ 923   2                      case cSVIDEO:
+ 924   2                              OutOfRange = 0;//Jason Choi
+ 925   2                              ForceToBack = 0;
+ 926   2      //                      AUDIO_MUTE();
+ 927   2                              ScalerPowerUp();
+ 928   2                              Sleep(10);
+ 929   2                              InitScaler();
+ 930   2      //                      ADC_SEL();
+ 931   2                              ForceToBackground(0,0,0);
+ 932   2                              Decoder_Init();
+ 933   2                              #if PRINT_MESSAGE
+ 934   2                                      printf("Select Video 1 Input\n");
+ 935   2                              #endif
+ 936   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//s-video input 
+ 937   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+ 938   2                              SoundVideo();
+ 939   2                              AUDIO_On();
+ 940   2                              DisplaySource(cSVIDEO);
+ 941   2      //                       Video_60Hz = 1;  // 60Hz detected...
+ 942   2                      
+ 943   2      //                      Sleep(50);
+ 944   2      //                      SetScalerAV();
+ 945   2      //                      SetDisplayNormal_Video();
+ 946   2                              break;
+ 947   2                      case cCOMPOSIT:
+ 948   2                              OutOfRange = 0;//Jason Choi
+ 949   2                              ForceToBack = 0;
+ 950   2      //                      AUDIO_MUTE();
+ 951   2      
+ 952   2                              ScalerPowerUp();
+ 953   2                              Sleep(10);
+ 954   2                              InitScaler();
+ 955   2      //                      ADC_SEL();
+ 956   2                              ForceToBackground(0,0,0);
+ 957   2                              Decoder_Init();
+ 958   2                              #if PRINT_MESSAGE
+ 959   2                                      printf("Select Video 2 Input\n");
+ 960   2                              #endif
+ 961   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x01);//composite input       
+ 962   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+ 963   2                              SoundVideo();
+ 964   2                      //      AUDIO_On();
+ 965   2                              DisplaySource(cCOMPOSIT);
+ 966   2      //                       Video_60Hz = 1;  // 60Hz detected...
+ 967   2              
+ 968   2      //                      Sleep(50);
+ 969   2      //                      SetScalerAV();
+ 970   2      //                      SetDisplayNormal_Video();
+ 971   2                              break;
+ 972   2                      case cTV:
+ 973   2      //                      AUDIO_MUTE();
+ 974   2                              OutOfRange = 0; //Jason Choi
+ 975   2                              ForceToBack = 0;
+ 976   2                              ScalerPowerUp();
+ 977   2                              Sleep(10);
+ 978   2                              InitScaler();
+ 979   2      //                      ADC_SEL();
+ 980   2                              ForceToBackground(0,0,0);
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 17  
+
+ 981   2                              Decoder_Init();
+ 982   2                              LoadChLimit();
+ 983   2                              if((ChSystem==CH_USA)||(ChSystem==CH_JPN)){
+ 984   3                                      ChBuffer = Read24C16(0x209);
+ 985   3                                      ChannelSel(ChBuffer);
+ 986   3                              }
+ 987   2                              else{
+ 988   3      //                              LoadChLimit();
+ 989   3                                      PRBuffer = Read24C16(0x207);
+ 990   3                                      ChBuffer = Read24C16(0x100+(PRBuffer - 1));
+ 991   3                                      ChannelSel(ChBuffer);
+ 992   3                              }
+ 993   2                              #if PRINT_MESSAGE
+ 994   2                                      printf("Select Video 2 Input\n");
+ 995   2                              #endif
+ 996   2                              WriteIIC(TDA7440D_Addr,A_InputSel,0x02);//composite input       
+ 997   2                              WriteIIC(TDA7440D_Addr,A_Volume,FuncBuf[pVCMVOL]);//0dB 0dB ~ -40dB
+ 998   2                              SoundTV();
+ 999   2              //              AUDIO_On();
+1000   2                              DisplaySource(cTV);
+1001   2      //                       Video_60Hz = 1;  // 60Hz detected...
+1002   2                      
+1003   2      //                      Sleep(50);
+1004   2      //                      SetScalerAV();
+1005   2      //                      SetDisplayNormal_Video();
+1006   2                              break;          
+1007   2                      };
+1008   1      }
+1009          
+1010          
+1011          
+1012          
+1013          void CheckModeChange(void)
+1014          {
+1015   1      
+1016   1              unsigned char temp;
+1017   1              if(DetectIRQ() || ChangeMode>0){
+1018   2                              temp = ReadIIC563(0x1ab);
+1019   2                              if((temp & 0x3c) != 0){
+1020   3                                      BackLightOff();
+1021   3                                      Abort = 1;
+1022   3                                      H_SYNC_Temp = 0xffff;
+1023   3                                      V_SYNC_Temp = 0xffff;
+1024   3                              #if PRINT_MESSAGE
+1025   3      //                              printf("Mode change1\r\n");
+1026   3                              #endif
+1027   3                              }
+1028   2                              
+1029   2                              temp = ReadIIC563(0x19a);
+1030   2                              if(((SyncMode > 0)&&(SyncMode < 3))||((SyncMode > 4)&&(SyncMode < 7))){         //compostive
+1031   3                                      if((temp & BIT_5) == 0){
+1032   4                                              BackLightOff();
+1033   4                                              Abort = 1;
+1034   4                                              H_SYNC_Temp = 0xffff;
+1035   4                                              V_SYNC_Temp = 0xffff;
+1036   4      //                              printf("Mode change2\r\n");
+1037   4                                              return;
+1038   4                                      }
+1039   3                              }
+1040   2                              else{
+1041   3                                      if((temp & 0x18) != 0x18){
+1042   4                                              BackLightOff();
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 18  
+
+1043   4                                              Abort = 1;
+1044   4                                              H_SYNC_Temp = 0xffff;
+1045   4                                              V_SYNC_Temp = 0xffff;
+1046   4      //                              printf("Mode change3\r\n");
+1047   4                                              return;
+1048   4                                      }
+1049   3                              }
+1050   2              }
+1051   1      }
+1052          
+1053          Byte SearchEstimatedModeTables(void)
+1054          {
+1055   1              Byte Resolution;
+1056   1              if(VTotal < 320)//486)//485)//470 )     // 720x400 Mode : Vertical Line < 470
+1057   1              {
+1058   2                      if(V_SYNC < 550) 
+1059   2                              Resolution = _756x574i_50Hz;
+1060   2                      else 
+1061   2                              Resolution = _640x480i_60Hz;
+1062   2              }
+1063   1              else if(VTotal < 488)//486)//485)//470 )        // 720x400 Mode : Vertical Line < 470
+1064   1              {
+1065   2                      if(V_SYNC < 740) 
+1066   2                              Resolution = _720x400_70Hz;
+1067   2                      else 
+1068   2                              Resolution = _720x400_70Hz;
+1069   2              }
+1070   1              else if(VTotal < 580)   // 640x480 Mode : 481 <= Vertical Line < 580
+1071   1              {
+1072   2                      if(V_SYNC < 640)
+1073   2                              if(SyncMode == 6)
+1074   2                                      Resolution = _640x480P_60Hz;
+1075   2                              else
+1076   2                                      Resolution = _640x480_60Hz;
+1077   2                      else if (V_SYNC < 690)  
+1078   2                              Resolution = _640x480_67Hz;
+1079   2                      else if (V_SYNC < 740)  
+1080   2                              Resolution = _640x480_73Hz;
+1081   2                      else
+1082   2                              Resolution = _640x480_75Hz;
+1083   2              }
+1084   1              else if(VTotal < 601 ) 
+1085   1              {
+1086   2                      Resolution = _720x400_70Hz;
+1087   2              }
+1088   1              else if(VTotal < 612)//610)//608)//606) //605 ) 
+1089   1              {
+1090   2                      Resolution = _720x400_70Hz;
+1091   2              }
+1092   1              else if(VTotal < 660 )  // 800x600 Mode : 604 <= Vertical Line < 660
+1093   1              {
+1094   2                      if(V_SYNC < 540)  // Add this line for 640x480@50Hz
+1095   2                              Resolution = _640x480_50Hz;
+1096   2                      else if(V_SYNC < 580)  
+1097   2                              Resolution = _800x600_56Hz;
+1098   2                      else if(V_SYNC < 660)  
+1099   2                              Resolution = _800x600_60Hz;
+1100   2                      else if(V_SYNC < 740)  
+1101   2                              Resolution = _800x600_72Hz;
+1102   2                      else
+1103   2                              Resolution = _800x600_75Hz;
+1104   2              }
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 19  
+
+1105   1              else if(VTotal < 732)//720 )    // 832x624(75Hz) Mode : 660 <= Vertical Line < 720
+1106   1              {
+1107   2                      if(V_SYNC < 740)  
+1108   2                              Resolution = _800x600_72Hz;
+1109   2                      else 
+1110   2                              Resolution = _832x624_75Hz;
+1111   2              }
+1112   1              else if(VTotal < 780)//778)//770 )      // 1280x720(60Hz) Mode : 720 <= Vertical Line < 770
+1113   1              {
+1114   2                      if(V_SYNC < 740) 
+1115   2                              Resolution = _1280x720_60Hz;
+1116   2                      else 
+1117   2                              Resolution = _1024x768_75Hz;
+1118   2              }
+1119   1              else if(VTotal < 800)   // 1280x768(60Hz) Mode : 780 <= Vertical Line < 800
+1120   1              {
+1121   2                      if(V_SYNC < 650) 
+1122   2                              Resolution = _1280x768_60Hz;
+1123   2                      else 
+1124   2                              Resolution = _1024x768_72Hz;
+1125   2              }
+1126   1              else if(VTotal < 881)//878)//876)//861) // 1024x768 Mode : 770 <= Vertical Line < 861
+1127   1              {
+1128   2                      if(V_SYNC < 650)  
+1129   2                              Resolution = _1024x768_60Hz;
+1130   2                      else if(V_SYNC < 730)  
+1131   2                              Resolution = _1024x768_70Hz;
+1132   2                      else if (V_SYNC < 800) 
+1133   2                              if((H_SYNC > 634)&&(H_SYNC < 644))
+1134   2                                      Resolution = _640x480_75Hz;             //Apple G4 PC 
+1135   2                              else
+1136   2                                      Resolution = _1024x768_75Hz;
+1137   2                      else 
+1138   2                              Resolution = _1024x768_75Hz;
+1139   2              }
+1140   1              else if(VTotal < 932)   // 1152x864/870 Mode : 861 <= Vertical Line < 961
+1141   1              {
+1142   2                      if(V_SYNC < 650) 
+1143   2                              if((VTotal > 899 && VTotal < 903)/*&&( H_SYNC & (SM_SyncHnVp))*/)
+1144   2                                      Resolution = _1152x864_60Hz;    //Apple G4 : 901(-/+)
+1145   2                              else
+1146   2                                      Resolution = _1152x864_60Hz;    //ATI : 895, Voodoo4 : 905, G550 : 900(+/+)
+1147   2                      else if(V_SYNC < 730)  
+1148   2                              Resolution = _1152x864_70Hz;
+1149   2                      else 
+1150   2                              if((H_SYNC > 679)&&(H_SYNC < 697))
+1151   2                                      Resolution = _1152x870_75Hz;
+1152   2                              else 
+1153   2                                      Resolution = _1152x864_75Hz;
+1154   2              }
+1155   1              else if(VTotal < 975)//961)     // 1152x864/870 Mode : 861 <= Vertical Line < 961
+1156   1              {
+1157   2                      if(V_SYNC < 680)
+1158   2                              Resolution = _1152x900_66Hz;
+1159   2                      else
+1160   2                              Resolution = _1152x864_70Hz;    //ATI Rage Fury Pro
+1161   2              }
+1162   1              else if(VTotal < 1040)//1036)//1025)    // 1280x960 Mode : 960 <= Vertical Line < 1024
+1163   1              {
+1164   2                      if(V_SYNC < 650)        
+1165   2                              Resolution = _1280x960_60Hz;
+1166   2                      else 
+C51 COMPILER V7.03   MODEHANDLE                                                            12/21/2006 19:15:24 PAGE 20  
+
+1167   2                              Resolution = _1280x960_75Hz;
+1168   2              }
+1169   1              else if(VTotal < 1080)// 1280x1024  Mode : 1040 <= Vertical Line < 1080
+1170   1              {
+1171   2                      if(V_SYNC < 680)        
+1172   2                              Resolution = _1280x1024_60Hz;
+1173   2                      else if(V_SYNC < 720)   
+1174   2                              Resolution = _1280x1024_70Hz;           
+1175   2                      else                    
+1176   2                              Resolution = _1280x1024_75Hz;
+1177   2              }
+1178   1              
+1179   1              else// 1600x1200  Mode : 1040 <= Vertical Line < 1080
+1180   1              {
+1181   2                      if(V_SYNC < 680)        
+1182   2                              Resolution = _1600x1200_60Hz;
+1183   2                      else if(V_SYNC < 720)   
+1184   2                              Resolution = _1600x1200_70Hz;           
+1185   2                      else                    
+1186   2                              Resolution = _1600x1200_75Hz;
+1187   2              }       
+1188   1              
+1189   1              
+1190   1              return Resolution;      
+1191   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3959    ----
+   CONSTANT SIZE    =    203    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      24
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       4
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,2346 @@
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE SCALER
+OBJECT MODULE PLACED IN .\BIN\Scaler.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\Scaler.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mode
+                    -lName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\Scaler.lst) OBJECT(.\BIN\Scaler.obj)
+
+line level    source
+
+   1          #include "Scaler.H"
+   2          #include "MCU.H"
+   3          #include "UserAdj.H"
+   4          #include "DDC_Ci.H"
+   5          #include "NT686xx_MCU_REG.H"
+   6          #include "IIC.H"
+   7          #include "stdio.h"
+   8          #include "PANEL.H"
+   9          #include "RAM.H"
+  10          #include "sRGB.H"
+  11          #include "OSD.H"
+  12          #include "ModeHandle.H"
+  13          #include "ROM_MAP.H"
+  14          #include "8051.H"
+  15          #include <math.h>
+  16          #include "NT686xx_SC_REG.H"
+  17          #include "NVRAM.H"
+  18          #include "Board.H"
+  19          #include "Mis.H"
+  20          #include "AutoAdj.H"
+  21          #include "BFControl.H"
+  22          #include "HDCP.H"
+  23          #ifdef USE_GAMMA
+              #include "gamma.h"
+              #endif
+  26          #if _Enable_OD_ == ON
+              #include "OD.H"
+              #endif
+  29          #include "DebugModeEn.H"
+  30          
+  31          //#define ScalerDebug
+  32          
+  33          #ifdef ScalerDebug
+                      #define NVTprint(s) printf(s)
+                      #define NVTprint1(s, a1) printf(s, a1)
+              #else
+  37                  #define NVTprint(s)
+  38                  #define NVTprint1(s, a1)
+  39          #endif
+  40          
+  41          #if PanelDepth == 6
+                      #define DisplayColorDepth 0xff
+                      //#define DT158 0x23
+              //      #define DT158 0x77
+              #else
+  46                  #define DisplayColorDepth 0x00
+  47          //      #define DT158 0x33
+  48          #endif
+  49          
+  50          #if PanelTwoPixelPerClk == 1
+  51                  #define DisplayBusWidth 0x00
+  52          #else
+                      #define DisplayBusWidth 0xff
+              #endif
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 2   
+
+  55          
+  56          #if PanelSync_DE == 1
+                      #define DisplaySyncMode 0xff
+              #else
+  59                  #define DisplaySyncMode 0x00
+  60          #endif
+  61          #define DisplayControl (0x61 | (DisplayColorDepth & BIT_3) | (DisplayBusWidth & BIT_2) | (DisplaySyncMode 
+             -& BIT_1))
+  62          
+  63          #define DT155 (unsigned char)PanelPadDrive
+  64          #define DT156 (unsigned char)(PanelPadDrive >> 8)|((~Panel_Invert_DVS & BIT_4) | (~Panel_Invert_DHS & BIT_
+             -5) | (~Panel_Invert_DCLK& BIT_6) | (~Panel_Invert_DEN & BIT_7))
+  65          #define DT61 ((Panel_Invert_DVS & BIT_0) | (Panel_Invert_DHS & BIT_1) | (Panel_Invert_ulDotClk & BIT_2) | 
+             -(Panel_Invert_DEN & BIT_3))
+  66          
+  67          code unsigned short H_ActiveTab[TOTAL_RESOLUTION]={
+  68          //       0       1       2       3       4        5        6    7        8        9       10  11   12   13   14  15  16   17   18  19   20
+  69                  640,720,640,800,832,1024,1152,1152,1152,1280,1280,688,1280,1600,1280,848,720,1088,1280,640,1360,
+  70          //       21   22   23   24   25   26   27   28   29   30  31   32  
+  71                  1400,1440,1680,1792,1856,1920,1920,1920,1280,960,1600,720,
+  72          };
+  73          code unsigned short V_ActiveTab[TOTAL_RESOLUTION]={
+  74          //       0       1       2       3       4       5       6       7       8        9       10  11  12  13  14  15  16  17  18   19  20
+  75                  350,400,480,600,624,768,864,870,900,960,1024,556,720,1200,768,480,576,612,800,400,768,
+  76          //       21   22  23   24   25   26   27   28   29   30  31   32  
+  77                  1050,900,1050,1344,1392,1080,1200,1440,1026,720,1000,350,
+  78          };
+  79          
+  80          unsigned short GetHActive(unsigned char ucRes)  //SAVE "CODE MEMORY SPACE"
+  81          {
+  82   1      unsigned short tmp;
+  83   1      tmp=H_ActiveTab[ucRes];
+  84   1              return tmp;
+  85   1      }
+  86          
+  87          unsigned short GetVActive(unsigned char ucRes)
+  88          {
+  89   1      unsigned short tmp;
+  90   1      tmp=V_ActiveTab[ucRes];
+  91   1              return tmp;
+  92   1      }
+  93          
+  94          void UpdatePresetData(void)
+  95          {
+  96   1      //sync process and display
+  97   1      code unsigned short ScalerInitAddrTab[]={
+  98   1              DV_TOTAL_LI,DV_TOTAL_HI, // Display Vtotal
+  99   1              DV_VS_WID,               // Display V Pulse Width
+ 100   1              DV_BG_BEG_LI,DV_BG_BEG_HI, // Display Background Window VBegin
+ 101   1              DV_BG_LEN_LI,DV_BG_LEN_HI, // Display Background Window VLength
+ 102   1              GDV_ACT_BEG_LI,GDV_ACT_BEG_HI, // Display Active VBegin
+ 103   1              GDV_ACT_LEN_LI,GDV_ACT_LEN_HI, // Display VActive
+ 104   1      
+ 105   1              DH_HTOTAL_LI,DH_HTOTAL_HI, // Display Htotal
+ 106   1              DH_HS_WID,               // Display H Pulse Width
+ 107   1              DH_BG_BEG_LI,DH_BG_BEG_HI, // Display Background Window HBegin
+ 108   1              DH_BG_WID_LI,DH_BG_WID_HI, // Display  Backgroun Window HWidth
+ 109   1              GDH_ACT_BEG_LI,GDH_ACT_BEG_HI, // Display Active HBegin
+ 110   1              GDH_ACT_WID_LI,GDH_ACT_WID_HI, // Display HActive
+ 111   1      
+ 112   1              GI_SYNC_CTRL, // Sync Processor Ctrl: Select Raw_hs
+ 113   1              GI_SYNC_CTRL2, // Sync Processor Ctrl2: H/V output
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 3   
+
+ 114   1              SOG_SLICER_CTRL, // SOG Slicer Ctrl
+ 115   1              FIFO_FLAG, // Clear FIFO interrupt 
+ 116   1              FIFO_FLAG_EN, // Disable FIFO interrupt
+ 117   1              GI_SYNC_CTRL3, // Sync out
+ 118   1              HPRE_THR_LO, // Hsync not present 
+ 119   1              HPRE_THR_HI, // Hsync present
+ 120   1              VPRE_THR_LO, // Vsync not present
+ 121   1              VPRE_THR_HI, // Vsync present
+ 122   1              HCNT_THR, //0x08// Hcounter change threshold
+ 123   1              V_CHANG_CTRL, //0x24// Vcounter change threshold
+ 124   1              SYNC_INT_EN1, // 0x3c H/V interrupt enable1
+ 125   1              SYNC_INT_EN2, // H/V interrupt enable2
+ 126   1              SYNC_INT_FLAG1, // H/V interrupt clear1
+ 127   1              SYNC_INT_FLAG2, // H/V interrupt clear2
+ 128   1              0xfff,  //end
+ 129   1      };
+ 130   1      code unsigned char ScalerInitDataTab[]={
+ 131   1              (unsigned char)PanelTypVTotal,(unsigned char)(PanelTypVTotal>>8), // Display Vtotal
+ 132   1              (unsigned char)PanelMinVSyncWidth, // Display V Pulse Width
+ 133   1              (unsigned char)PanelVActiveStart,(unsigned char)(PanelVActiveStart>>8), // Display Background Window VBeg
+             -in
+ 134   1              (unsigned char)PanelHeight,(unsigned char)(PanelHeight>>8), // Display Background Window VLength
+ 135   1              (unsigned char)PanelVActiveStart,(unsigned char)(PanelVActiveStart>>8), // Display Active VBegin
+ 136   1              (unsigned char)PanelHeight,(unsigned char)(PanelHeight>>8), // Display VActive
+ 137   1      
+ 138   1              (unsigned char)PanelTypHTotal,(unsigned char)(PanelTypHTotal>>8), // Display Htotal
+ 139   1              (unsigned char)PanelMinHSyncWidth, // Display H Pulse Width
+ 140   1              (unsigned char)PanelHActiveStart,(unsigned char)(PanelHActiveStart>>8), // Display Background Window HBeg
+             -in
+ 141   1              (unsigned char)PanelWidth,(unsigned char)(PanelWidth>>8), // Display  Backgroun Window HWidth
+ 142   1              (unsigned char)PanelHActiveStart,(unsigned char)(PanelHActiveStart>>8), // Display Active HBegin
+ 143   1              (unsigned char)PanelWidth,(unsigned char)(PanelWidth>>8), // Display HActive
+ 144   1      
+ 145   1              0x24, // Sync Processor Ctrl: Select Raw_hs
+ 146   1      #if NT68167
+                      0xc3, // Sync Processor Ctrl2: H/V output
+              #else
+ 149   1              0xc0, // Sync Processor Ctrl2: H/V output
+ 150   1      #endif
+ 151   1              0x00, // SOG Slicer Ctrl
+ 152   1              0x03, // Clear FIFO interrupt 
+ 153   1              0x00, // Disable FIFO interrupt
+ 154   1              0x43,   //0x40, // Sync out     //2007-05-08    1080i
+ 155   1              0x2d, // Hsync not present 
+ 156   1              0x2d, // Hsync present
+ 157   1              0x2d, // Vsync not present
+ 158   1              0x2d, // Vsync present
+ 159   1              0x04, //0x08// Hcounter change threshold
+ 160   1              0x24, // Vcounter change threshold      //2007-03-16 0x22->0x24 SOME MODES WILL MODE CHANGE LOOPLY (VG-828, GF
+             --6900 1440x900)
+ 161   1      #if PBusProtocol
+ 162   1              0x80,
+ 163   1      #else
+                      0x00, // 0x3c H/V interrupt enable1
+              #endif
+ 166   1              0x00, // H/V interrupt enable2
+ 167   1              0x2f, // H/V interrupt clear1
+ 168   1              0x1f, // H/V interrupt clear2
+ 169   1      };
+ 170   1      
+ 171   1      code unsigned short UpdateSquenceAddrTable[]={
+ 172   1              ADC_TEST1,ADC_TEST2,ADC_MID_CH_SEL,0x00C,DVI_CTRL1,DVI_CTRL2,DVI_CTRL3,DVI_CTRL4,DVI_CTRL5,DVI_CTRL6,DVI_
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 4   
+
+             -CTRL7,
+ 173   1              GPORT_CTRL,CLAMP_BEGIN,CLAMP_WIDTH,DIGITAL_CTRL,0x024,ADC_CK_CTRL,CAP_SWAP,GI_V_DE_DLY,0x028,0x029,
+ 174   1              GI_CAP_VBEGO_LI,GI_CAP_VBEGO_HI,GI_CAP_VBEGE_LI,GI_CAP_VBEGE_HI,GI_CAP_VLEN_LI,GI_CAP_VLEN_HI,GI_CAP_HBEG
+             -_LI,GI_CAP_HBEG_HI,GI_CAP_HWID_LI,GI_CAP_HWID_HI,GI_ALT_CTRL,
+ 175   1              BK_H_SHAP_CTRL,INTE_CTRL,GAMMA_CTRL,BK_V_SHAP_CTRL,DVI_CTRL15,DVI_CTRL16,
+ 176   1              DISPLAY_MUTE_CTRL,0x155,DISPLAY_POL_CTRL,DISPLAY_CLK_CTRL,DITH_CTRL,DITPLAY_CHANNEL,DISP_SWAP,GD_WIN_CTRL
+             -,INSIDE_CTRL1,0x18D,LVDS_MISC_CTRL1,
+ 177   1              LVDS_CTRL,ADC_OP_CURRENT,LVDS_MISC_CTRL3,
+ 178   1      //      LVDS_CTRL,LVDS_MISC_CTRL3,
+ 179   1              0xfff,  //end
+ 180   1      };
+ 181   1      
+ 182   1      code unsigned char UpdateSquenceDataTable[]={
+ 183   1      
+ 184   1      //  0x002,0x005,0x008,0x00c,0x018,0x019,0x01a,0x01b,0x01c,0x01d,0x01e
+ 185   1      #if (NT68670B || NT68667)
+ 186   1              0x01, 0x08, 0x04, 0x55, 0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xb8,
+ 187   1      #elif NT68167
+                      (0x06|0xe0), 0x08, 0x00, 0x55, 0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xb8,
+              #else
+                      0x03, 0x03, 0x04, 0x55, 0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xb8,
+              #endif
+ 192   1      //  0x020,0x021,0x022,0x023,0x024,0x025,0x026,0x027,0x028,0x029
+ 193   1              0xe1, 0x0c, 0x81, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00,
+ 194   1      //      0x02e,0x02f,0x030,0x031,0x032,0x033,0x034,0x035,0x036,0x037,0x038
+ 195   1              0x20, 0x00, 0x00, 0x00, 0xe0, 0x01, 0x88, 0x00, 0x80, 0x02, 0x00,
+ 196   1      //      0x060,0x064,0x065,0x066,0x146,0x147,
+ 197   1      //      0x00, 0x00, 0x00, 0x00, 0xf3, 0x00,     //HDCP issue 2007-03-14
+ 198   1              0x00, 0x00, 0x00, 0x00, 0xb3, 0x00,
+ 199   1      //      0x154,0x155,0x156,0x157,0x158,0x159,0x16a,0x16e,0x186,0x18d,0x1f5
+ 200   1              0x00, DT155,DT156,0x40, DT158,0x00,     DT16A,0x07, 0x00, 0x00, 0x35,
+ 201   1      //      0x1B8,0x1F1,0x1F7
+ 202   1      #if NT68167
+                      0x10,
+              #else
+ 205   1              0x15,
+ 206   1      #endif
+ 207   1      #if PANEL_SIZE < 20
+ 208   1              0x2a, 0x00
+ 209   1      #else
+                      0x15, 0x00
+              #endif
+ 212   1      };
+ 213   1      
+ 214   1      unsigned char i;
+ 215   1              i = 0;
+ 216   1              do{
+ 217   2                      WriteIIC560(ScalerInitAddrTab[i],ScalerInitDataTab[i]);
+ 218   2                      i++;
+ 219   2              }while(ScalerInitAddrTab[i] != 0xfff);
+ 220   1              i = 0;
+ 221   1              do{
+ 222   2                      WriteIIC560(UpdateSquenceAddrTable[i],UpdateSquenceDataTable[i]);
+ 223   2                      i++;
+ 224   2              }while(UpdateSquenceAddrTable[i] != 0xfff);
+ 225   1      
+ 226   1              
+ 227   1      #if NT68167
+                      #if _167_VERSION_C
+                              WriteIIC560(0x00d, 0xC0);
+                              WriteIIC560(0x1F7, 0xE5);
+                      #endif
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 5   
+
+              #endif
+ 233   1      
+ 234   1      #if SCALAR_BOARD==PCBA_Q50x50
+                      WriteIIC560(ADC_MID_CH_SEL, 0x00);
+              #endif
+ 237   1              
+ 238   1      //      CheckHDCP();
+ 239   1              if(!bAC1stOn){
+ 240   2                      WriteIIC560(DVI_CTRL15, 0xf3);  // IT IS NECESSARY
+ 241   2              }       
+ 242   1      #if NT68167
+                      WriteIIC560(ADC_VREF_TEST, 0x83);
+                      WriteIIC560(0x37A, ReadIIC560(0x37A)|0x01);
+              #endif
+ 246   1      }
+ 247          
+ 248          void InitScaler(void)
+ 249          {
+ 250   1      unsigned char i;
+ 251   1      
+ 252   1              //NVTprint("Init NT68560\n");
+ 253   1               printf("Init Scaler\r\n");                             // +jwshin 111212
+ 254   1      
+ 255   1              
+ 256   1      #if (!PBusProtocol)
+                      ucRegPage = 0;
+                      WriteIIC(SCALER_I2C_ADDR,0xff,ucRegPage);
+              #endif
+ 260   1              WriteIIC560(POWER_CTRL1,0x20);  //      Warm reset
+ 261   1              WriteIIC560(POWER_CTRL1,0x00);  //      output port power down
+ 262   1              Sleep(10);
+ 263   1              TCONInit();
+ 264   1      #ifdef DEMO_HDCP_KEY
+                      InitHDCP_DemoKey();
+              #endif
+ 267   1      
+ 268   1      #if _ENABLE_HDCP_
+ 269   1              InitHDCP();
+ 270   1      #endif
+ 271   1      
+ 272   1              UpdatePresetData();
+ 273   1      
+ 274   1      #if (NT68670B || NT68667)
+ 275   1                      WriteIIC560(LVDS_MISC_CTRL3,0x22);
+ 276   1                      WriteIIC560(LVDS_MISC_CTRL1,0x40);
+ 277   1                      WriteIIC560(LVDS_MISC_CTRL2,0x38);
+ 278   1                      WriteIIC560(LVDS_MISC_CTRL3,0x00);
+ 279   1      #endif
+ 280   1      
+ 281   1      #if NT68167
+                      WriteIIC560(POWER_CTRL2,0x6b);  //all power on
+              #else
+ 284   1              WriteIIC560(POWER_CTRL2,0x2a);  //all power on
+ 285   1      #endif
+ 286   1              WriteIIC560(DVI_CTRL12,0x20);   //all power on
+ 287   1      //      WriteIIC560(0x101,0x00);        //      output port power down
+ 288   1              bIsFRCMode = FALSE;
+ 289   1              SetFreeRun();
+ 290   1      
+ 291   1      //      ucSignalType = sigSEP;
+ 292   1              SetInterface();
+ 293   1      #if NT68167
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 6   
+
+                      WriteIIC560(ADC_POWER_UP,0x3f);
+              #else
+ 296   1              WriteIIC560(ADC_POWER_UP,0xff);
+ 297   1      #endif
+ 298   1              WriteIIC560(DISPLAY_CTRL,DisplayControl);               //fifo auto lock, auto usHTotal 
+ 299   1              WriteIIC560(DISPLAY_MUTE_CTRL,0x02);
+ 300   1      //Noise reduction
+ 301   1              // GetMode setting again
+ 302   1              //WriteIIC560(NR_CTRL,0x7a);                    // Origional is 0x3a // Jude 03/25/2005
+ 303   1              //WriteIIC560(NR_THR_CTRL1,0x4E);       // 0X43  // Origional is 0x22 // Jude 03/25/2005        
+ 304   1              //WriteIIC560(NR_THR_CTRL2,0x33);
+ 305   1      //PWM0
+ 306   1      //      WriteIIC560(GPIO_CTRL,0x3c);    // PWM0,VSO HSOoutput   bit-2 for PWM with VSync
+ 307   1      //      WriteIIC560(0x072,0x09);        // Sync Processor Ctrl: Bypass Sync Control
+ 308   1              WriteIIC560(0x073,0x01);
+ 309   1      //      WriteIIC560(PWM0_HCNT,0xff);            // jerry
+ 310   1      //      WriteIIC560(PWM1_LCNT,0x00);
+ 311   1      //      WriteIIC560(PWM_CTRL1,0x05);            
+ 312   1      //OSD
+ 313   1              WriteIIC560(OSD_BLINK_CTL,0x09);
+ 314   1      //      WriteIIC560(SPACE_CTL,0x80);    //12x16
+ 315   1      //ADC bandwidth 4: 300MHz 6: 500MHz
+ 316   1      #ifndef MODE_BANDWIDTH
+ 317   1              WriteIIC560(ADC_BW_CTRL,0x06);
+ 318   1      #endif
+ 319   1      
+ 320   1              WriteIIC560(HPLL_CTRL3,0x40);   //ADC clock duty
+ 321   1      
+ 322   1      // For ADC R/G/B phase delay jacky 20040629
+ 323   1              WriteIIC560(HPLL_PHASE_CTRL1,0x00);
+ 324   1              WriteIIC560(HPLL_PHASE_CTRL2,0x00);//00
+ 325   1              WriteIIC560(HPLL_PHASE_CTRL1,0x40);
+ 326   1              WriteIIC560(HPLL_PHASE_CTRL2,0x01);//02
+ 327   1              WriteIIC560(HPLL_PHASE_CTRL1,0x80);
+ 328   1              WriteIIC560(HPLL_PHASE_CTRL2,0x00);//00
+ 329   1      
+ 330   1              WriteIIC560(GI_PHS_MASK,0x00);  // Phase mask
+ 331   1      // 2005-05-26 mingyu: Trigger level
+ 332   1              WriteIIC560(HS_TRIG_LEVEL,0x37);        //0x77  0x33 //0x07
+ 333   1              //WriteIIC560(HS_TRIG_LEVEL,0x31);      // Solve the gitter issue for Dell PC (Jack's PC at BenQ)  // Jude 200
+             -7/05/16
+ 334   1              
+ 335   1              WriteIIC560(0x1AF, 0x4A);                       // 2006-01-11 FAST MUTE
+ 336   1      #if NT68167
+                      WriteIIC560(0x1FA,0x40);
+                      WriteIIC560(0x1ED,ReadIIC560(0x1ED)|BIT_5);
+                      WriteIIC560(ADC_BW_CTRL,0x06);
+                      WriteIIC560(0x011,0x58);
+              #else
+ 342   1              WriteIIC560(0x1FA,0x02);
+ 343   1              WriteIIC560(ADC_BW_CTRL,0x06);
+ 344   1      #endif
+ 345   1      //TMDS
+ 346   1              WriteIIC560(DVI_CTRL1,0x02);    //2005-01-06 DVI dot flash
+ 347   1              WriteIIC560(DVI_CTRL2,0x03);
+ 348   1              
+ 349   1      //      WriteIIC560(LVDS_MISC_CTRL4,0x02);  //mark 041223 for LVDS(PLL) range fine tune //NT68663 TO NT68665
+ 350   1      
+ 351   1              BF_Init();
+ 352   1      #ifdef USE_GAMMA
+                      LoadGamma();
+              #endif
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 7   
+
+ 355   1      
+ 356   1      
+ 357   1      //NT68663 TO NT68665
+ 358   1              WriteIIC560(0x1EF,0x04);                //LVDS POWER UP
+ 359   1      //      WriteIIC560(0x1FA,0x02);
+ 360   1      #if NT68665
+              //      if(SCALER_VER==NT68665_VER_GJ)  //SUGGESTED BY MIDAS'S APP.NOTE.
+              //              WriteIIC560(0x1F6,0x04);
+              //      else
+                              WriteIIC560(0x1F6,0x00);
+              #endif
+ 366   1      #if NT68670B||NT68667
+ 367   1              WriteIIC560(0x1F5,0x47);
+ 368   1              WriteIIC560(0x1F6,0x28);
+ 369   1      #endif
+ 370   1              if((ucPowerStatus & SoftPowerOnFlag)!= 0){
+ 371   2                      ScalerON();
+ 372   2      #if PanelID == CMO_M190E5_L0E  //neo 060811
+                              bScalerOutput = 1;
+              #endif
+ 375   2              }
+ 376   1      
+ 377   1              //NEW DITHERING MODE TO REDUCE LOW GRAY LEVEL NOISE.
+ 378   1              WriteIIC560(0x370,0x00);//0xf0
+ 379   1              WriteIIC560(0x371,0x00);//0x02
+ 380   1      //      WriteIIC560(0x390,0x10);        //IT AFFECT THE COLOR TEMP.
+ 381   1      //      WriteIIC560(0x371,0x72);
+ 382   1      
+ 383   1              WriteIIC560(0x1cc,0x07);
+ 384   1      
+ 385   1      #if Panel_Spread_Spect_En == 0xff
+ 386   1              i = (PanelSpreadSpectrumCtrl << 1) | BIT_0;
+ 387   1              WriteIIC560(SSC_CTRL,i);
+ 388   1      #endif
+ 389   1      
+ 390   1      #if _SmartBright_ == ON
+                      LightSensorOn();                // 2005-09-13 jerry
+              #endif
+ 393   1              WriteIIC560(0x1ed,0x08);//0x48
+ 394   1      #if _Enable_OD_ == ON
+                      bSmartResponse = Read24C16(EPADDR_OD_ONOFF);
+                      SetODTable(3);
+              #endif
+ 398   1      }
+ 399          
+ 400          void TCONInit(void)
+ 401          {
+ 402   1      #if Use_TCON != 0
+              unsigned char i;
+                      WriteIIC560(0x0FF,0x02); // page2 enable
+              
+                      NVTprint("TCON Init\n");
+              
+                      for(i=0; i<0x70; i=i+16)
+                              WritePage560(i,i,TCON_Tab);
+                      for(i=0x70; i<0x7b; i++)
+                              WriteIIC(SCALER_I2C_ADDR,i,TCON_Tab[i]);
+                      for(i=0x80; i<0xa0; i=i+16)
+                              WritePage560(i,i,TCON_Tab);
+                      WriteIIC560(0x0FF,0x00); // page1 disable
+              #endif
+ 416   1      }
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 8   
+
+ 417          #if Use_TCON != 0
+              void WritePage560(unsigned char target,unsigned char offset,unsigned char *value)
+              {
+              unsigned char i,ch;
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(SCALER_I2C_ADDR);
+                      WriteByte(target);
+                      for(i=0; i<16; i++){
+                              ch = value[offset + i];
+                              WriteByte(ch);
+                      }
+              /* stop bit */
+                      IIC_Stop();
+              }
+              #endif
+ 434          
+ 435          void SetADC_Phase(void)
+ 436          {
+ 437   1              //WriteIIC560(0x0d9,ucADCPhase);
+ 438   1              WriteIIC560(0x0d9,ucADCPhase | BIT_6);  // Jude 03/25/2005
+ 439   1              
+ 440   1              ucADCCPhase100Pa = (((unsigned short)ucADCPhase * 100) + 32) / 63;
+ 441   1      }
+ 442          
+ 443          void SetADC_PLL(void)
+ 444          {
+ 445   1      #if PanelXga == 1
+                      #define MIN_H_FREQ 298  //28    //KHz
+                      #define MIN_V_FREQ 555  //49//Hz
+                      #define MAX_H_FREQ 640 //85     //KHz
+                      #define MAX_V_FREQ 860           //Hz
+                      #define MAX_PIXEL_RATE 145      //90//MHz
+              #endif
+ 452   1      #if PanelSxga == 1
+ 453   1              #define MIN_H_FREQ 298  //28    //KHz
+ 454   1              //--- +jwshin 120525 Thin Client를 위해(1280x1024 50Hz)   
+ 455   1              #define MIN_V_FREQ 455  //54    //49    //Hz            //2007-03-02    49 is TPV Request //2007-04-11  55 is Philips Request   
+ 456   1      //      #define MIN_V_FREQ 555  //54    //49    //Hz            //2007-03-02    49 is TPV Request //2007-04-11  55 is Philips Reques
+             -t
+ 457   1              #define MAX_H_FREQ 835  // 93   //KHz //93 FOR 1280X1024/85
+ 458   1              #define MAX_V_FREQ 860           //Hz
+ 459   1              #define MAX_PIXEL_RATE 166      //155 //MHz     //2007-03-02    TPV Request 1920x1200
+ 460   1      #endif
+ 461   1      #if PanelWsxga == 1
+                      #define MIN_H_FREQ 298  //28    //KHz
+                      #define MIN_V_FREQ 555  //54    //49    //Hz            //2007-03-02    49 is TPV Request //2007-04-11  55 is Philips Request
+                      #define MAX_H_FREQ 835  // 93   //KHz //93 FOR 1280X1024/85
+                      #define MAX_V_FREQ 860           //Hz
+                      #define MAX_PIXEL_RATE 205      //155 //MHz     //2007-03-02    TPV Request 1920x1200
+              #endif
+ 468   1      
+ 469   1      xdata unsigned long PixelRate;
+ 470   1      unsigned char ch;
+ 471   1      #if (!NT68167)
+ 472   1              unsigned char k;
+ 473   1      #endif
+ 474   1      xdata float temp;
+ 475   1              PixelRate = ((unsigned long)usHTotal * usHSync)/10000;
+ 476   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640) PixelRate <<= 1;
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 9   
+
+              #endif
+ 479   1              ch = (unsigned char)PixelRate;
+ 480   1      #if NT68167
+                      
+                      // PLL configure sequence by APN v1.1 2008/2/14
+                      WriteIIC560(0xB04, ReadIIC560(0xB04)|BIT_0);
+                      WriteIIC560(0xB04, ReadIIC560(0xB04)&~BIT_0);
+              
+              
+                      WriteIIC560(HPLL_CTRL1, 0x21);
+                      if(ucSignalType == sigSOG){     // Clamping Width for SOG
+                              WriteIIC560(CLAMP_WIDTH, 0x80 | ((unsigned char)((float)ch*0.2)-1));
+                      }
+                      else
+                              WriteIIC560(CLAMP_WIDTH, 0x81);
+              #else
+ 494   1              WriteIIC560(HPLL_CTRL1, 0x53);
+ 495   1      #endif
+ 496   1              //out of range
+ 497   1              bOutOfRange = FALSE;
+ 498   1              bOutOfLimit = FALSE;
+ 499   1              bShowOutRange = FALSE;
+ 500   1              bShowOutRange85 = FALSE;
+ 501   1      
+ 502   1      //#if PanelXga == 1
+ 503   1      //      if((ch > MAX_PIXEL_RATE)||(H_ActiveTab[ucResolution] > 1024))
+ 504   1      //#else
+ 505   1      //      if((ch > MAX_PIXEL_RATE)||(H_ActiveTab[ucResolution] > 1280))
+ 506   1      //#endif
+ 507   1              if(ch > MAX_PIXEL_RATE)
+ 508   1                      bOutOfLimit = TRUE;
+ 509   1      
+ 510   1              if((usHSync > MAX_H_FREQ)||(usHSync < MIN_H_FREQ)){
+ 511   2      #if 0
+              //              if(ucResolution != R1280x1024 ) //1280x1024-85
+                              if(!((ucResolution != R1280x1024 )||(ucResolution != R1600x1200 ))) //1280x1024-85
+                                      bOutOfLimit = TRUE;
+                              else{
+                                      if(usHSync > 950)
+                                              bOutOfLimit = TRUE;
+                              }
+              #else
+ 520   2                      bOutOfLimit = TRUE;
+ 521   2      #endif
+ 522   2              }
+ 523   1              if((usVSync > MAX_V_FREQ)||(usVSync < MIN_V_FREQ)){
+ 524   2                      if(!(((ucResolution == R720x576)||(ucResolution == R1280x720)||(ucResolution == R1920x1080)) && (abs(usV
+             -Sync - 500) < 11)))
+ 525   2                              bOutOfLimit = TRUE;
+ 526   2              }
+ 527   1              
+ 528   1              if((ucResolution==R1920x1200) && (usVTotal>1240)&&(PanelID != SAM_LTM_240CT03))
+ 529   1                      bOutOfLimit = TRUE;
+ 530   1      
+ 531   1              if(bOutOfLimit == TRUE){
+ 532   2                      return;
+ 533   2              }
+ 534   1      
+ 535   1      #if NT68167
+                      WriteIIC560(HPLL_FREQ_CTRL,0x00);
+              #else   
+ 538   1              if(bBGMode == FALSE){
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 10  
+
+ 539   2                      k = ReadIIC560(HPLL_FREQ_CTRL) & 0x03;
+ 540   2              }
+ 541   1              else{
+ 542   2                      if(ch > 100){
+ 543   3                              WriteIIC560(HPLL_FREQ_CTRL,0x10);
+ 544   3                              k = 0;
+ 545   3                      }
+ 546   2                      else if (ch > 48){
+ 547   3                              WriteIIC560(HPLL_FREQ_CTRL,0x11);
+ 548   3                              k = 1;
+ 549   3                      }
+ 550   2                      else if(ch > 20){
+ 551   3                              WriteIIC560(HPLL_FREQ_CTRL,0x12);
+ 552   3                              k = 2;
+ 553   3                      }
+ 554   2                      else{
+ 555   3                              WriteIIC560(HPLL_FREQ_CTRL,0x13);
+ 556   3                              k = 3;
+ 557   3                      }
+ 558   2              }
+ 559   1      #endif
+ 560   1      
+ 561   1      #if NT68167
+                      WriteIIC560(HPLL_CTRL2,0xc0);
+              
+                      if( usHSync < 250 )
+                              WriteIIC560(HPLL_LINE_CNT,0x0A);
+                      else if( usHSync < 500 )
+                              WriteIIC560(HPLL_LINE_CNT,0x0B);
+                      else
+                              WriteIIC560(HPLL_LINE_CNT,0x0C);
+              
+                  //Samuel-2008-05-19
+                  //Solve glitch pulse issue in Chroma 22293
+              /*
+                  {
+                      unsigned char i, HPLL_Line_Count;
+                      unsigned long HPLL_Count, HS_CNT_RESULT;
+                      HPLL_Line_Count = ReadIIC560(HPLL_LINE_CNT);
+                      HPLL_Count = (unsigned long) (pow(2, HPLL_Line_Count) / usHSync * 1920000);
+                      printf("HPLL_Count = %08LX\r\n", HPLL_Count);
+                      for( i=0; i<=2; i++) {
+                          Sleep(100);
+                          HS_CNT_RESULT = ReadWordIIC560(HS_CNT_RESULT_MI);
+                          HS_CNT_RESULT <<= 8;
+                          HS_CNT_RESULT += ReadIIC560(HS_CNT_RESULT_LI);
+                          if( abs(HPLL_Count - HS_CNT_RESULT) < 256 ) {
+                              break;
+                          }
+                          printf("HS_CNT_RESULT = %08LX\r\n", HS_CNT_RESULT);
+                      }
+                      //Disable HPLL Auto Load
+                      WriteIIC560(HPLL_FREQ_CTRL, 0x40);
+                  }
+              */    
+              #else
+ 595   1              if((ucSignalType == sigSEP)||(ucSignalType == sigDVI))
+ 596   1                      WriteIIC560(HPLL_CTRL2,0xBF);
+ 597   1              else
+ 598   1                      WriteIIC560(HPLL_CTRL2,0xA0);
+ 599   1      
+ 600   1              WriteIIC560(HPLL_LINE_CNT,0x0C);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 11  
+
+ 601   1      #endif
+ 602   1              
+ 603   1      #if DUAL_MODE
+ 604   1              /*      2005-09-20
+ 605   1              When the system on DVI input,
+ 606   1              the HPLL will be power down.
+ 607   1              So, the firmware need to power up the HPLL to initialize the hardware.*/
+ 608   1            if(ucSignalType == sigDVI ){
+ 609   2                      ch = ReadIIC560(POWER_CTRL2);
+ 610   2                      WriteIIC560(POWER_CTRL2, ch | BIT_5);
+ 611   2                      Sleep(5);
+ 612   2                      WriteIIC560(POWER_CTRL2, ch );
+ 613   2      
+ 614   2      //                      if((ReadIIC560(DVI_STATUS)&BIT_0) != 0)
+ 615   2      //                      WriteIIC560(POWER_CTRL2, ch | BIT_5);
+ 616   2              }
+ 617   1      #endif
+ 618   1      
+ 619   1              if ( bBGMode == FALSE ) {
+ 620   2      //
+ 621   2      
+ 622   2      #if NT68167
+                              if(ucSignalType != sigSEP){ // SOG
+                                      WriteIIC560(HPLL_PHASE_CTRL,0x08);              //0x0d
+                              }
+                              else{
+                                      if((ucHVPolarity & BIT_1) == 0){
+                                              WriteIIC560(HPLL_PHASE_CTRL,0x00);              //0x05
+                                      }
+                                      else{
+                                              WriteIIC560(HPLL_PHASE_CTRL,0x08);              //0x0d
+                                      }
+                              }
+                              PixelRate = ReadWordIIC560(HS_CNT_RESULT_MI) & 0xffff;
+              #else
+ 636   2                      if(ucSignalType != sigSEP){ // SOG
+ 637   3                              WriteIIC560(HPLL_PHASE_CTRL,0x09);              //0x0d
+ 638   3                      }
+ 639   2                      else{
+ 640   3                              if((ucHVPolarity & BIT_1) == 0){
+ 641   4                                      WriteIIC560(HPLL_PHASE_CTRL,0x01);              //0x05
+ 642   4                              }
+ 643   3                              else{
+ 644   4                                      WriteIIC560(HPLL_PHASE_CTRL,0x09);              //0x0d
+ 645   4                              }
+ 646   3                      }
+ 647   2                      PixelRate = ReadWordIIC560(HS_CNT_RESULT_MI) & 0x3fff;
+ 648   2      #endif
+ 649   2                      PixelRate <<= 8;
+ 650   2                      ch = ReadIIC560(HS_CNT_RESULT_LI);
+ 651   2                      PixelRate += ch;
+ 652   2              }
+ 653   1              else{
+ 654   2                      WriteIIC560(HPLL_PHASE_CTRL,0x01);
+ 655   2      
+ 656   2      ulHfreqCounter = 0;
+ 657   2      
+ 658   2      if( ucSignalType != sigDVI || H_ActiveTab[ucResolution] > 1280 )        //1920x1200 HAS FIFO OVERFLOW
+ 659   2      {
+ 660   3                              ulHfreqCounter = 0;
+ 661   3                              ucLoopTimer_10ms = 30;
+ 662   3                              while(ucLoopTimer_10ms != 0){
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 12  
+
+ 663   4      #if NT68167
+                                              PixelRate = ReadWordIIC560(HS_CNT_RESULT_MI) & 0xffff;
+              #else
+ 666   4                                      PixelRate = ReadWordIIC560(HS_CNT_RESULT_MI) & 0x3fff;
+ 667   4      #endif
+ 668   4                                      PixelRate <<= 8;
+ 669   4                                      ch = ReadIIC560(HS_CNT_RESULT_LI);
+ 670   4                                      PixelRate += ch;
+ 671   4      
+ 672   4                                      if(PixelRate > ulHfreqCounter){
+ 673   5                                              if((PixelRate - ulHfreqCounter ) >  2){
+ 674   6                                                      ulHfreqCounter = PixelRate;
+ 675   6                                                      ucLoopTimer_10ms = 30;
+ 676   6                                              }
+ 677   5                                      }
+ 678   4                                      else{
+ 679   5                                              if((ulHfreqCounter - PixelRate ) >  2){
+ 680   6                                                      ulHfreqCounter = PixelRate;
+ 681   6                                                      ucLoopTimer_10ms = 30;
+ 682   6                                              }
+ 683   5                                      }
+ 684   4      /*
+ 685   4                                      if(abs(PixelRate - ulHfreqCounter ) >  2){
+ 686   4                                                      ulHfreqCounter = PixelRate;
+ 687   4                                                      ucLoopTimer_10ms = 30;
+ 688   4                                      }
+ 689   4      */                                      
+ 690   4                                      CheckModeChange();
+ 691   4                                      if(usTmpHSync == 0xffff){
+ 692   5                                              break;
+ 693   5                                      }
+ 694   4                              }
+ 695   3                              ulHfreqCounter = PixelRate;
+ 696   3      
+ 697   3      }
+ 698   2      
+ 699   2      #if DUAL_MODE
+ 700   2                      if(ucSignalType == sigDVI){      //neo 060620 suggest by jerry
+ 701   3                              PixelRate = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+ 702   3                              if((PixelRate == 0x1fff)||(PixelRate == 0)){
+ 703   4                                      usTmpHSync = 0xffff;
+ 704   4                              }
+ 705   3                              else{
+ 706   4                                          PixelRate = PixelRate * 512;
+ 707   4                              }
+ 708   3      
+ 709   3                              //printf("Hcounter(From Register) = %ld\r\n",PixelRate);                //IF DIFFERENCE IS LARGER, THEN USE ROUGHLY R
+             -EAD FROM REGISTER
+ 710   3                              //if(abs(PixelRate - ulHfreqCounter ) > 512)
+ 711   3                              //              ulHfreqCounter = PixelRate;                 
+ 712   3                              if( (PixelRate > ulHfreqCounter && PixelRate - ulHfreqCounter  > 512) ||
+ 713   3                                      (ulHfreqCounter > PixelRate && ulHfreqCounter - PixelRate  > 512) )
+ 714   3                              {
+ 715   4                                              ulHfreqCounter = PixelRate;             
+ 716   4                              }
+ 717   3                      }
+ 718   2      #endif
+ 719   2                      
+ 720   2      #if NT68167
+                                      if ( usHSync<250 )
+                                              WriteIIC560(HPLL_FREQ_CTRL,0x40);
+              #endif
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 13  
+
+ 724   2                      
+ 725   2              }
+ 726   1      
+ 727   1      #if NT68167
+                      if ( usHSync<250 )
+                              ulHfreqCounter = ulHfreqCounter>>2;
+                      else if ( usHSync<500 )
+                              ulHfreqCounter = ulHfreqCounter>>3;
+                      else
+                              ulHfreqCounter = ulHfreqCounter>>4;
+              #endif
+ 735   1              
+ 736   1              temp = ((float)usHTotal * 536870912) / ulHfreqCounter;
+ 737   1              PixelRate = (unsigned long)(temp + 0.5);
+ 738   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640) PixelRate <<= 1;
+              #endif
+ 741   1      //printf("DSS = %ld\r\n",PixelRate);
+ 742   1      
+ 743   1              if(usTmpHSync != 0xffff){
+ 744   2      
+ 745   2      #if (!PBusProtocol)
+                              for(k; k>0; k--){
+                                      PixelRate <<= 1;
+                              }
+                              WriteIIC560(HSDDS_RATIO_LI,(unsigned char)PixelRate);
+                              WriteIIC560(HSDDS_RATIO_MI,(unsigned char)(PixelRate>>8));
+              //              WriteIIC560(0x0D4,(unsigned char)(PixelRate>>16));
+                              WriteIIC_WaitV(SCALER_I2C_ADDR,0x0D4,(unsigned char)(PixelRate>>16));
+              #endif
+ 754   2      #ifdef R640_TUNE
+                              if(H_ActiveTab[ucResolution] == 640)
+                                      WriteWordIIC560(HSDDS_DIVIDER_LI,usHTotal<<1);
+                              else
+              #endif
+ 759   2                      WriteWordIIC560(HSDDS_DIVIDER_LI,usHTotal);
+ 760   2              }
+ 761   1      
+ 762   1      #if NT68167
+                      if(ucSignalType != sigSEP){ //SOG
+                              WriteIIC560(HPLL_PHASE_CTRL,0x00);      //0x0d
+                      }
+                      else{
+                              if((ucHVPolarity & BIT_1) == 0){
+              
+                                      WriteIIC560(HPLL_PHASE_CTRL,0x00);      //0x07
+                              }
+                              else{
+                                      WriteIIC560(HPLL_PHASE_CTRL,0x08);      //0x0f
+                              }
+                      }
+              #else
+ 776   1              if(ucSignalType != sigSEP){ //SOG
+ 777   2                      WriteIIC560(HPLL_PHASE_CTRL,0x09);      //0x0d
+ 778   2              }
+ 779   1              else{
+ 780   2                      if((ucHVPolarity & BIT_1) == 0){
+ 781   3      
+ 782   3                              WriteIIC560(HPLL_PHASE_CTRL,0x03);      //0x07
+ 783   3                      }
+ 784   2                      else{
+ 785   3                              WriteIIC560(HPLL_PHASE_CTRL,0x0b);      //0x0f
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 14  
+
+ 786   3                      }
+ 787   2              }
+ 788   1      #endif
+ 789   1      
+ 790   1      #if (!PBusProtocol)
+                      if(ucResolution > 1){   //<==NSTL "Win98 logo shakes"
+                              ch = ReadIIC560(HPLL_PHASE_CTRL) | BIT_2;       //switch to manual lock
+                              Sleep(5);                                                                       //mingyu20041223
+                              WriteIIC560(HPLL_PHASE_CTRL,ch);
+                      }
+              #endif  
+ 797   1      
+ 798   1      #ifdef ANTI_ESD
+                      // ESD ISSUE, AVOID HPLL REGISTER COULD BE RESET, jerry
+                      //ucESDSaveD0 = ReadIIC560(HPLL_CTRL1);
+                      ucESDSaveD1 = ReadIIC560(HPLL_FREQ_CTRL);
+                      ucESDSaveD2 = ReadIIC560(HSDDS_RATIO_LI);
+                      ucESDSaveD3 = ReadIIC560(HSDDS_RATIO_MI);
+                      ucESDSaveD4 = ReadIIC560(HSDDS_RATIO_HI);
+                      ucESDSaveF1 = ReadIIC560(DPLL_FREQ_CTRL);
+              #endif
+ 807   1              DebugModeEn();
+ 808   1      }
+ 809          
+ 810          void SetScaler(void)
+ 811          {
+ 812   1      xdata unsigned short i,InputActiveHeight,DispActiveHeight,dstVtotal,dstHtotal,V_Act;
+ 813   1      #if PanelID == CPT_CLAA170EA07P
+              xdata unsigned short Hr2;//,Hr,Ht,Hr_diff1,Hr_diff2,dstVLockPos,dstHLockPos;
+              unsigned char Reg0x154;
+              #endif
+ 817   1      unsigned char ch;
+ 818   1      xdata float temp;
+ 819   1      
+ 820   1              bIsFRCMode = FALSE;
+ 821   1      #if Panel_Spread_Spect_En == 0xff
+ 822   1              WriteIIC560(SSC_CTRL,0);
+ 823   1      #endif
+ 824   1              WriteIIC560(DISPLAY_CTRL,DisplayControl);               //fifo auto lock, auto usHTotal 
+ 825   1      
+ 826   1              if(ucSignalType == sigDVI){
+ 827   2                      usActiveH = ReadWordIIC560(DVI_CAP_HWID_LI);
+ 828   2                      V_Act = ReadWordIIC560(DVI_CAP_VLEN_LI);
+ 829   2      
+ 830   2                      if ( bIsInterlaced == TRUE )
+ 831   2                              V_Act <<= 1;
+ 832   2      
+ 833   2                      for(ch=0; ch<TOTAL_RESOLUTION; ch++){
+ 834   3                              if((abs(H_ActiveTab[ch] - usActiveH) < 2) && (abs(V_ActiveTab[ch] - V_Act) < 2)){
+ 835   4                                      ucResolution = ch;
+ 836   4                                      break;
+ 837   4                              }               
+ 838   3                      }
+ 839   2                      
+ 840   2              }
+ 841   1              else
+ 842   1              {       
+ 843   2                      usActiveH = H_ActiveTab[ucResolution];
+ 844   2      #ifdef R640_TUNE
+                              if(H_ActiveTab[ucResolution] == 640) usActiveH <<= 1;
+              #endif
+ 847   2                      V_Act = V_ActiveTab[ucResolution];
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 15  
+
+ 848   2              }
+ 849   1              
+ 850   1      
+ 851   1      
+ 852   1      
+ 853   1              if(usActiveH > PanelWidth)
+ 854   1                      WriteIIC560(INSIDE_CTRL2,0x44); //down scalling
+ 855   1              else
+ 856   1                      WriteIIC560(INSIDE_CTRL2,0x04); //up scalling
+ 857   1      
+ 858   1              WriteWordIIC560(GI_CAP_VLEN_LI,V_Act);          // Capture V_Active
+ 859   1              WriteWordIIC560(GI_CAP_HWID_LI,usActiveH);              // Capture H_Active
+ 860   1              InputActiveHeight = V_Act;
+ 861   1      
+ 862   1      //      printf("ucResolution = %d x %d\r\n",H_ActiveTab[ucResolution],V_ActiveTab[ucResolution]);
+ 863   1      
+ 864   1      
+ 865   1      // ulDotClk
+ 866   1              ulDotClk = ((unsigned long)PanelHeight * usVTotal / V_ActiveTab[ucResolution]) * usVSync * PanelMinHTotal
+             - / 10000;        //kHz   
+ 867   1              
+ 868   1              if(bIsInterlaced == TRUE){
+ 869   2                      ulDotClk <<= 1;
+ 870   2              }
+ 871   1              DispActiveHeight = PanelHeight;                         // set the vertical active height to the Panel Height
+ 872   1      /*
+ 873   1      #if (PanelID ==LPL_LM150X08_TL03 || PanelID ==LPL_LM170E01_TLBB || PanelID == LPL_LM170E01_TLBD || \ 
+ 874   1              PanelID ==LPL_LM190E03_TLB5 || PanelID ==LPL_LM190E03_TLB7      )
+ 875   1      */
+ 876   1      #if 0
+                      if( H_ActiveTab[ucResolution] == PanelWidth && abs(usVSync-600)<12 )
+                      {
+                              printf("FINE TUNE FOR NATIVE MODE@60HZ IN LPL PANEL\r\n");
+                              dstHtotal = PanelTypHTotal;
+                      }
+                      else
+                              dstHtotal = PanelMinHTotal;
+              #else
+ 885   1                      dstHtotal = PanelMinHTotal;
+ 886   1      #endif
+ 887   1      
+ 888   1      // calculate dst vtotal
+ 889   1              dstVtotal = ((((unsigned long)usVTotal * DispActiveHeight) << 4) / V_ActiveTab[ucResolution] + 8) >> 4; /
+             -/add .5 for rounding, make even
+ 890   1      
+ 891   1      //printf("Step 1.\r\n");
+ 892   1      //printf("dstHtotal=%d, dstVtotal=%d, InputActiveHeight =%d\r\nDispActiveHeight=%d\r\n", 
+ 893   1      //      (unsigned short)dstHtotal,(unsigned short)dstVtotal, InputActiveHeight, (unsigned short)DispActiveHeigh
+             -t);
+ 894   1      //printf("ulDotClk=%ld\r\n",ulDotClk);
+ 895   1      
+ 896   1              if(ulDotClk < PanelMinPClk){                            
+ 897   2                      dstHtotal = PanelTypHTotal;
+ 898   2              }
+ 899   1              else if(ulDotClk > PanelMaxPClk){
+ 900   2      
+ 901   2                      dstHtotal = PanelLowHTotal;
+ 902   2                              
+ 903   2                      if(ucSignalType == sigDVI){     //DVI
+ 904   3      #if 1                   
+ 905   3                              DispActiveHeight = (unsigned short)(((float)PanelMaxPClk / dstHtotal * 10) * V_ActiveTab[ucResolution] 
+             -/ usHSync + 0.5);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 16  
+
+ 906   3                              dstVtotal = ((((unsigned long)usVTotal * DispActiveHeight) << 4) / V_ActiveTab[ucResolution] + 8) >> 4;
+             -        //add .5 for rounding, make even
+ 907   3                              if(dstVtotal < PanelMinVTotal){
+ 908   4                                      DispActiveHeight = (unsigned long)PanelMinVTotal * V_ActiveTab[ucResolution] / usVTotal;
+ 909   4                              }
+ 910   3                              if(DispActiveHeight > PanelHeight)
+ 911   3                                      DispActiveHeight = PanelHeight;
+ 912   3      #endif
+ 913   3      /*
+ 914   3      //                      DispActiveHeight = (unsigned short)(((float)PanelMaxPClk / dstHtotal * 10) * V_ActiveTab[Resolution] 
+             -/ usHSync + 0.5);
+ 915   3                              DispActiveHeight = (unsigned long)PanelMaxHFreq * V_ActiveTab[ucResolution] / usHSync / 100;
+ 916   3                              dstVtotal = ((((unsigned long)usVTotal * DispActiveHeight) << 4) / V_ActiveTab[ucResolution] + 8) >> 4;
+             -        //add .5 for rounding, make even
+ 917   3                              if(dstVtotal < PanelMinVTotal){
+ 918   3                                      DispActiveHeight = (unsigned long)PanelMinVTotal * V_ActiveTab[ucResolution] / usVTotal;
+ 919   3                              }
+ 920   3                              if(DispActiveHeight > PanelHeight)
+ 921   3                                      DispActiveHeight = PanelHeight;
+ 922   3      */                              
+ 923   3                      }
+ 924   2                      else{   //analog
+ 925   3                              
+ 926   3                              temp = (float)PanelMaxPClk / 12000;
+ 927   3      #if 1                   
+ 928   3                              InputActiveHeight = (unsigned short)((float)dstHtotal * PanelHeight  * 4096 / ulHfreqCounter / temp);
+ 929   3                              if(InputActiveHeight < V_ActiveTab[ucResolution])
+ 930   3                                      InputActiveHeight = V_ActiveTab[ucResolution];
+ 931   3                              else if (InputActiveHeight < V_ActiveTab[ucResolution]+4)
+ 932   3                                      InputActiveHeight = V_ActiveTab[ucResolution]+4;
+ 933   3                              if(InputActiveHeight > usVTotal)
+ 934   3                                      InputActiveHeight = usVTotal - 16;
+ 935   3                              WriteWordIIC560(GI_CAP_VLEN_LI,InputActiveHeight);              // Capture V_Active
+ 936   3                              ucVPOffset = (InputActiveHeight - V_ActiveTab[ucResolution]) / 2;
+ 937   3                              ucMinVP += ucVPOffset;
+ 938   3                              SetVP();
+ 939   3      #endif
+ 940   3      /*
+ 941   3                              InputActiveHeight = (unsigned short)((float)dstHtotal * PanelHeight  * 4096 / ulHfreqCounter / temp);
+ 942   3                              if(InputActiveHeight < V_ActiveTab[ucResolution])
+ 943   3                                      InputActiveHeight = V_ActiveTab[ucResolution];
+ 944   3                              if((InputActiveHeight < PanelHeight + 8)&&(InputActiveHeight > PanelHeight))
+ 945   3                                      InputActiveHeight = InputActiveHeight + 8;
+ 946   3                              if(InputActiveHeight > usVTotal)
+ 947   3                              InputActiveHeight = usVTotal - 16;
+ 948   3                              ulDispHfreq = (unsigned long)PanelHeight * usHSync * 100 / InputActiveHeight;
+ 949   3                              if(ulDispHfreq > PanelMaxHFreq){
+ 950   3                                      InputActiveHeight = (unsigned long)PanelHeight * usHSync * 100 / PanelMaxHFreq;
+ 951   3                                      dstVtotal = ((((unsigned long)usVTotal * PanelHeight) << 4) / InputActiveHeight + 8) >> 4;      //add .5 fo
+             -r rounding, make even
+ 952   3                                      if(dstVtotal < PanelMinVTotal){
+ 953   3                                              InputActiveHeight = (unsigned long)PanelHeight * usVTotal / PanelMinVTotal;
+ 954   3                                      }
+ 955   3                              }
+ 956   3                              WriteWordIIC560(GI_CAP_VLEN_LI,InputActiveHeight);              // Capture V_Active
+ 957   3                              ucVPOffset = (InputActiveHeight - V_ActiveTab[ucResolution]) / 2;
+ 958   3                              ucMinVP += ucVPOffset;
+ 959   3                              SetVP();
+ 960   3      */                      
+ 961   3                      }
+ 962   2              }
+ 963   1      //      temp = (float)dstHtotal * PanelHeight * 4096 / ulHfreqCounter / V_ActiveTab[ucResolution];
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 17  
+
+ 964   1      //      ulDotClk = (unsigned long)(temp * 12000000) - 1000;
+ 965   1      
+ 966   1      #if bDisplaySize != ActDisplay1680x1050
+ 967   1              if(ucResolution == R1280x1024)
+ 968   1                      DispActiveHeight = 1024;
+ 969   1      #endif
+ 970   1      
+ 971   1              WriteWordIIC560(DV_BG_LEN_LI,DispActiveHeight);         // Display VActive
+ 972   1              WriteWordIIC560(GDV_ACT_LEN_LI,DispActiveHeight);               // Display VActive
+ 973   1      
+ 974   1      /*
+ 975   1              if ( ucSignalType != sigDVI && ucResolution==3 && usVSync > 740 )
+ 976   1              temp = ((float)dstHtotal+30) * DispActiveHeight * 4096 / ulHfreqCounter / InputActiveHeight;
+ 977   1              else
+ 978   1      */
+ 979   1      #if PanelID == CPT_CLAA170EA07P
+                      temp = ((float)dstHtotal-0.2) * DispActiveHeight * 4096 / ulHfreqCounter / InputActiveHeight;
+              #else
+ 982   1              temp = ((float)dstHtotal-0.1) * DispActiveHeight * 4096 / ulHfreqCounter / InputActiveHeight;
+ 983   1      #endif
+ 984   1              ulDotClk = (unsigned long)(temp * 12000000);
+ 985   1      
+ 986   1              if(bIsInterlaced == TRUE){
+ 987   2                      ulDotClk <<= 1;
+ 988   2              }
+ 989   1      
+ 990   1              SetDPLL();
+ 991   1      
+ 992   1      // Htotal
+ 993   1              WaitSetup(8);
+ 994   1      
+ 995   1              if(usTmpHSync != 0xffff){
+ 996   2      
+ 997   2                      i = ReadWordIIC560(DSP_HTOTAL_R) & 0x0fff;
+ 998   2                      if(abs(i - dstHtotal) < 5)              dstHtotal = i;
+ 999   2      
+1000   2                      dstVtotal = (ulDotClk * 10 / dstHtotal + (usVSync >> 1)) / usVSync;     
+1001   2                      if((dstVtotal-PanelHeight) > 256){
+1002   3                              usPanelVBackPorch = PanelMinVSyncBackPorch + 80;
+1003   3                      }
+1004   2                      else{
+1005   3                              usPanelVBackPorch = PanelMinVSyncBackPorch;
+1006   3                      }
+1007   2                      ulDispHfreq = ulDotClk / dstHtotal;             // burst mode
+1008   2      //printf("Step 2.\r\n");
+1009   2      //printf("dstHtotal=%d, dstVtotal=%d, InputActiveHeight =%d\r\nDispActiveHeight=%d\r\n", 
+1010   2      //      (unsigned short)dstHtotal,(unsigned short)dstVtotal, InputActiveHeight, (unsigned short)DispActiveHeigh
+             -t);
+1011   2      //printf("ulDotClk=%ld\r\n",ulDotClk);
+1012   2      
+1013   2                      NVTprint1("ulDotClk = %ld\r\n",ulDotClk);
+1014   2                      NVTprint1("DispActiveHeight = %d\r\n",DispActiveHeight);
+1015   2                      NVTprint1("InputActiveHeight = %d\r\n",InputActiveHeight);
+1016   2                      NVTprint1("dstVtotal = %d\r\n",dstVtotal);
+1017   2                      NVTprint1("dstHtotal = %d\r\n",dstHtotal);
+1018   2                                      
+1019   2                      WriteWordIIC560(DV_TOTAL_LI,dstVtotal);         // Display Vtotal
+1020   2                      i = usPanelVBackPorch + PanelMinVSyncWidth;
+1021   2                      WriteWordIIC560(DV_BG_BEG_LI,i);                // Display PanelVActiveStart
+1022   2                      i = i + (PanelHeight - DispActiveHeight) / 2;
+1023   2                      WriteWordIIC560(GDV_ACT_BEG_LI,i);              // Display PanelVActiveStart
+1024   2                      WriteWordIIC560(DH_HTOTAL_LI,dstHtotal);                // Display Htotal
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 18  
+
+1025   2      
+1026   2                      i = (dstHtotal - PanelWidth) / 3;
+1027   2                      WriteIIC560(DH_HS_WID,i);                // Display H Pulse Width
+1028   2                      i <<= 1;
+1029   2                      WriteWordIIC560(DH_BG_BEG_LI,i);        //PanelHActiveStart
+1030   2                      WriteWordIIC560(GDH_ACT_BEG_LI,i);      //PanelHActiveStart
+1031   2      
+1032   2      
+1033   2                      SetBrightness();
+1034   2      
+1035   2      
+1036   2                      //i = ReadIIC560(SRGB_CTRL);
+1037   2                      //WriteIIC560(SRGB_CTRL, i | 0x10 );
+1038   2      
+1039   2      #ifdef MODE_BANDWIDTH
+              #if PanelSxga == 1
+                              if ( H_ActiveTab[ucResolution] <= 640 ||  (H_ActiveTab[ucResolution]==1024 && usVSync<612) ) // ripple +
+             - by 2006/04/10
+              #else
+                              if ( H_ActiveTab[ucResolution] <= 640 )
+              #endif
+                                      WriteIIC560(ADC_BW_CTRL,0x00);
+                              else if ( H_ActiveTab[ucResolution] <=800 )
+                                      WriteIIC560(ADC_BW_CTRL,0x02);
+                              else
+                                      WriteIIC560(ADC_BW_CTRL,0x06);
+              #endif
+1051   2      
+1052   2                      
+1053   2      #ifdef MODE_OFFSET
+              #if PanelSxga == 1
+                              if ( H_ActiveTab[ucResolution] < 1280 && bOffsetDown==FALSE )
+              #else
+                              if ( H_ActiveTab[ucResolution] < 1024 && bOffsetDown==FALSE )
+              #endif
+                              {
+                                      ucR_ADC_Offset-=3;
+                                      ucG_ADC_Offset-=3;
+                                      ucB_ADC_Offset-=3;
+                                      bOffsetDown = TRUE;
+                                      Write24C16(EPADDR_OFFSETDOWN, bOffsetDown);
+              //printf("Offset-8\r\n");                       
+                                      UpdateADCOffset();
+                              }
+              #if PanelSxga == 1
+                              else if ( H_ActiveTab[ucResolution] == 1280 && bOffsetDown==TRUE )
+              #else
+                              else if ( H_ActiveTab[ucResolution] == 1024 && bOffsetDown==TRUE )
+              #endif
+                              {
+                                      ucR_ADC_Offset+=3;
+                                      ucG_ADC_Offset+=3;
+                                      ucB_ADC_Offset+=3;
+                                      bOffsetDown = FALSE;
+                                      Write24C16(EPADDR_OFFSETDOWN, bOffsetDown);
+              //printf("Offset+8\r\n");
+                                      UpdateADCOffset();
+                              }
+              #endif
+1083   2      
+1084   2              }
+1085   1              else{
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 19  
+
+1086   2                      SetFreeRun();
+1087   2      //              goto ERROR1;
+1088   2      #if Panel_Spread_Spect_En == 0xff
+1089   2                      i = (PanelSpreadSpectrumCtrl << 1) | BIT_0;
+1090   2                      WriteIIC560(SSC_CTRL,i);
+1091   2      #endif
+1092   2      
+1093   2                      return;
+1094   2              }
+1095   1      
+1096   1      
+1097   1              i = ReadIIC560(DISPLAY_CTRL);
+1098   1              
+1099   1              if (bIsInterlaced){
+1100   2                      if(//(ucResolution == R720x480) ||
+1101   2                          //(ucResolution == R720x576) ||
+1102   2                          (ucResolution == R1920x1080))
+1103   2                      {
+1104   3                              WriteIIC560(DISPLAY_CTRL,(i & ~BIT_6));         //manual HTotal
+1105   3                              WriteIIC560(DSP_VLOCK_POS_W, 0x01);
+1106   3                              WriteWordIIC560(DSP_HLOCK_POS_W, 0x200);
+1107   3                      }
+1108   2                      else
+1109   2                              WriteIIC560(DISPLAY_CTRL,i);            //fifo auto lock, auto HTotal 
+1110   2              }
+1111   1              else
+1112   1                      WriteIIC560(DISPLAY_CTRL,i);            //fifo auto lock, auto HTotal 
+1113   1      
+1114   1      #if PanelID == CPT_CLAA170EA07P
+              //              printf("DCLK x = %ld\r\n",ulDotClk);
+                              Reg0x154 = ReadIIC560(0x154);
+                              if(Reg0x154 != 0){
+              //                      WriteIIC560(INSIDE_CTRL3,0x01);         //set display normal
+                                      WriteIIC560(DISPLAY_MUTE_CTRL,0x00);            //set display normal
+                              }
+                              WriteIIC560(INSIDE_CTRL1,0x12); //read Hr2
+                              WriteIIC560(DISPLAY_CTRL,(DisplayControl & ~BIT_5));            //manual HTotal 
+              
+                              WaitSetup(8);
+                              if(usTmpHSync == 0xffff){
+                                      WriteIIC560(DISPLAY_CTRL,DisplayControl);               //fifo auto lock, auto HTotal 
+                                      Reg0x154 = 0x02;                //restore display control
+                              }
+                              else{
+                                      Hr2 = ReadWordIIC560(HR_VALUE);
+              //                      printf("Hr2 = %x\r\n",Hr2);
+                                      i = ReadWordIIC560(MISC_O_RD_LI) & 0x0fff;
+                                      dstVtotal = i + PanelHeight;
+                                      WriteWordIIC560(DV_TOTAL_LI,dstVtotal);         // Display Vtotal
+              //                      printf("dstVtotal 1 = %d\r\n",dstVtotal);
+              //                      if((Hr2 > 0x480) && (Hr2 < 0x5f0)){
+                                      if(Hr2 > 0x480){
+                                              temp = (float)ulDotClk * (Hr2 - 0x480);
+                                              temp = temp / ((unsigned long)dstVtotal*dstHtotal);
+                                              ulDotClk -= temp;
+                                              SetDPLL();
+                                      }
+              /*                      if(abs(Hr2 - 640) < 128){
+                                              temp = (float)ulDotClk * (Hr2 - 512);
+                                              temp = temp / ((unsigned long)dstVtotal*dstHtotal);
+                                              ulDotClk -= temp;
+                                              SetDPLL();
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 20  
+
+                                      }*/
+                              }
+              //              printf("DCLK y = %ld\r\n",ulDotClk);
+                              WriteIIC560(DISPLAY_CTRL,DisplayControl);               //fifo auto lock, auto HTotal 
+                              WriteIIC560(0x154,Reg0x154);            //restore display control
+                              WriteIIC560(INSIDE_CTRL1,0x00);
+              #endif
+1155   1      
+1156   1      
+1157   1      
+1158   1              if(DispActiveHeight != PanelHeight){
+1159   2                      i = ReadIIC560(DISPLAY_CTRL);
+1160   2                      WriteIIC560(DISPLAY_CTRL,(i & ~BIT_5));         //manual HTotal
+1161   2                      WriteWordIIC560(DV_BG_LEN_LI,PanelHeight);              // Display VActive
+1162   2              }
+1163   1      
+1164   1      //ERROR1:
+1165   1      
+1166   1      #if Panel_Spread_Spect_En == 0xff
+1167   1              i = (PanelSpreadSpectrumCtrl << 1) | BIT_0;
+1168   1              WriteIIC560(SSC_CTRL,i);
+1169   1      #endif
+1170   1      }
+1171          
+1172          void SetDPLL(void)
+1173          {
+1174   1      unsigned long temp;
+1175   1              WriteIIC560(DPLL_CTRL1,0x00);
+1176   1      #if NT68167
+                      WriteIIC560(DPLL_FREQ_CTRL,0x00);
+                      temp = ((float)ulDotClk * 16384) / 1500000;
+              #else
+1180   1      
+1181   1      #if PanelXga == 0
+1182   1              WriteIIC560(DPLL_FREQ_CTRL,0x10);
+1183   1              temp = ((float)ulDotClk * 16384) / 1500000;
+1184   1      #else
+                      if(ulDotClk > 90000000){
+                              WriteIIC560(DPLL_FREQ_CTRL,0x10);
+                              temp = ((float)ulDotClk * 16384) / 1500000;
+                      }
+                      else if(ulDotClk > 40000000){
+                              WriteIIC560(DPLL_FREQ_CTRL,0x11);
+                              temp = ((float)ulDotClk * 32768) / 1500000;
+                      }
+                      else if(ulDotClk > 25000000){
+                              WriteIIC560(DPLL_FREQ_CTRL,0x12);
+                              temp = ((float)ulDotClk * 65536) / 1500000;
+                      }
+                      else{
+                              WriteIIC560(DPLL_FREQ_CTRL,0x13);
+                              temp = ((float)ulDotClk * 131072) / 1500000;
+                      }
+              #endif
+1202   1      #endif
+1203   1              WriteIIC560(DDDS_RATIO_LI,(unsigned char)temp);
+1204   1              WriteIIC560(DDDS_RATIO_MI,(unsigned char)(temp >> 8));
+1205   1              WriteIIC560(DDDS_RATIO_HI,(unsigned char)(temp >> 16));
+1206   1              WriteIIC560(DPLL_CTRL1,0x01);
+1207   1      
+1208   1      #if NT68167
+                      #if _167_VERSION_B      
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 21  
+
+                              WriteIIC560(DPLL_CTRL1,0x09);   
+                              WriteIIC560(DPLL_CTRL1,0x01);
+                      
+                              DebugModeEn();
+                      #endif
+              #endif
+1216   1      
+1217   1      }
+1218          
+1219          void SetHP(void)
+1220          {
+1221   1      // Horizontal Start
+1222   1      #ifdef R640_TUNE
+                      if(H_ActiveTab[ucResolution] == 640)
+                              WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart<<1);
+                      else
+              #endif
+1227   1              WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+1228   1      
+1229   1              NVTprint1("usHPStart = %d\r\n",usHPStart);
+1230   1      
+1231   1      }
+1232          
+1233          void SetVP(void)
+1234          {
+1235   1      // Vertical Start
+1236   1              if ( bIsInterlaced == TRUE ) {
+1237   2                      WriteWordIIC560(GI_CAP_VBEGE_LI,(usVPStart-ucVPOffset+1));
+1238   2                      WriteWordIIC560(GI_CAP_VBEGO_LI,(usVPStart-ucVPOffset));
+1239   2              }
+1240   1              else{
+1241   2                      WriteWordIIC560(GI_CAP_VBEGO_LI,(usVPStart-ucVPOffset));
+1242   2              }
+1243   1      
+1244   1              NVTprint1("usVPStart = %d\r\n",usVPStart);
+1245   1      
+1246   1      }
+1247          
+1248          
+1249          void SetBrightness(void)
+1250          {
+1251   1      #ifndef BURST_BKL
+1252   1      
+1253   1      
+1254   1              #define MaxBrightness 255
+1255   1              #define MinBrightness 0
+1256   1              #define MergeOffsetLevel 5
+1257   1      
+1258   1      unsigned char value,tempbrightness;
+1259   1      #ifdef GREEN_POWER
+1260   1                      if(bVideoMuted == TRUE)
+1261   1                              tempbrightness = GREEN_POWER_BRIGHTNESS;
+1262   1                      else
+1263   1                              tempbrightness = ucBrightness;
+1264   1      #else
+                              tempbrightness = ucBrightness;
+              #endif
+1267   1              
+1268   1      //      value = ((unsigned short)ucBrightness * 160) / 100+95;
+1269   1              value = ((unsigned short)ucBrightness * 255 + 50) / 100;
+1270   1      //      value = ((unsigned short)tempbrightness * (MaxBrightness-MinBrightness) + 50) / 100 + MinBrightness;
+1271   1      
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 22  
+
+1272   1      /*
+1273   1      #ifdef _USE_PWM_B_
+1274   1              WriteIIC560(PWM_CTRL1,0x00);    
+1275   1      #else
+1276   1              WriteIIC560(PWM_CTRL0,0x00);    
+1277   1      #endif
+1278   1      */
+1279   1      //------------ +jwshin 111214
+1280   1      WriteIIC560(PWM_CTRL1,0x00);
+1281   1      //-----------------------
+1282   1      
+1283   1      #define INV_INVERTOR    123                             // +jwshin 120223
+1284   1      #ifdef INV_INVERTOR
+1285   1              #ifdef _USE_PWM_B_
+1286   1              
+1287   1                      //----------------------- 사용 루틴...                                          PWM1이 PWMA 임.~!!!!
+1288   1                      WriteIIC560(PWM1_LCNT,value);   //low           //PWMB
+1289   1                      WriteIIC560(PWM1_HCNT,255-value);       //high
+1290   1      
+1291   1      
+1292   1              #else
+                              WriteIIC560(PWM0_LCNT,value);   //low           //PWMB
+                              WriteIIC560(PWM0_HCNT,255-value);       //high
+                      #endif
+1296   1      #else
+                      #ifdef _USE_PWM_B_
+                              WriteIIC560(PWM1_LCNT,255-value);       //low           //PWMB
+                              WriteIIC560(PWM1_HCNT,value);   //high
+                      #else
+                              WriteIIC560(PWM0_LCNT,255-value);       //low           //PWMB
+                              WriteIIC560(PWM0_HCNT,value);   //high
+                      #endif
+              #endif
+1305   1      //      printf("ucBrightness = %d\r\n",(unsigned short)ucBrightness);
+1306   1      //      printf("Brightness PWM = %d\r\n",(unsigned short)value);
+1307   1      //      printf("Bri=%d, H=%d\r\n",(unsigned short)ucBrightness,(unsigned short)value);
+1308   1              if(tempbrightness < MergeOffsetLevel){
+1309   2                      ucBrightnessLevel = MergeOffsetLevel - tempbrightness;
+1310   2              }
+1311   1              else{
+1312   2                      ucBrightnessLevel = 0;
+1313   2              }
+1314   1              SetContrastRGB();
+1315   1      //---------------------------------        BURST_BKL 이 Define 된 경우... 사용안하는 루틴...
+1316   1      #else
+              #define MaxBrightness 255
+              #define MinBrightness 48
+              #define MergeOffsetLevel 5
+              unsigned char value, ch;
+              idata unsigned long PWM_Total,BriFreq;
+              
+                      BriFreq = 2400;
+              //      PWM_Total = ulDispHfreq * 10 / 25;      //250Hz                                 
+                      PWM_Total = (unsigned long)((float)ulDispHfreq * 10 / BriFreq + 0.5);
+              
+              #ifdef _USE_PWM_B_
+                      if(PWM_Total > 255){
+                              value = 0x30; 
+                              PWM_Total >>= 1;
+                      }
+                      else{
+                              value = 0x10;
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 23  
+
+                      }
+                      value |= 0x80;
+              
+                      WriteIIC560(PWM_CTRL1,value);
+              #else
+                      if(PWM_Total > 255){
+                              value = 0x03; 
+                              PWM_Total >>= 1;
+                      }
+                      else{
+                              value = 0x01;
+                      }
+                      value |= 0x08;
+              
+                      WriteIIC560(PWM_CTRL1,value);
+              #endif
+              
+                      if ( ucBrightness > 100 ) ucBrightness=100;
+                      value = ((unsigned short)ucBrightness * (MaxBrightness-MinBrightness) + 50) / 100 + MinBrightness;
+                      value =(unsigned char)(PWM_Total*(unsigned short)value/255);
+              
+                      ch = (unsigned char)(PWM_Total - value);
+              //      printf("Bri=%d, H/L = %d %d\r\n",(unsigned short)ucBrightness,(unsigned short)value,(unsigned short)ch)
+             -;
+              
+              #define INV_INVERTOR 123
+              #ifdef INV_INVERTOR
+                      #ifdef _USE_PWM_B_
+                              WriteIIC560(PWM1_LCNT,value);   //low
+                              WriteIIC560(PWM1_HCNT,ch);      //high
+                      #else
+                              WriteIIC560(PWM0_LCNT,value);   //low
+                              WriteIIC560(PWM0_HCNT,ch);      //high
+                      #endif
+              #else
+                      #ifdef _USE_PWM_B_
+                              WriteIIC560(PWM1_LCNT,ch);      //low
+                              WriteIIC560(PWM1_HCNT,value);   //high
+                      #else
+                              WriteIIC560(PWM0_LCNT,ch);      //low
+                              WriteIIC560(PWM0_HCNT,value);   //high
+                      #endif
+              #endif
+              
+              #endif
+1378   1      //---------------- 미사용 루틴 끝...
+1379   1      
+1380   1      #ifdef BF_DYNAMIC_BACKLIGHT
+1381   1              if (ucBrightness != iCurDynBk){
+1382   2      #if BFDYNBK_TYPE == BFDYNBK_TYPE_1
+                              usBF_DYMBK_Timer_10ms = 300;
+              #endif
+1385   2                      iCurDynBk = ucBrightness;
+1386   2              }
+1387   1      #endif
+1388   1      #if _SmartBright_ == ON
+                      SetBrightOffset();
+              #endif
+1391   1      //      printf("ucBrightness = %d\r\n",(unsigned short)ucBrightness);
+1392   1      }
+1393          
+1394          
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 24  
+
+1395          void SetPanelIDX(void)
+1396          {
+1397   1      #if 0
+                      PWM_PANELIDX = 255 - ucPanelIDX;
+              #else
+1400   1              SetBrightness();
+1401   1      #endif
+1402   1      }
+1403          
+1404          #if 0
+              void SetContrast(void)
+              {
+              #if 1
+              /*
+              unsigned char k;
+                      if(ucBrightness < 80){
+                              k = ucBrightness + 48;          //48 ---- 178
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(0x063,k);
+              #ifdef Debug
+                              printf("Contrast of ASIC = %x\r\n",(unsigned short)k);
+              #endif
+                      }
+                      else{
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(0x063,0x80);
+                      }*/
+              unsigned char k;
+                      if(ucBrightness < 50){
+                              k = ucBrightness + 78;          //78 ---- 128
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(BK_GAIN,k);
+              #ifdef Debug
+                              printf("Contrast of ASIC = %x\r\n",(unsigned short)k);
+              #endif
+                      }
+                      else{
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(BK_GAIN,0x80);
+                      }
+              #else
+              unsigned char k;
+                      if(ucBrightness < 50){
+              //              k = 255 - (50 - ucBrightness);// + 78;          //78 ---- 128
+                              k = ((unsigned short)(50 - ucBrightness) * 16 +25) / 50;
+                              k = 255 - k;// + 78;            //78 ---- 128
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(0x062,k);
+              #ifdef Debug
+                              printf("ucBrightness of ASIC = %x\r\n",(unsigned short)k);
+              #endif
+                      }
+                      else{
+                              WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+                              WriteIIC560(0x062,0x00);
+                      }
+              #endif
+              }
+              #endif
+1454                  
+1455          void ForceToBackground(unsigned char color)
+1456          {
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 25  
+
+1457   1      ///     if(((flag1 & BIT_1) == 0)||((flag3 & BIT_0) != 0)){
+1458   1      #if _Enable_OD_ == ON
+                      WriteIIC560(0x1ee,0x02);//for OD
+                      WriteIIC560(0x4e0,0x08);//for OD
+              #endif
+1462   1              if ( bBGMode == FALSE ) {
+1463   2      
+1464   2                      ucBGColor = color;
+1465   2                      if((color & BIT_0) == 0)
+1466   2                              WriteIIC560(DP_BG_B,0x00);
+1467   2                      else
+1468   2                              WriteIIC560(DP_BG_B,0xff);
+1469   2                      if((color & BIT_1) == 0)
+1470   2                              WriteIIC560(DP_BG_G,0x00);
+1471   2                      else
+1472   2                              WriteIIC560(DP_BG_G,0xff);
+1473   2                      if((color & BIT_2) == 0)
+1474   2                              WriteIIC560(DP_BG_R,0x00);
+1475   2                      else
+1476   2                              WriteIIC560(DP_BG_R,0xff);
+1477   2      
+1478   2                      WriteIIC560(DITPLAY_CHANNEL,0x00);      //RGB
+1479   2                      WriteIIC560(DISPLAY_MUTE_CTRL,0x02);
+1480   2                      //Set fource to background
+1481   2                      bBGMode = TRUE;
+1482   2              }
+1483   1              SetFreeRun();
+1484   1      }
+1485          
+1486          void SetFreeRun(void)
+1487          {
+1488   1      xdata unsigned short i;
+1489   1              if(bIsFRCMode == FALSE){
+1490   2                      ulDotClk = FreeRunH_Freq*PanelTypHTotal;
+1491   2                      SetDPLL();
+1492   2      //              ulDispHfreq = ulDotClk / PanelTypHTotal;                        // burst mode
+1493   2                      ulDispHfreq = FreeRunH_Freq;                    // jerry
+1494   2      //              SetBrightness();
+1495   2                      WriteWordIIC560(DV_TOTAL_LI,PanelTypVTotal);            // Display Vtotal
+1496   2      //              i = PanelMinVSyncBackPorch + PanelMinVSyncWidth;
+1497   2                      WriteWordIIC560(DV_BG_BEG_LI,PanelVActiveStart);                // Display PanelVActiveStart
+1498   2                      WriteWordIIC560(GDV_ACT_BEG_LI,PanelVActiveStart);              // Display PanelVActiveStart
+1499   2                      WriteWordIIC560(DH_HTOTAL_LI,PanelTypHTotal);           // Display Htotal
+1500   2      
+1501   2                      i = (PanelTypHTotal - PanelWidth) / 3;
+1502   2                      WriteIIC560(DH_HS_WID,i);                // Display H Pulse Width
+1503   2                      i <<= 1;
+1504   2                      WriteWordIIC560(DH_BG_BEG_LI,i);        //PanelHActiveStart
+1505   2                      WriteWordIIC560(GDH_ACT_BEG_LI,i);      //PanelHActiveStart
+1506   2      
+1507   2                      bIsFRCMode = TRUE;
+1508   2                      NVTprint("SetFreeRun\r\n");
+1509   2                      SetBrightness();
+1510   2              }
+1511   1      }
+1512          
+1513          void SetDisplayNormal(void)
+1514          {
+1515   1      unsigned short Hi_Counter,Lo_Counter;
+1516   1      #if 0
+              //-----------------------------------------------------------------
+              //20040908 For DVI DE mode scaler shut down and 
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 26  
+
+                      unsigned char  ch;
+              
+                      SYNC_INT_DISABLE();
+                      ch = ReadIIC560(POWER_CTRL1);
+                      WriteIIC560(POWER_CTRL1,ch|BIT_5);      //chip warm reset
+                      WriteIIC560(POWER_CTRL1,ch);    //chip warm reset
+              
+              #if DVI_MODE == DVI_DE_MODE
+                      // Jacky 20040623 For DE mode scaler shut down
+                      if(ucSignalType == sigDVI)      //DVI
+                      {
+                              //WriteIIC560(0x1a9,0x00);      //disable IRQ interrupt
+                              //WriteIIC560(0x1aa,0x00);
+                              ch = ReadIIC560(GI_SYNC_CTRL);
+                              WriteIIC560(GI_SYNC_CTRL,0x94);
+                              Sleep(20);
+                              WriteIIC560(GI_SYNC_CTRL,ch&(~BIT_7));
+                      }
+              #endif
+                      Sleep(80);
+                      WriteIIC560(SYNC_INT_FLAG1,0x3f);       //clear IRQ
+                      WriteIIC560(SYNC_INT_FLAG2,0x1f);
+                      SYNC_INT_ENABLE();
+              //-----------------------------------------------------------------
+              #endif
+1544   1      
+1545   1              //bDCReset = FALSE;
+1546   1              bBGMode = FALSE;
+1547   1              WriteIIC560(DISPLAY_MUTE_CTRL,0x00);            //comeback to image
+1548   1      //      Sleep(160);
+1549   1              ucTime2Backlight = 128;
+1550   1      //      ucTime2Backlight = PowerUpInvTiming/10;
+1551   1      //ucTime2Backlight = 10;
+1552   1      
+1553   1      
+1554   1      //20050409 mingyu check the incorrect SOG signal in the white pattern.
+1555   1              if(ucSignalType == sigSOG){
+1556   2                      Set_usTimer1_1ms(40);
+1557   2                      Hi_Counter = 0;
+1558   2                      Lo_Counter = 0;
+1559   2                      while(Get_usTimer1_1ms() != 0){
+1560   3      
+1561   3                              if ( GetHsyncLevel == FALSE ) {
+1562   4                                      Lo_Counter ++;
+1563   4                              }
+1564   3                              else{
+1565   4                                      Hi_Counter ++;
+1566   4                              }
+1567   3                      }
+1568   2      
+1569   2                      NVTprint1("H4 = %d\r\n", Hi_Counter);
+1570   2                      NVTprint1("L4 = %d\r\n", Lo_Counter);
+1571   2      
+1572   2                      Hi_Counter >>= 2;
+1573   2                      if((Hi_Counter > Lo_Counter)&&( Lo_Counter > 100)){
+1574   3      
+1575   3                              NVTprint("Sync on green\r\n");
+1576   3      
+1577   3                      }
+1578   2                      else{
+1579   3                              GoToSeparateSync();             //goto the Separate mode
+1580   3                      }
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 27  
+
+1581   2              }
+1582   1      
+1583   1              CheckModeChange();
+1584   1              
+1585   1              WriteIIC560(DITPLAY_CHANNEL, 0x80);
+1586   1      #if PanelID == CMO_M190E5_L0E  //neo 060811
+                      ScalerOutputON(1);
+              #endif
+1589   1      //--------------------------------------------------------------------------    
+1590   1      
+1591   1      #if _Enable_OD_ == ON
+                      WriteIIC560(0x1ee,0x00);//for OD
+                      WriteIIC560(0x4e0,0x09);//for OD
+              #endif
+1595   1              NVTprint("Set Display Normal\r\n");
+1596   1      
+1597   1      }
+1598          
+1599          void PowerSaving(void)
+1600          {
+1601   1              WriteIIC560(OSD_CTRL1,0x00);
+1602   1              if(!bStandalone){
+1603   2                      PWM_VOLUME = 0xff;
+1604   2                      AUDIO_MUTE();
+1605   2                      AMP_STBY();
+1606   2              }
+1607   1      
+1608   1              if(ucIsLFDemoMode) LFLeaveDemoMode(0);
+1609   1              
+1610   1      //#if PanelID==AUO_M170EG01V8 || PanelID==AUO_M190EG02V0 ||  PanelID==LPL_LM170E01_TLBL  || PanelID == CPT
+             -_CLAA170EA07Q//neo 060530 addd CPT
+1611   1      //      BackLightOff();
+1612   1      //      Sleep(PowerDownInvTiming-PowerDownWhitePtn);
+1613   1      //      ForceToBackground(0x07);                // AU PANEL: GARBAGE WHEN DC ON/OFF
+1614   1      //      Sleep(PowerDownWhitePtn);
+1615   1      //#else
+1616   1              BackLightOff();
+1617   1              ForceToBackground(0x00);
+1618   1              Sleep(PowerDownInvTiming);
+1619   1      //#endif
+1620   1        
+1621   1      
+1622   1              ScalerPowerDown();
+1623   1              Set_usPoSvTimer(0);
+1624   1      
+1625   1      //      if ( SCALER_VER >= VER_G )              
+1626   1                      WriteIIC560(DVI_CTRL13,0x00);
+1627   1              WriteIIC560(POWER_CTRL2,(ReadIIC560(POWER_CTRL2) & ~BIT_1));    //DVI power down
+1628   1      
+1629   1      #if _SmartBright_ == ON
+                      LightSensorOff();
+              #endif
+1632   1      
+1633   1              //NVTprint("Power Saving\r\n");
+1634   1              printf("Power Saving\r\n");                                     // +jwshin 120313
+1635   1      }
+1636          
+1637          void ScalerPowerDown(void)
+1638          {
+1639   1      
+1640   1      //#if (ModelName==H190B7 && PanelID==AUO_M190EG02V0) || (PanelID == CPT_CLAA170EA07Q) //neo 060605
+1641   1              WriteIIC560(0x154, 0xb1);//0x11
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 28  
+
+1642   1              Sleep(50);
+1643   1      //#endif
+1644   1      
+1645   1              WriteIIC560(GPIO_CTRL,0x0c);
+1646   1              WriteIIC560(LVDS_MISC_CTRL3,0x00);      //      output port pull low
+1647   1              WriteIIC560(POWER_CTRL1,0x00);  //      output port power down
+1648   1              WriteIIC560(LVDS_MISC_CTRL1,0x15);      //      output port pull low
+1649   1              WriteIIC560(POWER_CTRL1,0x07);
+1650   1      //#if NT68167
+1651   1      //      WriteIIC560(POWER_CTRL2,0x41);
+1652   1      //#else
+1653   1              WriteIIC560(POWER_CTRL2,0x00);
+1654   1      //#endif
+1655   1              WriteIIC560(DPLL_CTRL1,0x00);
+1656   1              WriteIIC560(DVI_CTRL12,0xa0);
+1657   1              WriteIIC560(DISPLAY_CTRL,0x00);
+1658   1      #if NT68167
+                      WriteIIC560(ADC_POWER_UP,0x40);//0x00
+                      WriteIIC560(ADC_VREF_TEST, 0x57);
+              #else
+1662   1              WriteIIC560(ADC_POWER_UP,0x00);
+1663   1      #endif
+1664   1      
+1665   1              Sleep(PowerDownPanelTiming);
+1666   1      
+1667   1      
+1668   1      //#if (ModelName==H190B7 && PanelID==AUO_M190EG02V0) || (PanelID == CPT_CLAA170EA07Q) //neo 060605
+1669   1              WriteIIC560(0x154, 0x02);
+1670   1      //#endif
+1671   1      
+1672   1              PanelPowerOff();                //panle power off
+1673   1              ucSyncStableTimer_10ms = 95;            //delay 1 second for power on/off
+1674   1      
+1675   1      }
+1676          
+1677          void ScalerPowerUp(void)
+1678          {
+1679   1      //printf("ScalerPowerUp\r\n");
+1680   1      #if NT68167
+                      if(ReadIIC560(ADC_POWER_UP) == 0x40){
+              #else
+1683   1              if(ReadIIC560(ADC_POWER_UP) == 0){
+1684   2      #endif
+1685   2                      LED_GrnOn();
+1686   2                      LED_RedOff();
+1687   2      
+1688   2                      ucSyncStableTimer_10ms += 20;
+1689   2                      while (ucSyncStableTimer_10ms!= 0);     // the time for DC [OFF --- ON] > 1second
+1690   2                      InitScaler();
+1691   2                      SetContrastRGB();
+1692   2      
+1693   2      //              SelectGamma();
+1694   2              }
+1695   1              Set_usPoSvTimer(500);
+1696   1              bVideoMuted = FALSE;
+1697   1              usTmpHSync = 0xffff;
+1698   1              usTmpVSync = 0xffff;
+1699   1              NVTprint("WakeUp\r\n");
+1700   1      }
+1701          
+1702          void LoadADC_Gain(void)
+1703          {
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 29  
+
+1704   1              //offset
+1705   1                      ucR_ADC_Offset = Read24C16(EPADDR_ADCR_OFFSET); //0x4a = ADC r offset
+1706   1                      ucG_ADC_Offset = Read24C16(EPADDR_ADCG_OFFSET); //0x4b = ADC g offset
+1707   1                      ucB_ADC_Offset = Read24C16(EPADDR_ADCB_OFFSET); //0x4c = ADC b offset
+1708   1              //gain
+1709   1                      ucR_ADC_Gain = Read24C16(EPADDR_ADCR_GAIN);     //0x4d = ADC r gain
+1710   1                      ucG_ADC_Gain = Read24C16(EPADDR_ADCG_GAIN);     //0x4e = ADC g gain
+1711   1                      ucB_ADC_Gain = Read24C16(EPADDR_ADCB_GAIN);     //0x4f = ADC b gain
+1712   1              
+1713   1              
+1714   1              //WriteIIC560(BK_GAIN, 0x78);           // 2005-11-22 jerry             for ghost noise issue testing...
+1715   1              
+1716   1              WriteIIC560(ROFFSET,ucR_ADC_Offset);
+1717   1              WriteIIC560(GOFFSET,ucG_ADC_Offset);
+1718   1              WriteIIC560(BOFFSET,ucB_ADC_Offset);
+1719   1              WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+1720   1              WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+1721   1              WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+1722   1      }
+1723          
+1724          void SetVolume(void)
+1725          {
+1726   1      /*      
+1727   1      unsigned char value;
+1728   1      
+1729   1              if(bMute || ucVolume == 0){
+1730   1                      //PWM_VOLUME = 0;
+1731   1                      AUDIO_MUTE();
+1732   1                      AMP_STBY();
+1733   1      //printf("SetVolume=MUTE\r\n");
+1734   1              }
+1735   1              else{
+1736   1      #if 1
+1737   1                      if ( ucVolume> 60)
+1738   1                              value = (((unsigned short)(ucVolume-60)*3)>>2)+204;
+1739   1                      else
+1740   1                              value = (((unsigned short)ucVolume*4)/3)+124;
+1741   1      #else
+1742   1      //              value = 255 - ((unsigned short)ucVolume * 255 / 100);
+1743   1                      value = 255 - ((unsigned short)ucVolume * 192 / 100);
+1744   1      #endif
+1745   1                      PWM_VOLUME = value;
+1746   1      
+1747   1                      AMP_On();
+1748   1                      AUDIO_On();
+1749   1      //printf("SetVolume=%d\r\n",(unsigned short)ucVolume);          
+1750   1              }
+1751   1      */
+1752   1      //---------------------- -jwshin 111214    PWMB를 이용한 Volume제어를 위해 기존 Routine은 Remark...
+1753   1      
+1754   1      
+1755   1      //-------------- +jwshin 111214
+1756   1              unsigned char value;
+1757   1              if(bMute || ucVolume == 0) {
+1758   2                      AUDIO_MUTE();
+1759   2                      AMP_STBY();
+1760   2              }
+1761   1              
+1762   1              else {
+1763   2                      value = 255 - ((unsigned short)ucVolume * 255 / 100);
+1764   2                      
+1765   2                      WriteIIC560(PWM0_LCNT,value);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 30  
+
+1766   2                      WriteIIC560(PWM0_HCNT,255-value);
+1767   2                      
+1768   2                      AMP_On();
+1769   2                      AUDIO_On();
+1770   2              }
+1771   1      //      printf("SetVolume=%d\r\n",(unsigned short)ucVolume);            
+1772   1      //-------------------------------------------------------------         
+1773   1      
+1774   1              
+1775   1      }
+1776          
+1777          /*
+1778          //      NT68665 SPEC. CHANGED
+1779          void SetScalerOffset(void)
+1780          {
+1781          unsigned char value;
+1782          //      value = Read24C16(EPADDR_SCALER_OFFSET);//0x17 = Scaler Offset
+1783                  value = ucBlackLevel ^ BIT_7;
+1784                  WriteIIC560(BK_CTRL1,0x0c);     // Enable random gain dithering mode // Jude 03/25/2005
+1785                  WriteIIC560(BK_OFFSET,value);
+1786          }
+1787          */
+1788          #if NT68665
+              void CheckRegPage(unsigned short addr)
+              {
+              unsigned char page;
+                      page = (unsigned char)(addr>>8);
+                      if(page != ucRegPage){
+                              ucRegPage = page;
+              #if NT68665
+                              WriteIIC(SCALER_I2C_ADDR,0xff,ucRegPage);
+              #else
+                              SC_RegPage = ucRegPage;
+              #endif
+                      }
+              }
+              #endif
+1803          void WriteIIC560(unsigned short addr,unsigned char ch)
+1804          {
+1805   1      #if NT68665
+                      CheckRegPage(addr);
+                      WriteIIC(SCALER_I2C_ADDR,addr,ch);
+              #else
+1809   1              unsigned char volatile *pBus;
+1810   1              SC_RegPage = (unsigned char)(addr>>8);
+1811   1              pBus = &SC_StarAddress;
+1812   1              pBus += (unsigned char)addr;
+1813   1              *pBus = ch;
+1814   1      #endif
+1815   1      }
+1816          
+1817          void WriteWordIIC560(unsigned short addr,unsigned short value)
+1818          {
+1819   1      #if NT68665
+                      CheckRegPage(addr);
+                      WriteWordIIC(SCALER_I2C_ADDR,addr,value );
+              #else
+1823   1              unsigned char volatile *pBus;
+1824   1              SC_RegPage = (unsigned char)(addr>>8);
+1825   1              pBus = &SC_StarAddress;
+1826   1              pBus += (unsigned char)addr;
+1827   1              *pBus = (unsigned char)value;
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 31  
+
+1828   1              pBus++;
+1829   1              *pBus = (value >> 8);
+1830   1      #endif
+1831   1      }
+1832          
+1833          #if 0//PBusProtocol
+              /*===============================================
+              ===============================================*/
+              void SetDataPortAddr(void)
+              {
+                      Union Page;
+              
+                      Page.w = 0x3B2;
+                      Pbus_Code = 0x80ff;
+                      *Pbus_Code = Page.b[0];
+                      Pbus_Code = 0x8000 + Page.b[1];
+              }
+              /*===============================================
+              ===============================================*/
+              void SetDataPortData(unsigned char Data)
+              {       
+                      *Pbus_Code = Data;
+              }
+              /*===============================================
+              ===============================================*/
+              unsigned char GetDataPortData(void)
+              {
+                      return *Pbus_Code;
+              }
+              /*===============================================
+              ===============================================*/
+              #endif
+1860          /*===============================================
+1861          ===============================================*/
+1862          /*
+1863          void ReadDataPort(void)
+1864          {
+1865                  unsigned char i;
+1866                  union {
+1867                          unsigned char UByte[4];
+1868                          unsigned long ULong;
+1869                  }temp;
+1870                  temp.ULong=0;
+1871          
+1872                  //for(i = 0; i < ACE_PARTITIONS; i++)   // mark at 070702 by evan
+1873                  //      ulCurHisgrm[i] = 0;
+1874          #if PBusProtocol
+1875                  SetDataPortAddr();
+1876                  SetDataPortData(0x00);
+1877                  SetDataPortData(0x00);
+1878          #endif  
+1879                  for(i = 0; i < ACE_PARTITIONS; i++)
+1880                  {
+1881          #if PBusProtocol
+1882                          temp.UByte[3] = GetDataPortData();
+1883                          Sleep(1);
+1884                          temp.UByte[2] = GetDataPortData();
+1885                          Sleep(1);
+1886                          temp.UByte[1] = GetDataPortData();
+1887          #else
+1888                          temp.UByte[3] = ReadIIC560(0x3B2);
+1889                          temp.UByte[2] = ReadIIC560(0x3B2);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 32  
+
+1890                          temp.UByte[1] = ReadIIC560(0x3B2);
+1891          
+1892          #endif
+1893                          ulCurHisgrm[i] = temp.ULong;
+1894                          ulCurHisgrmTotal += ulCurHisgrm[i];
+1895                          //printf("histogram = %bd  %bx   %bx   %bx       %ld\n\r",i,temp.UByte[3],temp.UByte[2],temp.UByte[1],ul
+             -CurHisgrmTotal);
+1896                  }
+1897          }
+1898          */
+1899          /*===============================================
+1900          ===============================================*/
+1901          unsigned char ReadIIC560(unsigned short addr)
+1902          {
+1903   1      #if NT68665
+              unsigned char value;
+                      CheckRegPage(addr);
+                      value = ReadIIC(SCALER_I2C_ADDR,addr);
+                      return value;
+              #else
+1909   1      unsigned char value;
+1910   1      unsigned char volatile *pBus;
+1911   1              SC_RegPage = (unsigned char)(addr>>8);
+1912   1              pBus = &SC_StarAddress;
+1913   1              pBus += (unsigned char)addr;
+1914   1              value = *pBus;
+1915   1              return value;
+1916   1      #endif
+1917   1      }
+1918          
+1919          unsigned short ReadWordIIC560(unsigned short addr)
+1920          {
+1921   1      #if NT68665
+              unsigned short value;
+                      CheckRegPage(addr);
+                      value = ReadWordIIC(SCALER_I2C_ADDR,addr);
+                      return value;
+              #else
+1927   1      unsigned short value;
+1928   1      unsigned char volatile *pBus;
+1929   1      unsigned char ch;
+1930   1              SC_RegPage = (unsigned char)(addr>>8);
+1931   1              pBus = &SC_StarAddress;
+1932   1              pBus += (unsigned char)addr;
+1933   1              ch = *pBus;
+1934   1              pBus++;
+1935   1              value = *pBus;
+1936   1              value <<= 8;
+1937   1              value |= ch;
+1938   1              return value;
+1939   1      #endif
+1940   1      }
+1941          
+1942          void SetInterface(void)
+1943          {
+1944   1      #if PBusProtocol
+1945   1              #define REG_072 0x00
+1946   1      #else
+              #if _INTERNAL_LDO_
+                      #define REG_072 0x00
+              #else
+                      #define REG_072 0x60
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 33  
+
+              #endif
+              #endif
+1953   1      
+1954   1      #if NT68667
+1955   1              #if _INTERNAL_LDO_
+1956   1                      #define REG_1E6 0x01
+1957   1              #else
+                              #define REG_1E6 0xa1
+                      #endif
+1960   1      #else
+                      #if _INTERNAL_LDO_
+                              #define REG_1E6 0x01
+                      #else
+                              #define REG_1E6 0x81
+                      #endif
+              #endif
+1967   1      
+1968   1      
+1969   1      //code unsigned short InterfaceTab[]={
+1970   1      //      0x000,0x020,0x021,0x023,0x196,0x012,0x072,0x028,0x1e6,0x1f4
+1971   1      //};
+1972   1      code unsigned short InterfaceTab[]={
+1973   1              ADC_CTRL, GPORT_CTRL, CLAMP_BEGIN, DIGITAL_CTRL, GI_SYNC_CTRL,
+1974   1              SOG_SLICER_CTRL, BP_SYNC_CTRL, 0x028, 0x1E6, 0x1F4
+1975   1      };
+1976   1      code unsigned char InterfaceDat[][10]={
+1977   1      #if NT68167
+                      {0x93,0xe1,0x81,0x00,0x64,0x00,(REG_072|BIT_0),0x01,REG_1E6,0xc0},                              //sep   //0x000,0x072 from Alvin code
+                      {0x93,0xe1,0x81,0x40,0x65,0x00,REG_072,0x01,REG_1E6,0xc0},                              //comp
+              //      {0x9b,0xe1,0x01,0x40,0x65,0x75,(REG_072|0x10),  0x01,(REG_1E6|0x10),    0xc0},  //SOG   //0x012=7c from Alvin 
+             -code //0x012=75 from vincent reg
+                      {0x9b,0xe1,0x01,0x40,0x65,0xe5,(REG_072|0x10),  0x01,(REG_1E6|0x10),    0xc0},  //SOG   //0x012=e5 mingyu test
+              #else
+1983   1              {0x02,0xe1,0x81,0x00,0x60,0x00,REG_072,0x01,REG_1E6,0xc0},                              //sep
+1984   1              {0x12,0xe1,0x81,0x40,0x61,0x00,REG_072,0x01,REG_1E6,0xc0},                              //comp
+1985   1              {0x1a,0xe1,0x01,0x40,0x61,0xb4,(REG_072|0x10),0x01,(REG_1E6|0x10),0xc0},        //SOG
+1986   1      #endif
+1987   1      #if DVI_MODE == DVI_HV_MODE
+                      {0x10,0xe3,0x01,0x00,0x90,0x00,REG_072,0x0f,REG_1E6,0x80},                              //DVI
+              #elif DVI_MODE == DVI_DE_MODE
+1990   1              {0x10,0xe3,0x01,0x00,0x20,0x00,REG_072,0x0f,REG_1E6,0x80},                              //DVI
+1991   1      #elif DVI_MODE == DVI_HVDE_MODE 
+                      {0x10,0xe3,0x01,0x08,0x90,0x00,REG_072,0x0f,REG_1E6,0x80},                              //DVI
+              #endif
+1994   1      };
+1995   1      unsigned char i;
+1996   1      //printf("SetInterface=%d\r\n",(unsigned short)ucSignalType);
+1997   1              for(i=0; i<10; i++){
+1998   2                      WriteIIC560(InterfaceTab[i],InterfaceDat[ucSignalType][i]);
+1999   2              }
+2000   1      
+2001   1              WriteIIC560(0x1D8, DT1D8);
+2002   1              WriteIIC560(0x1DA, DT1DA);
+2003   1              WriteIIC560(BK_CTRL1,0x08);
+2004   1              WriteIIC560(0x1DB,DT1DB);       //10 bit gamma dithering mode
+2005   1              
+2006   1              if(ucSignalType == sigSOG)
+2007   1                      WriteIIC560(GOFFSET, ucG_ADC_Offset+5);
+2008   1              else
+2009   1                      WriteIIC560(GOFFSET, ucG_ADC_Offset);
+2010   1      }
+2011          
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 34  
+
+2012          
+2013          void ScalerON(void)
+2014          {
+2015   1      //printf("ScalerON\r\n");
+2016   1              PanelPowerOn();
+2017   1              Sleep(PowerUpPanelTiming+43);
+2018   1      
+2019   1              WriteIIC560(POWER_CTRL1,0x40);  //output port power on
+2020   1      #if NT68167
+                      #if _167_VERSION_B
+                              WriteIIC560(LVDS_MISC_CTRL3,0xe5);      //      output port
+                              WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+                      #else
+                              WriteIIC560(LVDS_MISC_CTRL3,0xe0);      //      output port
+                              WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+                      #endif
+              #elif NT68670B||NT68667
+2029   1              WriteIIC560(LVDS_MISC_CTRL1,0x47);      //      output port
+2030   1              WriteIIC560(LVDS_MISC_CTRL2,0x28);      //      output port
+2031   1              WriteIIC560(LVDS_MISC_CTRL3,0xc0);      //      output port
+2032   1      #else
+                      WriteIIC560(LVDS_MISC_CTRL3,0xc0);      //      output port
+                      WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+              #endif
+2036   1      
+2037   1      #ifdef _USE_PWM_B_
+2038   1      //      WriteIIC560(GPIO_CTRL,0x2c);            
+2039   1                      WriteIIC560(GPIO_CTRL,0x3c);            // +jwshin 111214
+2040   1      #else   
+                      WriteIIC560(GPIO_CTRL,0x1c);
+              #endif
+2043   1      
+2044   1              Sleep(PowerUpInvTiming);
+2045   1      }
+2046          
+2047          void InputSourceSelect(void)
+2048          {
+2049   1      //      switch(ucPowerStatus & ~SoftPowerOnFlag){
+2050   1              switch(ucSource){
+2051   2              case mSource_VGA:       //analog 0
+2052   2      #if SCALAR_BOARD==PCBA_Q50x50
+                              WriteIIC560(ADC_MID_CH_SEL,0x00);
+              #else
+2055   2                      WriteIIC560(ADC_MID_CH_SEL,0x04);
+2056   2      #endif
+2057   2      //              GoToSeparateSync();
+2058   2                      if(CheckSOG() == 0)
+2059   2                              GoToCompositeSync();
+2060   2                      break;
+2061   2              case mSource_DVI:       //digital
+2062   2      
+2063   2      //WriteIIC560(DVI_CTRL15, 0xf3);
+2064   2      //WriteIIC560(DVI_CTRL12,0x20); //DVI power up
+2065   2                                              
+2066   2                      GoToDVI();
+2067   2                      break;
+2068   2              case mSource_HDMI:
+2069   2                      GoToDVI();
+2070   2                      break;
+2071   2              case mSource_VIDEO:
+2072   2      //#ifdef AnalogPort0
+2073   2                      WriteIIC560(ADC_MID_CH_SEL,0x00);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 35  
+
+2074   2      //#else
+2075   2      //              WriteIIC560(ADC_MID_CH_SEL,0x04);
+2076   2      //#endif
+2077   2      //              GoToSeparateSync();
+2078   2                      if(CheckSOG() == 0)
+2079   2                              GoToCompositeSync();
+2080   2                      break;
+2081   2              }
+2082   1      }
+2083          
+2084          #if DUAL_MODE==ON
+2085          void DVIBandWidthDetection(void)
+2086          {
+2087   1      unsigned char DVI_ClockTemp,loop;
+2088   1      #if 1
+2089   1              WriteIIC560(DVI_CTRL14,0x00);
+2090   1              WriteIIC560(DVI_CTRL13,0x00);
+2091   1              WriteIIC560(DVI_CTRL12,0xa0);   //DVI power off
+2092   1              WriteIIC560(DVI_CTRL12,0x20);   //DVI power on
+2093   1              Sleep(20);
+2094   1      
+2095   1              loop = 25;
+2096   1              ucCurrentDVIClk = 0;
+2097   1              do{
+2098   2                      DVI_ClockTemp = ReadIIC560(DVI_PIXELCLK);
+2099   2                      if(abs(ucCurrentDVIClk - DVI_ClockTemp) > 2){
+2100   3                              ucCurrentDVIClk = DVI_ClockTemp;
+2101   3                              loop = 25;
+2102   3                      }
+2103   2                      loop--;
+2104   2                      
+2105   2              #ifdef _SCDT_SOLUTION_
+2106   2                      // To avoid long-time loop if clock is abnormal , escape loop by invalid DVI clock range 
+2107   2                      // Jude 2008/04/30
+2108   2                      if ((ucCurrentDVIClk < 20) || (ucCurrentDVIClk > 180)) return;
+2109   2              #endif
+2110   2              
+2111   2              }while(loop != 0);
+2112   1      //      NVTprintf1("DVI_Clock = %d\r\n",(unsigned short)ucCurrentDVIClk);
+2113   1              if(ucCurrentDVIClk < 20)
+2114   1                      return;
+2115   1      
+2116   1              if(ucCurrentDVIClk <= 50){
+2117   2                      WriteIIC560(DVI_CTRL13,0x04);
+2118   2                      WriteIIC560(DVI_CTRL14,0x03); 
+2119   2                      WriteIIC560(DVI_CTRL12,0xa0);   //DVI power off
+2120   2                      WriteIIC560(DVI_CTRL12,0x20);   //DVI power on
+2121   2              }
+2122   1              Sleep(180);
+2123   1              if((ucCurrentDVIClk <= 140)&&(ucCurrentDVIClk >= 100)){         //2005-01-06 DVI dot flash
+2124   2                      WriteIIC560(DVI_CTRL4,0x0d);
+2125   2              }
+2126   1              else{
+2127   2                      WriteIIC560(DVI_CTRL4,0x00);
+2128   2              }
+2129   1              
+2130   1      #else   
+              
+                      //WriteIIC560(DVI_CTRL6,0x1f);
+                      WriteIIC560(DVI_CTRL14,0x00);
+                      WriteIIC560(DVI_CTRL13,0x00);
+                      Sleep(20);
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 36  
+
+              
+                      loop = 25;
+                      ucCurrentDVIClk = 0;
+                      do{
+                              DVI_ClockTemp = ReadIIC560(DVI_PIXELCLK);
+                              if(abs(ucCurrentDVIClk - DVI_ClockTemp) > 2){
+                                      ucCurrentDVIClk = DVI_ClockTemp;
+                                      loop = 25;
+                              }
+                              loop--;
+                      }while(loop != 0);
+              //      printf("DVI_Clock = %d\r\n",(unsigned short)ucCurrentDVIClk);
+                      if(ucCurrentDVIClk < 20)
+                              return;
+              
+                      if(ucCurrentDVIClk <= 50){
+                              WriteIIC560(DVI_CTRL13,0x04);
+                              WriteIIC560(DVI_CTRL14,0x03); 
+                      }
+                      Sleep(180);
+                      if((ucCurrentDVIClk <= 140)&&(ucCurrentDVIClk >= 100)){         //2005-01-06 DVI dot flash
+                              WriteIIC560(DVI_CTRL4,0x0d);
+                      }
+                      else{
+                              WriteIIC560(DVI_CTRL4,0x00);
+                      }
+              #endif
+2163   1      }
+2164          #endif
+2165          
+2166          #if PanelID == CMO_M190E5_L0E  //neo 060811
+              void ScalerOutputON(bit WithoutDelay)
+              {
+                      if(bScalerOutput == 0){
+              //printf("ScalerOutputON\r\n");
+                              PanelPowerOn();
+                              Sleep(PowerUpPanelTiming);
+              #if NT68167
+                      #if _167_VERSION_B
+                              WriteIIC560(LVDS_MISC_CTRL3,0xe5);      //      output port
+                              WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+                      #else
+                              WriteIIC560(LVDS_MISC_CTRL3,0xe0);      //      output port
+                              WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+                      #endif
+              #elif NT68670B||NT68667
+                      WriteIIC560(LVDS_MISC_CTRL1,0x47);      //      output port
+                      WriteIIC560(LVDS_MISC_CTRL2,0x28);      //      output port
+                      WriteIIC560(LVDS_MISC_CTRL3,0xc0);      //      output port
+              #else
+                      WriteIIC560(LVDS_MISC_CTRL3,0xc0);      //      output port
+                      WriteIIC560(LVDS_MISC_CTRL1,0x05);      //      output port
+              #endif
+              
+              #ifdef _USE_PWM_B_
+              //      WriteIIC560(GPIO_CTRL,0x2c);
+                      WriteIIC560(GPIO_CTRL,0x3c);            // +jwshin 111214
+              #else   
+                      WriteIIC560(GPIO_CTRL,0x1c);
+              #endif
+                              
+                              if(WithoutDelay == 0)
+C51 COMPILER V8.12   SCALER                                                                04/16/2014 18:12:34 PAGE 37  
+
+                                      Sleep(PowerUpInvTiming<<2);
+                              else
+                                      Sleep(PowerUpInvTiming);
+                                      
+                              bScalerOutput = 1;
+                              
+                      }
+              }
+              
+              void ScalerOutputOFF(void)
+              {
+                      if((bScalerOutput != 0)&&(IsBackLightOn() == OFF)){
+                              WriteIIC560(GPIO_CTRL,0x0c);    // PWM0,VSO HSOoutput
+                              Sleep(10);
+                              WriteIIC560(LVDS_MISC_CTRL3,0x00);      //      output port pull low
+                              WriteIIC560(POWER_CTRL1,0x00);  //      output port power down
+                              WriteIIC560(LVDS_MISC_CTRL1,0x15);      //      output port pull low
+                              Sleep(PowerDownPanelTiming);
+                              PanelPowerOff();
+                              bScalerOutput = 0;
+                              //printf("ScalerOutputOFF\r\n");
+                      }
+              }
+              #endif
+2222          
+2223          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4991    ----
+   CONSTANT SIZE    =    495    ----
+   XDATA SIZE       =   ----      49
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

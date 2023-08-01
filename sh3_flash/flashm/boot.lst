@@ -1,0 +1,269 @@
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:30  PAGE    1
+
+************ OBJECT LISTING ************
+
+FILE NAME: boot.c
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+P                         ; File boot.c    , Line 29       ; block
+    00000000              _boot:                           ; function: boot
+                                                           ; frame size=0
+                          ; File boot.c    , Line 30       ; block
+                          ; File boot.c    , Line 33       ; expression statement
+    00000000 D32C                   MOV.L       L243+38,R3 ; H'0000A500
+    00000002 E286                   MOV         #-122,R2
+    00000004 2231                   MOV.W       R3,@R2
+                          ; File boot.c    , Line 34       ; expression statement
+    00000006 D12C                   MOV.L       L243+42,R1 ; H'0000A503
+    00000008 E086                   MOV         #-122,R0
+    0000000A 2011                   MOV.W       R1,@R0
+                          ; File boot.c    , Line 35       ; expression statement
+    0000000C 933F                   MOV.W       L243,R3    ; H'5A80
+    0000000E E184                   MOV         #-124,R1
+    00000010 2131                   MOV.W       R3,@R1
+                          ; File boot.c    , Line 36       ; expression statement
+    00000012 923D                   MOV.W       L243+2,R2  ; H'0112
+    00000014 E380                   MOV         #-128,R3
+    00000016 2321                   MOV.W       R2,@R3
+                          ; File boot.c    , Line 39       ; expression statement
+    00000018 903B                   MOV.W       L243+4,R0  ; H'3008
+    0000001A 923B                   MOV.W       L243+6,R2  ; H'FF60
+    0000001C 2201                   MOV.W       R0,@R2
+                          ; File boot.c    , Line 40       ; expression statement
+    0000001E 913A                   MOV.W       L243+8,R1  ; H'39F0
+    00000020 903A                   MOV.W       L243+10,R0 ; H'FF62
+    00000022 2011                   MOV.W       R1,@R0
+                          ; File boot.c    , Line 43       ; expression statement
+    00000024 9339                   MOV.W       L243+12,R3 ; H'1010
+    00000026 9139                   MOV.W       L243+14,R1 ; H'FF7E
+    00000028 2131                   MOV.W       R3,@R1
+                          ; File boot.c    , Line 44       ; expression statement
+    0000002A 9238                   MOV.W       L243+16,R2 ; H'1551
+    0000002C 9338                   MOV.W       L243+18,R3 ; H'FF64
+    0000002E 2321                   MOV.W       R2,@R3
+                          ; File boot.c    , Line 48       ; expression statement
+    00000030 D022                   MOV.L       L243+46,R0 ; H'0000FFDD
+    00000032 9236                   MOV.W       L243+20,R2 ; H'FF66
+    00000034 2201                   MOV.W       R0,@R2
+                          ; File boot.c    , Line 49       ; expression statement
+    00000036 9135                   MOV.W       L243+22,R1 ; H'5124
+    00000038 9035                   MOV.W       L243+24,R0 ; H'FF68
+    0000003A 2011                   MOV.W       R1,@R0
+                          ; File boot.c    , Line 52       ; expression statement
+    0000003C 9334                   MOV.W       L243+26,R3 ; H'4000
+    0000003E 9134                   MOV.W       L243+28,R1 ; H'FF6A
+    00000040 2131                   MOV.W       R3,@R1
+                          ; File boot.c    , Line 53       ; expression statement
+    00000042 D21F                   MOV.L       L243+50,R2 ; H'0000A53E
+    00000044 9332                   MOV.W       L243+30,R3 ; H'FF72
+    00000046 2321                   MOV.W       R2,@R3
+                          ; File boot.c    , Line 55       ; expression statement
+    00000048 D01E                   MOV.L       L243+54,R0 ; H'0000A510
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:30  PAGE    2
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    0000004A 9230                   MOV.W       L243+32,R2 ; H'FF6E
+    0000004C 2201                   MOV.W       R0,@R2
+                          ; File boot.c    , Line 57       ; expression statement
+    0000004E D11E                   MOV.L       L243+58,R1 ; H'0000A400
+    00000050 902E                   MOV.W       L243+34,R0 ; H'FF74
+    00000052 2011                   MOV.W       R1,@R0
+                          ; File boot.c    , Line 58       ; while
+    00000054 A000                   BRA         L239
+    00000056 0009                   NOP
+    00000058              L240:                             
+    00000058              L239:                             
+    00000058 932A                   MOV.W       L243+34,R3 ; H'FF74
+    0000005A 6231                   MOV.W       @R3,R2
+    0000005C 622D                   EXTU.W      R2,R2
+    0000005E E11E                   MOV         #30,R1
+    00000060 3213                   CMP/GE      R1,R2
+    00000062 8BF9                   BF          L240
+                          ; File boot.c    , Line 60       ; expression statement
+    00000064 E300                   MOV         #0,R3
+    00000066 9224                   MOV.W       L243+36,R2 ; H'E880
+    00000068 2230                   MOV.B       R3,@R2
+                          ; File boot.c    , Line 63       ; expression statement
+    0000006A E108                   MOV         #8,R1
+    0000006C E0EC                   MOV         #-20,R0
+    0000006E 2012                   MOV.L       R1,@R0
+                          ; File boot.c    , Line 64       ; expression statement
+    00000070 E301                   MOV         #1,R3
+    00000072 2032                   MOV.L       R3,@R0
+                          ; File boot.c    , Line 67       ; expression statement
+    00000074 D115                   MOV.L       L243+62,R1 ; _ap_main
+    00000076 410B                   JSR         @R1
+    00000078 0009                   NOP
+                          ; File boot.c    , Line 69       ; for
+    0000007A A000                   BRA         L241
+    0000007C 0009                   NOP
+    0000007E              L242:                             
+    0000007E              L241:                             
+    0000007E AFFE                   BRA         L242
+    00000080 0009                   NOP
+                          ; File boot.c    , Line 70       ; block
+                          ; File boot.c    , Line 73       ; block
+    00000082              _di:                             ; function: di
+                                                           ; frame size=0
+                          ; File boot.c    , Line 74       ; block
+                          ; File boot.c    , Line 75       ; expression statement
+    00000082 0202                   STC         SR,R2
+    00000084 D312                   MOV.L       L243+66,R3 ; H'10000000
+    00000086 223B                   OR          R3,R2
+    00000088 420E                   LDC         R2,SR
+                          ; File boot.c    , Line 76       ; block
+    0000008A 000B                   RTS
+    0000008C 0009                   NOP
+    0000008E              L243:                             
+    0000008E 5A80                   .DATA.W     H'5A80
+    00000090 0112                   .DATA.W     H'0112
+    00000092 3008                   .DATA.W     H'3008
+    00000094 FF60                   .DATA.W     H'FF60
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:30  PAGE    3
+
+
+SCT OFFSET   CODE       C LABEL     INSTRUCTION OPERAND    COMMENT
+
+    00000096 39F0                   .DATA.W     H'39F0
+    00000098 FF62                   .DATA.W     H'FF62
+    0000009A 1010                   .DATA.W     H'1010
+    0000009C FF7E                   .DATA.W     H'FF7E
+    0000009E 1551                   .DATA.W     H'1551
+    000000A0 FF64                   .DATA.W     H'FF64
+    000000A2 FF66                   .DATA.W     H'FF66
+    000000A4 5124                   .DATA.W     H'5124
+    000000A6 FF68                   .DATA.W     H'FF68
+    000000A8 4000                   .DATA.W     H'4000
+    000000AA FF6A                   .DATA.W     H'FF6A
+    000000AC FF72                   .DATA.W     H'FF72
+    000000AE FF6E                   .DATA.W     H'FF6E
+    000000B0 FF74                   .DATA.W     H'FF74
+    000000B2 E880                   .DATA.W     H'E880
+    000000B4 0000A500               .DATA.L     H'0000A500
+    000000B8 0000A503               .DATA.L     H'0000A503
+    000000BC 0000FFDD               .DATA.L     H'0000FFDD
+    000000C0 0000A53E               .DATA.L     H'0000A53E
+    000000C4 0000A510               .DATA.L     H'0000A510
+    000000C8 0000A400               .DATA.L     H'0000A400
+    000000CC <00000000>             .DATA.L     _ap_main
+    000000D0 10000000               .DATA.L     H'10000000
+                          ; File boot.c    , Line 79       ; block
+    000000D4              _ei:                             ; function: ei
+                                                           ; frame size=0
+                          ; File boot.c    , Line 80       ; block
+                          ; File boot.c    , Line 81       ; expression statement
+    000000D4 0302                   STC         SR,R3
+    000000D6 D202                   MOV.L       L244,R2    ; H'EFFFFFFF
+    000000D8 2329                   AND         R2,R3
+    000000DA 430E                   LDC         R3,SR
+                          ; File boot.c    , Line 82       ; block
+    000000DC 000B                   RTS
+    000000DE 0009                   NOP
+    000000E0              L244:                             
+    000000E0 EFFFFFFF               .DATA.L     H'EFFFFFFF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SH SERIES C/C++ Compiler (Ver. 5.1A)                                                                 27-Aug-2003 13:54:30  PAGE    1
+
+
+******** STATISTICS INFORMATION ********
+
+
+********** ERROR INFORMATION ***********
+
+NUMBER OF ERRORS:           0
+NUMBER OF WARNINGS:         0
+
+
+
+
+******* SOURCE LINE INFORMATION ********
+
+COMPILED SOURCE LINE:       82
+
+
+
+******* SECTION SIZE INFORMATION *******
+
+PROGRAM  SECTION (P):                               000000E4 Byte(s)
+CONSTANT SECTION (C):                               00000000 Byte(s)
+DATA     SECTION (D):                               00000000 Byte(s)
+BSS      SECTION (B):                               00000000 Byte(s)
+
+ TOTAL PROGRAM SIZE: 000000E4 Byte(s)
+
+
+
+********** LABEL INFORMATION ***********
+
+NUMBER OF EXTERNAL REFERENCE SYMBOLS:            1
+NUMBER OF EXTERNAL DEFINITION SYMBOLS:           3
+NUMBER OF INTERNAL/EXTERNAL SYMBOLS:            10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*** COMMAND PARAMETER ***
+
+
+  /op=0 /cpu=SH3 /endian=b /define=_SHC3_ /show=ob,noso /list boot.c 
+

@@ -1,0 +1,633 @@
+#include "MyDef.H"
+#include "NT686xx_MCU_REG.H"
+#include "NT686xx_SC_REG.H"
+#include "RAM.H"
+#include "Board.H"
+#include "stdio.H"
+#include "Panel.H"
+#include "Scaler.H"
+#include "Mis.H"
+#include "OSD.H"
+#include "8051.H"
+
+
+#if SCALAR_BOARD==PCBA_Q80x67
+/*************************************************
+	P C B _ Q 8 0 x 6 7 
+**************************************************/
+//--------------------- Schematic에 맞게 Grn과 Red를 Change... +jwshin 110602
+void LED_RedOn(void)
+{
+/*	
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_2;
+	PortA = port;
+*/	
+}
+
+void LED_RedOff(void)
+{
+/*	
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_2;
+	PortA = port;
+*/	
+}
+
+//------------------ +jwshin 120223
+//---- LED On/Off Reverse... Dual B/D
+void LED_GrnOn(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_1;
+	PortA = port;	
+}
+
+void LED_GrnOff(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_1;
+	PortA = port;
+}
+
+void BackLightOn(void)
+{
+unsigned char port;
+	SetBrightness();
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_4;
+	PortC = port;
+	
+	//-------------- +jwshin 120228
+	bPowerSaveFlag = 0;
+}
+
+void BackLightOff(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_4;
+	PortC = port;
+	ucTime2Backlight = 0;
+
+#ifdef _USE_PWM_B_
+	WriteIIC560(PWM1_LCNT, 0xFF);
+	WriteIIC560(PWM1_HCNT, 0x00);
+#else
+	WriteIIC560(PWM0_LCNT, 0xFF);
+	WriteIIC560(PWM0_HCNT, 0x00);
+#endif
+
+	//------------- +jwshin 120228
+	bPowerSaveFlag = 1;
+}
+
+//-------------- -jwshin 110414
+/*
+void PanelPowerOn(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_0;
+	PortA = port;	
+}
+
+void PanelPowerOff(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_0;
+	PortA = port;
+}
+*/
+
+//-------------------- +jwshin 110414
+//------------- Panel Power On / Off가 반대로 되어 있으므로, Reverse 처리.~!
+//----------------- Off,On Reverse 처리함...
+
+// --- +jwshin 120223 다시 반대로 처리..~!
+void PanelPowerOn(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_0;
+	PortA = port;	
+}
+
+void PanelPowerOff(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_0;
+	PortA = port;
+}
+//---------------------------------
+
+//---------------------- +jwshin A/B Button 선택... 120223
+/*
+void	Button_En_SelA(void)
+{
+	unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_7;
+	PortA = port;
+}
+
+void Button_En_SelB(void)
+{
+	unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_7;
+	PortA = port;
+}
+*/
+//------------------------------------------------------------ 
+
+//----------------------- +jwshin RGB 1/2 선택... 120223    A Scaler와 반대로 적용
+void RGB_SW1_RGB1(void)
+{
+	unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_6;
+	PortA = port;
+}
+
+void RGB_SW1_RGB2(void)
+{
+	unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_6;
+	PortA = port;
+}
+//----------------------------------------------------------
+
+//--------------------+jwshin Copy LED 120224
+
+void COPYLED_GrnOn(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_2;
+	PortA = port;	
+}
+
+void COPYLED_GrnOff(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_2;
+	PortA = port;
+}
+
+//-----------------------------------------
+
+//--------------------+jwshin SEL_2 LED 120223
+/*
+void SEL2_GrnOn(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_5;
+	PortA = port;	
+}
+
+void SEL2_GrnOff(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_5;
+	PortA = port;
+}
+*/
+//-----------------------------------------
+
+
+
+
+
+
+#if !(NT68670 || NT68670B)
+void ResetOff(void)
+{
+unsigned char port;
+	port = PortD;
+	port |= RDPD_REG;
+	port |= BIT_5;
+	PortD = port;
+
+//	PortE |= (BIT_0 | BIT_1);
+}
+
+void ResetOn(void)
+{
+unsigned char port;
+	port = PortD;
+	port |= RDPD_REG;
+	port &= ~BIT_5;
+	PortD = port;
+
+//	PortE &= ~(BIT_0 | BIT_1);
+}
+#endif
+
+
+#if 1//AUDIO_HW == AUDIO_ENABLED
+void AUDIO_MUTE(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_1;
+	PortC = port;
+}
+
+void AUDIO_On(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_1;
+	PortC = port;
+}
+
+void AMP_STBY(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_0;
+	PortC = port;
+}
+
+void AMP_On(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_0;
+	PortC = port;
+}
+#endif
+
+#if FE2P_LIB==OFF
+void EEP_WP_OFF(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_2;
+	PortC = port;
+	port = 10;
+	while(port != 0){
+		port--;
+	}
+}
+
+void EEP_WP_ON(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_2;
+	PortC = port;
+}
+#endif
+
+#ifdef Use24C02
+/*
+void EDID_WP_OFF(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_5;
+	PortA = port;
+	port = 5;
+	while(port != 0){
+		port--;
+	}
+}
+
+void EDID_WP_ON(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_5;
+	PortA = port;
+}
+*/
+#endif
+
+bit IsPanelPowerOn(void)
+{
+	if((PortA & BIT_0)!= 0){
+		return ON;
+	}
+	else{
+		return OFF;
+	}
+}
+
+bit IsBackLightOn(void)
+{
+	if((PortC & BIT_4) == 0){
+		return TRUE;
+	}
+	else{
+		return FALSE;
+	}
+}
+
+bit IsVGAconnected(void)
+{
+	if((PortD & BIT_6) == 0){
+		return TRUE;
+	}
+	else{
+		return FALSE;
+	}
+}
+
+#if DUAL_MODE == ON
+bit IsDVIconnected(void)
+{
+	//if((PortC & BIT_2) == 0){
+	if((PortB & BIT_4) == 0){
+		return TRUE;
+	}
+	else{
+		return FALSE;
+	}
+}
+#endif
+
+#elif SCALAR_BOARD==PCBA_Q50x50
+/*************************************************
+	P C B _ Q 5 0 x 5 0 
+**************************************************/
+
+void LED_GrnOn(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_2;
+	PortA = port;
+
+}
+
+void LED_GrnOff(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_2;
+	PortA = port;
+	
+}
+
+void LED_RedOn(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_1;
+	PortA = port;	
+}
+
+void LED_RedOff(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_1;
+	PortA = port;
+}
+
+void BackLightOn(void)
+{
+unsigned char port;
+	SetBrightness();
+	port = PortB;
+	port |= RDPB_REG;
+	port &= ~BIT_2;
+	PortB = port;
+}
+
+void BackLightOff(void)
+{
+unsigned char port;
+	port = PortB;
+	port |= RDPB_REG;
+	port |= BIT_2;
+	PortB = port;
+	ucTime2Backlight = 0;
+
+#ifdef _USE_PWM_B_
+	WriteIIC560(PWM1_LCNT, 0xFF);
+	WriteIIC560(PWM1_HCNT, 0x00);
+#else
+	WriteIIC560(PWM0_LCNT, 0xFF);
+	WriteIIC560(PWM0_HCNT, 0x00);
+#endif
+
+}
+
+void PanelPowerOn(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_0;
+	PortA = port;	
+}
+
+void PanelPowerOff(void)
+{
+unsigned char port;
+port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_0;
+	PortA = port;
+}
+
+#if !(NT68670 || NT68670B || NT68167)
+void ResetOff(void)
+{
+unsigned char port;
+	port = PortD;
+	port |= RDPD_REG;
+	port |= BIT_5;
+	PortD = port;
+
+//	PortE |= (BIT_0 | BIT_1);
+}
+
+void ResetOn(void)
+{
+unsigned char port;
+	port = PortD;
+	port |= RDPD_REG;
+	port &= ~BIT_5;
+	PortD = port;
+
+//	PortE &= ~(BIT_0 | BIT_1);
+}
+#endif
+
+
+#if 1//AUDIO_HW == AUDIO_ENABLED
+void AUDIO_MUTE(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_1;
+	PortC = port;
+}
+
+void AUDIO_On(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_1;
+	PortC = port;
+}
+
+void AMP_STBY(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_0;
+	PortC = port;
+}
+
+void AMP_On(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_0;
+	PortC = port;
+}
+#endif
+
+#if FE2P_LIB==OFF
+void EEP_WP_OFF(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port &= ~BIT_2;
+	PortC = port;
+	port = 10;
+	while(port != 0){
+		port--;
+	}
+}
+
+void EEP_WP_ON(void)
+{
+unsigned char port;
+	port = PortC;
+	port |= RDPC_REG;
+	port |= BIT_2;
+	PortC = port;
+}
+#endif
+
+#ifdef Use24C02
+/*
+void EDID_WP_OFF(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port &= ~BIT_5;
+	PortA = port;
+	port = 5;
+	while(port != 0){
+		port--;
+	}
+}
+
+void EDID_WP_ON(void)
+{
+unsigned char port;
+	port = PortA;
+	port |= RDPA_REG;
+	port |= BIT_5;
+	PortA = port;
+}
+*/
+#endif
+
+bit IsPanelPowerOn(void)
+{
+	if((PortA & BIT_0)!= 0){
+		return ON;
+	}
+	else{
+		return OFF;
+	}
+}
+
+bit IsBackLightOn(void)
+{
+	if((PortB & BIT_2) == 0){
+		return TRUE;
+	}
+	else{
+		return FALSE;
+	}
+}
+
+bit IsVGAconnected(void)
+{
+	return P35;
+}
+
+#if DUAL_MODE == ON
+bit IsDVIconnected(void)
+{
+	if((PortC & BIT_2) == 0){
+		return TRUE;
+	}
+	else{
+		return FALSE;
+	}
+}
+
+#endif
+
+
+
+
+
+#endif
+

@@ -1,0 +1,1967 @@
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE MCU
+OBJECT MODULE PLACED IN .\BIN\MCU.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\MCU.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\MCU.
+                    -lst) OBJECT(.\BIN\MCU.obj)
+
+stmt level    source
+
+   1          #include "8051.H"
+   2          #include "STDIO.H"
+   3          #include "RAM.H"
+   4          #include "MCU.H"
+   5          #include "MyDef.H"
+   6          #include "IIC.H"
+   7          #include "F63XREG.H"
+   8          #include "F63XDEF.H"
+   9          #include "UserAdj.H"
+  10          #include "Scaler.H"
+  11          #include "rom_map.h"
+  12          #include "AutoAdj.H"
+  13          #include "OSD.H"
+  14          #include "OSD_TAB.H"
+  15          #include "OSD_TAB2.H"
+  16          #include "MODEHANDLE.H"
+  17          #include "Tuner.h"
+  18          //#include "dvKeypad.h"
+  19          #include "PANEL.H"
+  20          
+  21          /*
+  22          code unsigned short LG_IR_Tab[]={
+  23                  0x08f7,0x8877,0x48b7,0xc837,0x28d7,0xa857,0x6897,0xe817,
+  24                  0x18e7,0x9867,0x58a7,0xffff,0xffff,0xffff,0xd02f,0x906f,
+  25                  0x10ef,0xffff,0x22dd,0xc23d,0xaa55,0xffff,0xffff,0xffff,
+  26                  0xffff,0xffff,0xffff,0xffff,0x00ff,0x807f,0x2ad5,0xaa55,
+  27                  0x40bf,0xc03f,0x708f,0xf00f,0xffff,0xffff,0xffff,0xffff,
+  28          };
+  29          code unsigned char IR_KeyTab[]={
+  30                  0x80,  0x81,  0x82,  0x83,  0x84,  0x85,  0x86,  0x87,
+  31                  //0,        1,        2,        3,       4,       5,       6,       7,
+  32                  0x88,  0x89,  0x8a,  0x8b,  0x8c,  0x8d,  0x8e,  0x8f,
+  33                  //  8,       9,    10,     11 ,  12   , pre   ,source,   mute,
+  34                  0x90,  0x91,   0x92,  0x93,  0x94,  0x95,  0x96,  0x97,
+  35                  //pwr, Set,  menu,   auto, display,Analog, DVI, Video,
+  36                  0x98,  0x99,  0x9a,  0x9b,  0x9c,  0x9d,  0x9e,  0x9f,
+  37                  //S-vi, TV  ,         ,         ,ch-up,   ch-d, 자동체널, exit,
+  38                  0xa0,  0xa1,  0xa2,  0xa3,  0xa4,  0xa5,  0xa6,  0xa7
+  39           //vol-u, vol-d, sleep, Air-Cable,
+  40          };
+  41          */
+  42          code unsigned short LG_IR_Tab[]={                       // Platys Remocon Value 적용 +jwshin 051028
+  43                  0x28D7,0x18e7,0x9867,0x00ff,0x807f,0x40bf,0xc03f,0x20df,        //power,source,mute,0,1,2,3,4
+  44                  0xa05f,0x609f,0xe01f,0x10ef,0x906f,0x08f7,0x708f,       //5,6,7,8,9,ch up,ch down
+  45                  0xc837,0xa857,0x6897,0xd827,                                    //menu,vol down,vol up,exit
+  46          };
+  47          code unsigned char IR_KeyTab[]={
+  48                  0x28,0x18,0x98,0x00,0x80,0x40,0xc0,0x20,
+  49                  0xa0,0x60,0xe0,0x10,0x90,0x08,0x70,
+  50                  0xc8,0xa8,0x68,0xd8,                            
+  51          };
+  52          
+  53          code unsigned char IR_CodeTab[]={
+  54                  0x90,0x91,0x8f,0x80,0x81,0x82,0x83,0x84,
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 2   
+
+  55                  0x85,0x86,0x87,0x88,0x89,0x9c,0x9d,
+  56                  0x92,0xa1,0xa0,0x40,
+  57          };
+  58          
+  59          extern WarmUp();
+  60          
+  61          void InitMCU(void)
+  62          {
+  63   1              Byte xdata *Addr;
+  64   1              Byte i;
+  65   1              Addr = 0xf000;
+  66   1              for(i=0; i<0x23; i++){
+  67   2                      *Addr++ = McuRegTab[i];
+  68   2              }
+  69   1      // set timer 0
+  70   1              SCON = 0x52;
+  71   1              TMOD = 0x22;    //timer0 /timer1 8 bits auto reload
+  72   1      //      TMOD = 0x21;    //timer0 16 bits/timer1 8 bits auto reload
+  73   1              PCON = 0x80;
+  74   1      // timer0 8 bits auto reload
+  75   1              TL0 = -200;
+  76   1              TH0 =-200;
+  77   1      //      TL0 = 256-(CPU_CLK/1000*100/12000); //time base 100us
+  78   1      //      TH0 = 256-(CPU_CLK/1000*100/12000);
+  79   1      
+  80   1      // timer0 16 bits
+  81   1      //      TL0 = (65536-CPU_CLK/1200)%256; //time base 10ms
+  82   1      //      TH0 = (65536-CPU_CLK/1200)/256;
+  83   1      
+  84   1      // For 12.000 MHz 
+  85   1              TL1 = 256-(2*CPU_CLK/384/9600);
+  86   1              TH1 = 256-(2*CPU_CLK/384/9600);
+  87   1      // For 14.318 MHz 
+  88   1              //TL1 = 256-(2*CPU_CLK/384/4800);
+  89   1              //TH1 = 256-(2*CPU_CLK/384/4800);
+  90   1              TR0 = 1;                //start timer0
+  91   1              TR1 = 1;                //start timer1
+  92   1      // set interrupt
+  93   1              EX1 = 1;                //enable External interrupt1
+  94   1              ET0 = 1;                //enable timer0 interrupt
+  95   1              EA = 1;                 //enable all interrupt
+  96   1              T0_INT_CNT = 0;
+  97   1              T0_10ms_Cnt = 0;
+  98   1              cntIR_Data = 0;
+  99   1              IR_Status = cIR_START;
+ 100   1      //      IR_KeyBuffer = 0xff;
+ 101   1              IR_KeyTemp = 0xfb;
+ 102   1              IR_RepeatTimer = 40;
+ 103   1              bIR_Change=0;
+ 104   1              bIR_Active = 0;
+ 105   1              VideoTest = 1;
+ 106   1      //      Sleep(50);      // -jwshin 050729
+ 107   1              NoSigTimer = 100;               // +jwshin 051101 Added...
+ 108   1              SoundRGB();                     // 74HC4052 Port Initialization...    +jwshin 051128
+ 109   1              Sleep(50);
+ 110   1              SoundRGB();                     // Re-Initialization...         한번 더 Port 초기화...  +jwshin 051128
+ 111   1              StatusFlag = 0;                 // Initialization... +jwshin 051128
+ 112   1              
+ 113   1      }
+ 114          
+ 115          void Timer0(void) interrupt 1 using 2
+ 116          {
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 3   
+
+ 117   1      #if 1   //Used mode2--auto reload
+ 118   1              if(IR_Timer != 0xfff)
+ 119   1                      IR_Timer++;
+ 120   1              if(++T0_INT_CNT >= 10){
+ 121   2                      T0_INT_CNT = 0;
+ 122   2                      if(Timer1 != 0)                 // 1ms
+ 123   2                              Timer1--;
+ 124   2                      if(++T0_1ms_Cnt >= 10){ // 10ms
+ 125   3                              CLRWDT = 0x55;
+ 126   3                              T0_1ms_Cnt = 0;
+ 127   3                              if(Timer2 != 0)
+ 128   3                                      Timer2--;
+ 129   3                              if(Timer3 != 0)
+ 130   3                                      Timer3--;
+ 131   3      
+ 132   3                              if(++T0_10ms_Cnt >= 100){//--1s
+ 133   4                                      T0_10ms_Cnt = 0;
+ 134   4                                      if(BackLightTimerEn){
+ 135   5                                              if(BackLightTimer < 360000000)
+ 136   5                                                      BackLightTimer += 1;
+ 137   5                                              else
+ 138   5                                                      BackLightTimer = 0;
+ 139   5                                      }
+ 140   4                              }
+ 141   3                              if(NoSigTimer > 0)      // +jwshin 051101 Added...
+ 142   3                                      NoSigTimer--;
+ 143   3                              if(OsdTimer > 0)
+ 144   3                                      OsdTimer--;
+ 145   3                              if(LocalTimer > 0)
+ 146   3                                      LocalTimer--;
+ 147   3                              if(PowerTimer > 0)
+ 148   3                                      PowerTimer--;
+ 149   3                              if(RepeatTimer > 0)
+ 150   3                                      RepeatTimer--;
+ 151   3                              if(DDCTimer > 0)
+ 152   3                                      DDCTimer--;
+ 153   3                              if(SaveTimer > 0)
+ 154   3                                      SaveTimer--;
+ 155   3                              if(VideoTimer > 0)
+ 156   3                                      VideoTimer--;
+ 157   3                              if(BurnInTimer > 0)
+ 158   3                                      BurnInTimer--;
+ 159   3                              if(MuteTimer > 0)
+ 160   3                                      MuteTimer--;            
+ 161   3                              if(IR_RepeatTimer > 0) 
+ 162   3                                      IR_RepeatTimer--;
+ 163   3                              if(IR_WaitTimer>0) IR_WaitTimer--;
+ 164   3                              
+ 165   3                      }
+ 166   2              }
+ 167   1      
+ 168   1      #else   //Used mode1--16 bits counter
+                      TL0 = (65536-CPU_CLK/1200)%256; //time base 10ms
+                      TH0 = (65536-CPU_CLK/1200)/256;
+                      CLRWDT = 0x55;
+                      if(++T0_10ms_Cnt >= 100){
+                              T0_10ms_Cnt = 0;
+                              if(BackLightTimerEn){
+                                      if(BackLightTimer < 360000000)
+                                              BackLightTimer += 1;
+                                      else
+                                              BackLightTimer = 0;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 4   
+
+                              }
+                      }
+                      if(OsdTimer > 0)
+                              OsdTimer--;
+                      if(LocalTimer > 0)
+                              LocalTimer--;
+                      if(RepeatTimer > 0)
+                              RepeatTimer--;
+                      if(PowerTimer > 0)
+                              PowerTimer--;
+                      if(DDCTimer > 0)
+                              DDCTimer--;
+                      if(SaveTimer > 0)
+                              SaveTimer--;
+                      if(VideoTimer > 0)
+                              VideoTimer--;
+                      if(BurnInTimer > 0)
+                              BurnInTimer--;
+                      if(MuteTimer > 0)
+                              MuteTimer--;
+              #endif
+ 200   1              
+ 201   1      }
+ 202          
+ 203          void Sleep(Word T)
+ 204          {
+ 205   1              Word i,j;
+ 206   1              for(j=0;j<T;j++)
+ 207   1                      for(i=0;i<53*(CPU_CLK/20000000);i++)
+ 208   1                              CLRWDT=0x55;
+ 209   1      }
+ 210          
+ 211          void WaitSetup(unsigned short time)
+ 212          {
+ 213   1              LocalTimer = time;                      /* timeout n ms */
+ 214   1              while(LocalTimer != 0){
+ 215   2                      if(FuncBuf[pVIDEOSOURCE] < cSVIDEO) //jacky20040324
+ 216   2                              CheckModeChange();
+ 217   2              }
+ 218   1      }
+ 219          
+ 220          Byte GetKey()
+ 221          {
+ 222   1              Byte i,KeyTemp,KeyTemp2;
+ 223   1              i = 0;
+ 224   1       /*
+ 225   1              while(i < 10)
+ 226   1                      {
+ 227   1                      KeyTemp = 0;
+ 228   1                      if(!(PTA_REG & PA5))
+ 229   1                              KeyTemp = vkSOURCE;
+ 230   1                      if(!(PTA_REG & PA0))
+ 231   1                              KeyTemp = vkMENU;
+ 232   1                      if(!(PTA_REG & PA4))
+ 233   1                              KeyTemp = vkAUTO;
+ 234   1                      if(!(PTA_REG & PA3))
+ 235   1                              KeyTemp = vkPOWER;
+ 236   1                      if(!(PTA_REG & PA1))
+ 237   1                              KeyTemp = vkVALUP;
+ 238   1                      if(!(PTA_REG & PA2))
+ 239   1                              KeyTemp = vkVADOWN;
+ 240   1                      if(!(PTA_REG & PA3))
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 5   
+
+ 241   1                              KeyTemp = vkPOWER;
+ 242   1                      if(!(PTD_REG & PD0))
+ 243   1                              KeyTemp = vVOLUME;
+ 244   1                      if(!(PTD_REG & PD6))
+ 245   1                              KeyTemp = vkMONSEL;
+ 246   1                      if(KeyTemp != KeyTemp2)
+ 247   1                              {
+ 248   1                              KeyTemp2 = KeyTemp;
+ 249   1                              i = 0;
+ 250   1                              }
+ 251   1                      i++;
+ 252   1                      }  */
+ 253   1              while(i < 10) {
+ 254   2              //-------------------------------- +jwshin 061025   AD Method로 인한 routine 변경...    
+ 255   2                      KeyTemp = 0;
+ 256   2                      ADC_CON = (STRT_ADC | EN_ADC1);         //Channel;  // Start AD Convert
+ 257   2      //              ShowDebug(MAINMENU_RES_ADDR,RES_COLOR,(ADC1_REG & 0x7f));               // +jwshin 061019
+ 258   2                      if((ADC1_REG & 0x7f) == 0) {
+ 259   3                              KeyTemp = vkPOWER;
+ 260   3                      }
+ 261   2                      if((ADC1_REG & 0x7f) >= 36 && (ADC1_REG & 0x7f) <= 38) {
+ 262   3                              KeyTemp =  vkSOURCE;
+ 263   3                      }
+ 264   2                      if((ADC1_REG & 0x7f) >= 95 && (ADC1_REG & 0x7f) <= 97) {
+ 265   3                              KeyTemp =  vkVALUP;
+ 266   3                      } 
+ 267   2                      if((ADC1_REG & 0x7f) >= 108 && (ADC1_REG & 0x7f) <= 110) {
+ 268   3                              KeyTemp =  vkVADOWN;
+ 269   3                      }
+ 270   2                      if((ADC1_REG & 0x7f) >= 118 && (ADC1_REG & 0x7f) <= 120) {
+ 271   3                              KeyTemp =  vkMENU;
+ 272   3                      }
+ 273   2                      if((ADC1_REG & 0x7f) >= 59 && (ADC1_REG & 0x7f) <= 61) {
+ 274   3                              KeyTemp = vkRIGHT;
+ 275   3                      }
+ 276   2                      if((ADC1_REG & 0x7f) >= 78 && (ADC1_REG & 0x7f) <= 80) {
+ 277   3                              KeyTemp = vkLEFT;
+ 278   3                      } 
+ 279   2      /*              
+ 280   2                      if((ADC1_REG & 0x7f) >= 101 && (ADC1_REG & 0x7f) <= 103) {
+ 281   2                              KeyTemp = vkPOWER;
+ 282   2                      }
+ 283   2                      if((ADC1_REG & 0x7f) >= 111 && (ADC1_REG & 0x7f) <= 113) {
+ 284   2                              KeyTemp =  vkSOURCE;
+ 285   2                      }
+ 286   2                      if((ADC1_REG & 0x7f) >= 98 && (ADC1_REG & 0x7f) <= 100) {
+ 287   2                              KeyTemp =  vkVALUP;
+ 288   2                      } 
+ 289   2                      if((ADC1_REG & 0x7f) >= 93 && (ADC1_REG & 0x7f) <= 95) {
+ 290   2                              KeyTemp =  vkVADOWN;
+ 291   2                      }
+ 292   2                      if((ADC1_REG & 0x7f) >= 88 && (ADC1_REG & 0x7f) <= 90) {
+ 293   2                              KeyTemp =  vkMENU;
+ 294   2                      }
+ 295   2                      if((ADC1_REG & 0x7f) >= 104 && (ADC1_REG & 0x7f) <= 106) {
+ 296   2                              KeyTemp = vkRIGHT;
+ 297   2                      }
+ 298   2                      if((ADC1_REG & 0x7f) >= 109 && (ADC1_REG & 0x7f) <= 111) {
+ 299   2                              KeyTemp = vkLEFT;
+ 300   2                      }
+ 301   2      */              
+ 302   2                      
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 6   
+
+ 303   2                      
+ 304   2                      if(KeyTemp != KeyTemp2)
+ 305   2                              {
+ 306   3                              KeyTemp2 = KeyTemp;
+ 307   3                              i = 0;
+ 308   3                              }
+ 309   2                      i++;
+ 310   2              //----------------------------------
+ 311   2              }
+ 312   1              return KeyTemp;
+ 313   1      }
+ 314          
+ 315          
+ 316          void ScanKeyPad(void)   //2003/5/19 alvin
+ 317          {
+ 318   1              Byte KeyTemp;
+ 319   1              KeyTemp = GetKey();
+ 320   1      //      CheckIR();
+ 321   1              if(PrevKey!=KeyTemp)
+ 322   1              {
+ 323   2                      KeyLock = 0;
+ 324   2                      ChangeKey = 1;  //change key
+ 325   2      //                      printf("PrevKey=0x%x,KeyTemp=0x%x,KeyRepeatCnt=%d\r\n",(Word)PrevKey,(Word)KeyTemp,(Word)KeyRepeatCnt
+             -);
+ 326   2                      if(PrevKey == vkSOURCE && KeyTemp == 0 && KeyRepeatCnt < 10){
+ 327   3                              PrevKey = KeyTemp;
+ 328   3                              KeyBuffer = vkSOURCE;
+ 329   3                              KeyRepeatCnt = 0;
+ 330   3                              OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 331   3                              //OsdTimer = 3 * 100;
+ 332   3      //                      printf("KeyBuffer=%x,KeyRepeatCnt=%d\r\n",(Word)KeyBuffer,(Word)KeyRepeatCnt);
+ 333   3                      }
+ 334   2                      else if(KeyTemp == vkSOURCE){
+ 335   3                              PrevKey = KeyTemp;
+ 336   3                              KeyBuffer = 0;
+ 337   3      //                      printf("vkSOURCE2,KeyRepeatCnt=%d\r\n",(Word)KeyRepeatCnt);
+ 338   3                              //OsdTimer = 3 * 100;
+ 339   3                      }
+ 340   2                      else{
+ 341   3                              PrevKey = KeyTemp;
+ 342   3                              KeyBuffer = KeyTemp;
+ 343   3                              KeyRepeatCnt = 0;
+ 344   3      //                      if(KeyBuffer ==vkMENU)
+ 345   3                              if(OSDZoomFlag)
+ 346   3                                      OsdTimer = 3 * 100;  // Ch show and Video source..
+ 347   3                              else
+ 348   3                                      OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 349   3      
+ 350   3                      }
+ 351   2                      RepeatTimer = KeyHoldTime;
+ 352   2              }
+ 353   1      
+ 354   1              else if((IR_Pre_KeyBuffer!= IR_KeyTemp)&&(!bIR_Change)){
+ 355   2                      KeyLock = 0;
+ 356   2                      bIR_Change = 1;
+ 357   2                      IR_Pre_KeyBuffer = IR_KeyTemp;
+ 358   2                      KeyRepeatCnt = 0;
+ 359   2                      RepeatTimer = 5;
+ 360   2      //              printf("IRK00=%x\r\n",(Word)IR_Pre_KeyBuffer);
+ 361   2      
+ 362   2              }
+ 363   1              else if((bIR_Change)/*||(bIR_Active)*/){
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 7   
+
+ 364   2                      KeyBuffer = 0;
+ 365   2      //              printf("IRK11=%x\r\n",(Word)IR_Pre_KeyBuffer);
+ 366   2      //              printf("rt=%x\r\n",(Word)RepeatTimer);
+ 367   2                      if(RepeatTimer==0){
+ 368   3                              bIR_Change = 0;
+ 369   3                              switch(IR_Pre_KeyBuffer){
+ 370   4                                      case vIR_POWER:
+ 371   4                                              if(!KeyLock)
+ 372   4                                                      KeyBuffer = IR_Pre_KeyBuffer;
+ 373   4                                              RepeatTimer = KeyHoldTime;
+ 374   4                                              break;
+ 375   4                                      case vIR_MENU:
+ 376   4                                      case vIR_SELECT:
+ 377   4                                      case vIR_MUTE:
+ 378   4                                      case vIR_UP:
+ 379   4                                      case vIR_DOWN:
+ 380   4                                      case vIR_CHSearch:
+ 381   4                                      case vIR_Analog:
+ 382   4                                      case vIR_DVI:
+ 383   4                                      case vIR_SVideo:
+ 384   4                                      case vIR_Video:
+ 385   4                                      case vIR_TV:
+ 386   4                                              if(!KeyLock)
+ 387   4                                                      KeyBuffer = IR_Pre_KeyBuffer;
+ 388   4                                              RepeatTimer = KeyHoldTime;
+ 389   4                                              RepeatTimer = 5;
+ 390   4                                              if(OSDZoomFlag)
+ 391   4                                                      OsdTimer = 3 * 100;  // Ch show and Video source..
+ 392   4                                              else
+ 393   4                                                      OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 394   4                                              break;
+ 395   4                                      case vIR_1:
+ 396   4                                      case vIR_2:
+ 397   4                                      case vIR_3:
+ 398   4                                      case vIR_4:
+ 399   4                                      case vIR_5:
+ 400   4                                      case vIR_6:
+ 401   4                                      case vIR_7:
+ 402   4                                      case vIR_8:
+ 403   4                                      case vIR_9:
+ 404   4                                      case vIR_0:
+ 405   4                                      case vIR_10:
+ 406   4                                      case vIR_11:
+ 407   4                                      case vIR_12:
+ 408   4                                              if(!KeyLock)
+ 409   4                                                      KeyBuffer = IR_Pre_KeyBuffer;
+ 410   4                                              RepeatTimer = KeyHoldTime;
+ 411   4                                              RepeatTimer = 2;
+ 412   4                                              if(OSDZoomFlag)
+ 413   4                                                      OsdTimer = 3 * 100;  // Ch show and Video source..
+ 414   4                                              else
+ 415   4                                                      OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 416   4                                              break;
+ 417   4                                      case vIR_LEFT:
+ 418   4                                      case vIR_RIGHT:
+ 419   4                                              if(!KeyLock){
+ 420   5                                                      KeyBuffer = IR_Pre_KeyBuffer;
+ 421   5                                                      KeyRepeatCnt += 1;
+ 422   5                                              }
+ 423   4                                              else KeyRepeatCnt = 1;
+ 424   4                                              if(KeyRepeatCnt<3) RepeatTimer = KeyMenuTime;
+ 425   4                                              else RepeatTimer = KeyRepeatTime;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 8   
+
+ 426   4                                              if(OSDZoomFlag)
+ 427   4                                                      OsdTimer = 3 * 100;  // Ch show and Video source..
+ 428   4                                              else
+ 429   4                                                      OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 430   4                                              break;
+ 431   4                              }
+ 432   3      
+ 433   3                      }
+ 434   2      
+ 435   2              }
+ 436   1      
+ 437   1              else
+ 438   1              {
+ 439   2                      KeyBuffer = 0;  //the other key
+ 440   2                      if((RepeatTimer == 0))//&& MenuPtr.Menu > 0)
+ 441   2                              {
+ 442   3                              switch(KeyTemp)
+ 443   3                                      {
+ 444   4                                      case vkSOURCE:
+ 445   4                                              if(KeyRepeatCnt < 10){
+ 446   5                                                      KeyBuffer = KeyTemp;
+ 447   5                                                      RepeatTimer = 30;//KeyMenuTime;
+ 448   5                                                      if(!KeyLock)
+ 449   5                                                              KeyRepeatCnt = 10;
+ 450   5                                                      else
+ 451   5                                                              KeyRepeatCnt += 1;
+ 452   5                                              }
+ 453   4                                              OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 454   4                                              break;
+ 455   4                                      //--------------------------- +jwshin 061025    
+ 456   4                                      case vkLEFT:
+ 457   4                                      case vkRIGHT:
+ 458   4                                              if(!KeyLock)
+ 459   4                                                      KeyBuffer = KeyTemp;
+ 460   4                                              RepeatTimer = KeyRepeatTime;
+ 461   4                                              OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 462   4                                              break;
+ 463   4                                      //----------------------------  
+ 464   4                                      case vkMENU:
+ 465   4                                              if(!KeyLock)
+ 466   4                                                      KeyBuffer = KeyTemp;
+ 467   4                                              RepeatTimer = KeyMenuTime;
+ 468   4                                              OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 469   4                                              break;
+ 470   4                                      case vkVADOWN:
+ 471   4                                      case vkVALUP:
+ 472   4                                              if(!KeyLock)
+ 473   4                                                      KeyBuffer = KeyTemp;
+ 474   4                                              RepeatTimer = KeyRepeatTime;
+ 475   4                                              OsdTimer = FuncBuf[pOSDTIMER] * 100;
+ 476   4                                              break;
+ 477   4      //                              case (vkMENU|vkLEFT|vkVALUP):
+ 478   4      //                                      if(!KeyLock)
+ 479   4      //                                              KeyBuffer = KeyTemp;
+ 480   4      //                                      break;
+ 481   4                                      };
+ 482   3                              }
+ 483   2                      }
+ 484   1      }
+ 485          
+ 486          
+ 487          void KeyProcess(void)
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 9   
+
+ 488          {
+ 489   1       //     unsigned char caption;
+ 490   1              Byte code MaxItemsTabTV[]={7,4,4,9,5,6,7,MAX_FACT_ITEM}; //Jason Choi   // -jwshin 050729 closed caption me
+             -nu erase
+ 491   1      //      Byte code MaxItemsTabTV[]={7,2,4,9,7,6,7,MAX_FACT_ITEM}; //Jason Choi
+ 492   1              Byte code MaxItemsTab[]=    {7,4,4,9,5,6,7,MAX_FACT_ITEM};      // -jwshin 050729 closed caption menu erase
+ 493   1      //      Byte code MaxItemsTab[]=    {7,4,4,9,5,2,7,MAX_FACT_ITEM};      // +jwshin 061030 Only RGB,DVI Version...
+ 494   1      //      Byte code MaxItemsTab[]={7,2,4,9,6,6,7,MAX_FACT_ITEM};
+ 495   1              Byte temp;
+ 496   1              ScanKeyPad();
+ 497   1      //      printf("KeyBuffer2=0x%x\r\n",(Word)KeyBuffer);
+ 498   1      //      if(OsdLock && KeyBuffer != (vkMENU|vkLEFT|vkVALUP)){            // -jwshin 060908
+ 499   1      //              KeyBuffer = 0;
+ 500   1      //              printf("OsdLock==1 &&KeyBuffer=0x%x\r\n",(Word)KeyBuffer);
+ 501   1      
+ 502   1      //      }
+ 503   1      //      if((KeyRepeatCnt == 1) && KeyBuffer == vkSOURCE))
+ 504   1      //              KeyBuffer == 0;
+ 505   1      //      if(PowerDown && KeyBuffer != 0) //power down press any key
+ 506   1      //              if(KeyBuffer != vkPOWER)
+ 507   1      //                      WarmUp();
+ 508   1      //      printf("KeyBuffer11=0x%x\r\n",(Word)KeyBuffer);
+ 509   1      
+ 510   1      //      printf("VideoMute=%d\r\n",(Word)VideoMute);
+ 511   1              if((VideoMute && FuncBuf[pVIDEOSOURCE]<cSVIDEO) /*|| (FuncBuf[pVIDEOSOURCE]> cDVI&& !VideoOK)*/)
+ 512   1                      {
+ 513   2                      switch(KeyBuffer)
+ 514   2                              {
+ 515   3                      //      case vkMENU:
+ 516   3                      //      case vkMONSEL:
+ 517   3                              case vkLEFT:                    // +jwshin 061025
+ 518   3                              case vkRIGHT:                   // +jwshin 061025
+ 519   3                              case vkVALUP:
+ 520   3                              case vkVADOWN:
+ 521   3                              case vkPOWER:   //burn in
+ 522   3                              case vkSOURCE:
+ 523   3                              case vIR_POWER:
+ 524   3                              case vIR_MENU:
+ 525   3                              case vIR_SELECT:
+ 526   3                              case vIR_Analog:
+ 527   3                              case vIR_DVI:
+ 528   3                              case vIR_SVideo:
+ 529   3                              case vIR_Video:
+ 530   3                              case vIR_TV:
+ 531   3                                      break;
+ 532   3                              default:
+ 533   3                                      KeyBuffer = 0;
+ 534   3                                      break;
+ 535   3                              };
+ 536   2                              
+ 537   2                      }
+ 538   1      //      printf("KeyBuffer22=0x%x\r\n",(Word)KeyBuffer);
+ 539   1      
+ 540   1              if(OutOfRange != 0 && KeyBuffer != vkPOWER)  //OutOfRange== 0 mean normal
+ 541   1                              if(KeyBuffer != vkSOURCE)  KeyBuffer = 0;
+ 542   1      
+ 543   1      //      printf("KeyBuffer3=0x%x\r\n",(Word)KeyBuffer);
+ 544   1                      
+ 545   1              temp = MenuPtr.Page;
+ 546   1              if(MenuPtr.Menu == 2)
+ 547   1                      temp = 7;
+ 548   1              
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 10  
+
+ 549   1              if(FuncBuf[pVIDEOSOURCE] >cYPbPr) 
+ 550   1              MaxItem = MaxItemsTabTV[temp];
+ 551   1              else
+ 552   1              MaxItem = MaxItemsTab[temp];
+ 553   1              
+ 554   1              if(FuncBuf[pVIDEOSOURCE]==cDVI&& temp == 0)//for DVI MenuPtr.Page = 0
+ 555   1                      MaxItem = 3;
+ 556   1              else if(FuncBuf[pVIDEOSOURCE]>=cYPbPr&& temp == 0)//for CAVS and S-Video MenuPtr.Page = 0  +jwshin 061009
+ 557   1                      MaxItem = 5;
+ 558   1              if(!DecoderICEn && temp == 5)
+ 559   1                      MaxItem = 3;
+ 560   1      //              MaxItem = 2;                    // +jwshin 061030 
+ 561   1              
+ 562   1              if(MenuPtr.Level == 1)  //for level1 menu
+ 563   1                      BackPtr = MenuPtr.Ptr;
+ 564   1              else if(MenuPtr.Level == 2)
+ 565   1                      BackPtr = 0;
+ 566   1      //      printf("MenuPtr.Menu =0x%x\r\n",(Word)MenuPtr.Menu );
+ 567   1      
+ 568   1              if(MenuPtr.Menu == 0)
+ 569   1              {
+ 570   2      //      printf("KeyBuffer3=0x%x\r\n",(Word)KeyBuffer);
+ 571   2              switch(KeyBuffer)       //open main menu
+ 572   2                      {
+ 573   3              //------------------------------------------------ +jwshin 060905               
+ 574   3                              case vkMONSEL:
+ 575   3                                      if(!FactMode){
+ 576   4                                              if(MonTogg) {
+ 577   5                                                      ShowMonSel();
+ 578   5                                                      Button_En1_InAct();
+ 579   5                                                      Button_En2_Act();
+ 580   5                                                      RDPA_REG = 0xcf;
+ 581   5                                                      MonTogg = 0;
+ 582   5                                              }
+ 583   4                                              else {
+ 584   5                                                      ShowMonSel();
+ 585   5                                                      Button_En1_Act();
+ 586   5                                                      Button_En2_InAct();
+ 587   5                                                      RDPA_REG = 0xff;
+ 588   5                                                      MonTogg = 1;
+ 589   5                                              } 
+ 590   4                                              KeyLock = 1;
+ 591   4                                      } 
+ 592   3              //-------------------------------------------------                     
+ 593   3                                      break;
+ 594   3                              case vkSOURCE:
+ 595   3                                      if(!FactMode){
+ 596   4                                              if(KeyRepeatCnt == 0){
+ 597   5                                      //              MenuPtr.Menu = 5;
+ 598   5                                      //              MenuPtr.Page = 5;
+ 599   5                                      //              MenuPtr.Ptr = FuncBuf[pVIDEOSOURCE];
+ 600   5                                      //              MenuPtr.Level = 1;
+ 601   5                                      //              MenuPtr.Op = oUPDATEALL;
+ 602   5                                                      //------------------- +jwshin 060928
+ 603   5                                                      //------------------ DPMS 모드에서 Source를 눌렀을 경우,, Scaler Up 시킨다...
+ 604   5                                                      if(PowerDown == 1) {
+ 605   6                                                              ScalerPowerUp();
+ 606   6                                                      }
+ 607   5                                                      //-------------------
+ 608   5                                                      AUDIO_MUTE();
+ 609   5                                                      
+ 610   5                                                      FuncBuf[pVIDEOSOURCE]++;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 11  
+
+ 611   5                                                      
+ 612   5                                      //              if(FuncBuf[pVIDEOSOURCE] < cSVIDEO) FuncBuf[pVIDEOSOURCE] = cSVIDEO; // skip DVI
+ 613   5                                      //              else if(FuncBuf[pVIDEOSOURCE] > cTV) FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 614   5                                                      // -------------- +jwshin 060926
+ 615   5                                      //              if(FuncBuf[pVIDEOSOURCE] == cDVI) FuncBuf[pVIDEOSOURCE] = cYPbPr;
+ 616   5                                                      if(FuncBuf[pVIDEOSOURCE] > cTV) FuncBuf[pVIDEOSOURCE] = cANALOG;
+ 617   5                                      //              if(FuncBuf[pVIDEOSOURCE] > cDVI) FuncBuf[pVIDEOSOURCE] = cANALOG;       // +jwshin 061024
+ 618   5                                                      if(FuncBuf[pVIDEOSOURCE] < cSVIDEO) {           // +jwshin 060907
+ 619   6                                                              VideoMute = 1;
+ 620   6                                                              MessageShow = 0;
+ 621   6                                                              PowerTimer = POWER_TIME;
+ 622   6                                                      }
+ 623   5      //                                              printf("F=%d\r\n",FuncBuf[pVIDEOSOURCE]);
+ 624   5                                                      Osd_Off();
+ 625   5                                                      ForceToBack = 0;
+ 626   5                                                      ForceToBackground(0,0,0);
+ 627   5      //                                              Sleep(200);
+ 628   5                                                      // ------------------ Source의 EEprom Writing 위치 변경...+jwshin 060927
+ 629   5                                                      Write24C16(ep_Sync_Source,FuncBuf[pVIDEOSOURCE]); 
+ 630   5                                                      SourceSelect(); 
+ 631   5                                              //      Write24C16(ep_Sync_Source,FuncBuf[pVIDEOSOURCE]); 
+ 632   5                                                      KeyLock = 1; 
+ 633   5                                              }
+ 634   4                                              else if(KeyRepeatCnt == 10){
+ 635   5                      /*                              MenuPtr.Menu = 4;
+ 636   5                                                      MenuPtr.Level = 0;
+ 637   5                                                      MenuPtr.Op = oUPDATEALL;
+ 638   5                                                      KeyLock = 1;
+ 639   5                                                      OsdTimer = 3 * 100; */
+ 640   5                                                      InitEEPROM();           // +jwshin 060905
+ 641   5                                              }
+ 642   4                                      }
+ 643   3                                      return;
+ 644   3                                      break;
+ 645   3                              case vkMENU:
+ 646   3                              case vIR_MENU:
+ 647   3                                      if(!FactMode){
+ 648   4      //      printf("KeyBuffer3=0x%x\r\n",(Word)KeyBuffer);
+ 649   4                                              MenuPtr.Menu = 1;    // 1
+ 650   4                                              MenuPtr.Ptr = 0;     // 0
+ 651   4                                      }
+ 652   3                                      else{
+ 653   4      //      printf("KeyBuffer4=0x%x\r\n",(Word)KeyBuffer);
+ 654   4                                              MenuPtr.Menu = 2;
+ 655   4                                              MenuPtr.Ptr = 3;
+ 656   4                                              FuncBuf[pCOLORTEMP] = 2;
+ 657   4                                              LoadColor(FuncBuf[pCOLORTEMP]);
+ 658   4                                              SetContrast();
+ 659   4                                      }
+ 660   3      
+ 661   3                                      MenuPtr.Page = 0;
+ 662   3                                      MenuPtr.Level = 0;
+ 663   3                                      MenuPtr.Op = oUPDATEALL;
+ 664   3                                      KeyLock = 1;
+ 665   3                                      return;
+ 666   3                                      break;
+ 667   3                              case vkVALUP:
+ 668   3                              case vIR_UP:
+ 669   3                                      if((!FactMode)&&FuncBuf[pVIDEOSOURCE] != cTV){
+ 670   4                                      /*      MenuPtr.Menu = 3;
+ 671   4                                              MenuPtr.Page = 0;
+ 672   4                                              MenuPtr.Ptr = 0;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 12  
+
+ 673   4                                              MenuPtr.Level = 1;
+ 674   4                                              MenuPtr.Op = oUPDATEALL;  */
+ 675   4                                              ShowMuteFuncOnOff();            // +jwshin 061025
+ 676   4                                              KeyLock = 1;
+ 677   4                                      }
+ 678   3                                      else if(FuncBuf[pVIDEOSOURCE] == cTV){
+ 679   4                                              if((ChSystem==CH_USA)||(ChSystem==CH_JPN))
+ 680   4                                                              ChannelUp();
+ 681   4                                              else            
+ 682   4                                                              ProgUp();
+ 683   4                                      }
+ 684   3                                      return;
+ 685   3                                      break;
+ 686   3                              case vkVADOWN:
+ 687   3                              case vIR_DOWN:
+ 688   3                                      if((!FactMode)&&FuncBuf[pVIDEOSOURCE] != cTV){
+ 689   4                              /*              MenuPtr.Menu = 3;
+ 690   4                                              MenuPtr.Page = 0;
+ 691   4                                              MenuPtr.Ptr = 1;
+ 692   4                                              MenuPtr.Level = 1;
+ 693   4                                              MenuPtr.Op = oUPDATEALL; 
+ 694   4                                              KeyLock = 1; */
+ 695   4                                              if(MenuPtr.Menu == 0 && SyncMode != 3 && !FactMode)
+ 696   4                                                      if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+ 697   4                                                      {
+ 698   5                                                              KeyLock = 1;
+ 699   5                                                              ShowMessage(MSG_AUTOTUNE);
+ 700   5                                                              AutoTune();
+ 701   5                                                      }
+ 702   4                                      }
+ 703   3                                      else if(FuncBuf[pVIDEOSOURCE] == cTV){
+ 704   4                                              if((ChSystem==CH_USA)||(ChSystem==CH_JPN))
+ 705   4                                                              ChannelDown();
+ 706   4                                              else            
+ 707   4                                                              ProgDown();
+ 708   4                                      }
+ 709   3                                      return;
+ 710   3                                      break;
+ 711   3                              //-------------------- Left,Right Key 추가... +jwshin 061025
+ 712   3                              case vkLEFT:
+ 713   3                                      MenuPtr.Menu = 6;
+ 714   3                                      MenuPtr.Page = 1;
+ 715   3                                      MenuPtr.Ptr = 0;
+ 716   3                                      MenuPtr.Level = 1;
+ 717   3                                      MenuPtr.Op = oUPDATEALL;
+ 718   3                                      return;
+ 719   3                                      break;
+ 720   3                              case vkRIGHT:
+ 721   3                                      MenuPtr.Menu = 6;
+ 722   3                                      MenuPtr.Page = 1;
+ 723   3                                      MenuPtr.Ptr = 0;
+ 724   3                                      MenuPtr.Level = 1;
+ 725   3                                      MenuPtr.Op = oUPDATEALL;
+ 726   3                                      return;
+ 727   3                                      break;
+ 728   3                              //-------------------------     
+ 729   3                              case vVOLUME:                           // +jwshin 050802
+ 730   3                                              MenuPtr.Menu = 6;
+ 731   3                                              MenuPtr.Page = 1;
+ 732   3                                              MenuPtr.Ptr = 0;
+ 733   3                                              MenuPtr.Level = 1;
+ 734   3                                              MenuPtr.Op = oUPDATEALL;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 13  
+
+ 735   3                                              KeyLock = 1;
+ 736   3      //                                      printf("vVolume Key FuncBuf[pVIDEOSOURCE]=%d\r\n",(Word)FuncBuf[pVIDEOSOURCE]);
+ 737   3      //                                      if(FuncBuf[pVIDEOSOURCE]==5)ScanChannel();
+ 738   3                                      return;
+ 739   3                                      break;
+ 740   3                      };
+ 741   2              }
+ 742   1              switch(KeyBuffer)
+ 743   1                      {
+ 744   2                      case vkMENU:
+ 745   2                      case vIR_MENU:
+ 746   2                              if(MenuPtr.Menu == 2)
+ 747   2                              {
+ 748   3                                      if(MenuPtr.Level == 0)
+ 749   3                                      {
+ 750   4                                              MenuPtr.Level= 1;
+ 751   4                                              MenuPtr.Op = oENTER;
+ 752   4                                      }
+ 753   3                                      else if(MenuPtr.Level == 1)
+ 754   3                                      {
+ 755   4                                              MenuPtr.Level= 0;
+ 756   4                                              MenuPtr.Ptr = BackPtr;
+ 757   4                                              MenuPtr.Op = oENTER;
+ 758   4                                      }
+ 759   3                              }
+ 760   2                              else if(MenuPtr.Menu == 5)
+ 761   2                              {
+ 762   3                                      if(MenuPtr.Level == 0)
+ 763   3                                      {
+ 764   4                                              MenuPtr.Level= 1;
+ 765   4                                              MenuPtr.Op = oENTER;
+ 766   4                                              if(MenuPtr.Page == 5)
+ 767   4                                                      MenuPtr.Ptr = FuncBuf[pVIDEOSOURCE];
+ 768   4                                      }
+ 769   3                                      else if(MenuPtr.Level == 1)
+ 770   3                                      {
+ 771   4                                              MenuPtr.Ptr++;
+ 772   4                                              if(MenuPtr.Ptr >= MaxItem)
+ 773   4                                                      MenuPtr.Ptr = 0;
+ 774   4                                              MenuPtr.Op = oINCFUNC;
+ 775   4                                      }
+ 776   3                              }                               
+ 777   2                              else if((MenuPtr.Menu > 0)&&(MenuPtr.Menu < 4))
+ 778   2                              {
+ 779   3                                      if(MenuPtr.Level == 0)
+ 780   3                                      {
+ 781   4                                              MenuPtr.Level= 1;
+ 782   4                                              MenuPtr.Op = oENTER;
+ 783   4                                              if(MenuPtr.Page == 2){
+ 784   5                                                      if((FuncBuf[pVIDEOSOURCE] != cTV)&&(FuncPtr!=pFACTMENU)) //Jason Choi
+ 785   5                                                              MenuPtr.Ptr = FuncBuf[pCOLORTEMP];
+ 786   5                                                      else MenuPtr.Ptr = 0;
+ 787   5                                              }
+ 788   4                                              else if(MenuPtr.Page == 3)
+ 789   4                                                      MenuPtr.Ptr = FuncBuf[pLANGUAGE];
+ 790   4                                              else if(MenuPtr.Page == 5)
+ 791   4                                                      MenuPtr.Ptr = FuncBuf[pVIDEOSOURCE];
+ 792   4                                              else
+ 793   4                                                      MenuPtr.Ptr = 0;
+ 794   4                                      }
+ 795   3                                      else if(MenuPtr.Level == 1)
+ 796   3                                      {
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 14  
+
+ 797   4      //                                      printf("MenuPtr.Level => 1\r\n");
+ 798   4                                              if(MenuPtr.Menu == 3){
+ 799   5                                                      if(!FactMode){
+ 800   6                                                              if(MenuPtr.Ptr == 0)
+ 801   6                                                                      MenuPtr.Ptr = 1;
+ 802   6                                                              else
+ 803   6                                                                      MenuPtr.Ptr = 0;
+ 804   6                                                              MenuPtr.Op = oINCFUNC;
+ 805   6                                                      }
+ 806   5                                              }
+ 807   4                                              else{
+ 808   5                                                      MenuPtr.Ptr++;
+ 809   5                                                      if(MenuPtr.Page == 4){
+ 810   6                                                              if(!(ResolutionPtr == 4 ||(ResolutionPtr >= 6 && ResolutionPtr < 13)))
+ 811   6                                                                      if(MenuPtr.Ptr == 5) MenuPtr.Ptr = 6; // ration control skip
+ 812   6                                                      }
+ 813   5                                                      if(MenuPtr.Ptr >= MaxItem)
+ 814   5                                                              MenuPtr.Ptr = 0;
+ 815   5      
+ 816   5                                                      if(FuncBuf[pVIDEOSOURCE] == cTV){
+ 817   6                                                              if(MenuPtr.Page == 3){
+ 818   7                                                                      MenuPtr.Op = oINCVAL;
+ 819   7      //                                                              printf("MenuPtr.Ptr2=%d\r\n",(Word)MenuPtr.Ptr);
+ 820   7                                                              }
+ 821   6                                                              else    {
+ 822   7                                                                      MenuPtr.Op = oINCFUNC;
+ 823   7      //                                                              printf("MenuPtr.Ptr3=%d\r\n",(Word)MenuPtr.Ptr);
+ 824   7                                                              }
+ 825   6                                                      }
+ 826   5                                                      else{
+ 827   6                                                              if((MenuPtr.Page == 3)||(MenuPtr.Page == 2))
+ 828   6                                                                      MenuPtr.Op = oINCVAL;
+ 829   6                                                              else
+ 830   6                                                                      MenuPtr.Op = oINCFUNC;
+ 831   6                                                      }
+ 832   5                                              }
+ 833   4                                      }
+ 834   3                                      else if(MenuPtr.Level == 2)
+ 835   3                                      {
+ 836   4      //                                      printf("MenuPtr.Level => 2\r\n");
+ 837   4                                              MenuPtr.Ptr++;
+ 838   4                                              if(MenuPtr.Ptr >= 7)
+ 839   4                                                      MenuPtr.Ptr = 4;
+ 840   4                                              MenuPtr.Op = oINCFUNC;
+ 841   4      //                                      printf("MenuPtr.Ptr4=%d\r\n",(Word)MenuPtr.Ptr);
+ 842   4                                      }
+ 843   3                              }
+ 844   2                              KeyLock = 1;
+ 845   2                              break;
+ 846   2                      case vkVALUP:
+ 847   2                      case vIR_UP:
+ 848   2                      
+ 849   2                      /*      if(MenuPtr.Menu == 6 && MenuPtr.Page == 1 && MenuPtr.Level == 1) {
+ 850   2                                      MenuPtr.Op = oINCVAL;
+ 851   2                              }  */
+ 852   2                              break;
+ 853   2                      case vkVADOWN:
+ 854   2                      case vIR_DOWN:
+ 855   2                              
+ 856   2                              if(MenuPtr.Level == 0 || MenuPtr.Menu == 3 || MenuPtr.Menu == 4 || MenuPtr.Menu == 5 || MenuPtr.Menu ==
+             - 6)        // +jwshin 050802
+ 857   2                                      Osd_Off();
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 15  
+
+ 858   2                              else
+ 859   2                              {// Jacky 1021
+ 860   3                                      if(MenuPtr.Level == 2){
+ 861   4                                              MenuPtr.Level = 1;
+ 862   4                                              MenuPtr.Ptr = FuncBuf[pCOLORTEMP];
+ 863   4                                              MenuPtr.Op = oUPDATEALL;
+ 864   4                                      }
+ 865   3                                      else{
+ 866   4                                              MenuPtr.Level = 0;
+ 867   4                                              MenuPtr.Ptr = BackPtr;
+ 868   4                                              MenuPtr.Op = oUPDATE;
+ 869   4                                      }
+ 870   3                              }
+ 871   2                      /*      if(MenuPtr.Menu == 6 && MenuPtr.Page == 1 && MenuPtr.Level == 1) {
+ 872   2                                      MenuPtr.Op = oDECVAL;
+ 873   2                              } */
+ 874   2                              break;  
+ 875   2                      case vkLEFT:
+ 876   2                              if(((MenuPtr.Menu > 0)&&(MenuPtr.Menu <= 5)) || (MenuPtr.Menu == 6)){
+ 877   3                                      if(MenuPtr.Level == 0)
+ 878   3                                      {
+ 879   4                                              if(MenuPtr.Menu == 2)
+ 880   4                                              {
+ 881   5                                                      if(MenuPtr.Ptr==0)
+ 882   5                                                              MenuPtr.Ptr = MaxItem;
+ 883   5                                                      MenuPtr.Ptr--;
+ 884   5                                                      MenuPtr.Op = oDECFUNC;
+ 885   5                                              }
+ 886   4                                              else
+ 887   4                                              {
+ 888   5                                                      if(MenuPtr.Page==0)
+ 889   5                                                              MenuPtr.Page = MAX_PAGE;
+ 890   5                                                      MenuPtr.Page--;
+ 891   5                                                      MenuPtr.Op = oDECPAGE;
+ 892   5                                                      KeyLock = 1;
+ 893   5                                              }
+ 894   4                                      }
+ 895   3                                      else{
+ 896   4                                              if(MenuPtr.Page == 5)
+ 897   4                                                      MenuPtr.Op = oUPDATE;
+ 898   4                                              else if((MenuPtr.Page == 2)&&(FuncPtr!=pFACTMENU))
+ 899   4                                              {
+ 900   5                                                      if(FuncBuf[pVIDEOSOURCE] != cTV){
+ 901   6                                                              if((MenuPtr.Level == 1)&&(FuncBuf[pCOLORTEMP] == 3))
+ 902   6                                                              {
+ 903   7                                                                      MenuPtr.Level= 2;
+ 904   7                                                                      MenuPtr.Op = oUPDATE;
+ 905   7                                                                      MenuPtr.Ptr = 4;
+ 906   7                                                              }
+ 907   6                                                              else if(MenuPtr.Level == 2)
+ 908   6                                                                      MenuPtr.Op = oDECVAL;
+ 909   6                                                      }
+ 910   5                                                      else{
+ 911   6                                                              if(MenuPtr.Level == 1)
+ 912   6                                                              {
+ 913   7                                                                      MenuPtr.Level= 2;
+ 914   7                                                                      MenuPtr.Op = oDECVAL;
+ 915   7                      //                                              MenuPtr.Ptr = 4;
+ 916   7                                                              }
+ 917   6                                                              else if(MenuPtr.Level == 2)
+ 918   6                                                                      MenuPtr.Op = oDECVAL;
+ 919   6                                                      }
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 16  
+
+ 920   5                                              }
+ 921   4                                              else if(MenuPtr.Page == 4){
+ 922   5                                                      if((MenuPtr.Level==1)&&(FuncPtr==pCAPTION)) {
+ 923   6                                                              DisplayCaption(0);
+ 924   6                                                      }
+ 925   5                                                      else {
+ 926   6                                                              MenuPtr.Op = oDECVAL;   
+ 927   6                                                      }
+ 928   5                                              }
+ 929   4                                              else if(MenuPtr.Page != 3)
+ 930   4                                                      MenuPtr.Op = oDECVAL;
+ 931   4                                      }
+ 932   3      
+ 933   3      
+ 934   3                              }
+ 935   2                              break;
+ 936   2                      case vkRIGHT:
+ 937   2                              if(((MenuPtr.Menu > 0)&&(MenuPtr.Menu <= 5)) || (MenuPtr.Menu == 6)){
+ 938   3                                      if(MenuPtr.Level == 0)
+ 939   3                                      {
+ 940   4                                              if(MenuPtr.Menu == 2)
+ 941   4                                                      {
+ 942   5                                                      MenuPtr.Ptr++;
+ 943   5                                                      if(MenuPtr.Ptr >= MaxItem)
+ 944   5                                                              MenuPtr.Ptr = 0;
+ 945   5                                                      MenuPtr.Op = oINCFUNC;
+ 946   5                                                      }
+ 947   4                                              else
+ 948   4                                                      {
+ 949   5                                                      MenuPtr.Page++;
+ 950   5                                                      if(MenuPtr.Page >= MAX_PAGE)
+ 951   5                                                              MenuPtr.Page = 0;
+ 952   5                                                      MenuPtr.Op = oINCPAGE;
+ 953   5                                                      KeyLock = 1;
+ 954   5                                                      }
+ 955   4                                      }
+ 956   3                                      else
+ 957   3                                      {
+ 958   4                                              if(MenuPtr.Page == 5)
+ 959   4                                                      MenuPtr.Op = oUPDATE;
+ 960   4                                              else if((MenuPtr.Page == 2)&&(FuncPtr!=pFACTMENU)) //Jason Choi
+ 961   4                                              {
+ 962   5      //                                              printf("MenuPtr.Page == 2\r\n");
+ 963   5                                                      if(FuncBuf[pVIDEOSOURCE] != cTV){
+ 964   6                                                              if((MenuPtr.Level == 1)&&(FuncBuf[pCOLORTEMP] == 3))
+ 965   6                                                              {
+ 966   7                                                                      MenuPtr.Level= 2;
+ 967   7                                                                      MenuPtr.Op = oUPDATE;
+ 968   7                                                                      MenuPtr.Ptr = 4;
+ 969   7                                                              }
+ 970   6                                                              else if(MenuPtr.Level == 2)
+ 971   6                                                                      MenuPtr.Op = oINCVAL;
+ 972   6                                                      }
+ 973   5                                                      else{
+ 974   6                                                              if(MenuPtr.Level == 1)
+ 975   6                                                              {
+ 976   7                                                                      MenuPtr.Level= 2;
+ 977   7                                                                      MenuPtr.Op = oINCVAL;
+ 978   7      //                                                              printf("MenuPtr.Op = oUPDATE\r\n");
+ 979   7                                                              //      MenuPtr.Ptr = 4;
+ 980   7                                                              }
+ 981   6                                                              else if(MenuPtr.Level == 2){
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 17  
+
+ 982   7                                                                      MenuPtr.Op = oINCVAL;
+ 983   7      //                                                              printf("MenuPtr.Op = oINCVAL\r\n");
+ 984   7                                                              }
+ 985   6                                                      }
+ 986   5                                              }       
+ 987   4                                              else if(MenuPtr.Page == 4){
+ 988   5                                                      if((MenuPtr.Level==1)&&(FuncPtr==pCAPTION)) {
+ 989   6                                                              DisplayCaption(1);
+ 990   6                                                      }
+ 991   5                                                      else {
+ 992   6                                                              MenuPtr.Op = oINCVAL;           
+ 993   6                                                      }               
+ 994   5                                              }
+ 995   4                                              else if(MenuPtr.Page != 3)
+ 996   4                                                      MenuPtr.Op = oINCVAL;
+ 997   4                                      }
+ 998   3      
+ 999   3                              }
+1000   2                              break;
+1001   2                      case vkAUTO:
+1002   2                              if(MenuPtr.Menu == 0 && SyncMode != 3 && !FactMode)
+1003   2                                      if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+1004   2                                              {
+1005   3                                              KeyLock = 1;
+1006   3                                              ShowMessage(MSG_AUTOTUNE);
+1007   3                                              AutoTune();
+1008   3                                              }
+1009   2                              if(MenuPtr.Level == 0 || MenuPtr.Menu == 3 || MenuPtr.Menu == 4 || MenuPtr.Menu == 5 || MenuPtr.Menu ==
+             - 6)        // +jwshin 050802
+1010   2                                      Osd_Off();
+1011   2                              else
+1012   2                                      {// Jacky 1021
+1013   3                                      if(MenuPtr.Level == 2){
+1014   4                                              MenuPtr.Level = 1;
+1015   4                                              MenuPtr.Ptr = FuncBuf[pCOLORTEMP];
+1016   4                                              MenuPtr.Op = oUPDATEALL;
+1017   4                                      }
+1018   3                                      else{
+1019   4                                              MenuPtr.Level = 0;
+1020   4                                              MenuPtr.Ptr = BackPtr;
+1021   4                                              MenuPtr.Op = oUPDATE;
+1022   4                                      }
+1023   3                                      }
+1024   2                              break;
+1025   2                      case vkSOURCE:
+1026   2                      case vIR_SELECT:
+1027   2                              if(MenuPtr.Menu == 4)
+1028   2                              {
+1029   3      //                              if(MenuPtr.Level == 0){
+1030   3                                              MenuPtr.Level = 1;
+1031   3      //                                      MenuPtr.Op = oINCVAL;
+1032   3      //                              }
+1033   3      //                              else
+1034   3                                              MenuPtr.Op = oINCVAL;
+1035   3                                      OsdTimer = 3 * 100;
+1036   3                              }
+1037   2                              KeyLock = 1;
+1038   2      //                      if(MenuPtr.Menu != 4){
+1039   2      //                                      ChannelMask(ChAdd_Del); //test
+1040   2      //                                      CheckChMask();
+1041   2      //                                      LoadChLimit();
+1042   2      //                                      ScanChannel();
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 18  
+
+1043   2      //                      }
+1044   2                              break;
+1045   2                      case vkPOWER:
+1046   2                      case vIR_POWER:
+1047   2                              KeyLock = 1;
+1048   2                              PowerOffProcess();
+1049   2                              break;
+1050   2      
+1051   2                      case (vkVALUP|vkVADOWN):        //fact mode and clear
+1052   2                              if(FactMode && (MenuPtr.Menu == 2))
+1053   2                              {
+1054   3                                      BackLightTimerEn = 0;
+1055   3                                      BackLightTimer = 0;
+1056   3                                      SaveBackLightTime();
+1057   3                                      ShowBackLightTime();
+1058   3                                      BackLightTimerEn = 1;
+1059   3                              }
+1060   2                              break;
+1061   2                      case (vkMENU|vkPOWER):
+1062   2                              if(NoSyncFlag && !BurnInMode && !PowerDown)
+1063   2                                      {
+1064   3                                      BurnInMode = 1;
+1065   3                                      Write24C16(ep_Status,StatusFlag);
+1066   3                                      ShowBurnInPattern(1);
+1067   3                                      KeyLock = 1;
+1068   3                                      } 
+1069   2                              break;
+1070   2                      case vIR_MUTE:
+1071   2                                      AUDIO_MUTE();
+1072   2                              break;
+1073   2      
+1074   2                      case vIR_1:
+1075   2                      case vIR_2:
+1076   2                      case vIR_3:
+1077   2                      case vIR_4:
+1078   2                      case vIR_5:
+1079   2                      case vIR_6:
+1080   2                      case vIR_7:
+1081   2                      case vIR_8:
+1082   2                      case vIR_9:
+1083   2                      case vIR_0:
+1084   2                              if((MenuPtr.Menu == 0) ||(MenuPtr.Menu  == 6)){
+1085   3                                      Osd_Off();
+1086   3                                      ClearOSD();
+1087   3                                      MenuPtr.Menu = 5;
+1088   3                                      IR_Number_cnt = 1;
+1089   3                                      IR_WaitTimer = 500;
+1090   3                              }
+1091   2                              else if(MenuPtr.Menu  == 5){
+1092   3                                      IR_Number_cnt ++;
+1093   3                                      IR_WaitTimer = 500;
+1094   3                              }
+1095   2      //                      printf("IR_Number_cnt=%x\n",(Word)IR_Number_cnt);
+1096   2                              if(((Read24C16(ep_Input_CH_Sys) & 0x80)!= 0)&&(IR_Number_cnt<4)){
+1097   3                                                                                                                      ChannelMove(KeyBuffer & 0x7F);
+1098   3                                                                                                                      /*printf("ChannelMove1\r\n");*/
+1099   3                              }
+1100   2                              else if(((Read24C16(ep_Input_CH_Sys) & 0x80) == 0)&&(IR_Number_cnt<3)){
+1101   3                                                                                                                      ChannelMove(KeyBuffer & 0x7F);
+1102   3                                                                                                                      /*printf("ChannelMove2\r\n");*/
+1103   3                              }
+1104   2                              else {
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 19  
+
+1105   3                                      IR_Number_cnt = 0;
+1106   3                                      Osd_Off();
+1107   3                              }
+1108   2                              KeyLock = 1;
+1109   2                              Sleep(50);
+1110   2                              break;
+1111   2      
+1112   2                              
+1113   2      //              case (vkMENU|vkLEFT|vkVALUP):
+1114   2      //                      if(OsdTimer < ((FuncBuf[pOSDTIMER] * 100) - 500))
+1115   2      //                              {
+1116   2      //                              KeyLock = 1;
+1117   2      //                              OsdLock = ~OsdLock;
+1118   2      //                              Write24C16(ep_Status,StatusFlag);
+1119   2      //                              }
+1120   2      //                      break;
+1121   2                      };
+1122   1      }
+1123          
+1124          //--------------------- +jwshin 061030    Port Reverse
+1125          void LED_GrnOff(void)
+1126          {
+1127   1      unsigned char port;
+1128   1              port = PTE_REG;
+1129   1              port |= RDPE_REG;
+1130   1              port |= PE1;
+1131   1              PTE_REG = port;
+1132   1      }
+1133          
+1134          void LED_GrnOn(void)
+1135          {
+1136   1      unsigned char port;
+1137   1              port = PTE_REG;
+1138   1              port |= RDPE_REG;
+1139   1              port &= ~PE1;
+1140   1              PTE_REG = port;
+1141   1      }
+1142          //---------------------------------
+1143                                          // -jwshin 051101
+1144          void LED_RedOn(void)
+1145          {
+1146   1      unsigned char port;
+1147   1              port = PTE_REG;
+1148   1              port |= RDPE_REG;
+1149   1              port |= PE0;
+1150   1              PTE_REG = port;
+1151   1      }
+1152          
+1153          void LED_RedOff(void)
+1154          {
+1155   1      unsigned char port;
+1156   1              port = PTE_REG;
+1157   1              port |= RDPE_REG;
+1158   1              port &= ~PE0;
+1159   1              PTE_REG = port;
+1160   1      }
+1161          
+1162          void FLED_GrnOn(void)
+1163          {
+1164   1      unsigned char port;
+1165   1              port = PTD_REG;
+1166   1              port |= RDPD_REG;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 20  
+
+1167   1              port |= PD4;
+1168   1              PTD_REG = port;
+1169   1      }
+1170          
+1171          void FLED_GrnOff(void)
+1172          {
+1173   1      unsigned char port;
+1174   1              port = PTD_REG;
+1175   1              port |= RDPD_REG;
+1176   1              port &= ~PD4;
+1177   1              PTD_REG = port;
+1178   1      }
+1179          
+1180          
+1181          
+1182          //---------------------------Dual 에서 Port 제어를 위한 Routine... +jwshin 060904
+1183          void RGB_SW1_RGB1(void)
+1184          {
+1185   1      unsigned char port;
+1186   1              port = PTD_REG;
+1187   1              port |= RDPD_REG;
+1188   1              port &= ~PD5;
+1189   1              PTD_REG = port;
+1190   1      }
+1191          
+1192          void RGB_SW1_RGB2(void)
+1193          {
+1194   1      unsigned char port;
+1195   1              port = PTD_REG;
+1196   1              port |= RDPD_REG;
+1197   1              port |= PD5;
+1198   1              PTD_REG = port;
+1199   1      }
+1200          
+1201          void Button_En1_Act(void)
+1202          {
+1203   1              unsigned char port;
+1204   1              port = PTC_REG;
+1205   1              port |= RDPC_REG;
+1206   1              port &= ~PC7;
+1207   1              PTC_REG = port;
+1208   1      }
+1209          
+1210          void Button_En1_InAct(void)
+1211          {
+1212   1              unsigned char port;
+1213   1              port = PTC_REG;
+1214   1              port |= RDPC_REG;
+1215   1              port |= PC7;
+1216   1              PTC_REG = port;
+1217   1      }
+1218          
+1219          void Button_En2_Act(void)
+1220          {
+1221   1              unsigned char port;
+1222   1              port = PTD_REG;
+1223   1              port |= RDPD_REG;
+1224   1              port &= ~PD3;
+1225   1              PTD_REG = port;
+1226   1      }
+1227          
+1228          void Button_En2_InAct(void)
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 21  
+
+1229          {
+1230   1              unsigned char port;
+1231   1              port = PTD_REG;
+1232   1              port |= RDPD_REG;
+1233   1              port |= PD3;
+1234   1              PTD_REG = port;
+1235   1      }
+1236          
+1237          //------------------------------------------------------------
+1238          
+1239          void BackLightOn(void)
+1240          {
+1241   1      unsigned char port,temp;
+1242   1              if(FuncBuf[pVIDEOSOURCE] < cSVIDEO){
+1243   2                      temp = ReadIIC563(0x020);
+1244   2                      WriteIIC563(0x020,temp & (~BIT_0));
+1245   2                      }
+1246   1              else{
+1247   2                      temp = ReadIIC563(0x040);
+1248   2                      WriteIIC563(0x040,temp & (~BIT_0));
+1249   2              }
+1250   1              //PanelPowerOn();//lo_cs
+1251   1              //DC2DCPowerOn();
+1252   1              //XAO_Off();//lo_cs
+1253   1              //XAO_On();//lo_cs
+1254   1              WaitSetup(5);
+1255   1              port = PTC_REG;
+1256   1              port |= RDPC_REG;
+1257   1              port |= PC0;
+1258   1              PTC_REG = port;
+1259   1              BackLightTimerEn = 1;
+1260   1              WaitSetup(5);
+1261   1              if(FuncBuf[pVIDEOSOURCE] < cSVIDEO){
+1262   2                      temp = ReadIIC563(0x020);
+1263   2                      WriteIIC563(0x020,temp|BIT_0);
+1264   2                      }
+1265   1              else{
+1266   2                      temp = ReadIIC563(0x040);
+1267   2                      WriteIIC563(0x040,temp|BIT_0);
+1268   2              }
+1269   1      //      printf("BackLightOn\r\n");
+1270   1      }
+1271          
+1272          void BackLightOff(void)
+1273          {
+1274   1              unsigned char port,temp;
+1275   1              
+1276   1              temp = ReadIIC563(0x16e);
+1277   1              WriteIIC563(0x16e,temp&(~BIT_0));       //lo_cs
+1278   1              port = PTC_REG;
+1279   1              port |= RDPC_REG;
+1280   1              port &= ~PC0;
+1281   1              PTC_REG = port;
+1282   1      
+1283   1              BackLightTimerEn = 0;
+1284   1      
+1285   1      //      printf("BackLightOff\r\n");
+1286   1      }
+1287          
+1288          bit DetectBacklight()
+1289          {
+1290   1              if(PTC_REG & PC0)
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 22  
+
+1291   1                      return 1;
+1292   1              else
+1293   1                      return 0;
+1294   1      }
+1295          
+1296          #if PanelPowerActive == High
+1297          void PanelPowerOn(void)
+1298          {
+1299   1      unsigned char port;
+1300   1              port = PTC_REG;
+1301   1              port |= RDPC_REG;
+1302   1              port |= PC2;
+1303   1              PTC_REG = port;
+1304   1              if(PanelInterface == TCON_TO_RSDS || PanelInterface == TCON_TO_TTL)
+1305   1              {
+1306   2                      port = PTC_REG;         
+1307   2                      port |= RDPC_REG;
+1308   2                      port |= PC4;
+1309   2                      PTC_REG = port;
+1310   2              }
+1311   1      }
+1312          
+1313          void PanelPowerOff(void)
+1314          {
+1315   1      unsigned char port;
+1316   1              port = PTC_REG;
+1317   1              port |= RDPC_REG;
+1318   1              port &= ~PC2;
+1319   1              PTC_REG = port;
+1320   1              if(PanelInterface == TCON_TO_RSDS || PanelInterface == TCON_TO_TTL)
+1321   1              {
+1322   2                      port = PTC_REG;
+1323   2                      port |= RDPC_REG;
+1324   2                      port &= ~PC4;
+1325   2                      PTC_REG = port;
+1326   2              }
+1327   1      }
+1328          #else
+              void PanelPowerOff(void)
+              {
+              unsigned char port;
+                      port = PTC_REG;
+                      port |= RDPC_REG;
+                      port |= PC2;
+                      PTC_REG = port;
+                      if(PanelInterface == TCON_TO_RSDS || PanelInterface == TCON_TO_TTL)
+                      {
+                              port = PTC_REG;         
+                              port |= RDPC_REG;
+                              port |= PC4;
+                              PTC_REG = port;
+                      }
+              }
+              
+              void PanelPowerOn(void)
+              {
+              unsigned char port;
+                      port = PTC_REG;
+                      port |= RDPC_REG;
+                      port &= ~PC2;
+                      PTC_REG = port;
+                      if(PanelInterface == TCON_TO_RSDS || PanelInterface == TCON_TO_TTL)
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 23  
+
+                      {
+                              port = PTC_REG;
+                              port |= RDPC_REG;
+                              port &= ~PC4;
+                              PTC_REG = port;
+                      }
+              }
+              #endif
+1361          #if PANEL == CMO_M170ES05
+              void DC2DCPowerOn(void)
+              {
+                      unsigned char port;
+                      
+                      port = PTE_REG;
+                      port |= RDPE_REG;
+                      port &= ~PE0;
+                      PTE_REG = port;
+              }
+              
+              void DC2DCPowerOff(void)
+              {
+                      unsigned char port;
+                      
+                      port = PTE_REG;
+                      port |= RDPE_REG;
+                      port |= PE0;
+                      PTE_REG = port;
+              }
+              
+              void XAO_On(void)
+              {
+                      Byte Port;
+                      Port = PTC_REG;         
+                      Port |= RDPC_REG;
+                      Port |= PC3;
+                      PTC_REG = Port;
+              }
+              
+              void XAO_Off(void)
+              {
+                      Byte Port;
+                      Port = PTC_REG;         
+                      Port |= RDPC_REG;
+                      Port &= ~PC3;
+                      PTC_REG = Port;
+              }
+              #endif
+1400          void ResetOff(void)
+1401          {
+1402   1      unsigned char port;
+1403   1              port = PTC_REG;
+1404   1              port |= RDPC_REG;
+1405   1              port |= PC3;
+1406   1              PTC_REG = port;
+1407   1      }
+1408          
+1409          void ResetOn(void)
+1410          {
+1411   1      unsigned char port;
+1412   1              port = PTC_REG;
+1413   1              port |= RDPC_REG;
+1414   1              port &= ~PC3;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 24  
+
+1415   1              PTC_REG = port;
+1416   1      }
+1417          /*
+1418          void FastMuteOn()
+1419          {
+1420                  Byte Port;
+1421                  WaitVblank();
+1422                  Port = PTD_REG;         
+1423                  Port |= RDPD_REG;
+1424                  Port |= PD4;
+1425                  PTD_REG = Port;
+1426          }
+1427          
+1428          void FastMuteOff()
+1429          {
+1430                  Byte Port;
+1431                  WaitVblank();
+1432                  Port = PTD_REG;         
+1433                  Port |= RDPD_REG;
+1434                  Port &= ~PD4;
+1435                  PTD_REG = Port;
+1436          }
+1437          */
+1438          /*
+1439          void SAA7114Off()
+1440          {
+1441                  Byte Port;
+1442                  Port = PTD_REG;         
+1443                  Port |= RDPD_REG;
+1444                  Port &= ~PD1;
+1445                  PTD_REG = Port;
+1446          }
+1447          
+1448          void SAA7114On()
+1449          {
+1450                  Byte Port;
+1451                  Port = PTD_REG;         
+1452                  Port |= RDPD_REG;
+1453                  Port |= PD1;
+1454                  PTD_REG = Port;
+1455          }
+1456          */
+1457          
+1458          //**********************************
+1459          // Sound Select                         // +jwshin 050802
+1460          //**********************************
+1461          void SoundRGB(void)                     
+1462          {                                       
+1463   1              Byte Port1;
+1464   1              Port1 = PTD_REG;
+1465   1              Port1 |= RDPD_REG;
+1466   1              Port1 &= ~PD1;
+1467   1              Port1 &= ~PD2;
+1468   1              PTD_REG = Port1;
+1469   1      }       
+1470          
+1471          void SoundTV(void)
+1472          {                                       
+1473   1              Byte Port1;                     
+1474   1              Port1 = PTD_REG;
+1475   1              Port1 |= RDPD_REG;
+1476   1              Port1 &= ~PD1;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 25  
+
+1477   1              Port1 |= PD2;
+1478   1              PTD_REG = Port1;
+1479   1      }
+1480          
+1481          void SoundComp(void)
+1482          {                                       
+1483   1              Byte Port1;                     
+1484   1              Port1 = PTD_REG;
+1485   1              Port1 |= RDPD_REG;
+1486   1              Port1 |=  PD1;
+1487   1              Port1 &= ~PD2;
+1488   1              PTD_REG = Port1;
+1489   1      }
+1490          
+1491          void SoundVideo(void)
+1492          {
+1493   1              Byte Port1;                     
+1494   1                                              
+1495   1              Port1 = PTD_REG;
+1496   1              Port1 |= RDPD_REG;
+1497   1              Port1 |= PD1;
+1498   1              Port1 |= PD2;
+1499   1              PTD_REG = Port1;
+1500   1      }
+1501          
+1502          void AUDIO_MUTE(void)
+1503          {
+1504   1      
+1505   1              Byte Port;
+1506   1              Port = PTC_REG;         
+1507   1              Port |= RDPC_REG;
+1508   1              Port |= PC1;
+1509   1      
+1510   1              PTC_REG = Port;
+1511   1      //      printf("Audio_Mute\r\n");
+1512   1      
+1513   1      }
+1514          
+1515          void AUDIO_On(void)
+1516          {
+1517   1      
+1518   1              Byte Port;
+1519   1              Port = PTC_REG;         
+1520   1              Port |= RDPC_REG;
+1521   1              Port &= ~PC1;
+1522   1              PTC_REG = Port;
+1523   1      //      printf("Audio_On\r\n");
+1524   1      
+1525   1      }
+1526          
+1527          //bit Saa7114Status()
+1528          //{
+1529          //
+1530          //      if(PTD_REG & PD1)
+1531          //              return 1;
+1532          //      else
+1533          //              return 0;
+1534          
+1535          //      return 0;
+1536          //}
+1537          
+1538          bit DetectDVI()
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 26  
+
+1539          {
+1540   1      
+1541   1              if(PTD_REG & PD3)
+1542   1                      return 0;
+1543   1              else
+1544   1                      return 1;
+1545   1      
+1546   1      //              return 1;
+1547   1      }
+1548          
+1549          /*
+1550          bit DetectDsub()
+1551          {
+1552                  if(PTD_REG & PD5)
+1553                          return 0;
+1554                  else
+1555                          return 1;
+1556          }
+1557          */
+1558          
+1559          bit DetectIRQ()
+1560          {
+1561   1              if(PTB_REG & PB2)
+1562   1                      return 0;
+1563   1              else
+1564   1                      return 1;
+1565   1      }
+1566          /*
+1567          bit DetectPower()
+1568          {
+1569                  if(PTB_REG & PB3)
+1570                          return 1;
+1571                  else
+1572                          return 0;
+1573          }
+1574          */
+1575          
+1576          bit VsyncValide()
+1577          {
+1578   1              Word VsyncWidth;
+1579   1              LocalTimer = 2; //20ms
+1580   1              while(!(PTC_REG & BIT_6))       //Vsync Lo
+1581   1                      {
+1582   2                      if(LocalTimer == 0)
+1583   2                              return 0;
+1584   2                      }
+1585   1              LocalTimer = 10;        //100ms
+1586   1              while(PTC_REG & BIT_6)  //Vsync Hi
+1587   1                      {
+1588   2                      if(LocalTimer == 0)
+1589   2                              return 0;
+1590   2                      }
+1591   1              VsyncWidth = 0;
+1592   1              while(!(PTC_REG & BIT_6))       //Vsync Hi 1:7us
+1593   1                      {
+1594   2                      VsyncWidth ++;
+1595   2                      if(VsyncWidth > 50)             //over 350us
+1596   2                              return 0;
+1597   2                      }
+1598   1              VsyncWidth = 0;
+1599   1              while(PTC_REG & BIT_6)          //Vsync Hi 1:7us
+1600   1                      {
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 27  
+
+1601   2                      VsyncWidth ++;
+1602   2                      if(VsyncWidth > 714)    //over 5ms
+1603   2                              return 1;
+1604   2                      }
+1605   1              return 0;
+1606   1      }
+1607          
+1608          void WaitVblank()
+1609          {
+1610   1              LocalTimer = 3; //30ms
+1611   1              while(!(PTC_REG & BIT_6))       //Vsync Lo
+1612   1                      {
+1613   2                      if(LocalTimer == 0)
+1614   2                              return;
+1615   2                      }
+1616   1              LocalTimer = 5; //50ms
+1617   1              while(PTC_REG & BIT_6)  //Vsync Hi
+1618   1                      {
+1619   2                      if(LocalTimer == 0)
+1620   2                              return;
+1621   2                      }
+1622   1      }
+1623          void IntGroup1(void) interrupt 2 using 1
+1624          {
+1625   1              Byte i;
+1626   1              if(INT_SRC & INT_EXT)
+1627   1                      if(INTEXT_FLG & INTE0)  {
+1628   2                              if(FastMuteEnable){
+1629   3                                      i = PTC_REG;            //backlight off
+1630   3                                      i |= RDPC_REG;
+1631   3                                      i &= ~PC0;
+1632   3                                      PTC_REG = i;
+1633   3                                      //Port = PTD_REG;               //fastmute on
+1634   3                                      //Port |= RDPD_REG;
+1635   3                                      //Port &= ~PD4;
+1636   3                                      //PTD_REG = Port;
+1637   3                              }
+1638   2                              Abort = 1;      //abort autotune
+1639   2                              if(ChangeMode<10)
+1640   2                                      ChangeMode++;
+1641   2                              INTEXT_FLG = INTE0;
+1642   2                      }
+1643   1                      else if(INTEXT_FLG & INTE1){
+1644   2                              INTEXT_FLG |= CLR_INTE1;
+1645   2                              if(IR_Status == cIR_Dummy){
+1646   3                                              IR_Timer = 0;
+1647   3                                              IR_Status = cIR_START;
+1648   3                                              IR_Data = 0;
+1649   3                                              cntIR_Data = 0;
+1650   3      //                                      i = INTEXT_EN;
+1651   3      //                                      i |=INTE1_EDG; // make rising edge interupt....
+1652   3                                              INTEXT_EN |= (INTE1_EDG|BIT_1);
+1653   3                              }
+1654   2                              else if(IR_Status == cIR_START){
+1655   3                                              if(IR_Timer >60) {
+1656   4                                                              IR_Status = cIR_Dummy;
+1657   4                                                              i = INTEXT_EN;
+1658   4                                                              i &=(~INTE1_EDG); // make falling edge interupt....
+1659   4                                                              INTEXT_EN = i |BIT_1;
+1660   4                                                              return;
+1661   4                                              }
+1662   3                                              IR_Status = cIR_COMMAND;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 28  
+
+1663   3                                              i = INTEXT_EN;
+1664   3                                              i &=(~INTE1_EDG); // make falling edge interupt....
+1665   3                                              INTEXT_EN = i |BIT_1;
+1666   3                                              IR_Timer = 0;
+1667   3                              }
+1668   2                              else if(IR_Status == cIR_COMMAND){
+1669   3                                              if(IR_Timer >40) {
+1670   4                                                              IR_Status = cIR_Dummy;
+1671   4                                                              i = INTEXT_EN;
+1672   4                                                              i &=(~INTE1_EDG); // make falling edge interupt....
+1673   4                                                              INTEXT_EN = i |BIT_1;
+1674   4                                                              return;
+1675   4                                              }
+1676   3                                              IR_Status = cIR_DATA;
+1677   3                                              IR_Timer = 0;
+1678   3                              }
+1679   2                              else if(IR_Status == cIR_DATA){
+1680   3                                              if(IR_Timer >30) {
+1681   4                                                              IR_Status = cIR_Dummy;
+1682   4                                                              i = INTEXT_EN;
+1683   4                                                              i &=(~INTE1_EDG); // make falling edge interupt....
+1684   4                                                              INTEXT_EN = i |BIT_1;
+1685   4                                                              return;
+1686   4                                              }
+1687   3                                              IR_Data = IR_Data << 1;
+1688   3                                              if(IR_Timer >20) IR_Data |= 1;
+1689   3                                              cntIR_Data++;
+1690   3                                              IR_Timer = 0;
+1691   3                                              if(cntIR_Data == 31){
+1692   4                                                      bIR_flag = 1;
+1693   4                                                      IR_Data_buffer = IR_Data;
+1694   4                                                      IR_RepeatTimer = 45;            // +jwshin 051028 repeat timer value 수정.
+1695   4      //                                              IR_RepeatTimer = 10;
+1696   4                                              }
+1697   3                                              if(cntIR_Data > 30) IR_Status = cIR_Dummy;
+1698   3                                              
+1699   3                              }
+1700   2                      }
+1701   1      
+1702   1      }
+1703          
+1704          void SetInverter(void)
+1705          {
+1706   1              Byte value;
+1707   1      //      if(FuncBuf[pCOLORTEMP] < 4)
+1708   1      #if PANEL == Samsung_LTM170E4_L01 || LP_LM170E01
+1709   1                      value = 0x7f - FuncBuf[pBACKLIGHT];
+1710   1      #else
+                              value = FuncBuf[pBACKLIGHT];
+              #endif
+1713   1      //      else
+1714   1      //              value = FuncMax - FuncBuf[pBACKLIGHT2];
+1715   1              PWM8_REG = value * 2;
+1716   1              #if PRINT_MESSAGE
+1717   1                      printf("FuncBuf[pBACKLIGHT] = %x\r\n",(unsigned short)value);
+1718   1              #endif
+1719   1      }
+1720          
+1721          #define AUDIO_PWM_MAX 205
+1722          void SetAudioVolume(void)
+1723          {
+1724   1      unsigned char value;
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 29  
+
+1725   1              value = (((FuncBuf[pVOLUME] * AUDIO_PWM_MAX) ) / 100+ 1);
+1726   1              //value = FuncBuf[pVOLUME];
+1727   1              PWM9_REG = value;
+1728   1      //      #if PRINT_MESSAGE
+1729   1      //              printf("FuncBuf[pVOLUME] = %x\r\n",(unsigned short)value);
+1730   1      //      #endif
+1731   1      }
+1732          
+1733          void SetVCM_Vol(void)
+1734          {
+1735   1      unsigned char value;
+1736   1              value = FuncBuf[pVCMVOL];
+1737   1              WriteIIC(TDA7440D_Addr,A_Volume,value);//0dB 0dB ~ -40dB
+1738   1      //      PWM9_REG = value;
+1739   1      //      #if PRINT_MESSAGE
+1740   1      //              printf("FuncBuf[pVCMVOL] = %x\r\n",(unsigned short)value);
+1741   1      //      #endif
+1742   1      }
+1743          
+1744          void SetAudioMute(void)
+1745          {
+1746   1              if(AudioMute)
+1747   1                      AUDIO_MUTE();
+1748   1              else
+1749   1                      AUDIO_On();
+1750   1              #if PRINT_MESSAGE
+1751   1                      printf("AudioMute = %x\r\n",(unsigned short)AudioMute);
+1752   1              #endif
+1753   1      }
+1754          
+1755          void PowerOffProcess()
+1756          {
+1757   1              AUDIO_MUTE();
+1758   1              Osd_Off();
+1759   1              PowerStatus = 0;        //power off
+1760   1              Write24C16(ep_Status,StatusFlag);
+1761   1      //      printf("PowerOffProcess\r\n");
+1762   1              PowerSaving();
+1763   1      //      LED_RedOff();           // -jwshin 051101
+1764   1              LED_GrnOff();
+1765   1              if((FactMode)&&(!BurnInMode))//jacky0316 Item41 BurnInMode
+1766   1              {
+1767   2                      FactMode = 0;
+1768   2                      FuncBuf[pCOLORTEMP] = 3;        //Colortemp user
+1769   2                      Write24C16(ep_Status,StatusFlag);
+1770   2                      Write24C16(ep_Color_Ptr,2);
+1771   2                      Write24C16(ep_Color4_R,Read24C16(ep_Color6_R)); //R Gain
+1772   2                      Write24C16(ep_Color4_G,Read24C16(ep_Color6_G)); //G Gain
+1773   2                      Write24C16(ep_Color4_B,Read24C16(ep_Color6_B)); //B Gain
+1774   2                      //Write24C16(ep_Color5_R,Read24C16(ep_Color1_R));       //R Gain
+1775   2                      //Write24C16(ep_Color5_G,Read24C16(ep_Color1_G));       //G Gain
+1776   2                      //Write24C16(ep_Color5_B,Read24C16(ep_Color1_B));       //B Gain
+1777   2                      #if PRINT_MESSAGE
+1778   2                              printf("Release Factory mode\r\n");
+1779   2                      #endif
+1780   2                      while(GetKey() == 0);
+1781   2                              Osd_Off();
+1782   2              }
+1783   1              while(1)
+1784   1                      {
+1785   2                      ScanKeyPad();
+1786   2                      //KeyScan();
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 30  
+
+1787   2                      //KeyBuffer &= 0x7F;
+1788   2                      if((KeyBuffer&vkPOWER) && !KeyLock)
+1789   2                              {
+1790   3                                      PowerStatus = 1;        //power on
+1791   3                                      BurnInMode = 0;
+1792   3                                      KeyLock = 0;            // +jwshin 050812
+1793   3                                      Write24C16(ep_Status,StatusFlag);
+1794   3                                      WarmUp();
+1795   3                      /*              if(MonTogg == 1) {
+1796   3                                              RDPA_REG = 0xff;
+1797   3                                      }
+1798   3                                      else {
+1799   3                                              RDPA_REG = 0xcf;
+1800   3                                      } */
+1801   3                              }
+1802   2                      }
+1803   1      }
+1804          
+1805          void CheckAnyKey()
+1806          {
+1807   1              if(Abort)
+1808   1                      return;
+1809   1              if(GetKey() == vkPOWER)
+1810   1                      Abort = 1;
+1811   1      }
+1812          
+1813          void CheckIR(void)
+1814          {
+1815   1              unsigned short i,value;
+1816   1              unsigned char k;
+1817   1                      if(IR_Timer > 500) IR_Status = cIR_Dummy;
+1818   1      
+1819   1                      if(bIR_flag) {
+1820   2                              bIR_flag = 0;
+1821   2      //                      if(cntIR_Data>30) printf("IR_data3=0x%x,%x \r\n",IR_Data,(IR_Data>>16));
+1822   2                              value = IR_Data_buffer;
+1823   2                              i = IR_Data_buffer >>16;
+1824   2      //                      printf("i=%x\r\n",i);
+1825   2      //                      printf("value=%x\r\n",value);
+1826   2                              
+1827   2                              
+1828   2      //                      if(i == 0x20df){  // LG
+1829   2                              if(i == 0x40ff){
+1830   3                                      for(k=0; k<19; k++){
+1831   4      //                                      printf("LG\r\n");
+1832   4                                              if(LG_IR_Tab[k] == (unsigned short)value){      // +jwshin Platys Remocon Code 적용 051028
+1833   5                                                      IR_KeyTemp= IR_CodeTab[k];
+1834   5                                                      bIR_Active = 1;
+1835   5      //                                              RepeatTimer = KeyHoldTime;
+1836   5                                              }
+1837   4                                      }
+1838   3      //                              printf("KeyBuffer LG=%x\r\n",(unsigned short)IR_KeyTemp);
+1839   3      
+1840   3                              }
+1841   2      
+1842   2                      }
+1843   1                      else if((IR_Status == cIR_Dummy)&&(IR_RepeatTimer == 0)){
+1844   2                                                      IR_KeyTemp = 0xfb;
+1845   2                                                      bIR_Active = 0;
+1846   2                      }
+1847   1      }
+1848          
+C51 COMPILER V7.03   MCU                                                                   01/04/2007 13:21:43 PAGE 31  
+
+1849          
+1850          /*
+1851          void CheckDDC2Bi(void)
+1852          {
+1853          unsigned char cmd;
+1854          //      if((flag3 & BIT_7) != 0){
+1855          //Wait stop
+1856                                          //      printf("CmdRxPtr1=%d\n",CmdRxPtr1);
+1857                                          //      printf("CmdRxPtr2=%d\n",CmdRxPtr2);
+1858          
+1859                          Timer1=200;
+1860          //              Timer3 = 200;
+1861                          while(Timer3 != 0){
+1862                                  if((IIC1_STATUS & BUS_STOP) != 0){
+1863                                          break;
+1864                                  }
+1865                          }
+1866                          if(Timer1 != 0){
+1867                          //if(Timer3 != 0){
+1868                                  CmdTxBuffer[0] = 0;
+1869                                  while(CmdRxPtr1 != CmdRxPtr2){
+1870                                          cmd = CmdRxBuffer[CmdRxPtr2++];
+1871                                          if(CmdRxPtr2 > 127)
+1872                                                  CmdRxPtr2 = 0;
+1873                                          CheckCmd(cmd);
+1874                                  }
+1875                          }
+1876                  //      flag3 &= ~BIT_7;
+1877          //      }
+1878          }
+1879          */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4419    ----
+   CONSTANT SIZE    =    159    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       8
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

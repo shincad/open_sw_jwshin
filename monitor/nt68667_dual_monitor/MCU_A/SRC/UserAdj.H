@@ -1,0 +1,90 @@
+#ifndef _UserAdj_H_
+#define  _UserAdj_H_
+
+
+void BrightnessUp(void);
+void BrightnessDown(void);
+void SetBrightOffset();
+void SaveModeIndependentSettings();
+void LoadModeIndependentSettings(void);
+void LoadModeDependentSettings(void);
+void SaveModeDependentSettings(void);
+void ContrastUp(void);
+void ContrastDown(void);
+void ClockUp(void);
+void ClockDown(void);
+void PhaseUp(void);
+void PhaseDown(void);
+void HP_Up(void);
+void HP_Down(void);
+void VP_Up(void);
+void VP_Down(void);
+void FactoryReset();
+void Recall(void);
+void OSD_X_Up(void);
+void OSD_X_Down(void);
+void OSD_Y_Up(void);
+void OSD_Y_Down(void);
+void TransparencyUp();
+void TransparencyDown();
+void SetTransparency();
+void OSD_TimerUp(void);
+void OSD_TimerDown(void);
+void ColorTempUp(void);
+void ColorTempDown(void);
+unsigned char ScalingColorGain(unsigned char RGB_Gain);
+unsigned char ColorGainReturnToNormal(unsigned char RGB_Percentage);
+void ColorRedUp(void);
+void ColorGreenUp(void);
+void ColorBlueUp(void);
+void ColorRedDown(void);
+void ColorGreenDown(void);
+void ColorBlueDown(void);
+void Recall9300(bit);
+void Recall6500(bit);
+void RecallUser(bit);
+void RecallsRGB(bit);
+void DirectVolumeUp(void);
+void DirectVolumeDown(void);
+void BackLevelUp(void);
+void BackLevelDown(void);
+void ADC_R_Up(void);
+void ADC_G_Up(void);
+void ADC_B_Up(void);
+void ADC_R_Down(void);
+void ADC_G_Down(void);
+void ADC_B_Down(void);
+void ADC_R_OffsetUp(void);
+void ADC_G_OffsetUp(void);
+void ADC_B_OffsetUp(void);
+void ADC_R_OffsetDown(void);
+void ADC_G_OffsetDown(void);
+void ADC_B_OffsetDown(void);
+void ColorRedFactoryUp(void);
+void ColorGreenFactoryUp(void);
+void ColorBlueFactoryUp(void);
+void ColorRedFactoryDown(void);
+void ColorGreenFactoryDown(void);
+void ColorBlueFactoryDown(void);
+void SetColorTemp(unsigned char);
+void BrightnessFactoryUp(void);
+void BrightnessFactoryDown(void);
+void ContrastFactoryUp(void);
+void ContrastFactoryDown(void);
+void RecallsRGBOffset();
+void RecallPOT();
+
+void ClearNewMode();
+
+void LanguageUp(void);
+void LanguageDown(void);
+void InputSourceUp(void);
+void InputSourceDown(void);
+void DirectBrightnessUp(void);
+void DirectBrightnessDown(void);
+void SaturationUp(void);
+void SaturationDown(void);
+void TintUp(void);
+void TintDown(void);
+
+#endif

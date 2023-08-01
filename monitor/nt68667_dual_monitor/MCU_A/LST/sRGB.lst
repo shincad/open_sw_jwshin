@@ -1,0 +1,326 @@
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE SRGB
+OBJECT MODULE PLACED IN .\BIN\sRGB.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\sRGB.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,ModelN
+                    -ame=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\sRGB.lst) OBJECT(.\BIN\sRGB.obj)
+
+line level    source
+
+   1          #include "IIC.H"
+   2          #include "Scaler.H"
+   3          #include "MyDef.H"
+   4          #include "RAM.H"
+   5          #include "sRGB.H"
+   6          #include "Rom_Map.H"
+   7          #include "NT686xx_SC_REG.h"
+   8          #include "BFControl.H"
+   9          
+  10          #if 0
+              #define LinearRGB
+              
+              #ifdef LinearRGB
+              code int defautlTab[3][3]={
+                      {  0x1000,  0x0000,  0x0000 },
+                      {  0x0000,  0x1000,  0x0000 },
+                      {  0x0000,  0x0000,  0x1000 } 
+              };
+              #else
+              code int rgb2yuv[3][3]={
+                      {  0x041B,  0x0810,  0x0191 },
+                      { -0x025F, -0x04A7,  0x0707 },
+                      {  0x0707, -0x05E2, -0x0124 } 
+              };
+              
+              code int yuv2rgb[3][3]={
+                      {  0x12A1,  0x0000,  0x1989 }, 
+                      {  0x12A1, -0x0644, -0x0D01 }, 
+                      {  0x12A1,  0x2046,  0x0000 }
+              };
+              
+              code int sincos_tbl[65]={
+                      0x0000,0x0064,0x00C9,0x012D,0x0191,0x01F5,0x0259,0x02BC,0x031F,0x0381,
+                      0x03E3,0x0444,0x04A5,0x0505,0x0564,0x05C2,0x061F,0x067B,0x06D7,0x0731,
+                      0x078A,0x07E3,0x083A,0x088F,0x08E3,0x0937,0x0988,0x09D8,0x0A26,0x0A73,
+                      0x0ABF,0x0B08,0x0B50,0x0B97,0x0BDB,0x0C1E,0x0C5E,0x0C9D,0x0CDA,0x0D15,
+                      0x0D4D,0x0D85,0x0DB9,0x0DEC,0x0E1C,0x0E4B,0x0E77,0x0EA1,0x0EC8,0x0EEE,
+                      0x0F10,0x0F31,0x0F4F,0x0F6C,0x0F85,0x0F9C,0x0FB1,0x0FC4,0x0FD4,0x0FE1,
+                      0x0FEC,0x0FF5,0x0FFB,0x0FFE,0x1000
+              };
+              
+              int sine(unsigned char alpha)
+              {
+                      unsigned char value = alpha & 0x3f;
+                      switch(alpha & 0xC0){
+                      case 0x00:
+                          return(sincos_tbl[value]);
+                              break;
+                      case 0x40:
+                          return(sincos_tbl[(64 - value)]);
+                              break;
+                      case 0x80:
+                          return(-sincos_tbl[value]);
+                              break;
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 2   
+
+                      case 0xC0:
+                          return(-sincos_tbl[(64 - value)]);
+                              break;
+                  }
+              }
+              
+              int cosine(unsigned char alpha)
+              {
+                  return (sine(alpha + 64));
+              }
+              
+              void product(int *first, int * second, int *result)
+              {
+              unsigned char i,j,k;
+              long res;
+                      for( i=0;i<3;i++){
+                              for( j=0;j<3;j++){
+                              res = 0;
+                                      for( k=0;k<3;k++){
+                                              res += (long)*(first + i*3 + k) * (long)*(second + k*3 + j);
+                              }
+                              *(result + i*3 + j) = ((res + 2048)>>12);
+                              }
+                      }
+              }
+              #endif
+              
+              void SetContrastRGB(void)
+              {
+                      unsigned char i,j;
+                      int temp,gain[3];
+                      int result[3][3];
+              
+              #ifndef LinearRGB
+                      #define MAX_USERCONTRAST        150
+                      #define MID_USERCONTRAST        128
+                      #define MIN_USERCONTRAST        78
+                      
+                      unsigned short ss,hh;
+                      xdata int adjust[3][3];
+                      xdata int UVrotated[3][3];
+                      int UserPrefContrast;
+              
+              #endif
+                              gain[0] = ucR_Gain;
+                              gain[1] = ucG_Gain;
+                              gain[2] = ucB_Gain;
+              
+              #ifndef LinearRGB
+                      ss = 128;
+                      hh = 0;
+              /*
+                      if(ucContrast > 50){
+                              UserPrefContrast = ((unsigned short)(ucContrast-50) * (MAX_CONTRAST-MID_CONTRAST) + 25)/50 + MID_CONTRAS
+             -T;
+                      }
+                      else{
+                              UserPrefContrast = ((unsigned short)ucContrast * (MID_CONTRAST-MIN_CONTRAST) + 25)/50 + MIN_CONTRAST;
+                      }
+              */
+                      if(ucContrast > 50){
+                              UserPrefContrast = ((unsigned short)(ucContrast-50) * (MAX_USERCONTRAST-MID_USERCONTRAST) + 25)/50 + MID
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 3   
+
+             -_USERCONTRAST;
+                      }
+                      else{
+                              UserPrefContrast = ((unsigned short)ucContrast * (MID_USERCONTRAST-MIN_USERCONTRAST) + 25)/50 + MIN_USER
+             -CONTRAST;
+                      }
+              
+              
+                      for(i=0; i<3; i++){
+                              UVrotated[i][0] = 0;
+                      }
+                      for(i=0; i<3; i++){
+                              UVrotated[0][i] = 0;
+                      }
+                      
+                      UVrotated[1][1] = (((((long)ss<<5) * (long)cosine(hh))+2048)>>12);
+                      UVrotated[1][2] = (((((long)ss<<5) * (long)sine(hh)  )+2048)>>12);
+                      UVrotated[2][1] = (((-(long)sine(hh)*((long)ss<<5))+2048)>>12);
+                      UVrotated[2][2] = ((( (long)cosine(hh)*((long)ss<<5))+2048)>>12);
+              
+                      product(&UVrotated[0][0], &rgb2yuv[0][0], &adjust[0][0]);
+              
+                      for(i=0; i<3; i++){
+                              adjust[0][i] =((((long)rgb2yuv[0][i]*((long)UserPrefContrast << 5))+2048)>>12);
+                      }
+              
+                      product(&yuv2rgb[0][0],&adjust[0][0],&result[0][0]);
+                      
+              #else
+                      for(i=0; i<3; i++){
+                              for(j=0; j<3; j++){
+                                              result[i][j] = defautlTab[i][j];
+                              }
+                       }
+              
+                      result[0][0] = (int)((float)result[0][0] * ucContrast / 128 + 0.5);
+                      result[1][1] = (int)((float)result[1][1] * ucContrast / 128 + 0.5);
+                      result[2][2] = (int)((float)result[2][2] * ucContrast / 128 + 0.5);
+              #endif
+              
+                      for(i=0; i<3; i++){
+                              WriteIIC560(0x1d0,((i * 2) + 0x21));
+                              for(j=0; j<3; j++){
+                                      temp = (((((long)(result[i][j]+8)>>4)*((long)gain[i]<<4))+2048)>>12);
+                                      if(temp < 0){
+                                              temp = temp ^ 0xffff;
+                                              temp +=1 ;
+                                              temp |= 0xf400;
+                                      }
+              #ifdef Debug
+                                      printf("%x ",temp);
+              #endif
+                                      WriteWordIIC560((0x1d1+(j*2)),temp);
+                              }
+              #ifdef Debug
+                              printf("\r\n");
+              #endif
+                      }
+              
+              //      WriteIIC_WaitV(0x1d0,0x2d);
+                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x0d);
+              //      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x3d);      //(noise testing)
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 4   
+
+              
+              }
+              
+              
+              
+              #else
+ 182          // STEWARD
+ 183          
+ 184          //------------------ +jwshin 111208   실제 사용 루틴...
+ 185          void SetContrastRGB(void)
+ 186          {
+ 187   1      #define USER_GAIN_MAX   255
+ 188   1      #define USER_GAIN_MIN   127
+ 189   1      #define USER_GAIN_RANGE 128
+ 190   1      unsigned char R_OFFSET_MID,G_OFFSET_MID,B_OFFSET_MID;
+ 191   1      
+ 192   1              unsigned int tR,tB,tG;
+ 193   1      //      tR = 200+(unsigned int)(((double)100*ucR_Gain/255) * ((double)ucContrast/100));
+ 194   1      //      tG = 200+(unsigned int)(((double)100*ucG_Gain/255) * ((double)ucContrast/100));
+ 195   1      //      tB = 200+(unsigned int)(((double)100*ucB_Gain/255) * ((double)ucContrast/100));
+ 196   1      
+ 197   1              if(ucColorTemperature == COLOR_USER){
+ 198   2                      tR = (unsigned short)ucR_Gain*USER_GAIN_RANGE/255+USER_GAIN_MIN;
+ 199   2                      tG = (unsigned short)ucG_Gain*USER_GAIN_RANGE/255+USER_GAIN_MIN;
+ 200   2                      tB = (unsigned short)ucB_Gain*USER_GAIN_RANGE/255+USER_GAIN_MIN;
+ 201   2              }
+ 202   1              else{
+ 203   2                      tR = ucR_Gain;
+ 204   2                      tG = ucG_Gain;
+ 205   2                      tB = ucB_Gain;
+ 206   2              }
+ 207   1      //printf("RGB0=%d\r\n",(unsigned short)ucContrast);
+ 208   1      //printf("RGB0=%d,%d,%d\r\n",(unsigned short)tR,(unsigned short)tG,(unsigned short)tB);
+ 209   1              tR = (unsigned int)(((double)ucRGB_OFFSET+((double)150*ucContrast/100))*((double)tR/255)); //20060313 Ste
+             -ward modified //Set 250 in center point (Contrast=50%)
+ 210   1              tG = (unsigned int)(((double)ucRGB_OFFSET+((double)150*ucContrast/100))*((double)tG/255)); //20060313 Ste
+             -ward modified
+ 211   1              tB = (unsigned int)(((double)ucRGB_OFFSET+((double)150*ucContrast/100))*((double)tB/255));  //20060313 St
+             -eward modified
+ 212   1      //printf("RGB1=%d,%d,%d\r\n",(unsigned short)tR,(unsigned short)tG,(unsigned short)tB);
+ 213   1      
+ 214   1      //      if((PanelID == CMO_M220Z1_L03)&&(bFactoryMode == FALSE)){
+ 215   1      /*      if(PanelID == CMO_M220Z1_L03){
+ 216   1                      R_OFFSET_MID = 0x80;
+ 217   1                      G_OFFSET_MID = 0x80;
+ 218   1                      B_OFFSET_MID = 0x79;
+ 219   1              }
+ 220   1              else{*/
+ 221   1                      R_OFFSET_MID = 0x80;
+ 222   1                      G_OFFSET_MID = 0x80;
+ 223   1                      B_OFFSET_MID = 0x80;
+ 224   1      //      }
+ 225   1              WriteIIC560(0x1d0,((0 * 2) + 0x21));
+ 226   1              WriteWordIIC560(0x1d1,tR);
+ 227   1              WriteWordIIC560(0x1d3,0);
+ 228   1              WriteWordIIC560(0x1d5,0);
+ 229   1              WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucBkOffset[0]*RGB_OFFSET_SCOPE)/255+RGB_OFFSET_MIN+(ucBlac
+             -kLevel-ucBrightnessLevel-R_OFFSET_MID)+PanelRGB_Offset);
+ 230   1              
+ 231   1              WriteIIC560(0x1d0,((1 * 2) + 0x21));    
+ 232   1              WriteWordIIC560(0x1d1,0);
+ 233   1              WriteWordIIC560(0x1d3,tG);
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 5   
+
+ 234   1              WriteWordIIC560(0x1d5,0);
+ 235   1              WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucBkOffset[1]*RGB_OFFSET_SCOPE)/255+RGB_OFFSET_MIN+(ucBlac
+             -kLevel-ucBrightnessLevel-G_OFFSET_MID)+PanelRGB_Offset);
+ 236   1      
+ 237   1              WriteIIC560(0x1d0,((2 * 2) + 0x21));
+ 238   1              WriteWordIIC560(0x1d1,0);
+ 239   1              WriteWordIIC560(0x1d3,0);
+ 240   1              WriteWordIIC560(0x1d5,tB);
+ 241   1              WriteIIC560(SRGB_COEF_OFFSET, ((unsigned short)ucBkOffset[2]*RGB_OFFSET_SCOPE)/255+RGB_OFFSET_MIN+(ucBlac
+             -kLevel-ucBrightnessLevel-B_OFFSET_MID)+PanelRGB_Offset);
+ 242   1      
+ 243   1      //      if((ucColorTemperature == COLOR_USER)||(ucColorTemperature == COLOR_ORIGIN))
+ 244   1      //      if((PanelID == LPL_LM170ME03_TLLX)&&(ucResolution == R640x480))
+ 245   1      /*
+ 246   1              if(PanelID == LPL_LM170ME03_TLLX)
+ 247   1                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x2D);
+ 248   1              else if(PanelID == CMO_M220Z1_L03)
+ 249   1                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x3D);
+ 250   1              else
+ 251   1                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x0D);
+ 252   1      */
+ 253   1      #if PBusProtocol
+ 254   1              WriteIIC_WaitV(SCALER_I2C_ADDR,0x1D0,0x2d);
+ 255   1      #else
+                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xD0,0x2d);
+              #endif
+ 258   1      /*
+ 259   1      
+ 260   1              if ( ucResolution == R640x480 )
+ 261   1              {
+ 262   1                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x2D);      //NSTL Quality : 640x480 Dot Pattern Flicker
+ 263   1              #if PanelID==LPL_LM170ME03_TLLX
+ 264   1                      WriteIIC560(SRGB_DITH_CTRL,0xC0);
+ 265   1              #else   //#if PanelID==LPL_LM190E08_TLLX
+ 266   1                      WriteIIC560(SRGB_DITH_CTRL,0xA0);
+ 267   1              #endif
+ 268   1              }
+ 269   1              else
+ 270   1              {
+ 271   1                      WriteIIC_WaitV(SCALER_I2C_ADDR,0xd0,0x0D);      //NSTL Quality
+ 272   1              #if PanelID==LPL_LM190E08_TLLX// || PanelID == HSD_HSD190MEN3_A //xyy 20070524 +HSD
+ 273   1                      WriteIIC560(SRGB_DITH_CTRL, 0x00);
+ 274   1              #elif PanelID == HSD_HSD190MEN3_A  //xyy 20070525 +HSD
+ 275   1                      WriteIIC560(SRGB_DITH_CTRL, 0x10);
+ 276   1              #else
+ 277   1                      WriteIIC560(SRGB_DITH_CTRL, 0xE0);
+ 278   1              #endif
+ 279   1              }
+ 280   1      */
+ 281   1      }
+ 282          
+ 283          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    580    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V8.12   SRGB                                                                  11/09/2015 19:43:40 PAGE 6   
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

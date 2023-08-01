@@ -1,0 +1,700 @@
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN .\BIN\IIC.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\IIC.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\IIC.
+                    -lst) OBJECT(.\BIN\IIC.obj)
+
+stmt level    source
+
+   1          #include "stdio.h"
+   2          #include "8051.H"
+   3          #include "RAM.H"
+   4          #include "IIC.H"
+   5          #include "MCU.H"
+   6          #include "ROM_MAP.H"
+   7          #include "MyDef.H"
+   8          #include "F63XREG.H"
+   9          #include "F63XDEF.H"
+  10          #include "osd.h"
+  11          #include "INTRINS.H"
+  12          void DDC2(void)
+  13          {
+  14   1              ISCL = 0;
+  15   1              ISCL = 1;
+  16   1      }
+  17          
+  18          void IIC_Start(void)
+  19          {
+  20   1              ISDA = 0;
+  21   1              ISCL = 0;
+  22   1      }
+  23          
+  24          void IIC_Stop(void)
+  25          {
+  26   1              ISDA = 0;
+  27   1              ISCL = 1;
+  28   1              ISDA = 1;
+  29   1      }
+  30          
+  31          void CheckIIC(void)
+  32          {
+  33   1              ISCL = 1;
+  34   1              ISDA = 1;
+  35   1              while(!ISDA || !ISCL)   //waiting for IIC released
+  36   1                      {
+  37   2                      ISCL = 0;
+  38   2                      IIC_Stop();
+  39   2                      }
+  40   1      }
+  41          
+  42          Byte IIC_Tx(Byte Data)
+  43          {       //subroutine total time 630us
+  44   1              Byte AckLoop,Ack;
+  45   1      
+  46   1      #if SOFTWAREIIC_220K == 0
+  47   1              Byte i;
+  48   1              for(i=0;i<8;i++)
+  49   1                      {
+  50   2                  ISCL = 0;
+  51   2                      ISDA = (Data & 0x80);
+  52   2                      _nop_();
+  53   2                      _nop_();
+  54   2                      ISCL = 1;
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 2   
+
+  55   2                      _nop_();
+  56   2                      _nop_();
+  57   2                      Data <<= 1;
+  58   2                      }
+  59   1      #else
+                      ISCL = 0;
+                      ISDA = (Data & 0x80);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x40);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x20);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x10);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x08);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x04);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x02);
+                      ISCL = 1;
+                  ISCL = 0;
+                      ISDA = (Data & 0x01);
+                      ISCL = 1;
+              #endif
+  85   1              //
+  86   1              ISCL = 0;
+  87   1              ISDA = 1;
+  88   1              ISCL = 1;
+  89   1              Ack = NACK;
+  90   1              for(AckLoop=0;AckLoop<20;AckLoop++) //260us
+  91   1                      {
+  92   2                      if(!ISDA)
+  93   2                              {
+  94   3                              Ack = ACK;
+  95   3                              break;
+  96   3                              }
+  97   2                      }
+  98   1              ISCL = 0;
+  99   1              return Ack;                     //return success=0 / failure=1
+ 100   1      }
+ 101          
+ 102          /*
+ 103          Byte IIC_TxV(Byte Data)
+ 104          {       //subroutine total time 630us
+ 105                  Byte AckLoop,Ack;
+ 106                  Byte i;
+ 107                  for(i=0;i<8;i++)
+ 108                          {
+ 109                      ISCL = 0;
+ 110                          if(i == 7)
+ 111                                  WaitVblank();
+ 112                          ISDA = (Data & 0x80);
+ 113                          ISCL = 1;
+ 114                          Data <<= 1;
+ 115                          }
+ 116                  ISCL = 0;
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 3   
+
+ 117                  ISDA = 1;
+ 118                  ISCL = 1;
+ 119                  Ack = NACK;
+ 120                  for(AckLoop=0;AckLoop<20;AckLoop++) //260us
+ 121                          {
+ 122                          if(!ISDA)
+ 123                                  {
+ 124                                  Ack = ACK;
+ 125                                  break;
+ 126                                  }
+ 127                          }
+ 128                  ISCL = 0;
+ 129                  return Ack;                     //return success=0 / failure=1
+ 130          }
+ 131          */
+ 132          Byte IIC_Rx(Bit Ack)
+ 133          {
+ 134   1              Byte Data;
+ 135   1              Byte i;
+ 136   1              Data = 0;
+ 137   1              for(i=0;i<8;i++)
+ 138   1                      {
+ 139   2                      Data <<= 1;
+ 140   2                      ISCL = 0;
+ 141   2                      ISDA = 1;
+ 142   2                      ISCL = 1;
+ 143   2                      if(ISDA)
+ 144   2                              Data |= 1;
+ 145   2                      else
+ 146   2                              Data &= 0xfe;
+ 147   2                      }
+ 148   1              ISCL = 0;
+ 149   1              ISDA = Ack;
+ 150   1              ISCL = 1;
+ 151   1              ISCL = 0;
+ 152   1              return Data;
+ 153   1      }
+ 154          
+ 155          
+ 156          void SetISCL(void)
+ 157          {
+ 158   1              ISCL = 1;
+ 159   1              while(ISCL == 0){};
+ 160   1      }
+ 161          void IIC_Delay(void)
+ 162          {
+ 163   1              unsigned char i;
+ 164   1              i = 5;          //24MHz = 10, 12MHz = 5
+ 165   1              while(i--);
+ 166   1      }
+ 167          void IIC_ACK(void)
+ 168          {
+ 169   1              ISDA=1; 
+ 170   1              SetISCL();              /* SCL=1 */
+ 171   1              IIC_Delay();
+ 172   1              Timer1 = 100;                   // timeout 100ms 
+ 173   1              while(ISDA != 0){
+ 174   2                      if(Timer1 == 0){
+ 175   3      //                      EA = 0;
+ 176   3                              break;
+ 177   3                      }
+ 178   2              }
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 4   
+
+ 179   1              ISCL = 0;               /* SCL=0 */
+ 180   1      //      ISDA = 1;               /* SDA=1 */
+ 181   1              IIC_Delay();
+ 182   1      }
+ 183          void MasterACK(void)
+ 184          {
+ 185   1              ISDA=0; 
+ 186   1              SetISCL();              // SCL=1   
+ 187   1              IIC_Delay();
+ 188   1              ISCL = 0;
+ 189   1              ISDA=1; 
+ 190   1              IIC_Delay();
+ 191   1      }
+ 192          
+ 193          void MasterNACK(void)
+ 194          {
+ 195   1              ISDA=1; 
+ 196   1              SetISCL();              // SCL=1   
+ 197   1              IIC_Delay();
+ 198   1              ISCL = 0;
+ 199   1              IIC_Delay();
+ 200   1      }
+ 201          
+ 202          void WriteByte(unsigned char temp)
+ 203          {
+ 204   1      unsigned char i,j;
+ 205   1              j=temp;
+ 206   1              for (i=0; i<8; i++){
+ 207   2                      if ((j & 0x80) ==0)
+ 208   2                              ISDA = 0;       /* SDA=0 */
+ 209   2                      else
+ 210   2                              ISDA = 1;       /* SDA=1 */
+ 211   2                      j = j << 1;
+ 212   2                      SetISCL();              /* SCL=1 */
+ 213   2                      IIC_Delay();
+ 214   2                      ISCL = 0;               /* SCL=0 */
+ 215   2                      IIC_Delay();
+ 216   2              }
+ 217   1      }
+ 218          
+ 219          unsigned char ReadByte(void)
+ 220          {
+ 221   1      unsigned char i,j;
+ 222   1              j=0;
+ 223   1              ISDA = 1;               /* SDA=1 */
+ 224   1              for (i=0; i<8; i++){
+ 225   2                      j = j << 1;
+ 226   2                      SetISCL();              /* SCL=1 */
+ 227   2                      IIC_Delay();
+ 228   2                      if (ISDA ==0)
+ 229   2                              j &= 0xfe;      /* SDA=0 */
+ 230   2                      else
+ 231   2                              j |= 0x01;      /* SDA=1 */
+ 232   2                      ISCL = 0;               /* SCL=0 */
+ 233   2                      IIC_Delay();
+ 234   2              }
+ 235   1              return j;
+ 236   1      }
+ 237          
+ 238          void Fill24C16(unsigned short addr,unsigned char ch)
+ 239          {
+ 240   1      unsigned char i;
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 5   
+
+ 241   1      //      EEP_WP_OFF;
+ 242   1              IIC_Delay();
+ 243   1      /* start bit */
+ 244   1              IIC_Start();
+ 245   1      /* transmit data */
+ 246   1              i = (unsigned char)((addr >>7 ) & 0x0e);
+ 247   1              i |= EEPROM;
+ 248   1              WriteByte(i);
+ 249   1              IIC_ACK();
+ 250   1              i = (unsigned char)addr;
+ 251   1              WriteByte(i);
+ 252   1              IIC_ACK();
+ 253   1              for(i=0; i<16; i++){
+ 254   2                      WriteByte(ch);
+ 255   2                      IIC_ACK();
+ 256   2              }
+ 257   1      /* stop bit */
+ 258   1              IIC_Stop();
+ 259   1              Sleep(12);
+ 260   1      //      EEP_WP_ON;
+ 261   1      }
+ 262          
+ 263          void WaitEEprom(void)
+ 264          {
+ 265   1              Byte i,ack;
+ 266   1              for(i=0;i<100;i++)  //10ms 
+ 267   1                      {
+ 268   2                      IIC_Start();
+ 269   2                      ack = IIC_Tx(0xa0);     //polling ACKnowledge
+ 270   2                      IIC_Stop();
+ 271   2                      if(ack == ACK)
+ 272   2                              break;
+ 273   2                      CLRWDT = 0x55;
+ 274   2                      }
+ 275   1      }
+ 276          
+ 277          void WriteIIC(Byte device,Byte addr,Byte ch)
+ 278          {
+ 279   1              IIC_Start();
+ 280   1              IIC_Tx(device);
+ 281   1              IIC_Tx(addr);
+ 282   1              IIC_Tx(ch);
+ 283   1              IIC_Stop();
+ 284   1      }
+ 285          /*
+ 286          void WriteWordIIC(unsigned char device,unsigned char addr,unsigned short value)
+ 287          {
+ 288                  IIC_Start();
+ 289                  IIC_Tx(device);
+ 290                  IIC_Tx(addr);
+ 291                  IIC_Tx((Byte)value);
+ 292                  IIC_Tx((Byte)(value>>8));
+ 293                  IIC_Stop();
+ 294          }
+ 295          */
+ 296          void WriteIIC563(unsigned short addr,unsigned char ch)
+ 297          {
+ 298   1              CheckRegPage(addr);
+ 299   1              IIC_Start();
+ 300   1              IIC_Tx(SCALER_ADDR);
+ 301   1              IIC_Tx(addr);
+ 302   1              IIC_Tx(ch);
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 6   
+
+ 303   1              IIC_Stop();
+ 304   1      }
+ 305          
+ 306          void WriteWordIIC563(unsigned short addr,unsigned short value)
+ 307          {
+ 308   1              CheckRegPage(addr);
+ 309   1              IIC_Start();
+ 310   1              IIC_Tx(SCALER_ADDR);
+ 311   1              IIC_Tx((Byte)addr);
+ 312   1              IIC_Tx((Byte)value);
+ 313   1              IIC_Tx((Byte)(value>>8));
+ 314   1              IIC_Stop();
+ 315   1      }
+ 316          
+ 317          Byte ReadIIC(Byte device,Byte addr)
+ 318          {
+ 319   1              Byte value;
+ 320   1              IIC_Start();
+ 321   1              IIC_Tx(device);
+ 322   1              IIC_Tx(addr);
+ 323   1              ISDA = 1;       //repeat start
+ 324   1              ISCL = 1;
+ 325   1              ISDA = 0;
+ 326   1              ISCL = 0;
+ 327   1              IIC_Tx(device+1);
+ 328   1              value = IIC_Rx(NACK);   //nack
+ 329   1              IIC_Stop();
+ 330   1              return value;
+ 331   1      }
+ 332          
+ 333          unsigned char ReadIIC563(unsigned short addr)
+ 334          {
+ 335   1              Byte value;
+ 336   1              CheckRegPage(addr);
+ 337   1              IIC_Start();
+ 338   1              IIC_Tx(SCALER_ADDR);
+ 339   1              IIC_Tx(addr);
+ 340   1              ISDA = 1;       //repeat start
+ 341   1              ISCL = 1;
+ 342   1              ISDA = 0;
+ 343   1              ISCL = 0;
+ 344   1              IIC_Tx(SCALER_ADDR+1);
+ 345   1              value = IIC_Rx(NACK);   //nack
+ 346   1              IIC_Stop();
+ 347   1              return value;
+ 348   1      }
+ 349          
+ 350          unsigned short ReadWordIIC563(unsigned short addr)
+ 351          {
+ 352   1              Byte temp;
+ 353   1              Word value;
+ 354   1              CheckRegPage(addr);
+ 355   1              IIC_Start();
+ 356   1              IIC_Tx(SCALER_ADDR);
+ 357   1              IIC_Tx(addr);
+ 358   1              ISDA = 1;       //repeat start
+ 359   1              ISCL = 1;
+ 360   1              ISDA = 0;
+ 361   1              ISCL = 0;
+ 362   1              IIC_Tx(SCALER_ADDR+1);
+ 363   1              temp = IIC_Rx(ACK);
+ 364   1              value = IIC_Rx(NACK);   //nack
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 7   
+
+ 365   1              value <<= 8;
+ 366   1              value += temp;
+ 367   1              IIC_Stop();
+ 368   1              return value;
+ 369   1      }
+ 370          unsigned char Read24C16(unsigned short addr16)
+ 371          {
+ 372   1              Byte ch;
+ 373   1              Byte device,addr;
+ 374   1              addr = addr16 & 0x0ff;
+ 375   1              device = (addr16 >> 7) & 0x0e;
+ 376   1              device |= EEPROM;
+ 377   1              ch = ReadIIC(device,addr);
+ 378   1              return ch;
+ 379   1      }
+ 380          
+ 381          void CheckRegPage(unsigned short addr)
+ 382          {
+ 383   1              Byte page;
+ 384   1              IIC_Start();
+ 385   1              IIC_Stop();
+ 386   1              page = (Byte)((addr/256) & 0x003);
+ 387   1              if(page != RegPage)
+ 388   1                      {
+ 389   2                      RegPage = page;
+ 390   2                      WriteIIC(SCALER_ADDR,0xff,RegPage);
+ 391   2                      }
+ 392   1      }
+ 393          
+ 394          // 0x000 ... 0x07f ==>analog DDC
+ 395          // 0x080 ... 0x0ff ==>digiatl DDC
+ 396          // 0x100 ...0x17f ==> TV channel fine tune,PR. NO. TV CH.
+ 397          // 0x180 ...0x1ff ==> CATV channel fine tune,PR. NO. CATV CH.
+ 398          // 0x200 ... 0x244 ==>EEP_GeoMap
+ 399          // 0x245 ... 0x27F ==> Free
+ 400          // 0x280 ... 0x28f ==>TV channel mask(ADD/DEL),PR. NO. TV channel mask
+ 401          // 0x290 ... 0x29f ==>CATV channel mask(ADD/DEL),PR. NO. CATV channel mask
+ 402          // 0x300 ... 0x468 ==>EEP_FreqMap
+ 403          // 0x469 ... 0x4ff ==> Free
+ 404          // 0x500 ... 0x7D0 ==>EEP_SyncMap
+ 405          // 0x7d1 ... 0x7EF ==>Free
+ 406          
+ 407          // 0x7F0 ... 0x7Fb  ==> Closed-Caption & V-Chip
+ 408          //0x7F0: caption on/off //INIT STATUS==OFF
+ 409          //0x7F1: caption mode
+ 410          //0x7F2: display box/shadow
+ 411          //0x7F3: VChip Enable
+ 412          //0x7F4...0x7F7: password default(0000)
+ 413          //0x7F8: MPAA Rating
+ 414                          //BIT_0:MPAA_G
+ 415                          //BIT_1:MPAA_PG
+ 416                          //BIT_2:MPAA_PG13
+ 417                          //BIT_3:MPAA_R
+ 418                          //BIT_4:MPAA_NC17
+ 419                          //BIT_5:MPAA_X
+ 420                          //BIT_6:MPAA_NR
+ 421          //0x7F9: TV Guidences 1
+ 422                          //BIT_0:TV-Y
+ 423                          //BIT_1:TV-Y7
+ 424                          //BIT_2:TV-Y7-FV
+ 425                          //BIT_3:
+ 426                          //BIT_4:TV-G
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 8   
+
+ 427                          //BIT_5:TV-PG
+ 428                          //BIT_6:TV-14
+ 429                          //BIT_7:TV-MA
+ 430          //0x7Fa: TV Guidences 2
+ 431                          //BIT_0:TV-PG-V
+ 432                          //BIT_1:TV-14-V
+ 433                          //BIT_2:TV-MA-V
+ 434                          //BIT_3:
+ 435                          //BIT_4:TV-PG-S
+ 436                          //BIT_5:TV-14-S
+ 437                          //BIT_6:TV-MA-S
+ 438                          //BIT_7:
+ 439          //0x7Fb: TV Guidences 3
+ 440                          //BIT_0:TV-PG-L
+ 441                          //BIT_1:TV-14-L
+ 442                          //BIT_2:TV-MA-L
+ 443                          //BIT_3:
+ 444                          //BIT_4:TV-PG-D
+ 445                          //BIT_5:TV-14-D
+ 446                          //BIT_6:
+ 447                          //BIT_7:
+ 448                          
+ 449          void InitEEPROM(void)
+ 450          {
+ 451   1              unsigned short addr;
+ 452   1              #if PRINT_MESSAGE
+ 453   1                      printf("Initial EEPROM.\n");
+ 454   1              #endif
+ 455   1              LED_GrnOff();
+ 456   1      //      LED_RedOn();            // -jwshin 051101
+ 457   1      
+ 458   1              Write24C16(ep_RGBStatus,0); // +jwshin 060908
+ 459   1              //Dsub EDID
+ 460   1              for(addr=0;addr<0x80;addr++)
+ 461   1                      Write24C16(ep_DDC_Analog+addr,DsubEdidTab[addr]);
+ 462   1              //Dvi EDID
+ 463   1      //              printf("initeep\r\n");
+ 464   1              for(addr=0;addr<0x80;addr++){
+ 465   2                      Write24C16(ep_DDC_DVI+addr,DviEdidTab[addr]);
+ 466   2      //              printf("%x ",(Word)DviEdidTab[addr]);
+ 467   2              }
+ 468   1      //              printf("\r\n");
+ 469   1      
+ 470   1      //      InitEDID_Save();
+ 471   1              //Geo
+ 472   1      //      LED_RedOff();           // -jwshin 051101
+ 473   1      //clear tv channel
+ 474   1              for(addr=0x280; addr<0x2a0; addr+=16){
+ 475   2                      Fill24C16(addr,0xff);
+ 476   2              }
+ 477   1              for(addr=0x100; addr<0x200; addr+=16){
+ 478   2                      Fill24C16(addr,0x32);
+ 479   2              }
+ 480   1      
+ 481   1      //      Write24C16(0x500,0x01);//mask PR NO1. TV CH.
+ 482   1      //      Write24C16(0x510,0x01);//mask PR NO1. CATV CH.
+ 483   1      
+ 484   1      //              printf("Initial EEPROM2\n");
+ 485   1              
+ 486   1              for(addr=0;addr<0x45;addr++)
+ 487   1                      Write24C16(0x200+addr,EEP_GeoMap[addr]);
+ 488   1              //Mode
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 9   
+
+ 489   1      //      LED_RedOn();            // -jwshin 051101
+ 490   1              for(addr=0;addr<UserModeSt*4;addr++)
+ 491   1                      Write24C16(0x300+addr,EEP_FreqMap[addr]);
+ 492   1      //      LED_RedOff();           // -jwshin 051101
+ 493   1              for(;addr<ModeNum*4;addr++)
+ 494   1                      Fill24C16(0x300+addr,0xff);
+ 495   1      //              Write24C16(0x300+addr,0xff);
+ 496   1              //Sync
+ 497   1      //      LED_RedOn();            // -jwshin 051101
+ 498   1              for(addr=0;addr<UserModeSt*8;addr++)
+ 499   1                      Write24C16(0x500+addr,EEP_SyncMap[addr]);
+ 500   1      //      LED_RedOff();           // -jwshin 051101
+ 501   1              for(;addr<ModeNum*8;addr++)
+ 502   1                      Fill24C16(0x500+addr,0xff);
+ 503   1      //              Write24C16(0x500+addr,0xff);
+ 504   1      //closed caption setting
+ 505   1              Write24C16(0x7F0,0x00);         // 0x7F0 = caption on/
+ 506   1      //      Write24C16(0x720,0x01);         // 0x7F0 = caption on/off //INIT SATATUS==OFF
+ 507   1              Write24C16(0x7F1,0x01);         // 0x7F1 = caption mode -->cc1 Mode
+ 508   1              Write24C16(0x7F2,0x00);         // 0x7F2 = display box/shadow
+ 509   1              Write24C16(0x7F3,0x00);         // 0x7F3 = VChip Enable  init= off
+ 510   1              for(addr=0x7F4;addr<0x7FC;addr++)
+ 511   1                                              Write24C16(addr,0x00);          // 0x7F4 = Password 1
+ 512   1              
+ 513   1              Write24C16(ep_FirmWare_Ver,Version);
+ 514   1              Write24C16(ep_FirmWare_Rev,Reversion);
+ 515   1      //      Write24C16(0x246,7);
+ 516   1      //      Write24C16(0x247,7);
+ 517   1      // 0x246....Base
+ 518   1      // 0x247....Treble
+ 519   1              Write24C16(ep_Bass,7);// 0x246....Bass
+ 520   1              Write24C16(ep_Treble,7);// 0x247....Treble
+ 521   1              Write24C16(ep_Volume,50);// Volume
+ 522   1              Write24C16(ep_VCMVol,0);// Volume
+ 523   1      
+ 524   1              LED_GrnOn();
+ 525   1      }
+ 526          
+ 527          void Write24C16(unsigned short k,unsigned char ch)
+ 528          {
+ 529   1      unsigned char device,addr;
+ 530   1              addr = (unsigned char)k;
+ 531   1              device = (unsigned char)((k>>7)&0x0e);
+ 532   1              device |= EEPROM;
+ 533   1              WriteIIC(device,addr,ch);
+ 534   1              WaitEEprom();
+ 535   1      }
+ 536          /*
+ 537          void WritePage24C16(unsigned short addr1,unsigned short addr2,unsigned char *p)
+ 538          {
+ 539          unsigned char i,ch;
+ 540                  IIC_Start();
+ 541                  i = (unsigned char)((addr1 >>7 ) & 0x0e);
+ 542                  i |= EEPROM;
+ 543                  IIC_Tx(i);
+ 544                  IIC_Tx((Byte)addr1);
+ 545                  for(i=0; i<16; i++)
+ 546                          {
+ 547                          ch = p[addr2 + i];
+ 548                          IIC_Tx(ch);
+ 549                          }
+ 550                  IIC_Stop();
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 10  
+
+ 551                  WaitEEprom();
+ 552          }
+ 553          */
+ 554          void LoadDDCData()
+ 555          {
+ 556   1              Byte xdata *DDCptr;
+ 557   1              Byte i;
+ 558   1              DDC_CTL0 = 0;           //disable DDC
+ 559   1              DDC_CTL1 = 0;           //disable DDC
+ 560   1              DDCptr = 0xf800;  
+ 561   1      //              printf("\r\n");
+ 562   1              for(i=0;i<128;i++)
+ 563   1                      {
+ 564   2                      CLRWDT = 0x55;
+ 565   2                      *DDCptr++ = Read24C16(ep_DDC_DVI+i);
+ 566   2      //              printf("%x ",(Word)*(DDCptr-1));
+ 567   2                      }
+ 568   1      //              printf("\r\n");
+ 569   1              DDCptr = 0xf900;  
+ 570   1              for(i=0;i<128;i++)
+ 571   1                      {
+ 572   2                      CLRWDT = 0x55;
+ 573   2                      *DDCptr++ = Read24C16(ep_DDC_Analog+i);
+ 574   2                      }
+ 575   1              DDC_CTL0 = (EN_DDC|CLR_UPD|CLR_PTR);    
+ 576   1              DDC_CTL1 = (EN_DDC|CLR_UPD|CLR_PTR);    
+ 577   1      }
+ 578          
+ 579          void SaveDDCData(Bit Channel)
+ 580          {
+ 581   1              Byte xdata *DDCptr;
+ 582   1              Byte i,ptr;
+ 583   1              DDC_CTL0 = 0;           //disable DDC
+ 584   1              DDC_CTL1 = 0;           //disable DDC
+ 585   1              if(Channel == 0)
+ 586   1                      {
+ 587   2                      DDCptr = 0xf800;
+ 588   2                      for(i=0;i<16;i++)
+ 589   2                              {
+ 590   3                              IIC_Start();
+ 591   3                              IIC_Tx(0xa0);           // DVI :0x80
+ 592   3                              IIC_Tx(i*8+ep_DDC_DVI);
+ 593   3                              for(ptr=0;ptr<8;ptr++) //page write 8bytes(16bytes max)
+ 594   3                                      IIC_Tx(*DDCptr++);
+ 595   3                              IIC_Stop();
+ 596   3                              WaitEEprom();   //polling acknowledge
+ 597   3                              CLRWDT = 0x55;
+ 598   3                              }
+ 599   2                      }
+ 600   1              else
+ 601   1                      {
+ 602   2                      DDCptr = 0xf900;                //analog:0x00
+ 603   2                      for(i=0;i<16;i++)
+ 604   2                              {
+ 605   3                              IIC_Start();
+ 606   3                              IIC_Tx(0xa0);
+ 607   3                              IIC_Tx(i*8);
+ 608   3                              for(ptr=0;ptr<8;ptr++) //page write 8bytes(16bytes max)
+ 609   3                                      IIC_Tx(*DDCptr++);
+ 610   3                              IIC_Stop();
+ 611   3                              WaitEEprom();   //polling acknowledge
+ 612   3                              CLRWDT = 0x55;
+C51 COMPILER V7.03   IIC                                                                   12/21/2006 16:55:05 PAGE 11  
+
+ 613   3                              }
+ 614   2                      }
+ 615   1              DDC_CTL0 = (EN_DDC|CLR_UPD|CLR_PTR);    
+ 616   1              DDC_CTL1 = (EN_DDC|CLR_UPD|CLR_PTR);    
+ 617   1              if(!Channel)
+ 618   1                      SaveDDC0 = 0;
+ 619   1              else
+ 620   1                      SaveDDC1 = 0;
+ 621   1      }
+ 622          
+ 623          void CheckVersion()
+ 624          {
+ 625   1              Byte i,Ver1,Ver2;
+ 626   1              for(i=0;i<10;i++)
+ 627   1                      {
+ 628   2                      Ver1 = Read24C16(ep_FirmWare_Ver);
+ 629   2                      Ver2 = Read24C16(ep_FirmWare_Rev);
+ 630   2                      if(Ver1 == Version && Ver2 == Reversion)
+ 631   2                              break;
+ 632   2                      Sleep(10);
+ 633   2                      }
+ 634   1              if(i==10)
+ 635   1                      {
+ 636   2      //              #if PRINT_MESSAGE
+ 637   2      //                      printf("Version error.\n");
+ 638   2      //              #endif
+ 639   2                      InitEEPROM();
+ 640   2                      }
+ 641   1      }
+ 642          
+ 643          void CheckDevice(void)
+ 644          {
+ 645   1              Byte i;
+ 646   1      //      WriteIIC(TW990x_Addr,0x2F,0x55);
+ 647   1              i = ReadIIC(TW990x_Addr,0x00);
+ 648   1      //      printf("TW data=0x%x\r\n",(Word)i);
+ 649   1              DecoderICEn = 1;                        // +jwshin 050722
+ 650   1      //      if(i == 0x1a) DecoderICEn =1;
+ 651   1      //      else DecoderICEn =0;
+ 652   1      
+ 653   1      
+ 654   1      }
+ 655          
+ 656          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1411    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      21
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,2046 @@
+#include "NT686xx_MCU_REG.H"
+#include "RAM.H"
+#include "ModeHandle.H"
+//#include "MyDef.H"
+#include "UserAdj.H"
+#include "NVRAM.H"
+#include "Scaler.H"
+#include "MCU.H"
+#include "PANEL.H"
+#include "AutoAdj.H"
+#include "OSD.H"
+#include "ROM_MAP.H"
+#include <math.h>
+#include "NT686xx_SC_REG.H"
+#include "Board.H"
+#include "Mis.H"
+#include "DDC_Ci.H"
+#include "8051.H"
+#include "BFControl.H"
+#include "HDCP.H"
+
+//#define PRINT(x) //printf(x)
+//#define ModeDebug
+
+
+#ifdef _NONHDCP_SOLUTION_
+void NonHDCPDetection(unsigned char k);
+#endif
+
+code unsigned char bitMask[]={
+	0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,
+};
+code unsigned char PolTab[]={
+	0x00,0x02,0x01,0x03
+};
+
+bit GetSpecialMode(unsigned short value);
+
+
+void Mode_Check()
+{
+	if((ucPowerStatus > 0x7f)){
+		CheckFreq();
+		SyncSource();
+	}
+
+	//	Check DVI signal
+	if((bForceToSleep != 0)&&(ucSignalType == sigDVI)){
+		CheckDVI();
+	}
+}
+
+void GetCounter(void)
+{
+unsigned short value;
+
+	if(usTmpHSync == 0xffff){
+		ForceToBackground(0);	//Set fource to background
+		SYNC_INT_DISABLE();
+		WriteIIC560(SYNC_INT_FLAG1,0x3f);
+		WriteIIC560(SYNC_INT_FLAG2,0x1f);
+
+#ifdef _NONHDCP_SOLUTION_
+		NonHDCPDetection(0);	// Jude 2008/05/07
+#endif
+//		ClearNewModeLED();
+/*	
+		if (bLFLEDState)
+		{
+			BF_DisableWindow(BF_WINDOW_1);
+			LED_LF_Off();
+		}
+*/
+		if (ucIsLFDemoMode) 
+			LFLeaveDemoMode(0);
+			
+		//	THEFT DETERRENCE
+		bShowTheftOSD = FALSE;
+#if NT68167
+//		WriteIIC560(POWER_CTRL2,0x41);
+#else
+
+		if(ucSignalType == sigDVI)
+			WriteIIC560(POWER_CTRL2,0x03);
+		else
+			WriteIIC560(POWER_CTRL2,0x01);
+#endif
+
+		bSyncFlag = TRUE;
+		bIsSyncConfirmed = FALSE;
+#if PanelID == CMO_M190E5_L0E  //neo 060811
+		ScalerOutputOFF();
+#endif
+		if(ucSignalType == sigSOG){
+			if(CheckSOG() == 0)
+				GoToSeparateSync();
+		}
+
+
+#if DUAL_MODE==ON
+	#ifdef _SCDT_SOLUTION_
+		if ((ucSignalType == sigDVI) && ((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18))	// Jude 2008/04/30	
+	#else
+		if(ucSignalType == sigDVI && (ReadIIC560(DVI_STATUS) & BIT_0) != 0 )
+	#endif
+		{
+			DVIBandWidthDetection();			
+	#if _ENABLE_HDCP_
+			CheckHDCPSyncMode();
+	#endif
+		}
+#endif			
+	}
+
+// VGA/DVI Connector
+// Connected
+//	if((ReadIIC560(0x1ab) & 0x3e) != 0x00){
+	if(bSyncFlag != FALSE){
+
+#if DUAL_MODE==ON
+	#ifdef _SCDT_SOLUTION_
+		if ((ucSignalType == sigDVI) && ((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18))	// Jude 2008/04/30
+	#else
+		if (ucSignalType == sigDVI)
+	#endif
+		{
+			if (abs(ucCurrentDVIClk - ReadIIC560(DVI_PIXELCLK)) > 2)
+			{
+				DVIBandWidthDetection();
+	#if _ENABLE_HDCP_
+				CheckHDCPSyncMode();
+	#endif
+				usTmpHSync = 0xffff;
+				usTmpVSync = 0xffff;
+			}
+		}
+#endif
+
+		WriteIIC560(SYNC_INT_FLAG1,0x3f);
+		WriteIIC560(SYNC_INT_FLAG2,0x1f);
+		bInSync = TRUE;
+
+//bit0==>H_pol, bit1==>V_pol
+		ucHVPolarity = ReadIIC560(GI_SYNC_STATUS);
+//		printf("GI_SYNC_STATUS=%x\r\n",(unsigned short)ucHVPolarity);	
+
+//usHSync=xx.xKHz
+		if(((ucHVPolarity & BIT_6) != 0)&&(ucSignalType != sigDVI)){
+			usHSync = 0;		//h overflow
+			bInSync = FALSE;
+		}
+		else{
+			value = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+//			printf("GI_HCNT_LI=%d\r\n",value);	
+			//if((value == 0x1fff)||(value == 0)){
+			if((value == 0x1fff)||(value < 256)){
+				usHSync = 0;
+				bInSync = FALSE;
+			}
+			else{
+			    usHSync = 960000 / value;
+//				printf("usHSync %d\r\n",(unsigned short)usHSync);
+			}
+		}
+//usVSync=xx.xHz
+		if(((ucHVPolarity & BIT_7) != 0)&&(ucSignalType != sigDVI)){
+			usVSync = 0;		//v overflow
+			bInSync = FALSE;
+		}
+		else{
+			value = ReadWordIIC560(GI_VCNT_LI) & 0x1fff;
+//			printf("GI_VCNT_LI=%d\r\n",value);
+			//if((value == 0x1fff)||(value == 0)){
+			if((value == 0x1fff)||(value < 128)){
+				usVSync = 0;
+				bInSync = FALSE;
+			}
+			else{
+				usVSync = 468750 / value;
+//				printf("usVSync %d\r\n",(unsigned short)usVSync);
+			}
+		}
+//bit1==>H_pol, bit0==>V_pol
+		ucHVPolarity &= 0x03;
+		ucHVPolarity = PolTab[ucHVPolarity];	// V+H => H+V	
+//	}
+//	else{
+
+		switch(ucSignalType){
+		case sigSEP:
+			if((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18){
+//printf("sigSEP-Nosync\r\n");
+				bInSync = FALSE;				
+			} 
+			break;
+		case sigCOMP:
+		case sigSOG:
+			if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) == 0){
+//printf("sigCOMP/sigSOG-Nosync\r\n");
+				bInSync = FALSE;
+			}
+			break;
+		case sigDVI:
+#ifdef _SCDT_SOLUTION_
+			if((ReadIIC560(GI_SYNC_STATUS) & 0x18) != 0x18) {	// Jude 2008/04/30
+#else
+			if((ReadIIC560(DVI_STATUS) & BIT_0) == 0){
+#endif
+//printf("sigDVI-Nosync\r\n");
+				bInSync = FALSE;
+			}
+			break;
+		}
+/*
+		if((ucSignalType > 0)&&(ucSignalType < 3)){		//compostive
+			if((value & BIT_5) == 0){
+				flag1 &= ~BIT_0;	//no sync
+			}
+		}
+		else if(ucSignalType == 0){
+			if((value & 0x18) != 0x18){
+				flag1 &= ~BIT_0;	//no sync
+			}
+		}
+*/
+
+		if(bInSync == FALSE){			
+			MCU_INT_DISABLE();
+			SYNC_INT_DISABLE();
+			//bInSync = FALSE;
+		}
+
+	}	
+}
+
+void CheckFreq(void)
+{
+//unsigned char k,tag_value;
+#ifdef AUTO_OFFSET
+unsigned char Reg0x06A;
+#endif
+
+	ucLoopTimer_10ms = 100;
+	do{
+
+		GetCounter();
+
+//		if (ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source&&bBGMode&&Get_usOSDTimer_10ms()!=0)	return;
+		if((ucOSDType == DIRECT_MENU)&&((ucOSDLvl1_Cursor == mDirect_Source)||(ucOSDLvl1_Cursor == mDirect_Volume)))
+		{	//
+			// SHOW "SORUCE MENU" WITHOUT CARE SIGNAL CHANGED.
+			// EX. "NO VIDEO INPUT" OR "OUT OF RANGE"
+			//
+			return;
+		}
+		//-------------------------------
+		if((bInSync==FALSE) || (ucLoopTimer_10ms == 0)){
+			//------------------ +jwshin 111213   여기 Routine으로 진입하여... Nosync를 조사한다...
+			//if (ucOSDType==DIRECT_MENU&&ucOSDLvl1_Cursor == mDirect_Source&&bBGMode&&Get_usOSDTimer_10ms()!=0)	return;
+			//printf("ucOSDType=%d\r\n",(unsigned short)ucOSDType);
+			//printf("ucOSDLvl1_Cursor %d\r\n",(unsigned short)ucOSDLvl1_Cursor);
+			//printf("bBGMode %d\r\n",(unsigned short)bBGMode);
+			//printf("usOSDTimer_10ms %d\r\n",(unsigned short)usOSDTimer_10ms);
+			GrnLEDFlick();				// +jwshin 111213
+			NoSync();
+			return;
+		}
+		else{
+			if((bVideoMuted == TRUE)&&(bForceToSleep == FALSE)){
+//			if((flag1 & BIT_3) != 0){
+/*				if((ucSignalType == 2) && ((flag2 & BIT_4) == 0)){
+					flag1 &= ~BIT_0;
+					flag2 |= BIT_4;
+					return;
+				}*/		
+				//printf("FROM NO SIGNAL POWERSAVING\r\n");
+				ScalerPowerUp();
+			}
+		}
+		if(ucTmpHVPol != ucHVPolarity){
+			MuteScreen();
+			ucTmpHVPol = ucHVPolarity;
+#ifdef ModeDebug
+			printf("ucHVPolarity Change %bx\r\n",ucHVPolarity);
+#endif
+		}
+
+		if(usTmpHSync > usHSync){
+			if((usTmpHSync - usHSync) > 3){
+				MuteScreen();
+				usTmpHSync = usHSync;
+#ifdef ModeDebug
+				printf("usHSync Change %d\r\n",usHSync);
+#endif
+			}
+		}
+		else{
+			if((usHSync - usTmpHSync) > 3){
+				MuteScreen();
+				usTmpHSync = usHSync;
+#ifdef ModeDebug
+				printf("usHSync Change %d\r\n",usHSync);
+#endif
+			}
+		}
+		if(usTmpVSync > usVSync){
+			if((usTmpVSync - usVSync) > 3){
+				MuteScreen();
+				usTmpVSync = usVSync;
+#ifdef ModeDebug
+				printf("usVSync Change %d\r\n",usVSync);
+#endif
+			}
+		}
+		else{
+			if((usVSync - usTmpVSync) > 3){
+				MuteScreen();
+				usTmpVSync = usVSync;
+#ifdef ModeDebug
+				printf("usVSync Change %d\r\n",usVSync);
+#endif
+			}
+		}
+		if((ucSyncStableTimer_10ms < (SYNC_STABLE_TIME - 20)) && (ucSyncStableTimer_10ms > 0)){
+#ifdef ModeDebug
+			printf("CheckSyncMode\r\n");
+#endif
+			CheckSyncMode();
+		}
+		else if(ucSyncStableTimer_10ms == 0){
+			bSyncFlag = FALSE;
+		}
+	}while(ucSyncStableTimer_10ms != 0);
+	//---------------- 신호가 있을 경우 여기로 진입...+jwshin 111213
+	if(bModeChanged == TRUE){
+//		printf("MODECHANGED\r\n");				
+#ifdef _NONHDCP_SOLUTION_
+			NonHDCPDetection(1);	// Jude 2008/05/07
+#endif
+		LED_RedOff();
+		LED_GrnOn();
+		bSyncFlag = TRUE;
+		if(bForceToSleep == TRUE || (ReadIIC560(ADC_POWER_UP) == 0)){ 	//check force to sleep
+			bForceToSleep = FALSE;
+			ScalerPowerUp();
+		}
+		bVideoMuted = FALSE;
+		bModeChanged = FALSE;
+
+		GetMode();
+//printf("0x369=%x,=%d\r\n",(unsigned short)ReadIIC560(0x369),(unsigned short)usPoSvTimer);
+		CheckModeChange();
+		if(usTmpHSync == 0xffff){
+			return;
+		}
+		
+		//-------------- +jwshin 111213   현재의 모드를 Display...
+		ShowSourceMsg();										
+		//-----------------------------
+		
+//		LoadCurrentSettingByInput(1,0);
+		if(bOutOfLimit == FALSE){
+			SetDisplayNormal();
+
+			if((usVSync > V_UPPER_BOUND)){
+				if(bSwitchSource){
+					//bShowNotAvailable = FALSE;
+					ShowSourceMsg();
+					ucOSDType = OUT_RANGE2;
+					Set_usWarningMsgTimer_1s(10);
+					ucOutOfRangeTimer = 11;		// ShowOutOfRange85 with 10 times for each 5 secs and 60 sec interval
+				}
+				else{
+					ShowOutOfRange85Hz();
+					Set_usWarningMsgTimer_1s(60);
+					ucOutOfRangeTimer = 10;		// ShowOutOfRange85 with 10 times for each 5 secs and 60 sec interval
+				}
+				if(usTmpHSync == 0xffff){
+					MCU_INT_ENABLE();
+					SYNC_INT_ENABLE();
+					return;
+				}
+				else{
+					BackLightOn();
+				}
+
+				
+			}			
+			else{
+#ifdef AUTO_OFFSET
+				//WriteIIC560(0x1C7, 0x10);
+				printf("AutoOffset\r\n");
+
+				Reg0x06A = ReadIIC560(JITTER_CTRL);
+				WriteIIC560(JITTER_CTRL,0x00);	//Analog de-jitter
+				bOptAbort = FALSE;
+				WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart - 20);
+				SetADC_AutoOffset();
+				//WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+				SetHP();
+				WriteIIC560(JITTER_CTRL,Reg0x06A);	//Analog de-jitter
+#endif
+				
+				//if ( (bAC1stOn || bDCReset) && (bResolutionNot && ucModeNumber != BEST_RESULT) ) 
+				//{
+				//	ShowBestResultMsg();
+				//}
+				//else	
+				if(bSwitchSource){
+					//bShowNotAvailable = FALSE;
+					ShowSourceMsg();
+//					BackLightOn();
+				}
+			}
+		}
+		else{
+			bShowOutRange = FALSE;
+//			ScalerOutputON(1);
+			bBGMode = FALSE;
+			ForceToBackground(0);
+
+			//if ( (bAC1stOn || bDCReset ) && (bResolutionNot && ucModeNumber != BEST_RESULT) )
+			//{
+			//	ShowBestResultMsg();
+			//	OUTRRANGETimer = 800;	//480+300
+			//}
+			//else 
+			if(bSwitchSource){
+				//bShowNotAvailable = FALSE;
+				ShowSourceMsg();
+				ucOSDType = OUT_RANGE;
+				Set_usPoSvTimer(800);	//OUTRRANGETimer = 800;	//480+300
+			}
+			else{
+				ShowOutOfRangeOver();
+			}
+			
+			if(usTmpHSync == 0xffff){
+				MCU_INT_ENABLE();
+				SYNC_INT_ENABLE();
+				return;
+			}
+			else{
+				BackLightOn();
+			}
+
+		}
+
+		SetVolume();
+		
+		if((ucOSDType != OUT_RANGE)&&(ucOSDType != OUT_RANGE2)){
+			 LFEnableSettings();					
+			ucIsLFDemoMode = Read24C16(EPADDR_LFDEMO_ONOFF);
+
+			if(ucIsLFDemoMode) LFEnterDemoMode(0);
+
+		}
+/*		else if(bLFLEDState){
+			BF_DisableWindow(BF_WINDOW_1);
+			LED_LF_Off();
+		}	
+*/
+		bDCReset = FALSE;		// 2005-01-09
+		bAC1stOn = FALSE;
+		bSwitchSource = FALSE;
+		
+
+
+/////////////////////////////////////////////////
+#if 0
+		if(ucSignalType == sigDVI)
+			ucPowerStatus = SoftPowerOnFlag | InputSourceDVI;
+		else
+			ucPowerStatus = SoftPowerOnFlag & ~InputSourceDVI;
+
+		if(ucPowerStatus != Read24C16(EPADDR_POWER)){
+			Write24C16(EPADDR_POWER,ucPowerStatus);//0x04 = Power Status
+		}
+#endif
+//////////////////////////////////////////////////
+
+#if 1 
+		WriteIIC560(SYNC_INT_FLAG1,0x3f);
+		WriteIIC560(SYNC_INT_FLAG2,0x1f);
+		SYNC_INT_ENABLE();
+		MCU_INT_ENABLE();
+#endif
+
+#ifdef BenQ_FACTORY		
+		if((IIC0_ADDR == BenQ_ADDR)||(IIC1_ADDR == BenQ_ADDR)){	//restart Alignment
+			IIC0_ADDR = BenQ_ADDR;	//stop iic for Alignment busy
+			IIC0_ADDR = BenQ_ADDR | ENIIC;
+			IIC0INT_CLR = 0xff;
+			IIC0_INT_EN = 0xf8;
+			IIC1_ADDR = BenQ_ADDR;	//stop iic for Alignment busy
+			IIC1_ADDR = BenQ_ADDR | ENIIC;
+			IIC1INT_CLR = 0xff;
+			IIC1_INT_EN = 0xf8;
+		}
+#endif
+	}
+	else{
+
+		if((bOutOfLimit == TRUE)&&
+			//(OutOfRangeTimer < 480)&&(OutOfRangeTimer > 0)){
+			//(OUTRRANGETimer < 480)&&(OUTRRANGETimer > 0)){
+			(Get_usPoSvTimer() < 480)&&(Get_usPoSvTimer() > 0)){
+			if ( bForceToSleep == FALSE ) {
+//				ScalerOutputON(1);
+				ShowOutOfRangeOver();
+			}
+		}
+	}
+}
+
+
+
+void GetMode(void)
+{
+unsigned char pol,k1,k2,ch;
+unsigned short value,temp,v,i;
+
+//printf("V_CHANG_CTRL=%02x\r\n",(unsigned short)ReadIIC560(V_CHANG_CTRL));
+#if 1
+	ch = ReadIIC560(GPORT_CTRL);
+//	if((usHSync > 344)&&(usHSync < 366)&&(usVSync > 859)&&(usVSync < 881)){	//2007-05-08 ADD 1920x1080i
+		if(ReadIIC560(GI_SYNC_STATUS) & BIT_2){
+			WriteIIC560(GPORT_CTRL,((ch|BIT_2)&~BIT_6));	// BIT_6 FOR 1080i/PAT-1 QUALITY 2007-05-15
+			//interlace
+			bIsInterlaced = TRUE;
+			WriteIIC560(V_CHANG_CTRL, 0x24);
+//			printf("Interlace mode\r\n");
+		}
+		else{
+			WriteIIC560(GPORT_CTRL,(ch&~BIT_2));
+			bIsInterlaced = FALSE;
+//			printf("Non-Interlace mode\r\n");
+	}
+#endif
+#if 1
+	usVTotal = (unsigned short)(((unsigned long)usHSync * 1000 + (usVSync / 2))/ usVSync);
+#else
+	value = ReadWordIIC560(0x19b) & 0x1fff;
+	temp = ReadWordIIC560(0x19d) & 0x1fff;
+	usVTotal = (unsigned short)(((float)temp * 2048 / value) + 0.5);
+#endif
+
+
+	k1 = 0xff;
+	k2 = 0xff;
+	temp = 0xffff;
+	
+	// SPECIAL MODE
+	mode_k = 0xff;
+	maxPhase = 0;
+	
+	for(ucModeNumber=0; ucModeNumber<AMOUNT_OF_MODE; ucModeNumber++){
+		if(ucModeNumber < NUMBER_OF_USER_MODE){
+
+			value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVTotal;
+			v = EEPROM_TimingTable[(unsigned short)ucModeNumber].ucResolution;
+			v = V_ActiveTab[v]+8;
+			if ( bIsInterlaced == TRUE ) {
+				value = value >> 1;
+			}
+			value = abs(usVTotal - value);
+			if((temp > value)&&(v < usVTotal)){
+				temp = value;
+				k1 = ucModeNumber;
+			}
+
+			value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHFreq;
+			if(abs(usHSync - value) < EEPROM_TimingTable[(unsigned short)ucModeNumber].ucRange){
+				value = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVFreq;
+				if(abs(usVSync - value) < EEPROM_TimingTable[(unsigned short)ucModeNumber].ucRange){
+/*
+						//---------------------------------------------------------------
+						//	CHECK POLARITY ONLY WHEN LOWER RESOLUTION
+						//-----------------------------------------------------------------
+						if ( usHSync < 327 )	// 315+12
+						{
+							pol = (unsigned char)EEPROM_TimingTable[(unsigned short)ucModeNumber].ucSyncPolarity;
+							if(pol == ucHVPolarity){
+								break;
+							}
+							else{
+								if (ucModeNumber==2) // 640x480	//2006-02-25 640x480@60(+,+) NORMAL DISPLAY ( NOT NEW MODE )
+									break;
+								else
+									k2 = ucModeNumber;
+							}
+						}
+						else
+							break;
+*/
+					value = EEPROM_TimingTable[(unsigned short)ucModeNumber].ucResolution;
+				
+					//---------------------------------------------------------------
+					//	CHECK POLARITY ONLY WHEN LOWER RESOLUTION & SPECIAL MODE
+					//-----------------------------------------------------------------
+					// if(((ucSignalType == sigSEP)&&(ucModeNumber < 4))||((value == R1024x768)||(value == R1280x768)||(value == R1360x768))){
+					if((ucSignalType == sigSEP)&&(usHSync < 327)&&(ucModeNumber != M720x576_60)){	// || ((value == R1024x768)||(value == R1280x768)||(value == R1360x768))){	// 315+12
+						pol = (unsigned char)EEPROM_TimingTable[(unsigned short)ucModeNumber].ucSyncPolarity;
+						if(pol == ucHVPolarity){
+							break;
+						}
+						else{
+//							if(ucModeNumber == T640x480_60) // 640x480	//2006-02-25 640x480@60(+,+) NORMAL DISPLAY ( NOT NEW MODE )
+//								break;
+//							else
+								k2 = ucModeNumber;
+						}
+					}
+					else {
+						// SPECIAL MODE
+						if(GetSpecialMode(value) == TRUE)
+						{
+							if(bOptAbort == TRUE){
+								if(ucHVPolarity == 0x02)
+									mode_k = M1440x900_60R;//ucModeNumber;//1440x900-R (60)
+								else
+									mode_k = M1440x900_60;//ucModeNumber;//1440x900 (60)
+								ucModeNumber = mode_k;
+								//printf("mode_Ky=%d\r\n",(unsigned short)mode_k);		
+							}
+							
+							if ( ucModeNumber==M1280x1024_60 ||ucModeNumber==M1680x1050_60)	//1280x1024@60 & 1680x1050@60 & 1680x1050@60-R
+							{
+								//printf("%d=usVTotal=%d\r\n",(unsigned short)ucModeNumber,usVTotal);
+								if ( abs(usVTotal-EEPROM_TimingTable[(unsigned short)ucModeNumber].usVTotal) > 7 )
+									continue;
+							}
+//							printf("ok\r\n");
+							break; 
+						}
+					}
+
+				}
+			}
+
+			// SPECIAL MODE
+			if((mode_k != 0xff)&&(ucModeNumber == (NUMBER_OF_USER_MODE-1))){	//
+				ucModeNumber = mode_k;
+//				printf("ucModeNumber %d\r\n",(unsigned short)ucModeNumber);
+				break;
+			}
+			
+		}
+		else{
+				i = NVRAM_HS((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+				value = Read24C16_Short(i);
+				if(abs(usHSync - value) < 12){
+					i = NVRAM_VS((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+					value = Read24C16_Short(i);
+					if(abs(usVSync - value) < 12){
+						i = NVRAM_POL((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+						pol = Read24C16(i);	// check ucHVPolarity
+						i = NVRAM_VTOTAL((unsigned short)(ucModeNumber-NUMBER_OF_USER_MODE));
+						value = Read24C16_Short(i);
+						if(abs(usVTotal - value) < 3){
+							if(pol == ucHVPolarity){
+								break;
+							}
+						}
+					}
+				}
+		}
+	}
+/*
+	//------------------------------------------------------------------------------------------
+	//	1280x768 & 1024x768 ARE SIMILAR, (-,+) =1280x768, OTHERWIASE=1024x768
+	//------------------------------------------------------------------------------------------
+	if( ucModeNumber==15  && ucHVPolarity==1 )
+	{
+		ucModeNumber = 39;
+	}
+	else if ( ucModeNumber==17 && ucHVPolarity==1 )
+	{
+		ucModeNumber = 40;
+	}
+	else
+*/
+//printf("mode %d,k1=%d,k2=%d\r\n",(unsigned short)ucModeNumber,(unsigned short)k1,(unsigned short)k2);
+	if(ucModeNumber >= AMOUNT_OF_MODE){
+//#ifdef ModeDebug
+//		printf("user's mode %d %d\r\n",(unsigned short)k1,(unsigned short)k2);
+//#endif
+		if(k2 == 0xff)
+			k2 = k1;
+
+#if 1
+		if(k2 < 2){	//dos mode
+			if((ucHVPolarity == 2)||(usVTotal < 400)){	//640x350 (2,3)
+	
+					k2 = 1;
+			}
+			else{	//720x400 (0,1)
+
+					k2 = 0;
+			}
+		}
+		
+		SetUserMode(k2);
+//		bIsNewMode = TRUE;
+		
+#else
+		if(k2 < 4){	//dos mode
+			if((ucHVPolarity == 2)||(usVTotal < 400)){	//640x350 (2,3)
+				if(usVSync > 750)
+					k2 = 3;
+				else
+					k2 = 2;
+			}
+			else{	//720x400 (0,1)
+				if(usVSync > 750)
+					k2 = 1;
+				else
+					k2 = 0;
+			}
+		}
+		
+		//------------------------------------------------------------------------------------------
+		//	1280x768 & 1024x768 ARE SIMILAR, (-,+) =1280x768, OTHERWIASE=1024x768 , jerry
+		//------------------------------------------------------------------------------------------
+		if (k2 ==17) { 
+			if ( ucHVPolarity == 1 )
+				ucModeNumber = 40;	//1280x768@75 (-,+)
+			else
+				ucModeNumber = 17;
+		}
+		else if (k2 ==15) {	
+			if ( ucHVPolarity == 1 )
+				ucModeNumber = 39;	// 1280x768@60 (-,+)
+			else
+				ucModeNumber = 15;
+		}
+		else
+		{
+			SetUserMode(k2);
+//			bIsNewMode = TRUE;
+		}
+#endif
+	}
+
+	LoadModeDependentSettings();
+	
+
+	ucMinVP = 0;
+	if((usVTotal - V_ActiveTab[ucResolution]) < 25)
+		ucMaxVP = (unsigned char)(usVTotal - V_ActiveTab[ucResolution] + 10);
+	else
+		ucMaxVP = (unsigned char)(usVTotal - V_ActiveTab[ucResolution] + 15);
+	if(ucMaxVP < usVPStart)
+		ucMaxVP = (unsigned char)usVPStart;
+
+//printf("Mode %d(k1=%d,k2=%d)\r\n",(unsigned short)ucModeNumber, (unsigned short)k1, (unsigned short)k2);
+//printf("ucHVPolarity= %x\r\n",(unsigned short)ucHVPolarity);
+//printf("usHSync= %d\r\n",usHSync);
+//printf("usVSync= %d\r\n",usVSync);
+//printf("ucMaxVP = %d\r\n",(unsigned short)ucMaxVP);
+//printf("usVTotal=%d\r\n", (unsigned short)usVTotal);
+//printf("usHTotal=%d\r\n", (unsigned short)usHTotal);
+//printf("ucResolution=%d\r\n", (unsigned short)ucResolution);
+
+	if((ucResolution == R1280x1024)&&(PanelWidth == 1680)&&(PanelHeight == 1050)){
+#if 1
+		WriteIIC560(INTE_CTRL,0x09);//0x09
+#else
+		WriteIIC560(INTE_CTRL,0x88);//0x09
+		WriteIIC560(0x066,0x20);
+		WriteIIC560(0x06c,0xc8);
+#endif
+	}
+	else{
+		WriteIIC560(INTE_CTRL,0x09);//00
+		WriteIIC560(0x066,0x00);
+		WriteIIC560(0x06c,0x00);
+	}
+//	if((H_ActiveTab[ucResolution] == PanelWidth)&&(V_ActiveTab[ucResolution] == PanelHeight))
+//		WriteIIC560(0x1db,0x81);
+//	else
+//		WriteIIC560(0x1db,0x83);
+	if(ucSignalType != sigDVI){	//H/V, H+V, SOG
+#if NT68167
+		WriteIIC560(POWER_CTRL2,0x69);
+#else
+		WriteIIC560(POWER_CTRL2,0x28);
+#endif
+		WriteIIC560(DVI_CTRL12,0xa0);	//DVI power down
+		SetADC_PLL();
+		SetHP();
+		SetVP();
+//sharpness
+//		WriteIIC560(BK_H_SHAP_CTRL,0x00);	//horizontal
+//		WriteIIC560(BK_V_SHAP_CTRL,0x00);	//vertical
+
+/*
+#ifdef R640_TUNE
+		if( H_ActiveTab[ucResolution] >=1280 || H_ActiveTab[ucResolution] == 640 )
+			WriteIIC560(NR_CTRL,0x7a);
+#else
+		if ( H_ActiveTab[ucResolution] >=1280 )
+			WriteIIC560(NR_CTRL,0x7a);
+#endif
+		else
+*/
+
+#if PanelID==AUO_M220EW01_V0
+		WriteIIC560(NR_CTRL,0x79);	
+		WriteIIC560(NR_THR_CTRL1,0x43);
+		WriteIIC560(JITTER_CTRL,0x12);			//Analog de-jitter
+		WriteIIC560(NR_THR_CTRL2,0x23);
+#elif PanelID==CMO_M220Z1_L01
+		WriteIIC560(NR_CTRL,0x7a);
+		WriteIIC560(NR_THR_CTRL1,0x43);
+		WriteIIC560(JITTER_CTRL,0x12);			//Analog de-jitter
+		WriteIIC560(NR_THR_CTRL2,0x23);
+#else
+		if(H_ActiveTab[ucResolution] == PanelWidth){
+			WriteIIC560(NR_CTRL,0x7a);//79	
+			WriteIIC560(NR_THR_CTRL1,0x43);
+			WriteIIC560(JITTER_CTRL,0x12);			//Analog de-jitter
+			WriteIIC560(NR_THR_CTRL2,0x23);
+		}
+		else{
+			WriteIIC560(NR_CTRL,0x79);//79	
+			WriteIIC560(NR_THR_CTRL1,0x43);
+			WriteIIC560(JITTER_CTRL,0x12);			//Analog de-jitter
+			WriteIIC560(NR_THR_CTRL2,0x23);
+		}
+#endif
+//#if PanelID==HSD_HSD190MEN3_A
+//		WriteIIC560(NR_CTRL,0x79);	
+//		WriteIIC560(NR_THR_CTRL1,0x43);
+//		WriteIIC560(JITTER_CTRL,0x12);			//Analog de-jitter
+//		WriteIIC560(NR_THR_CTRL2,0x13);
+//#else
+//		WriteIIC560(NR_CTRL,0x73);	
+//		WriteIIC560(NR_THR_CTRL1,0x43);
+//		WriteIIC560(JITTER_CTRL,0xd2);			//Analog de-jitter
+//		WriteIIC560(NR_THR_CTRL2,0x13);
+//#endif
+#if 1 	//NSTL ATI X1300 640x480 GARY NOISE
+/*		if(ucResolution==R640x480){
+			WriteIIC560(ADC_VREF_TEST,0x01);
+			WriteIIC560(ADC_BW_CTRL,0x00);
+		}
+		else{
+			WriteIIC560(ADC_VREF_TEST,0x03);
+			if(H_ActiveTab[ucResolution] > 1152)
+				WriteIIC560(ADC_BW_CTRL,0x06);
+			else
+				WriteIIC560(ADC_BW_CTRL,0x04);
+		}*/
+		if(H_ActiveTab[ucResolution] > 1152){
+//			WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+//			WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+//			WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+			WriteIIC560(ROFFSET, ucR_ADC_Offset);
+			WriteIIC560(GOFFSET, ucG_ADC_Offset);
+			WriteIIC560(BOFFSET, ucB_ADC_Offset);
+		}
+		else if(H_ActiveTab[ucResolution] > 800){
+//			WriteIIC560(RGAIN_HI,ucR_ADC_Gain+4);
+//			WriteIIC560(GGAIN_HI,ucG_ADC_Gain+4);
+//			WriteIIC560(BGAIN_HI,ucB_ADC_Gain+4);
+			WriteIIC560(ROFFSET, ucR_ADC_Offset+4);
+			WriteIIC560(GOFFSET, ucG_ADC_Offset+4);
+			WriteIIC560(BOFFSET, ucB_ADC_Offset+4);
+		}
+		else{
+//			WriteIIC560(RGAIN_HI,ucR_ADC_Gain+6);
+//			WriteIIC560(GGAIN_HI,ucG_ADC_Gain+6);
+//			WriteIIC560(BGAIN_HI,ucB_ADC_Gain+6);
+			WriteIIC560(ROFFSET, ucR_ADC_Offset+6);
+			WriteIIC560(GOFFSET, ucG_ADC_Offset+6);
+			WriteIIC560(BOFFSET, ucB_ADC_Offset+6);
+		}
+#endif
+		
+//		printf("AnalogTest\r\n");
+	}
+	else{		//DVI
+//		printf("Reg0x369=%x\r\n",(unsigned short)ReadIIC560(0x369));
+//		printf("Reg0x364=%x\r\n",(unsigned short)ReadIIC560(0x364));
+		WriteIIC560(JITTER_CTRL,0x00);	//DVI don't need
+		WriteIIC560(POWER_CTRL2,0x02);	//DVI power up
+		WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+		SetADC_PLL();
+#if DVI_MODE == DVI_DE_MODE
+		//usVPStart = 0;
+		usVPStart = 0x1e0;	//Jacky 20040908
+		usHPStart = 0;
+		WriteWordIIC560(GI_CAP_VBEGE_LI,usVPStart);		//Jacky 20040908
+		WriteWordIIC560(GI_CAP_VBEGO_LI,usVPStart);
+		WriteWordIIC560(GI_CAP_HBEG_LI,usHPStart);
+#else
+		bOptAbort = FALSE;
+		AutoPosition();
+#endif
+//sharpness
+//		WriteIIC560(BK_H_SHAP_CTRL,0x00);	//horizontal
+//		WriteIIC560(BK_V_SHAP_CTRL,0x00);	//vertical
+		WriteIIC560(NR_CTRL,0x00);
+		WriteIIC560(NR_THR_CTRL1,0x00);
+	}
+//	printf("flag3 = %x\r\n",(unsigned short)flag3);
+	if(bOutOfLimit == FALSE){
+#if NT68167
+		if(ucSignalType == sigSOG){	// AUTO OFFSET
+			WriteIIC560(0x1BB, 0x80);
+			WriteIIC560(0x1BC, 0x03);
+		}
+#endif
+		if(ucSignalType != sigDVI){
+			SetADC_Phase();
+//			SetHP();
+//			SetVP();
+		}
+		SetScaler();
+		SetMinMax();
+	}
+}
+
+void SetUserMode(unsigned char mode)
+{
+//code unsigned char i1600x1200Tab[]={
+//	0x01,0x30,0x0d,0x20,0x08,0x70,0x00,0x2e,		//over (1600x1200)
+//};
+//xdata unsigned char	DataBuffer[8];
+unsigned short sync_mode;//, target;	//, tmpVTotal;
+//unsigned char *p;
+//	p = &DataBuffer;
+#ifdef ModeDebug
+	printf("usVTotal = %d\r\n",usVTotal);
+#endif
+		ucModeNumber = Read24C16(EPADDR_USERSTART) + (NUMBER_OF_USER_MODE-1);//0x0a = user mode start point
+		ucModeNumber++;
+		if(ucModeNumber >= AMOUNT_OF_MODE){ //2004-02-07 mingyu for new mode point 0...16
+			ucModeNumber = NUMBER_OF_USER_MODE;
+		}
+		Write24C16(EPADDR_USERSTART,ucModeNumber - (NUMBER_OF_USER_MODE-1));//0x0a = user mode start point
+#ifdef ModeDebug
+	printf("ucModeNumber =  %bd\r\n",ucModeNumber);
+	printf("UserModePoint =  %bd\r\n",Read24C16(EPADDR_USERSTART));//0x0a = user mode start point
+#endif
+
+	sync_mode = (unsigned short)(ucModeNumber - NUMBER_OF_USER_MODE);
+	Write24C16_Short(NVRAM_HS(sync_mode), usHSync);
+	Write24C16_Short(NVRAM_VS(sync_mode), usVSync);
+	Write24C16(NVRAM_POL(sync_mode), ucHVPolarity);
+	
+	 // Double V if interlace is present // Jude 03/21/2005
+//	tmpVTotal = usVTotal;
+
+//	if ( bIsInterlaced == TRUE )
+//		tmpVTotal = usVTotal << 1;
+
+	//if(usVTotal < 1200){		//under 1600x1200
+#if NT68167
+	usHPStart = EEPROM_TimingTable[mode].usHStart-18;
+#else	
+	usHPStart = EEPROM_TimingTable[mode].usHStart;
+#endif
+	usHTotal = EEPROM_TimingTable[mode].usHTotal;
+	usVPStart = EEPROM_TimingTable[mode].usVStart;
+	ucResolution = EEPROM_TimingTable[mode].ucResolution;
+
+	// for 1280x800 mingyu
+	if(ucResolution == R1024x768){ // 1024x768
+//		printf("VTotal=%d HV_Pol=%d\r\n",usVTotal,(unsigned short)ucHVPolarity);
+//		if((usVTotal > 816)&&((ucHVPolarity == 0x01)||(ucHVPolarity == 0x02))){	//1280x800
+		if(usVTotal > 815 ){	//@60
+			// Force time with vtotal 838 to 1024x768@70Hz // Jude 2007/05/16
+			if(!((abs(usVTotal - 838) < 4)&&(abs(usVSync - 700) < 11))){
+//			if((usVTotal < 835) || (usVTotal > 841)){
+				usHTotal = 1688;	// 1280x800
+				ucResolution = R1280x800;
+			}
+		}
+	}
+#if 0
+		if(ucResolution == 5){	//1024x768
+			if((usVTotal > 816)&&(ucHVPolarity == 0x01)){	//1280x800
+				usHTotal = 1688;		//preset usHTotal = 1688
+				ucResolution = 18;
+			}
+			else{
+				if((usVSync < 710)||(usVSync > 730)){//1280x768
+					if((ucHVPolarity == 0x01)||(ucHVPolarity == 0x02)){	//this is 1280x768
+						usHTotal = 1688;		//preset usHTotal = 1688
+						ucResolution = 14;
+					}
+				}
+			}
+		}
+		else if(ucResolution == 2){	//640x480
+//			if((usVSync < 690)||(usVSync > 710)){	//non 70Hz
+			if((abs(usVSync - 600) < 12)&&(abs(usVTotal - 517) < 3)){
+				if(ucHVPolarity != 0){	//this is 848x480
+					usHTotal = 1088;		//preset usHTotal = 1088
+					ucResolution = 15;
+				}
+			}
+			else if(usVSync > 710){	//non 60/70Hz
+				if(ucHVPolarity != 0){	//this is 848x480
+					usHTotal = 1088;		//preset usHTotal = 1088
+					ucResolution = 15;
+				}
+			}
+			else{
+				if((usVSync > 590)&&(usVSync < 610)&&(ucHVPolarity == 0x01)){	//60Hz
+					if(usVTotal > 586){	//720x576
+						usHTotal = 912;		//preset usHTotal = 912
+						ucResolution = 16;
+					}
+				}
+			}
+		}
+		else if(ucResolution == 10){	//
+			if((usVSync > 840) && (usVSync < 860))
+				if (ucHVPolarity == 3) usHTotal = 1728;	// 1280x1024@85Hz // Jude 2005/04/19
+		}
+		else if(ucResolution == 3){	//800x600
+			if((usVSync > 490) && (usVSync < 510)){//50Hz
+				usHTotal = 864;	// 720x576 // mingyu 2005/04/22
+				ucResolution = 16;
+			}
+			else if((ucHVPolarity == 1)&&(usVTotal > 631)){
+				usHTotal = 1408;	// 1088x612 // mingyu 2005/04/22
+				ucResolution = 17;
+			}
+		}
+#endif
+//	}
+/*	else{
+		usHPStart = i1600x1200Tab[0];
+		usHPStart <<= 8;
+		usHPStart |= i1600x1200Tab[1];
+		usHTotal = i1600x1200Tab[4];
+		usHTotal <<= 8;
+		usHTotal |= i1600x1200Tab[5];
+		usVPStart = i1600x1200Tab[6];
+		usVPStart <<= 8;
+		usVPStart |= i1600x1200Tab[6];
+		ucResolution = i1600x1200Tab[2];
+	}*/
+
+	ucADCPhase = 32;
+
+	Write24C16_Short(NVRAM_HPSTART(ucModeNumber), usHPStart);
+	Write24C16(NVRAM_RESOLU(ucModeNumber), ucResolution);
+	Write24C16(NVRAM_PHASE(ucModeNumber), ucADCPhase);
+	Write24C16_Short(NVRAM_HTOTAL(ucModeNumber), usHTotal);
+	Write24C16_Short(NVRAM_VPSTART(ucModeNumber), usVPStart);
+
+	Write24C16_Short(NVRAM_HTOTAL50(ucModeNumber), usHTotal);
+	//Write24C16_Short(NVRAM_HP50(ucModeNumber), usHPStart);
+
+
+	sync_mode = ucModeNumber - NUMBER_OF_USER_MODE;
+	Write24C16_Short(NVRAM_VTOTAL(sync_mode), usVTotal);
+
+	
+//	target = NVRAM_AUTOADJ_S + (ucModeNumber / 8);
+//	sync_mode = ucModeNumber % 8;
+//	DataBuffer[0] = Read24C16(target);
+//	DataBuffer[0] &= ~bitMask[sync_mode];
+//	Write24C16(target, DataBuffer[0]);
+}
+
+
+void SyncSource(void)
+{
+unsigned char value;
+
+	if(bVideoMuted == TRUE){
+
+		if((Get_usPoSvTimer() == 0)&&(IsBackLightOn() == ON)){
+
+			if(bIsBurnInEnabled == FALSE){
+	//			printf("NO SIGNAL THEN POWERSAVING\r\n");
+				PowerSaving();
+//				LED_GrnOff();				// -jwshin 111213
+//				LED_RedOn();
+				//bIsDPMS = TRUE;
+			}
+			else{
+				OSD_OFF();			//Factory mode
+
+				Set_usPoSvTimer(300);//1500;
+				if(ucBGColor == 0)
+					value = 4;
+				else if(ucBGColor == 4)
+					value = 2;
+				else if(ucBGColor == 2)
+					value = 1;
+				else if(ucBGColor == 1)
+					value = 7;
+				else
+					value = 0;
+				//Clear fource to background
+				
+				bBGMode = FALSE;
+				ForceToBackground(value);	//Set fource to background
+				ShowAging(value);
+//				LED_GrnOff();				// -jwshin 111213
+//				LED_RedOn();
+				//BackLightOn();
+			}
+		}
+#if DUAL_MODE==ON
+		else if((IsVGAconnected() == FALSE)&&(IsDVIconnected() == FALSE)){
+#else
+		else if(IsVGAconnected() == FALSE){
+#endif
+//printf("DISCONNECT\r\n");
+			bDCReset = FALSE;
+			
+			if((Get_usPoSvTimer() < 480)&&(bIsBurnInEnabled == FALSE)){
+				if(bForceToSleep == FALSE){
+					if(Get_usPoSvTimer() == 0){
+						ScalerPowerUp();
+					}
+					else{
+						while(ucSyncStableTimer_10ms != 0){};
+//						ScalerOutputON(1);
+						ShowDisconnected();
+						BackLightOn();
+						Set_usPoSvTimer(530);	//480+100;
+					}
+				}
+			}
+//			return;
+		}
+#if DUAL_MODE==ON
+		else if(((IsVGAconnected() == TRUE)||(IsDVIconnected() == TRUE))&&
+#else
+		else if((IsVGAconnected() == TRUE)&&
+#endif
+				(bShowDiscon == TRUE)){
+//printf("NO SIGNAL FROM DISCONNECT\r\n");
+			//preset no sync
+			bVideoMuted = FALSE;
+			NoSync();
+
+		}
+
+//		if ( bIsBurnInEnabled==TRUE ||  Get_usPoSvTimer() < 490 ){	//2007-03-06 490 // "SOURCE=AUTO" POWER ON WILL GO TO VGA FIRSTLY // MAKE THE TIME OF CHANGE PORT LONGER
+		if(bIsBurnInEnabled==TRUE ||  ucSyncSourceTimer == 0 ){	//2007-03-06 490 // "SOURCE=AUTO" POWER ON WILL GO TO VGA FIRSTLY // MAKE THE TIME OF CHANGE PORT LONGER
+			switch(ucSignalType){
+			case sigSEP:		// H/V
+//				if(ucSource != mSource_VGA){
+					value = ReadIIC560(POWER_CTRL2);
+					WriteIIC560(POWER_CTRL2,(value | BIT_1));
+//					WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+					WriteIIC560(DVI_CTRL15, 0xf3);	// IT IS NECESSARY
+					Sleep(10);
+#ifdef _SCDT_SOLUTION_
+					if (DVIPresentDetection() == TRUE)	// Jude 2008/04/30	
+#else
+					if((ReadIIC560(DVI_STATUS) & BIT_0) != 0)
+#endif
+					{
+						GoToDVI();
+//						Sleep(200);
+						break;
+					}
+/*					if(ucSource == mSource_DVI){
+						ucSignalType = sigDVI;
+						break;
+					}*/
+//				}
+				if(CheckSOG() == 0)
+					GoToCompositeSync();
+				break;
+				
+			case sigCOMP:		// H+V
+//printf("comp%d\r\n",(unsigned short)usPoSvTimer);
+				GoToSeparateSync();
+				Sleep(10);	//	VGA FIRST AFTER AC ON    usPoSvTimer += 5; //xxx
+//				if ( bShowNotAvailable )	Set_usPoSvTimer(500);
+				break;
+			case sigSOG:		//SOG
+//printf("sog\r\n");
+				GoToCompositeSync();
+				break;
+			case sigDVI:		//DVI
+#if 1
+				if(ucSource!=mSource_DVI){
+					if(CheckSOG() == 0)
+						GoToCompositeSync();
+				}
+				else{
+					value = ReadIIC560(POWER_CTRL2);
+					WriteIIC560(POWER_CTRL2,(value | BIT_1));
+//					WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+					WriteIIC560(DVI_CTRL15, 0xf3);	// IT IS NECESSARY
+					Sleep(10);
+
+#ifdef _SCDT_SOLUTION_					
+                    			if (DVIPresentDetection() == TRUE)	// Jude 2008/04/30	
+#else
+					if((ReadIIC560(DVI_STATUS) & BIT_0) != 0)
+#endif
+					{
+						GoToDVI();
+					}
+					else
+					{
+						WriteIIC560(POWER_CTRL2,(value & ~BIT_1));
+						Sleep(100);	//POWER CONSUMPTION AT POWERSAVING WHILE SROURCE=DVI
+					}
+				}
+
+#else
+				if(((ReadIIC560(DVI_STATUS) & BIT_0) == 0) || (ucDVICnt == 0)){
+					ucDVICnt = DVI_RETRY_COUNTER;
+					if(CheckSOG() == 0)
+						GoToCompositeSync();
+					}
+				if (ucDVICnt) ucDVICnt--;
+
+				if (ucPowerStatus == inputDigital1)
+				{
+				}
+#endif
+				break;
+			}
+			ucSyncSourceTimer = 25;
+		}
+		
+	}
+#ifdef GREEN_POWER
+	else{
+      	if((ucLFMode == LF_MODE_OFF)&&(ucDynBKMode==0)&& IsBackLightOn()){
+		   	if((ReadIIC560(GI_AUTO_TUNE_CTRL) & BIT_1) == 0){
+				if(ReadIIC560(GI_PHS_SDIFF_LI0) < PURE_BLACK_LEVEL){
+					if(ReadIIC560(GI_PHS_SDIFF_LI1) < PURE_BLACK_LEVEL){
+						if(ReadIIC560(GI_PHS_SDIFF_HI0) < PURE_BLACK_LEVEL){
+							if(ucPurelyBlackCounter != 0){
+								ucPurelyBlackCounter--;
+							}
+							else{
+								value = ucBrightness;
+								ucBrightness = GREEN_POWER_BRIGHTNESS;
+								SetBrightness();
+								ucBrightness = value;
+								ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+								bSetGreenPower = TRUE;
+							}
+						}
+						else{
+							CheckGreenPower();
+						}
+					}
+					else{
+						CheckGreenPower();
+					}
+				}
+				else{
+					CheckGreenPower();
+				}
+				WriteIIC560(GI_AUTO_TUNE_CTRL,0x6e);
+			}
+		}
+	}
+#endif
+#ifdef ANTI_ESD
+	else if ( bFactoryMode == FALSE ) {
+		
+		// ESD ISSUE, AVOID HPLL REGISTER COULD BE RESET, jerry
+		if ( ucTimer1000ms==0 && bOutOfLimit==FALSE &&  ucSignalType != sigDVI ) {
+
+#ifdef R640_TUNE
+			if( H_ActiveTab[ucResolution] == 640 )
+			usHTotal <<= 1;
+#endif
+
+			if ( ucESDSaveD1 != ReadIIC560(HPLL_FREQ_CTRL) || 
+			ucESDSaveD2 != ReadIIC560(HSDDS_RATIO_LI) ||
+			ucESDSaveD3 != ReadIIC560(HSDDS_RATIO_MI) ||
+			ucESDSaveD4 != ReadIIC560(HSDDS_RATIO_HI) ||
+			ucESDSaveF1 != ReadIIC560(DPLL_FREQ_CTRL) ||
+			usHTotal != ReadWordIIC560(HSDDS_DIVIDER_LI)
+			)
+			{
+				usTmpHSync = 0xffff;
+			}
+
+#ifdef R640_TUNE
+			if( H_ActiveTab[ucResolution] == 640 )
+			usHTotal >>= 1;
+#endif
+		}
+
+	}
+#endif
+/*	else{
+#if PANEL == CPT_CLAA150XP02
+	CheckDotPattern();
+#endif
+	}*/
+}
+
+#ifdef GREEN_POWER
+void CheckGreenPower(void)
+{
+	if(bSetGreenPower == TRUE){
+		SetBrightness();
+		bSetGreenPower = FALSE;
+		ucPurelyBlackCounter = PURE_BLACK_FRAME_NUM;
+	}
+}
+#endif
+
+void CheckSyncMode(void)
+{
+unsigned char temp,value;
+unsigned short usHSync_Bak,usVSync_Bak;
+	if(bIsSyncConfirmed == FALSE){
+//printf("CheckSyncMode\r\n");
+		temp = ucSignalType;
+		usHSync_Bak = usHSync;
+		usVSync_Bak = usVSync;
+		switch(ucSignalType){
+		case sigSEP:		//SeparateSync
+			ucSignalType = sigSOG;
+			SetInterface();
+			Set_usTimer1_1ms(40);
+			usHSync = 0;
+			usVSync = 0;
+			while(Get_usTimer1_1ms() != 0){
+				if(GetHsyncLevel == LOW){
+					usVSync++;
+				}
+				else{
+					usHSync++;
+				}
+			}
+#ifdef ModeDebug
+			printf("H2 = %d\r\n",usHSync);
+			printf("L2 = %d\r\n",usVSync);
+#endif
+//			if((abs(usHSync_Bak-650)<15)&&(abs(usVSync_Bak-599)<12)){	//1680x1050
+			if(((usHSync_Bak > 550)||(abs(usHSync_Bak-474)<8))&&(abs(usVSync_Bak-599)<12)){
+				usHSync = usHSync / 10;
+				usVSync += 20;
+			}
+			else{
+				usHSync >>= 2;
+			}
+			if((usHSync > usVSync)&&(usVSync > 100)){
+				Sleep(80);
+				if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+//					printf("CheckSyncMode:sigSEP->sigSOG2\r\n");
+					break;
+				}
+			}
+//			else{
+				ucSignalType = sigCOMP;
+				SetInterface();
+				Sleep(100);
+				value = ReadIIC560(GI_SYNC_STATUS);
+//				printf("0x19a = %x\r\n",(unsigned short)value);
+				if((value & 0xf8) != 0x38){		//SeparateSync
+					ucSignalType = temp;
+					SetInterface();
+					Sleep(80);
+					usHSync = usHSync_Bak;
+					usVSync = usVSync_Bak;
+//					printf("CheckSyncMode:sigSEP->sigSEP\r\n");
+				}
+				else{
+//					printf("CheckSyncMode:sigSEP->sigCOMP\r\n");
+				}
+
+				WriteIIC560(SYNC_INT_FLAG1,0x3f);
+				WriteIIC560(SYNC_INT_FLAG2,0x1f);
+
+//			}
+			break;
+		case sigCOMP:		//CompositeSync
+/*			value = ReadIIC560(0x19a);
+			printf("0x19a = %x\r\n",(unsigned short)value);
+			if((value & 0xf8) != 0x38){		//SeparateSync
+				ucSignalType = 0;
+				SetInterface();
+				printf("SeparateSync\r\n");
+				break;
+			}*/
+			ucSignalType = sigSOG;
+			SetInterface();
+			Set_usTimer1_1ms(40);
+			usHSync = 0;
+			usVSync = 0;
+			while(Get_usTimer1_1ms() != 0){
+				if(GetHsyncLevel == LOW){
+					usVSync++;
+				}
+				else{
+					usHSync++;
+				}
+			}
+#ifdef ModeDebug
+			printf("H3 = %d\r\n",usHSync);
+			printf("L3 = %d\r\n",usVSync);
+#endif
+//			if((abs(usHSync_Bak-650)<15)&&(abs(usVSync_Bak-599)<12)){	//1680x1050
+			if(((usHSync_Bak > 550)||(abs(usHSync_Bak-474)<8))&&(abs(usVSync_Bak-599)<12)){
+				usHSync = usHSync / 10;
+				usVSync += 20;
+			}
+			else{
+				usHSync >>= 2;
+			}
+			if((usHSync > usVSync)&&(usVSync > 100)){
+				Sleep(80);
+				if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+//					printf("CheckSyncMode:sigCOMP->sigSOG3\r\n");
+					break;
+				}
+			}
+//			else{
+				ucSignalType = temp;
+				SetInterface();
+				Sleep(80);
+
+				WriteIIC560(SYNC_INT_FLAG1,0x3f);
+				WriteIIC560(SYNC_INT_FLAG2,0x1f);
+
+				usHSync = usHSync_Bak;
+				usVSync = usVSync_Bak;
+//				printf("CheckSyncMode:sigCOMP->sigCOMP\r\n");
+//			}
+			break;
+/*		case 2:
+			value = ReadIIC560(0x19a);
+			printf("0x19a = %x\r\n",(unsigned short)value);
+			if((value & 0xf8) != 0x38){		//SeparateSync
+				ucSignalType = 0;
+				SetInterface();
+				break;
+			}
+			break;*/
+		}
+		bIsSyncConfirmed = TRUE;
+	}
+}
+
+void GoToSeparateSync(void)
+{
+unsigned char value;
+	value = ReadIIC560(POWER_CTRL2);
+	WriteIIC560(POWER_CTRL2,(value & ~BIT_1));	//DVI power down
+//xxx	WriteIIC560(DVI_CTRL15, 0xb3); 
+	WriteIIC560(DVI_CTRL12,0xa0);	//DVI power down
+	ucSignalType = sigSEP;
+	SetInterface();
+	Sleep(20);
+//	NVTprint("Separate Sync\r\n");
+}
+
+void GoToCompositeSync(void)
+{
+
+unsigned char value;
+	value = ReadIIC560(POWER_CTRL2);
+	WriteIIC560(POWER_CTRL2,(value & ~BIT_1));	//DVI power down
+//xxx	WriteIIC560(DVI_CTRL15, 0xb3); 
+	WriteIIC560(DVI_CTRL12,0xa0);	//DVI power down
+	ucSignalType = sigCOMP;
+	SetInterface();
+	Sleep(40);
+
+//	NVTprint("Composite Sync\r\n");
+
+}
+
+bit CheckSOG(void)
+{
+unsigned char value;
+#if NT68167
+float Rati;
+#else
+unsigned short temp,low,high;
+#endif
+	if(ucSignalType != sigSOG){	//SOG ?		
+		value = ReadIIC560(POWER_CTRL2);
+		WriteIIC560(POWER_CTRL2,(value & ~BIT_1));
+//xxx		WriteIIC560(DVI_CTRL15, 0xb3); 
+		WriteIIC560(DVI_CTRL12,0xa0);	//DVI power down
+		ucSignalType = sigSOG;
+		SetInterface();
+	}
+#if NT68167
+	usTimer1_1ms = 40;
+	usHSync = 0;
+	usVSync = 0;
+	while(usTimer1_1ms != 0){
+		if((ReadIIC560(DVI_STATUS) & BIT_6)){
+			usHSync++;
+		}
+		else{
+			usVSync++;
+		}
+	}
+//	printf("H1 = %d\r\n",usHSync);
+//	printf("L1 = %d\r\n",usVSync);
+	Rati = (float)usVSync / usHSync;
+//	printf("Rati = %f\r\n",Rati);
+	if ( Rati < 0.25 && Rati > 0.015 )
+		return 1;
+	else
+		return 0;
+#else
+	Set_usTimer1_1ms(40);
+	usHSync = 0;
+	usVSync = 0;
+	while(Get_usTimer1_1ms() != 0){
+		if(GetHsyncLevel == LOW){
+			usVSync++;
+		}
+		else{
+			usHSync++;
+		}
+	}
+#ifdef ModeDebug
+	printf("H1 = %d\r\n",usHSync);
+	printf("L1 = %d\r\n",usVSync);
+#endif
+	low = usVSync;
+	high = usHSync;
+
+	usHSync >>= 2;
+	if((usHSync > usVSync)&&(usVSync > 80)){//100
+		Sleep(80);
+		temp = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+	    usHSync = 960000 / temp;
+		temp = ReadWordIIC560(GI_VCNT_LI) & 0x1fff;
+		usVSync = 468750 / temp;
+//		if((abs(usHSync-650)<15)&&(abs(usVSync-599)<12)){	//1680x1050
+		if(((usHSync > 550)||(abs(usHSync-474)<8))&&(abs(usVSync-599)<12)){
+			high = high / 10;
+			low += 20;
+		}
+		else{
+			high >>= 2;
+		}
+		if((high > low)&&(low > 100)){
+			if((ReadIIC560(GI_SYNC_STATUS) & BIT_5) != 0){
+#ifdef ModeDebug
+				printf("goto Sync on green1\r\n");
+#endif
+				return 1;
+			}
+			else{
+				return 0;
+			}
+		}
+		else{
+			return 0;
+		}
+	}
+	else{
+		return 0;
+	}
+#endif
+}
+
+void GoToDVI(void)
+{
+	WriteIIC560(POWER_CTRL2,0x02);	//DVI power up
+	WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+//	WriteIIC560(DVI_CTRL15, 0xf3);
+	ucSignalType = sigDVI;
+	SetInterface();
+	usTmpHSync = 0xffff;
+//	NVTprint("GoToDVI\r\n");
+}
+
+void NoSync(void)
+{
+	if(bVideoMuted == FALSE){
+		SetVolume();
+		if(bForceToSleep == TRUE){ //
+			bForceToSleep = FALSE;
+			ScalerPowerUp();
+		}
+		
+		bOutOfLimit = FALSE;
+		bVideoMuted = TRUE;
+		bShowNoSync = FALSE;
+		bShowDiscon  = FALSE;
+		bShowOutRange = FALSE;
+		//bSOG2nd = FALSE;
+		bShowNoInput = FALSE;
+		bOutOfRange = FALSE;
+//		ClearNewModeLED();
+	
+		BackLightOff();
+//		bIsFRCMode = 0;
+		bBGMode=FALSE;	//2007-03-07	POWERON WITH NO VIDEO WILL SHOW BLACK 
+		ForceToBackground(0);	//Set fource to background
+		
+		OSD_OFF();
+
+//		printf("NoSync=%d\r\n",(unsigned short)ucSignalType);
+		if((bFactoryMode == TRUE)&&(bIsBurnInEnabled == FALSE)){//BenQ: fast test
+			Set_usPoSvTimer(100);
+			bShowNoSync = TRUE;
+			if(!IsBackLightOn()) BackLightOn();
+		}
+		else{
+			Set_usPoSvTimer(500);
+		}
+		ucSyncSourceTimer = 25;
+	}
+	else if((Get_usPoSvTimer() < 300)&&(Get_usPoSvTimer() > 0)&&(bShowNoSync==FALSE)){
+
+		bDCReset = FALSE;
+		
+		if(bIsBurnInEnabled != FALSE){
+
+			bBGMode = FALSE;
+			ForceToBackground(0);
+			Sleep(20);
+			Set_usPoSvTimer(0);
+			bShowNoSync = TRUE;
+			ucBGColor = 0;
+		}
+		else if(ucModeNumber > 0x80){		// AC power start and no sync
+
+//			printf("NO SIGNAL0\r\n");	//NO SIGNAL@AC ON or SOURCE NO INPUT			+jwshin 111209
+			if(((Get_usWarningMsgTimer_1s() == 0)&&(bShowNoInput == TRUE))){
+//				ScalerOutputON(1);
+				ShowNoVideo();								// +jwshin 111213
+				//ShowNoSync();
+//				BackLightOn();
+				bShowNoSync = TRUE;
+			}
+			else{														// 초기 신호가 없을 때는 여기로 진입..~!
+//				ScalerOutputON(1);
+				ShowNoVideo();				
+//				BackLightOn();
+			}
+		}
+		else{		//no sync									// 사용 중 PC에서 신호가 안 들어 올 때~!.. +jwshin 111209
+//			printf("NO SIGNAL1\r\n");
+//			ShowNoSync();
+				ShowNoVideo();								// +jwshin 111212
+			//BackLightOn();
+//			bShowNoSync = TRUE;						// -jwshin 111212
+		}
+		
+		if(!IsBackLightOn())
+			BackLightOn();	// 2005-10-20
+		
+	}
+}
+
+void SetMinMax(void)
+{
+unsigned short k;
+// Set Minimum and Maximum
+		k = Read24C16_Short(NVRAM_HTOTAL50((unsigned short)ucModeNumber));
+		//k = Read24C16_Short(NVRAM_HTOTAL((unsigned short)ucModeNumber));
+#ifdef R640_TUNE
+	if(H_ActiveTab[ucResolution] == 640)  usActiveH >>= 1;
+#endif
+
+	usMaxHP = k - usActiveH - 20;	//w;
+//	ucMinHP = (unsigned char)((k * 3) / 100);
+//	if((usMaxHP - ucMinHP) < 100)
+		ucMinHP = (unsigned char)((k * 1) / 100);
+	if(usHPStart > usMaxHP){
+		usMaxHP = usHPStart;
+	}
+	if(usHPStart < ucMinHP){
+		ucMinHP = usHPStart;
+	}
+	
+//	for AutoColor : usHPStart must be larger than 20    2005-11-23 jerry
+	if ( ucMinHP < 20 ) ucMinHP = 20;
+
+	if((usHPStart + usActiveH) < (k - 50)){
+		usMinClk = k - 50;
+		usMaxClk = k + 50;
+	}
+	else{
+		usMinClk = usHPStart + usActiveH;
+		if (usMinClk > usHTotal ) usMinClk = usHTotal;
+		usMaxClk = usMinClk + 100;
+	}
+
+	// For 50% HP // Jude 03/15/2005
+#if 0	
+//		i = NVRAM_HP50((unsigned short)ucModeNumber);
+		usReferenceHP = Read24C16_Short(NVRAM_HP50((unsigned short)ucModeNumber));
+#endif
+
+#ifdef R640_TUNE
+	if(H_ActiveTab[ucResolution] == 640) usActiveH <<= 1;
+#endif
+	GetHmask();
+//	printf("usMaxHP=%d\r\n",usMaxHP);
+//	printf("ucMinHP=%d\r\n",(unsigned short)ucMinHP);
+//	printf("k(usHTotal)=%d\r\n",k);
+//	printf("usMinClk=%d\r\n",usMinClk);
+//	printf("usMaxClk=%d\r\n",usMaxClk);
+
+}
+
+void CheckModeChange(void)
+{
+unsigned char value;
+unsigned short k;
+	value = ReadIIC560(SYNC_INT_FLAG1);
+	if((value & 0x3c) != 0){
+
+		WriteIIC560(SYNC_INT_FLAG1,0x3f);
+		MuteScreen_1();
+		return;
+	}
+	value = ReadIIC560(GI_SYNC_STATUS);
+	if((ucSignalType > sigSEP)&&(ucSignalType < sigDVI)){		//compostive
+		if((value & BIT_5) == 0){
+			MuteScreen_1();
+			return;
+		}
+	}
+	else if(ucSignalType == sigSEP){
+		if((value & 0x18) != 0x18){
+			MuteScreen_1();
+			return;
+		}
+	}
+	else{
+		k = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+		if((k == 0x1fff)||(k == 0)){
+			MuteScreen_1();
+		}
+	}
+}
+
+void MuteScreen(void)
+{
+	OSD_OFF();
+	BackLightOff();
+	
+	if(ucBGColor != 0)
+		bBGMode = FALSE;
+
+	ForceToBackground(0);	//Set fource to background
+	ucSyncStableTimer_10ms = SYNC_STABLE_TIME;
+	bModeChanged = TRUE;
+	SYNC_INT_DISABLE();
+	WriteIIC560(SYNC_INT_FLAG1,0x3f);
+	WriteIIC560(SYNC_INT_FLAG2,0x1f);
+
+#if PanelID == CMO_M190E5_L0E                                     //coffee 061027
+      ScalerOutputOFF();
+#endif
+
+}
+void MuteScreen_1(void)
+{
+//printf("MuteScreen_1:Backlightoff\r\n");
+	BackLightOff();
+	WriteIIC560(OSD_CTRL1,0x00);
+	if(ucBGColor != 0)
+		bBGMode = FALSE;
+	
+	ForceToBackground(0);	//Set fource to background
+	bOptAbort = TRUE;
+	usTmpHSync = 0xffff;
+	usTmpVSync = 0xffff;
+#if PanelID == CMO_M190E5_L0E                                 //coffee 061027
+      ScalerOutputOFF();
+#endif
+}
+
+/*
+void SetAutoAdjTag(void)
+{
+unsigned short addr;
+unsigned char i, k;
+	addr = NVRAM_AUTOADJ(ucModeNumber);
+	k = ucModeNumber % 8;
+	i = Read24C16(addr);			
+	Write24C16(addr, i|bitMask[k]);
+}
+*/
+//void ClearNewModeLED(void)
+//{
+//	if(bIsNewMode == 1){	//clear LED flash when new mode.
+//		bIsNewMode = 0;
+//		bIsLEDFlashing = FALSE;
+//
+//		if ( bGLEDState == FALSE )
+//			LED_GrnOn();
+//	}
+//}
+
+void WaitSetup(unsigned char time)
+{
+	ucLoopTimer_10ms = time;			// timeout n ms
+	while(ucLoopTimer_10ms != 0){
+		CheckModeChange();
+	}
+}
+
+
+
+void CheckDVI(void)
+{
+// CHECK DVI SIGNAL WHEN FORCE TO SLEEP
+unsigned char DVI_DCLK;
+//	if(--ucLoopCounter == 0){
+	if(Get_usOSDTimer_10ms() == 0){
+	//DVI on
+		WriteIIC560(POWER_CTRL2,0x02);	//DVI power up
+		WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+		WriteIIC560(DVI_CTRL13,0x01);	//DVI power up
+		WriteIIC560(DVI_CTRL14,0x00);	//DVI power up
+		WriteIIC560(DVI_CTRL15,0xf3);	//DVI power up
+	
+		Sleep(10);
+
+#ifdef _SCDT_SOLUTION_
+		if (DVIPresentDetection() == TRUE)  { // Jude 2008/04/30
+#else
+		if( (ReadIIC560(DVI_STATUS) & BIT_0) != 0 ){
+#endif
+		//read DLCK
+			DVI_DCLK = ReadIIC560(DVI_PIXELCLK);
+//printf("0dvi=%d\r\n",(unsigned short)DVI_DCLK);//xxx
+			if(abs(ucCurrentDVIClk - DVI_DCLK) > 1){
+				ucCurrentDVIClk = DVI_DCLK;
+				ucTime2Backlight = 0;
+//				bForceToSleep = 0;		//shampoo
+				bOptAbort = TRUE;
+
+				usTmpHSync = 0xffff;
+				BackLightOn();
+				SYNC_INT_ENABLE();
+				return;
+			}
+		//DVI off
+			WriteIIC560(POWER_CTRL2,0x00);
+		 	WriteIIC560(DVI_CTRL12,0x80);
+//			ucLoopCounter = 100;
+		}
+		else{
+//printf("0aaalg\r\n");//xxx
+			if ( ucSource!=mSource_DVI )//|| ucModeNumber!=0xff)
+			{
+				if(CheckSOG() == 0){
+	//				bForceToSleep = 0;		//shampoo
+					GoToCompositeSync();
+				}
+			}
+		}
+		
+		Set_usOSDTimer_10ms(50);
+	}
+}
+
+
+#if DUAL_MODE==ON
+// Function to solve SCDT issues
+// Jude 2008/04/30
+//#define _SCDT_SOLUTION_
+unsigned char DVIPresentDetection(void)
+{
+	unsigned char  i,j;
+	unsigned char  reg0X1E7, reg0X102, reg0X143, reg0X144, reg0X146;
+	unsigned char  clk,tmp;
+	unsigned short sync;
+	if ((ReadIIC560(DVI_STATUS)& BIT_0) != 0)
+	{
+#if 1 //ifdef _SCDT_SOLUTION_
+		reg0X1E7 = ReadIIC560(0x1e7);
+		WriteIIC560(0x1e7, reg0X1E7 | BIT_0);	// Enable DVI page (Page3)
+		WriteIIC560(0x300, 0x10);
+		WriteIIC560(0x300, 0x00);
+		
+		clk = 0;
+		j = 0;
+		for(i = 0; i < 60; i++)
+		{
+			tmp = ReadIIC560(0x304);
+			if (abs(tmp-clk)<2) 
+				j++;
+			else 
+				j = 0;
+			clk = tmp;
+			Sleep(1);
+			if (j> 30) 
+			{
+				if (clk < 10)  i = 60;
+				if (clk > 180) i = 60;
+				break;
+			}
+		}
+
+		WriteIIC560(0x1e7, reg0X1E7);
+
+		if (i >= 60) return FALSE;
+        
+		reg0X102 = ReadIIC560(POWER_CTRL2);
+		reg0X143 = ReadIIC560(DVI_CTRL12);
+		reg0X144 = ReadIIC560(DVI_CTRL13);
+		reg0X146 = ReadIIC560(DVI_CTRL15);
+        
+		tmp = ucSignalType;
+		ucSignalType = sigDVI;
+		WriteIIC560(POWER_CTRL2,0x02);	//DVI power up
+		WriteIIC560(DVI_CTRL12,0x20);	//DVI power up
+		WriteIIC560(DVI_CTRL13, reg0X144 & ~BIT_0);
+		WriteIIC560(DVI_CTRL15, 0xf3);
+
+		SetInterface();
+		Sleep(20);
+		sync = ReadWordIIC560(GI_HCNT_LI) & 0x1fff;
+		if((sync == 0x1fff)||(sync < 640)) 
+		{
+			WriteIIC560(POWER_CTRL2,reg0X102);	//DVI power up
+			WriteIIC560(DVI_CTRL12, reg0X143);	//DVI power up
+			WriteIIC560(DVI_CTRL13, reg0X144);
+			WriteIIC560(DVI_CTRL15, reg0X146);
+			ucSignalType = tmp;
+			SetInterface();
+			return FALSE;
+		}
+#endif
+		return TRUE;
+	}
+	else
+		return FALSE;
+}
+
+
+#ifdef _NONHDCP_SOLUTION_
+// Function to solve the issue of snow display over non-HDCP DVI signal
+// k=0 : Reset HDCP if RstCnt == 0;
+// k=1 : Reset RstCnt
+// Jude 2008/05/07
+void NonHDCPDetection(unsigned char k)
+{
+	static unsigned char  RstCnt= 0;
+	
+	if (ucSignalType != sigDVI) return;
+
+	if (k == 0)
+	{
+		if (RstCnt == 0)
+		{
+			WriteIIC560(0x368, 0x75);
+			WriteIIC560(0x368, 0x74);
+			RstCnt = 1;
+			//printf("HDCP Reset during GetCounter\n\r");
+		}
+	}
+	else
+	{
+		RstCnt = 0;
+	}
+
+}
+#endif
+
+#endif
+
+bit GetSpecialMode(unsigned short value)
+{
+//unsigned short value;
+//unsigned char pol;
+//xdata float maxPhase,temp_phase;
+
+
+//						if((ucSignalType != sigDVI)&&((value == R1024x768)||(value == R1280x768)||(value == R1360x768)
+//						||(value == R1680x1050))){	//H/V, H+V, SOG
+						if((ucSignalType != sigDVI)&&(((value == R1440x900)&&(abs(usVSync-600)<12)))){	//H/V, H+V, SOG
+
+//							printf("GetSpecialMode_ucModeNumber %d\r\n",(unsigned short)ucModeNumber);
+							ucResolution = value;
+							usHTotal = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHTotal;
+							usHPStart = EEPROM_TimingTable[(unsigned short)ucModeNumber].usHStart;
+							usVPStart = EEPROM_TimingTable[(unsigned short)ucModeNumber].usVStart;
+							//printf("usHTotal %d\r\n",(unsigned short)usHTotal);
+							ucMinVP = 0;
+							ucVPOffset = 0;
+#if NT68167
+							WriteIIC560(POWER_CTRL2,0x69);
+#else
+							WriteIIC560(POWER_CTRL2,0x28);
+#endif
+							WriteIIC560(DVI_CTRL12,0xa0);	//DVI power down
+							WriteIIC560(0x0d9,32 | BIT_6);	// Jude 03/25/2005
+							SetADC_Phase();
+							SetADC_PLL();
+							SetHP();
+							SetVP();
+							WriteWordIIC560(GI_CAP_HWID_LI,H_ActiveTab[ucResolution]);		// Capture V_Active
+							WriteWordIIC560(GI_CAP_VLEN_LI,V_ActiveTab[ucResolution]);		// Capture H_Active
+							bOptAbort = FALSE;
+							WriteIIC560(GI_AUTO_TUNE_CTRL,0x41);
+							WriteIIC560(GI_HMASK_BEG,0);  // AutoPosition Pixel mask -> H
+							WriteIIC560(GI_HMASK_END,ucMinHP);  // AutoPosition Pixel mask -> H
+							WriteIIC560(GI_VMASK_BEG,0x00);  // AutoPosition Pixel mask -> V
+							WriteIIC560(GI_VMASK_END,0x00);  // AutoPosition Pixel mask -> V
+							WriteIIC560(GI_POS_THR,0x40);  // Red Noise Margin
+							WriteIIC560(GI_AUTO_TUNE_CTRL,0x00);
+
+							CheckClock();
+							if(bOptAbort == TRUE) { return TRUE; } //break;
+							if(bAutoClockResult == TRUE){
+								temp_phase = CheckPhase();
+//								printf("temp_phase=%d\r\n", (unsigned short)temp_phase);
+								if(bOptAbort == TRUE) { return TRUE; } //break;
+								if(maxPhase < temp_phase){
+									maxPhase = temp_phase;
+									mode_k = ucModeNumber;
+//									printf("mode_k %d\r\n",(unsigned short)mode_k);
+								}
+							//	break;
+							}
+							else{
+								if(mode_k == 0xff){
+									if(ucHVPolarity == 0x02)
+										mode_k = M1440x900_60R;//ucModeNumber;	//1440x900-R (60)
+									else
+										mode_k = M1440x900_60;//ucModeNumber;	//1440x900 (60)
+//									printf("mode_Ky=%d\r\n",(unsigned short)mode_k);
+								}
+							}
+							return FALSE;	
+						}
+						else{
+							bOptAbort = FALSE;
+							return TRUE; //break;
+						}
+
+}
+

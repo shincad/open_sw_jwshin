@@ -1,0 +1,1 @@
+"SRC\ModeHandle.C" OPTIMIZE (9,SPEED) DEFINE (X21) DEBUG OBJECTEXTEND PRINT(.\LST\ModeHandle.lst) OBJECT(.\BIN\ModeHandle.obj)

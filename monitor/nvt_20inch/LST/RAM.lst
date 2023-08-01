@@ -1,0 +1,272 @@
+C51 COMPILER V7.03   RAM                                                                   12/21/2006 14:17:32 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE RAM
+OBJECT MODULE PLACED IN .\BIN\RAM.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\RAM.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\RAM.
+                    -lst) OBJECT(.\BIN\RAM.obj)
+
+stmt level    source
+
+   1          #include "RAM.H"
+   2          #include "OSD.H"
+   3          
+   4          unsigned char bdata flag1;
+   5          sbit NoSyncFlag         = flag1^0;
+   6          sbit ForceToBack        = flag1^1;
+   7          sbit ChangeKey          = flag1^2;
+   8          sbit VideoMute          = flag1^3; 
+   9          sbit MessageShow        = flag1^4;
+  10          sbit DecoderICEn                = flag1^5;
+  11          sbit NewMode            = flag1^6;
+  12          sbit GTmodeEn           = flag1^7;
+  13          
+  14          unsigned char bdata flag2;
+  15          sbit Abort                      = flag2^0;
+  16          sbit PowerDown          = flag2^1;
+  17          sbit KeyLock            = flag2^2;
+  18          sbit OsdEnable          = flag2^3;
+  19          sbit FastMuteEnable     = flag2^4;
+  20          sbit Interlance         = flag2^5;
+  21          sbit SaveDDC1           = flag2^6;
+  22          sbit SaveDDC0           = flag2^7;
+  23          
+  24          unsigned char bdata VideoFlag;
+  25          sbit VideoIntLance      = VideoFlag^7;  
+  26          sbit VideoUnlock        = VideoFlag^6;
+  27          sbit Video_60Hz         = VideoFlag^5;
+  28          sbit ColorDetected      = VideoFlag^0;
+  29          
+  30          bit BlueScreen;
+  31          bit MonoVideo;
+  32          bit VideoOK;
+  33          bit BypassSOG;
+  34          bit EndMute;
+  35          bit NonFullScreen;
+  36          bit BackLightTimerEn;
+  37          //bit KeyRepeat;
+  38          bit LightEn;
+  39          bit ScalerMode;
+  40          bit NoSigTogg;                                          // +jwshin 051101
+  41          
+  42          unsigned char bdata StatusFlag;
+  43          sbit PowerStatus        = StatusFlag^0;
+  44          sbit BurnInMode         = StatusFlag^1;
+  45          sbit FactMode           = StatusFlag^2;
+  46          sbit OsdLock            = StatusFlag^3;
+  47          sbit AudioMute          = StatusFlag^4;
+  48          sbit AutoSetting        = StatusFlag^5;
+  49          sbit TextMode           = StatusFlag^6;
+  50          sbit EconomyMode        = StatusFlag^7;
+  51          
+  52          //unsigned char bdata MiscFlag;
+  53          //sbit LightEn          = StatusFlag^0;
+  54          //sbit ScalerMode               = StatusFlag^1;
+C51 COMPILER V7.03   RAM                                                                   12/21/2006 14:17:32 PAGE 2   
+
+  55          
+  56          idata unsigned short    NoSigTimer;                     // +jwshin 051101 Nosignal timer Value added.
+  57          idata unsigned char     T0_INT_CNT;
+  58          idata unsigned short    OsdTimer;
+  59          idata unsigned char             LocalTimer;
+  60          idata unsigned short    PowerTimer;
+  61          idata unsigned short    RepeatTimer;
+  62          idata unsigned char     DDCTimer;
+  63          idata unsigned char     SaveTimer;
+  64          idata unsigned char     VideoTimer;
+  65          idata unsigned char     BurnInTimer;
+  66          idata unsigned char     MuteTimer;
+  67          idata unsigned char     T0_10ms_Cnt;
+  68          idata unsigned char     T0_1ms_Cnt;
+  69          xdata unsigned long     BackLightTimer;
+  70          idata unsigned char     KeyRepeatCnt;
+  71          
+  72          
+  73          xdata unsigned char     DVI_Clock;              // +jwshin 061013
+  74          
+  75          idata unsigned short    H_SYNC;
+  76          idata unsigned short    V_SYNC;
+  77          idata unsigned short    H_SYNC_Temp;
+  78          idata unsigned short    V_SYNC_Temp;
+  79          idata unsigned short    VTotal;
+  80          idata unsigned short    H_Act;
+  81          idata unsigned char     ResolutionPtr;
+  82          idata unsigned char     ChangeMode;
+  83          idata unsigned char     HV_Pol;
+  84          idata unsigned char     HV_Pol_Temp;
+  85          idata unsigned char     RegPage;                
+  86          idata unsigned char     ModePoint;
+  87          idata unsigned char     KeyBuffer;
+  88          idata unsigned char     PrevKey;
+  89          idata unsigned char     FuncPtr;
+  90          idata unsigned char     SavePointer;
+  91          idata unsigned char     SyncMode;
+  92          idata unsigned char     OutOfRange;
+  93          idata unsigned char     DigitalPtr;
+  94          idata unsigned char     Timer1;
+  95          idata unsigned char     Timer2;
+  96          idata unsigned char     Timer3;
+  97          /////////////////////Jason Choi
+  98          idata unsigned char rwbuf;
+  99          idata unsigned short abuf;
+ 100          idata unsigned char dbuf;
+ 101          ///0 = Separate H & V
+ 102          ///1= H+V
+ 103          ///2= Sync on green
+ 104          ///3= DVI
+ 105          xdata unsigned short FuncBuf[42];
+ 106          xdata unsigned short Hresolution;
+ 107          xdata unsigned short Vresolution;
+ 108          xdata unsigned short FuncMax;
+ 109          xdata unsigned short FuncMin;
+ 110          xdata unsigned short ClockBase;
+ 111          xdata unsigned short HPositionBase;
+ 112          xdata unsigned char BackPtr;
+ 113          xdata unsigned char TvMode;
+ 114          xdata unsigned char TempPtr;
+ 115          xdata unsigned char VideoSourcePtr;
+ 116          xdata unsigned char MaxItem;
+C51 COMPILER V7.03   RAM                                                                   12/21/2006 14:17:32 PAGE 3   
+
+ 117          xdata unsigned char BackItem;
+ 118          xdata unsigned char UserModePtr;
+ 119          xdata unsigned char BurnInPattern;
+ 120          idata unsigned char TempPhase;
+ 121          xdata unsigned char SCRev;
+ 122          CONTROL_DEF xdata MenuPtr;
+ 123          xdata unsigned char UserModeRefReso;
+ 124          xdata unsigned char SCFactor;
+ 125          xdata unsigned char VideoStandard;
+ 126          ///////////////////////////////// Jason Choi
+ 127          xdata unsigned char CmdTxPtr1;
+ 128          xdata unsigned char CmdTxPtr2;
+ 129          xdata unsigned char CmdRxPtr1;
+ 130          xdata unsigned char CmdRxPtr2;
+ 131          xdata unsigned char     CmdTxBuffer[128];
+ 132          xdata unsigned char     CmdRxBuffer[128];
+ 133          ////////////////////////////////
+ 134          
+ 135          xdata unsigned char ChBuffer;
+ 136          xdata unsigned char TV_Min;
+ 137          xdata unsigned char TV_Max;
+ 138          xdata unsigned char TV_Total;
+ 139          xdata unsigned char CATV_Min;
+ 140          xdata unsigned char CATV_Max;
+ 141          xdata unsigned char CATV_Total;
+ 142          xdata unsigned char PRBuffer;//Program NO. buffer
+ 143          xdata unsigned char PR_ChBuffer;//Program NO.CH. buffer 
+ 144          xdata unsigned char PR_TV_Max;
+ 145          xdata unsigned char PR_CATV_Max;
+ 146          xdata unsigned char ChSystem; 
+ 147          xdata unsigned char ChNumCnt; 
+ 148          
+ 149          //for CCD
+ 150          xdata unsigned char  VChip_Data[2];
+ 151          xdata unsigned short Non_VChip_Count;
+ 152          xdata unsigned char  VChip_Block;
+ 153          xdata unsigned char  VChip_Password[4];
+ 154          xdata unsigned char  VChip_ChangePassword[4];
+ 155          xdata unsigned char  VChip_Confirm;
+ 156          xdata unsigned char  VChip_RatingSelected;
+ 157          xdata unsigned char  VChip_AcquisitionMPAA;
+ 158                  //0x01://MPAA_G
+ 159                  //0x02://MPAA_PG
+ 160                  //0x03://MPAA_PG13
+ 161                  //0x04://MPAA_R
+ 162                  //0x05://MPAA_NC17
+ 163                  //0x06://MPAA_X
+ 164                  //0x07://MPAA_NR
+ 165          xdata unsigned char  VChip_AcquisitionTV;
+ 166                  //0x01://TV_Y
+ 167                  //0x02://TV_Y7
+ 168                  //0x03://TV_G
+ 169                  //0x04://TV_PG
+ 170                  //0x05://TV_14
+ 171                  //0x06://TV_MA
+ 172          xdata unsigned char  VChip_AcquisitionTVFVVSLD;
+ 173                  //BIT_1://TV_Y7_FV
+ 174                  //BIT_2://TV_V
+ 175                  //BIT_3://TV_S
+ 176                  //BIT_4://TV_L
+ 177                  //BIT_5://TV_D
+ 178          xdata unsigned char  ResetPasswordBuff;
+C51 COMPILER V7.03   RAM                                                                   12/21/2006 14:17:32 PAGE 4   
+
+ 179          xdata unsigned char  ResetData[7];
+ 180          xdata unsigned short VChip_Timer;
+ 181          xdata unsigned short DevNum;
+ 182          //xdata unsigned char  Bass;
+ 183          //xdata unsigned char  Treble;
+ 184          xdata unsigned char  RatingMAPP;
+ 185                  //0x01://MPAA_G
+ 186                  //0x02://MPAA_PG
+ 187                  //0x03://MPAA_PG13
+ 188                  //0x04://MPAA_R
+ 189                  //0x05://MPAA_NC17
+ 190                  //0x06://MPAA_X
+ 191                  //0x07://MPAA_NR
+ 192          xdata unsigned char  RatingTV;
+ 193                  //0x01://TV_Y
+ 194                  //0x02://TV_Y7
+ 195                  //0x03//TV_Y7_FV
+ 196                  //0x04://TV_G
+ 197                  //0x05://TV_PG
+ 198                  //0x06://TV_14
+ 199                  //0x07://TV_MA
+ 200          xdata unsigned char  RatingTVFVVSLD;
+ 201                  //BIT_1://
+ 202                  //BIT_2://TV_V
+ 203                  //BIT_3://TV_S
+ 204                  //BIT_4://TV_L
+ 205                  //BIT_5://TV_D
+ 206          
+ 207          xdata unsigned short IR_Timer;  
+ 208          xdata unsigned char IR_Status;
+ 209          xdata unsigned char cntIR_Data;
+ 210          xdata unsigned char IR_Status;
+ 211          xdata unsigned long IR_Data;
+ 212          xdata unsigned long IR_Data_buffer;
+ 213          xdata unsigned char IR_Pre_KeyBuffer;
+ 214          xdata unsigned char IR_KeyTemp;
+ 215          xdata unsigned char IR_WaitTimer;
+ 216          xdata unsigned char IR_RepeatTimer;
+ 217          xdata unsigned short IR_Number;
+ 218          xdata unsigned char IR_Number_cnt;      
+ 219          bit bIR_Change;
+ 220          bit bIR_Active;
+ 221          bit bIR_flag;
+ 222          
+ 223          bit Violence;
+ 224          bit Sexual;
+ 225          bit Lang;
+ 226          bit Dialogue;
+ 227          bit CaptionFlag;
+ 228          
+ 229          bit VPXinit;
+ 230          bit VideoFlagTW;
+ 231          bit SyncFlag;
+ 232          bit VideoCheck;
+ 233          bit AirCableFlag;
+ 234          bit ChAdd_Del;
+ 235          bit OSDZoomFlag;
+ 236          bit TVSignalNormalFlag;
+ 237          bit VideoTest;
+ 238          
+ 239          bit MonTogg;
+ 240          bit RGBStatus;
+C51 COMPILER V7.03   RAM                                                                   12/21/2006 14:17:32 PAGE 5   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    443    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4    ----
+   IDATA SIZE       =     51    ----
+   BIT SIZE         =     29    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

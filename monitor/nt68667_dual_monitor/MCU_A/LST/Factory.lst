@@ -1,0 +1,1619 @@
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE FACTORY
+OBJECT MODULE PLACED IN .\BIN\Factory.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\Factory.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Mod
+                    -elName=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\Factory.lst) OBJECT(.\BIN\Factory.obj)
+
+line level    source
+
+   1          #include <math.h>
+   2          #include "Factory.H"
+   3          #include "RAM.H"
+   4          #include "Osd.H"
+   5          #include "ModeHandle.H"
+   6          #include "Scaler.H"
+   7          #include "NT686xx_SC_REG.H"
+   8          //#include "MyDef.H"
+   9          #include "Mis.H"
+  10          #include "NVRam.H"
+  11          #include "AutoAdj.H"    // AutoColor()
+  12          #include "sRGB.H"               // SetContrastRGB()
+  13          #include "OSD_Tab.H"    // VersionStr
+  14          #include "Panel.H"              // PanelName
+  15          #include "UserAdj.H"    // SetColorTemp()
+  16          #include "Rom_map.H"    // MCU_DATAMAP[]
+  17          #include "Board.H"
+  18          #include "8051.H"
+  19          #include "BFControl.H"
+  20          #include "OSD_LF.H"
+  21          #include "MCU.H"
+  22          
+  23          code unsigned char YES[]={      3,"YES"};
+  24          code unsigned char NO[]={       2,"NO"};
+  25          code unsigned char OK[]={       2,"OK"};
+  26          //code unsigned char ReturnText[]={     6,"Return"};
+  27          code unsigned char ResetText[]={        5,"Reset"};
+  28          code unsigned char TD_ResetText[]={     8,"TD-Reset"};
+  29          
+  30          idata unsigned char ucFactoryStatus;
+  31                  #define fsMENU 0
+  32                  #define fsVALUE 1
+  33          
+  34          
+  35          enum OSD_FACTORY {
+  36                  mfAUTO,
+  37                  mfBURNING,
+  38                  mfBLACKLEVEL,
+  39                  mfBRIGHTNESS,   mfIDX,
+  40                  mfCONTRAST,
+  41                  
+  42                  mfGAINR,        mfGAING,        mfGAINB,
+  43                  mfOFFSETR,      mfOFFSETG,      mfOFFSETB,
+  44                  mfSRGBR,        mfSRGBG,        mfSRGBB,
+  45                  mf5000R,        mf5000G,        mf5000B,
+  46                  mf6500R,        mf6500G,        mf6500B,
+  47                  mf7500R,        mf7500G,        mf7500B,
+  48                  mf8200R,        mf8200G,        mf8200B,
+  49                  mf9300R,        mf9300G,        mf9300B,
+  50                  mf11500R,       mf11500G,       mf11500B,
+  51                  
+  52                  mfADDRESS,      mfWR,
+  53                  mfRESET,
+  54                  mfTDRESET,
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 2   
+
+  55                  mfRETURN
+  56          };
+  57          idata enum OSD_FACTORY ucFactoryIndex;
+  58          
+  59          
+  60          typedef struct {
+  61                  unsigned char x;
+  62                  unsigned char y;
+  63                  unsigned char len;
+  64          }_LIGHTBAR_;
+  65                  
+  66          code _LIGHTBAR_ LBar[] = {              // { X, Y, LENGTH}
+  67                          {0,4,7},
+  68                          {0,5,7},
+  69                          {0,6,7},
+  70                          {0,7,7},  {12,7,3},
+  71                          {0,8,7},
+  72                          {7,9,1},  {12,9,1},  {17,9,1},
+  73                          {7,10,1},{12,10,1},{17,10,1},
+  74                          {7,11,1},{12,11,1},{17,11,1},
+  75                          {7,12,1},{12,12,1},{17,12,1},
+  76                          {7,13,1},{12,13,1},{17,13,1},
+  77                          {7,14,1},{12,14,1},{17,14,1},
+  78                          {7,15,1},{12,15,1},{17,15,1},
+  79                          {7,16,1},{12,16,1},{17,16,1},
+  80                          {7,17,1},{12,17,1},{17,17,1},
+  81          
+  82                          {0,18,7}, {20,18,3},
+  83                          {0,19,7},
+  84                          {0,20,7},
+  85                          {0,21,7},
+  86          };
+  87          
+  88          
+  89          
+  90          // Scaler Register R/W
+  91          unsigned short reg_addr;
+  92          unsigned char reg_value;
+  93          void RegAddrInc(unsigned short*);
+  94          void RegAddrDec(unsigned short*);
+  95          void RegInc(unsigned char*);
+  96          void RegDec(unsigned char*);
+  97          void RegWrite();
+  98          void RegRead();
+  99          
+ 100          
+ 101          void FactorySelect();
+ 102          void FactoryUnSelect();
+ 103          void FactorySelectValue();
+ 104          void FactoryUnSelectValue();
+ 105          //void FactoryReset();
+ 106          void    FactoryShowAutoColor(bit);
+ 107          void    FactoryShowBurnin();
+ 108          void FactoryShowPanel();
+ 109          //void OsdInit_F(unsigned char W,unsigned char H);
+ 110          void FactoryColorUp(unsigned char*);
+ 111          void FactoryColorDown(unsigned char*);
+ 112          void ADC_R_Down(void);
+ 113          void ADC_G_Down(void);
+ 114          void ADC_B_Down(void);
+ 115          void ADC_R_Up(void);
+ 116          void ADC_G_Up(void);
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 3   
+
+ 117          void ADC_B_Up(void);
+ 118          void ADC_R_OffsetDown(void);
+ 119          void ADC_G_OffsetDown(void);
+ 120          void ADC_B_OffsetDown(void);
+ 121          void ADC_R_OffsetUp(void);
+ 122          void ADC_G_OffsetUp(void);
+ 123          void ADC_B_OffsetUp(void);
+ 124          //void ADC_GainOffsetUp(unsigned short addr, unsigned char *value);
+ 125          //void ADC_GainOffsetDown(unsigned short addr, unsigned char *value);
+ 126          
+ 127          
+ 128          // --------------------------------------------------------------------
+ 129          //                      FACTORY FUNCTIONS
+ 130          // --------------------------------------------------------------------
+ 131          
+ 132          void FactoryShowValue(unsigned char attr, enum OSD_FACTORY index, unsigned short value)
+ 133          {
+ 134   1              if(index >= mfGAINR &&  index <= mfOFFSETB){
+ 135   2                      ShowNum(attr, LBar[index].x+1, LBar[index].y, 255-value);
+ 136   2              }
+ 137   1              else if(index >= mfSRGBR &&  index <= mf11500B){
+ 138   2                      ShowNum(attr, LBar[index].x+1, LBar[index].y, value);
+ 139   2              }
+ 140   1              else if(index == mfADDRESS){
+ 141   2                      ShowNum(attr, LBar[index].x+LBar[index].len+2, LBar[index].y, (unsigned char)(value>>8));
+ 142   2                      ShowNum(attr, LBar[index].x+LBar[index].len, LBar[index].y, value);
+ 143   2              }
+ 144   1              else if(index == mfWR){
+ 145   2                      ShowNum(attr, LBar[index].x-5, LBar[index].y, value);
+ 146   2              }
+ 147   1              else{
+ 148   2                      ShowNum(attr, LBar[index].x+LBar[index].len, LBar[index].y, value);
+ 149   2              }
+ 150   1      }
+ 151          
+ 152          void FactoryEnterMode()
+ 153          {
+ 154   1              bFactoryMode = TRUE;
+ 155   1              /*
+ 156   1              if(ucLFMode==LF_MODE_OFF){
+ 157   1                      ucBrightness = Read24C16(EPADDR_BRIGHT_FACTORY);
+ 158   1                      ucContrast = Read24C16(EPADDR_CONTRAST_FACTORY);
+ 159   1                      Write24C16(EPADDR_BRIGHT, ucBrightness);
+ 160   1                      Write24C16(EPADDR_CONTRAST, ucContrast);
+ 161   1                      ucBrightnessUser = ucBrightness;
+ 162   1                      ucContrastUser = ucContrast;
+ 163   1                      Write24C16(EPADDR_BRIGHT_USER,ucBrightnessUser);//0x36 = brightness user
+ 164   1                      Write24C16(EPADDR_CONTRAST_USER,ucContrastUser);//0x37 = contrast user
+ 165   1                      SetBrightness();
+ 166   1                      SetContrastRGB();
+ 167   1              }
+ 168   1              */
+ 169   1              StartDDCCI();   //START DDCCI WHEN GO INTO FACTORY MODE
+ 170   1      }
+ 171          
+ 172          void FactoryShowMenu()
+ 173          {
+ 174   1      
+ 175   1      code unsigned char AutoLevelText[]={10,"Auto Level"};
+ 176   1      code unsigned char BurnInText[]={6,"Burnin"};
+ 177   1      code unsigned char BlackLevelText[]={10,"Black Lvl."};
+ 178   1      code unsigned char BrightnessText[]= {6,"Bright."};
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 4   
+
+ 179   1      code unsigned char IDXText[]={3,"IDX"};
+ 180   1      code unsigned char ContrastText[]= {6,"Contr."};
+ 181   1      code unsigned char GainText[]={4,"Gain"};
+ 182   1      code unsigned char OffsetText[]={6,"Offset"};
+ 183   1      code unsigned char SRGBText[]={4,"sRGB"};
+ 184   1      code unsigned char Color5000Text[]={4,"5000"};
+ 185   1      code unsigned char Color6500Text[]={4,"6500"};
+ 186   1      code unsigned char Color7500Text[]={4,"7500"};
+ 187   1      code unsigned char Color8200Text[]={4,"8200"};
+ 188   1      code unsigned char Color9300Text[]={4,"9300"};
+ 189   1      code unsigned char Color11500Text[]={5,"11500"};
+ 190   1      code unsigned char AddressText[]={5,"Addr."};
+ 191   1      code unsigned char WRText[]={2,"WR"};
+ 192   1      code unsigned char POTText[]={3,"POT"};
+ 193   1      code unsigned char ExitText[] = {4,"Exit"};
+ 194   1      
+ 195   1      code unsigned char H_Text[]={1,"H"};
+ 196   1      code unsigned char R_Text[]={1,"R"};
+ 197   1      code unsigned char G_Text[]={1,"G"};
+ 198   1      code unsigned char B_Text[]={1,"B"};
+ 199   1      code unsigned char Symbol1[]={1,"="};
+ 200   1      code unsigned char Scaler_Text[]={7,"NT68673"};
+ 201   1      code unsigned char Panel_Text[]={20, PANEL_STRING};
+ 202   1      code unsigned char HDCP_Text[]={4,"HDCP"};
+ 203   1      
+ 204   1      unsigned char i;
+ 205   1      
+ 206   1              ucOSDType = FACTORY;
+ 207   1              ucOSDLvl1_Cursor = 0;
+ 208   1      
+ 209   1              OsdInit(OSD_FACTORY_W,OSD_FACTORY_H);
+ 210   1              // ----------------------------------------
+ 211   1      
+ 212   1              
+ 213   1              ucStrAlignment = 0;
+ 214   1              usFontIndex = 32;
+ 215   1              ucStrWidth = 1;
+ 216   1      
+ 217   1              WriteArialFont(ModelStrTab);
+ 218   1              WriteXY_String(0,0,0);
+ 219   1              WriteArialFont(VersionStrTab);
+ 220   1              WriteXY_String(0,12,0);
+ 221   1              WriteArialFont(Scaler_Text);
+ 222   1              WriteXY_String(0,0,1);
+ 223   1              WriteArialFont(Panel_Text);
+ 224   1              WriteXY_String(0,0,2);
+ 225   1      
+ 226   1      
+ 227   1              WriteArialFont(AutoLevelText);
+ 228   1              WriteXY_String(0, LBar[mfAUTO].x, LBar[mfAUTO].y);
+ 229   1              WriteArialFont(BurnInText);
+ 230   1              WriteXY_String(0, LBar[mfBURNING].x, LBar[mfBURNING].y);
+ 231   1              WriteArialFont(BlackLevelText);
+ 232   1              WriteXY_String(0, LBar[mfBLACKLEVEL].x, LBar[mfBLACKLEVEL].y);
+ 233   1              WriteArialFont(BrightnessText);
+ 234   1              WriteXY_String(0, LBar[mfBRIGHTNESS].x, LBar[mfBRIGHTNESS].y);
+ 235   1              WriteArialFont(IDXText);
+ 236   1              WriteXY_String(0, LBar[mfIDX].x, LBar[mfIDX].y);
+ 237   1              WriteArialFont(ContrastText);
+ 238   1              WriteXY_String(0, LBar[mfCONTRAST].x, LBar[mfCONTRAST].y);
+ 239   1      
+ 240   1              WriteArialFont(GainText);
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 5   
+
+ 241   1              WriteXY_String(0,0,9);
+ 242   1              WriteArialFont(OffsetText);
+ 243   1              WriteXY_String(0,0,10);
+ 244   1              WriteArialFont(SRGBText);
+ 245   1              WriteXY_String(0,0,11);         
+ 246   1              WriteArialFont(Color5000Text);
+ 247   1              WriteXY_String(0,0,12);
+ 248   1              WriteArialFont(Color6500Text);
+ 249   1              WriteXY_String(0,0,13);
+ 250   1              WriteArialFont(Color7500Text);
+ 251   1              WriteXY_String(0,0,14);
+ 252   1              WriteArialFont(Color8200Text);
+ 253   1              WriteXY_String(0,0,15);
+ 254   1              WriteArialFont(Color9300Text);
+ 255   1              WriteXY_String(0,0,16);
+ 256   1              WriteArialFont(Color11500Text);
+ 257   1              WriteXY_String(0,0,17);
+ 258   1      
+ 259   1              WriteArialFont(AddressText);
+ 260   1              WriteXY_String(0, LBar[mfADDRESS].x, LBar[mfADDRESS].y);
+ 261   1              WriteArialFont(ResetText);
+ 262   1              WriteXY_String(0, LBar[mfRESET].x, LBar[mfRESET].y);    
+ 263   1              WriteArialFont(ExitText);
+ 264   1              WriteXY_String(0, LBar[mfRETURN].x, LBar[mfRETURN].y);
+ 265   1              WriteArialFont(Symbol1);
+ 266   1              WriteXY_String(0,12,18);
+ 267   1              WriteArialFont(WRText);
+ 268   1              WriteXY_String(0, LBar[mfWR].x, LBar[mfWR].y);
+ 269   1              WriteArialFont(POTText);
+ 270   1              WriteXY_String(0,11,19);
+ 271   1              WriteArialFont(H_Text);
+ 272   1              WriteXY_String(0,20,19);
+ 273   1      
+ 274   1      
+ 275   1              WriteArialFont(R_Text);
+ 276   1              for (i=0;i<9;i++)
+ 277   1                      WriteXY_String(0,  7,  9+i);            
+ 278   1              
+ 279   1              WriteArialFont(G_Text);
+ 280   1              for (i=0;i<9;i++)
+ 281   1                      WriteXY_String(0, 12, 9+i);
+ 282   1                      
+ 283   1              WriteArialFont(B_Text);
+ 284   1              for (i=0;i<9;i++)
+ 285   1                      WriteXY_String(0, 17, 9+i);
+ 286   1      
+ 287   1              {
+ 288   2                      unsigned char glob_buff[SN_LEN+1];
+ 289   2                      for (i=1; i<SN_LEN+1; i++)
+ 290   2                      {
+ 291   3                              glob_buff[i] = ucSerialNum[i-1];
+ 292   3                              if ( glob_buff[i]==0x00 || glob_buff[i]==0x0A) break;
+ 293   3                      }
+ 294   2                      glob_buff[0] = i-1;
+ 295   2                      WriteArialFont(glob_buff);
+ 296   2                      WriteXY_String(0,12,1);
+ 297   2              }
+ 298   1      
+ 299   1              if (    Read24C16(NVRAM_HDCP_KEY+290)=='P' &&
+ 300   1                      Read24C16(NVRAM_HDCP_KEY+291)=='H' &&
+ 301   1                      Read24C16(NVRAM_HDCP_KEY+292)=='L' &&
+ 302   1                      Read24C16(NVRAM_HDCP_KEY+293)=='H' &&
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 6   
+
+ 303   1                      Read24C16(NVRAM_HDCP_KEY+294)=='8' )
+ 304   1              {
+ 305   2                      WriteArialFont(HDCP_Text);
+ 306   2                      WriteXY_String(0,12,2);
+ 307   2              }
+ 308   1      #ifdef DEMO_HDCP_KEY
+                      else if(Read24C16(NVRAM_HDCP_KEY+290)==0x01 &&
+                              Read24C16(NVRAM_HDCP_KEY+291)==0x02 &&
+                              Read24C16(NVRAM_HDCP_KEY+292)==0x03 &&
+                              Read24C16(NVRAM_HDCP_KEY+293)==0x04 &&
+                              Read24C16(NVRAM_HDCP_KEY+294)==0x05 )
+                      {
+                              code unsigned char HDCP_Demo_Text[]={8,"HDCPdemo"};
+                              WriteArialFont(HDCP_Demo_Text);
+                              WriteXY_String(0,12,2);
+                      }
+              #endif
+ 320   1      
+ 321   1              WriteArialFont(TD_ResetText);
+ 322   1              WriteXY_String(1, LBar[mfTDRESET].x, LBar[mfTDRESET].y);
+ 323   1      
+ 324   1      
+ 325   1              FactoryShowBurnin();
+ 326   1      
+ 327   1              FactoryShowValue(0, mfBLACKLEVEL, (unsigned short)ucBlackLevel);
+ 328   1              FactoryShowValue(0, mfBRIGHTNESS, (unsigned short)ucBrightness);
+ 329   1              FactoryShowValue(0, mfIDX, (unsigned short)ucPanelIDX);
+ 330   1              FactoryShowValue(0, mfCONTRAST, (unsigned short)ucRGB_OFFSET);
+ 331   1              FactoryShowValue(0, mfGAINR, (unsigned short)(ucR_ADC_Gain));
+ 332   1              FactoryShowValue(0, mfGAING, (unsigned short)(ucG_ADC_Gain));   
+ 333   1              FactoryShowValue(0, mfGAINB, (unsigned short)(ucB_ADC_Gain));
+ 334   1              FactoryShowValue(0, mfOFFSETR, (unsigned short)(ucR_ADC_Offset));
+ 335   1              FactoryShowValue(0, mfOFFSETG, (unsigned short)(ucG_ADC_Offset));       
+ 336   1              FactoryShowValue(0, mfOFFSETB, (unsigned short)(ucB_ADC_Offset));
+ 337   1              FactoryShowValue(0, mfSRGBR, (unsigned short)ucR_GainsRGB);
+ 338   1              FactoryShowValue(0, mfSRGBG, (unsigned short)ucG_GainsRGB);
+ 339   1              FactoryShowValue(0, mfSRGBB, (unsigned short)ucB_GainsRGB);
+ 340   1              FactoryShowValue(0, mf5000R, (unsigned short)ucR_Gain5000K);
+ 341   1              FactoryShowValue(0, mf5000G, (unsigned short)ucG_Gain5000K);
+ 342   1              FactoryShowValue(0, mf5000B, (unsigned short)ucB_Gain5000K);
+ 343   1              FactoryShowValue(0, mf6500R, (unsigned short)ucR_Gain6500K);
+ 344   1              FactoryShowValue(0, mf6500G, (unsigned short)ucG_Gain6500K);
+ 345   1              FactoryShowValue(0, mf6500B, (unsigned short)ucB_Gain6500K);
+ 346   1              FactoryShowValue(0, mf7500R, (unsigned short)ucR_Gain7500K);
+ 347   1              FactoryShowValue(0, mf7500G, (unsigned short)ucG_Gain7500K);
+ 348   1              FactoryShowValue(0, mf7500B, (unsigned short)ucB_Gain7500K);
+ 349   1              FactoryShowValue(0, mf8200R, (unsigned short)ucR_Gain8200K);
+ 350   1              FactoryShowValue(0, mf8200G, (unsigned short)ucG_Gain8200K);
+ 351   1              FactoryShowValue(0, mf8200B, (unsigned short)ucB_Gain8200K);
+ 352   1              FactoryShowValue(0, mf9300R, (unsigned short)ucR_Gain9300K);
+ 353   1              FactoryShowValue(0, mf9300G, (unsigned short)ucG_Gain9300K);
+ 354   1              FactoryShowValue(0, mf9300B, (unsigned short)ucB_Gain9300K);
+ 355   1              FactoryShowValue(0, mf11500R, (unsigned short)ucR_Gain11500K);
+ 356   1              FactoryShowValue(0, mf11500G, (unsigned short)ucG_Gain11500K);
+ 357   1              FactoryShowValue(0, mf11500B, (unsigned short)ucB_Gain11500K);
+ 358   1      
+ 359   1              reg_addr = 0;
+ 360   1              FactoryShowValue(0, mfADDRESS, (unsigned short)reg_addr);
+ 361   1              reg_value = 0;
+ 362   1              FactoryShowValue(0, mfWR, (unsigned short)reg_value);
+ 363   1              
+ 364   1              ShowNum(0, 14, 19, (unsigned char)(ulPOTTimerH>>8));
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 7   
+
+ 365   1              ShowNum(0, 16, 19, (unsigned char)ulPOTTimerH);
+ 366   1      
+ 367   1              OSD_ON();
+ 368   1              
+ 369   1              ucFactoryStatus = fsMENU;
+ 370   1              ucFactoryIndex = mfAUTO;
+ 371   1              FactorySelect();
+ 372   1      
+ 373   1              usOSDTimer_10ms = 1000;
+ 374   1      
+ 375   1      }
+ 376          
+ 377          
+ 378          
+ 379          // **************************************
+ 380          //
+ 381          //      Enter ITEM->VALUE or Leave VALUE->ITEM
+ 382          //
+ 383          // **************************************
+ 384          void FactoryEnter()
+ 385          {
+ 386   1      bit auto_color;
+ 387   1              if(ucFactoryIndex == mfAUTO){
+ 388   2      //              if((bIsBurnInEnabled == TRUE)&&(ucResolution == R1280x1024)&&(abs(usVSync-750) < 12)){
+ 389   2      //              if((bIsBurnInEnabled == TRUE)&&(((ucResolution == R1280x1024)&&(abs(usVSync-750) < 12))||(ucResolution
+             - == R1680x1050))){
+ 390   2                      if(1){
+ 391   3                              ucBrightness = MCU_DataMap[EPADDR_BRIGHT];      //0x08 = brightness
+ 392   3                              ucSavePointer = svBRIGHTNESS;
+ 393   3                              SaveData();
+ 394   3                              ucContrast = MCU_DataMap[EPADDR_CONTRAST];              //0x09 = contrast
+ 395   3                              ucSavePointer = svCONTRAST;
+ 396   3                              SaveData();
+ 397   3                              ucLFMode = LF_MODE_OFF;
+ 398   3                              Write24C16(EPADDR_DVI_LF_MODE, ucLFMode);
+ 399   3                              Write24C16(EPADDR_DSUB_LF_MODE, ucLFMode);
+ 400   3                              ucDynBKMode = 0;
+ 401   3                              ucSavePointer = svDYBK;
+ 402   3                              SaveData();
+ 403   3                              LFEnableSettings();                             
+ 404   3                              ucColorTemperature = COLOR_ORIGIN;
+ 405   3                              SetColorTemp(ucColorTemperature);
+ 406   3      /*
+ 407   3                              ucDynBKMode = 0;
+ 408   3                              SetBrightness();
+ 409   3                              iCurDynBk = ucBrightness;
+ 410   3                              ucNewDynBk = ucBrightness;
+ 411   3      */
+ 412   3                              auto_color = AutoColor();
+ 413   3                              FactoryShowMenu();
+ 414   3                              FactoryShowAutoColor( auto_color );
+ 415   3                              return;
+ 416   3                      }
+ 417   2                      else{
+ 418   3                              auto_color = 0;
+ 419   3                              FactoryShowAutoColor( auto_color );
+ 420   3                      }
+ 421   2              }
+ 422   1              else if(ucFactoryIndex == mfRESET){
+ 423   2                      OSD_OFF();
+ 424   2                      
+ 425   2                      ucOSDType = FACTORY;
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 8   
+
+ 426   2      
+ 427   2                      FactoryReset();
+ 428   2                      Recall();
+ 429   2                      
+ 430   2                      // CLEAR IN FACTORY MENU RESET
+ 431   2                      //RecallPOT();
+ 432   2              
+ 433   2                      FactoryShowMenu();
+ 434   2                      return;
+ 435   2              }
+ 436   1              else if(ucFactoryIndex == mfRETURN){
+ 437   2                      OSD_OFF();
+ 438   2                      ucOSDType = MAIN_MENU;
+ 439   2                      ucOSDLvl1_Cursor = 0;
+ 440   2      //              bOSDReady=FALSE;
+ 441   2                      WriteSequenceScaler(0xe0,MainIconTowBitFont);
+ 442   2                      WriteSequenceScaler(0xe0,MainIconFourBitFont);
+ 443   2                      MainOSD();
+ 444   2                      OSD_ON();
+ 445   2                      return;
+ 446   2              }
+ 447   1              else if(ucFactoryIndex == mfTDRESET){
+ 448   2                      FactoryUnSelect();
+ 449   2                      ucTD_ACMode = 0;
+ 450   2                      Write24C16(EPADDR_TD_ACMODE, ucTD_ACMode);
+ 451   2                      ucTD_State = TD_NORMAL;
+ 452   2                      Write24C16(EPADDR_TD_STATE, ucTD_State);
+ 453   2                      bShowTheftOSD = FALSE;
+ 454   2                      ucCurKey = IGNORE_KEY;
+ 455   2                      ucPrevKey = IGNORE_KEY;
+ 456   2                      
+ 457   2                      ucBrightness = Read24C16(EPADDR_BRIGHT);
+ 458   2                      ucBrightnessUser = ucBrightness;
+ 459   2                      ucContrast = Read24C16(EPADDR_CONTRAST);
+ 460   2                      ucContrastUser = ucContrast;
+ 461   2                      SetContrastRGB();
+ 462   2                      SetBrightness();
+ 463   2                      Sleep(200);
+ 464   2                      FactorySelect();
+ 465   2                      return;
+ 466   2              }
+ 467   1      
+ 468   1              
+ 469   1      
+ 470   1                      if(ucFactoryStatus == fsMENU){
+ 471   2                              FactoryUnSelect();
+ 472   2                              FactorySelectValue();
+ 473   2                              ucFactoryStatus = fsVALUE;
+ 474   2                              switch ( ucFactoryIndex ){
+ 475   3                              case mfSRGBR:
+ 476   3                              case mfSRGBG:
+ 477   3                              case mfSRGBB:
+ 478   3                                      ucColorTemperature = COLOR_SRGB;
+ 479   3                                      SetColorTemp(ucColorTemperature);
+ 480   3      //                              ucR_Gain = ucR_GainsRGB;
+ 481   3      //                              ucG_Gain = ucG_GainsRGB;
+ 482   3      //                              ucB_Gain = ucB_GainsRGB;
+ 483   3      //                              SetContrastRGB();
+ 484   3                                      break;
+ 485   3                              case mf5000R:
+ 486   3                              case mf5000G:
+ 487   3                              case mf5000B:
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 9   
+
+ 488   3                                      ucColorTemperature = COLOR_5000;
+ 489   3                                      SetColorTemp(ucColorTemperature);
+ 490   3      //                              ucR_Gain = ucR_Gain5000K;
+ 491   3      //                              ucG_Gain = ucG_Gain5000K;
+ 492   3      //                              ucB_Gain = ucB_Gain5000K;
+ 493   3      //                              SetContrastRGB();
+ 494   3                                      break;
+ 495   3                              case mf6500R:
+ 496   3                              case mf6500G:
+ 497   3                              case mf6500B:
+ 498   3                                      ucColorTemperature = COLOR_6500;
+ 499   3                                      SetColorTemp(ucColorTemperature);
+ 500   3      //                              ucR_Gain = ucR_Gain6500K;
+ 501   3      //                              ucG_Gain = ucG_Gain6500K;
+ 502   3      //                              ucB_Gain = ucB_Gain6500K;
+ 503   3      //                              SetContrastRGB();
+ 504   3                                      break;
+ 505   3                              case mf7500R:
+ 506   3                              case mf7500G:
+ 507   3                              case mf7500B:
+ 508   3                                      ucColorTemperature = COLOR_7500;
+ 509   3                                      SetColorTemp(ucColorTemperature);
+ 510   3      //                              ucR_Gain = ucR_Gain7500K;
+ 511   3      //                              ucG_Gain = ucG_Gain7500K;
+ 512   3      //                              ucB_Gain = ucB_Gain7500K;
+ 513   3      //                              SetContrastRGB();
+ 514   3                                      break;
+ 515   3                              case mf8200R:
+ 516   3                              case mf8200G:
+ 517   3                              case mf8200B:
+ 518   3                                      ucColorTemperature = COLOR_8200;
+ 519   3                                      SetColorTemp(ucColorTemperature);
+ 520   3      //                              ucR_Gain = ucR_Gain8200K;
+ 521   3      //                              ucG_Gain = ucG_Gain8200K;
+ 522   3      //                              ucB_Gain = ucB_Gain8200K;
+ 523   3      //                              SetContrastRGB();
+ 524   3                                      break;
+ 525   3                              case mf9300R:
+ 526   3                              case mf9300G:
+ 527   3                              case mf9300B:
+ 528   3                                      ucColorTemperature = COLOR_9300;
+ 529   3                                      SetColorTemp(ucColorTemperature);
+ 530   3      //                              ucR_Gain = ucR_Gain9300K;
+ 531   3      //                              ucG_Gain = ucG_Gain9300K;
+ 532   3      //                              ucB_Gain = ucB_Gain9300K;
+ 533   3      //                              SetContrastRGB();
+ 534   3                                      break;
+ 535   3                              case mf11500R:
+ 536   3                              case mf11500G:
+ 537   3                              case mf11500B:
+ 538   3                                      ucColorTemperature = COLOR_11500;
+ 539   3                                      SetColorTemp(ucColorTemperature);
+ 540   3      //                              ucR_Gain = ucR_Gain11500K;
+ 541   3      //                              ucG_Gain = ucG_Gain11500K;
+ 542   3      //                              ucB_Gain = ucB_Gain11500K;
+ 543   3      //                              SetContrastRGB();
+ 544   3                                      break;
+ 545   3                              }
+ 546   2                      }
+ 547   1                      else {
+ 548   2                              ucFactoryStatus = fsMENU;
+ 549   2                              FactoryUnSelectValue();
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 10  
+
+ 550   2                              FactorySelect();
+ 551   2      
+ 552   2                              // -------------------------------------------------
+ 553   2                              //
+ 554   2                              //  When leaving VALUE options, write it back to EEPROM
+ 555   2                              //
+ 556   2                              switch( ucFactoryIndex )
+ 557   2                              {
+ 558   3                              case mfBURNING:
+ 559   3                                      Write24C16(EPADDR_BURNIN, bIsBurnInEnabled );                           
+ 560   3      //                              if(bIsBurnInEnabled == 0)
+ 561   3      //                                      Write24C16(EPADDR_FACTORY, 0 );
+ 562   3                                      break;
+ 563   3                              case mfBLACKLEVEL:
+ 564   3                                      Write24C16(EPADDR_SCALER_OFFSET, ucBlackLevel); // 0x17
+ 565   3                              case mfBRIGHTNESS:
+ 566   3                                      ucSavePointer = svBRIGHTNESS_F;
+ 567   3                                      SaveData();
+ 568   3                              case mfIDX:
+ 569   3                                      ucSavePointer = svPANELIDX;
+ 570   3                                      SaveData();
+ 571   3                              case mfCONTRAST:
+ 572   3                                      ucSavePointer = svCONTRAST_F;
+ 573   3                                      SaveData();
+ 574   3                                      break;
+ 575   3                              case mfGAINR:
+ 576   3                                      Write24C16(EPADDR_ADCR_GAIN,ucR_ADC_Gain);//0x4d = ADC r gain
+ 577   3                                      break;
+ 578   3                              case mfGAING:
+ 579   3                                      Write24C16(EPADDR_ADCG_GAIN,ucG_ADC_Gain);//0x4e = ADC g gain
+ 580   3                                      break;
+ 581   3                              case mfGAINB:
+ 582   3                                      Write24C16(EPADDR_ADCB_GAIN,ucB_ADC_Gain);//0x4f = ADC b gain
+ 583   3                                      break;
+ 584   3                              case mfOFFSETR:
+ 585   3                                      Write24C16(EPADDR_ADCR_OFFSET,ucR_ADC_Offset);//0x4a = ADC r offset
+ 586   3                                      break;
+ 587   3                              case mfOFFSETG:
+ 588   3      //                              Write24C16(EPADDR_ADCG_OFFSET,ucG_ADC_Offset);//0x4b = ADC g offset
+ 589   3                                      if(ucSignalType == sigSOG)
+ 590   3                                              Write24C16(EPADDR_ADCG_OFFSET, ucG_ADC_Offset+5);//0x4b = ADC g offset
+ 591   3                                      else
+ 592   3                                              Write24C16(EPADDR_ADCG_OFFSET, ucG_ADC_Offset);//0x4b = ADC g offset
+ 593   3                                      break;
+ 594   3                              case mfOFFSETB:
+ 595   3                                      Write24C16(EPADDR_ADCB_OFFSET,ucB_ADC_Offset);//0x4c = ADC b offset
+ 596   3                                      break;
+ 597   3                              case mfSRGBR:
+ 598   3                                      ucR_GainsRGB = ucR_Gain;
+ 599   3                                      Write24C16(EPADDR_RGAIN_SRGB, ucR_Gain);
+ 600   3                                      break;
+ 601   3                              case mfSRGBG:
+ 602   3                                      ucG_GainsRGB = ucG_Gain;
+ 603   3                                      Write24C16(EPADDR_GGAIN_SRGB, ucG_Gain);
+ 604   3                                      break;
+ 605   3                              case mfSRGBB:
+ 606   3                                      ucB_GainsRGB = ucB_Gain;
+ 607   3                                      Write24C16(EPADDR_BGAIN_SRGB, ucB_Gain);
+ 608   3                                      break;
+ 609   3                              case mf5000R:
+ 610   3                                      ucR_Gain5000K = ucR_Gain;
+ 611   3                                      Write24C16(EPADDR_RGAIN_5000, ucR_Gain);
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 11  
+
+ 612   3                                      break;
+ 613   3                              case mf5000G:
+ 614   3                                      ucG_Gain5000K = ucG_Gain;
+ 615   3                                      Write24C16(EPADDR_GGAIN_5000, ucG_Gain);
+ 616   3                                      break;
+ 617   3                              case mf5000B:
+ 618   3                                      ucB_Gain5000K = ucB_Gain;
+ 619   3                                      Write24C16(EPADDR_BGAIN_5000, ucB_Gain);
+ 620   3                                      break;
+ 621   3                              case mf6500R:
+ 622   3                                      ucR_Gain6500K = ucR_Gain;
+ 623   3                                      Write24C16(EPADDR_RGAIN_6500, ucR_Gain);
+ 624   3                                      break;
+ 625   3                              case mf6500G:
+ 626   3                                      ucG_Gain6500K = ucG_Gain;
+ 627   3                                      Write24C16(EPADDR_GGAIN_6500, ucG_Gain);
+ 628   3                                      break;
+ 629   3                              case mf6500B:
+ 630   3                                      ucB_Gain6500K = ucB_Gain;
+ 631   3                                      Write24C16(EPADDR_BGAIN_6500, ucB_Gain);
+ 632   3                                      break;
+ 633   3                              case mf7500R:
+ 634   3                                      ucR_Gain7500K = ucR_Gain;
+ 635   3                                      Write24C16(EPADDR_RGAIN_7500, ucR_Gain);
+ 636   3                                      break;
+ 637   3                              case mf7500G:
+ 638   3                                      ucG_Gain7500K = ucG_Gain;
+ 639   3                                      Write24C16(EPADDR_GGAIN_7500, ucG_Gain);
+ 640   3                                      break;
+ 641   3                              case mf7500B:
+ 642   3                                      ucB_Gain7500K = ucB_Gain;
+ 643   3                                      Write24C16(EPADDR_BGAIN_7500, ucB_Gain);
+ 644   3                                      break;
+ 645   3                              case mf8200R:
+ 646   3                                      ucR_Gain8200K = ucR_Gain;
+ 647   3                                      Write24C16(EPADDR_RGAIN_8200, ucR_Gain);
+ 648   3                                      break;
+ 649   3                              case mf8200G:
+ 650   3                                      ucG_Gain8200K = ucG_Gain;
+ 651   3                                      Write24C16(EPADDR_GGAIN_8200, ucG_Gain);
+ 652   3                                      break;
+ 653   3                              case mf8200B:
+ 654   3                                      ucB_Gain8200K = ucB_Gain;
+ 655   3                                      Write24C16(EPADDR_BGAIN_8200, ucB_Gain);
+ 656   3                                      break;
+ 657   3                              case mf9300R:
+ 658   3                                      ucR_Gain9300K = ucR_Gain;
+ 659   3                                      Write24C16(EPADDR_RGAIN_9300, ucR_Gain);
+ 660   3                                      break;
+ 661   3                              case mf9300G:
+ 662   3                                      ucG_Gain9300K = ucG_Gain;
+ 663   3                                      Write24C16(EPADDR_GGAIN_9300, ucG_Gain);
+ 664   3                                      break;
+ 665   3                              case mf9300B:
+ 666   3                                      ucB_Gain9300K = ucB_Gain;
+ 667   3                                      Write24C16(EPADDR_BGAIN_9300, ucB_Gain);
+ 668   3                                      break;
+ 669   3                              case mf11500R:
+ 670   3                                      ucR_Gain11500K = ucR_Gain;
+ 671   3                                      Write24C16(EPADDR_RGAIN_11500, ucR_Gain);
+ 672   3                                      break;
+ 673   3                              case mf11500G:
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 12  
+
+ 674   3                                      ucG_Gain11500K = ucG_Gain;
+ 675   3                                      Write24C16(EPADDR_GGAIN_11500, ucG_Gain);
+ 676   3                                      break;
+ 677   3                              case mf11500B:
+ 678   3                                      ucB_Gain11500K = ucB_Gain;
+ 679   3                                      Write24C16(EPADDR_BGAIN_11500, ucB_Gain);
+ 680   3                                      break;
+ 681   3                              case mfADDRESS:
+ 682   3      //#ifdef _FULL_CODE_SIZE_                       
+ 683   3                                      RegRead();
+ 684   3                                      FactoryShowValue(0, mfWR, reg_value);
+ 685   3      //#endif
+ 686   3                                      break;
+ 687   3                              case mfWR:
+ 688   3      //#ifdef _FULL_CODE_SIZE_
+ 689   3                                      RegWrite();
+ 690   3      //#endif
+ 691   3                                      break;                  
+ 692   3                              }
+ 693   2                      }
+ 694   1      
+ 695   1      }
+ 696          
+ 697          
+ 698          void FactoryItemUp()
+ 699          {
+ 700   1              if ( ucFactoryStatus == fsMENU )
+ 701   1                      FactoryMoveUp();
+ 702   1              else
+ 703   1                      FactoryValueUp();
+ 704   1      }
+ 705          void FactoryItemDown()
+ 706          {
+ 707   1              if ( ucFactoryStatus == fsMENU )
+ 708   1                      FactoryMoveDown();
+ 709   1              else
+ 710   1                      FactoryValueDown();
+ 711   1      }
+ 712          
+ 713          void FactoryValueUp()
+ 714          {
+ 715   1      
+ 716   1              //if ( ucFactoryStatus != fsVALUE ) return;
+ 717   1              
+ 718   1              switch( ucFactoryIndex )
+ 719   1              {
+ 720   2              case mfBURNING:
+ 721   2                      bIsBurnInEnabled = !bIsBurnInEnabled;
+ 722   2                      FactoryShowBurnin();
+ 723   2                      break;
+ 724   2              case mfBLACKLEVEL:
+ 725   2                      if(++ucBlackLevel == 0x00){
+ 726   3                              ucBlackLevel = MAX_BLACKLEVEL;
+ 727   3                      }
+ 728   2                      else{
+ 729   3      //                      SetScalerOffset();
+ 730   3                              SetContrastRGB();
+ 731   3                              FactoryShowValue(0, mfBLACKLEVEL, ucBlackLevel);
+ 732   3                      }
+ 733   2                      break;
+ 734   2              case mfBRIGHTNESS:
+ 735   2                      if(++ucBrightness > 100)
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 13  
+
+ 736   2                              ucBrightness = 100;
+ 737   2                      else{
+ 738   3                              SetBrightness();
+ 739   3      //#if _SmartBright_ == ON
+ 740   3      //                      SetBrightOffset();
+ 741   3      //#endif
+ 742   3                              FactoryShowValue(0, mfBRIGHTNESS, ucBrightness);
+ 743   3      //                      ucSavePointer = svBRIGHTNESS;
+ 744   3                      }       
+ 745   2                      break;
+ 746   2              case mfIDX:
+ 747   2      #if 0
+                              if(++ucPanelIDX == 0x00 )
+                                      ucPanelIDX = 0xff;
+              #else
+ 751   2                      if(++ucPanelIDX > 3 )
+ 752   2                              ucPanelIDX = 3;
+ 753   2      #endif
+ 754   2                      else{
+ 755   3                              SetPanelIDX();
+ 756   3                              FactoryShowValue(0, mfIDX, ucPanelIDX);
+ 757   3                      }
+ 758   2                      break;
+ 759   2              case mfCONTRAST:
+ 760   2                      if(++ucRGB_OFFSET == 0)
+ 761   2                              ucRGB_OFFSET = 255;
+ 762   2                      else{
+ 763   3                              SetContrastRGB();
+ 764   3                              FactoryShowValue(0, mfCONTRAST, ucRGB_OFFSET);
+ 765   3      //                      ucSavePointer = svCONTRAST;
+ 766   3                      }
+ 767   2                      break;
+ 768   2              case mfGAINR:
+ 769   2                      ADC_R_Up();
+ 770   2                      //ADC_GainOffsetUp(RGAIN_HI,&ucR_ADC_Gain);
+ 771   2                      FactoryShowValue(0, mfGAINR, (unsigned short)ucR_ADC_Gain);
+ 772   2                      break;
+ 773   2              case mfGAING:
+ 774   2                      ADC_G_Up();
+ 775   2                      //ADC_GainOffsetUp(GGAIN_HI,&ucG_ADC_Gain);
+ 776   2                      FactoryShowValue(0, mfGAING, (unsigned short)ucG_ADC_Gain);             
+ 777   2                      break;
+ 778   2              case mfGAINB:
+ 779   2                      ADC_B_Up();
+ 780   2                      //ADC_GainOffsetUp(BGAIN_HI,&ucB_ADC_Gain);
+ 781   2                      FactoryShowValue(0, mfGAINB, (unsigned short)ucB_ADC_Gain);
+ 782   2                      break;
+ 783   2              case mfOFFSETR:
+ 784   2                      ADC_R_OffsetUp();
+ 785   2                      //ADC_GainOffsetUp(ROFFSET,&ucR_ADC_Offset);
+ 786   2                      FactoryShowValue(0, mfOFFSETR, (unsigned short)ucR_ADC_Offset);
+ 787   2                      break;
+ 788   2              case mfOFFSETG:
+ 789   2                      ADC_G_OffsetUp();
+ 790   2                      //ADC_GainOffsetUp(GOFFSET,&ucG_ADC_Offset);
+ 791   2                      FactoryShowValue(0, mfOFFSETG, (unsigned short)ucG_ADC_Offset); 
+ 792   2                      break;
+ 793   2              case mfOFFSETB:
+ 794   2                      ADC_B_OffsetUp();
+ 795   2                      //ADC_GainOffsetUp(BOFFSET,&ucB_ADC_Offset);
+ 796   2                      FactoryShowValue(0, mfOFFSETB, (unsigned short)ucB_ADC_Offset);                 
+ 797   2                      break;
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 14  
+
+ 798   2              case mfSRGBR:
+ 799   2                      FactoryColorUp(&ucR_Gain);
+ 800   2                      FactoryShowValue(0, mfSRGBR, (unsigned short)ucR_Gain);
+ 801   2                      break;
+ 802   2              case mfSRGBG:
+ 803   2                      FactoryColorUp(&ucG_Gain);
+ 804   2                      FactoryShowValue(0, mfSRGBG, (unsigned short)ucG_Gain);
+ 805   2                      break;
+ 806   2              case mfSRGBB:
+ 807   2                      FactoryColorUp(&ucB_Gain);
+ 808   2                      FactoryShowValue(0, mfSRGBB, (unsigned short)ucB_Gain);
+ 809   2                      break;
+ 810   2              case mf5000R:
+ 811   2                      FactoryColorUp(&ucR_Gain);
+ 812   2                      FactoryShowValue(0, mf5000R, (unsigned short)ucR_Gain);
+ 813   2                      break;
+ 814   2              case mf5000G:
+ 815   2                      FactoryColorUp(&ucG_Gain);
+ 816   2                      FactoryShowValue(0, mf5000G, (unsigned short)ucG_Gain);
+ 817   2                      break;
+ 818   2              case mf5000B:
+ 819   2                      FactoryColorUp(&ucB_Gain);
+ 820   2                      FactoryShowValue(0, mf5000B, (unsigned short)ucB_Gain);
+ 821   2                      break;
+ 822   2              case mf6500R:
+ 823   2                      FactoryColorUp(&ucR_Gain);
+ 824   2                      FactoryShowValue(0, mf6500R, (unsigned short)ucR_Gain);
+ 825   2                      break;
+ 826   2              case mf6500G:
+ 827   2                      FactoryColorUp(&ucG_Gain);
+ 828   2                      FactoryShowValue(0, mf6500G, (unsigned short)ucG_Gain);
+ 829   2                      break;
+ 830   2              case mf6500B:
+ 831   2                      FactoryColorUp(&ucB_Gain);
+ 832   2                      FactoryShowValue(0, mf6500B, (unsigned short)ucB_Gain);
+ 833   2                      break;
+ 834   2              case mf7500R:
+ 835   2                      FactoryColorUp(&ucR_Gain);
+ 836   2                      FactoryShowValue(0, mf7500R, (unsigned short)ucR_Gain);
+ 837   2                      break;
+ 838   2              case mf7500G:
+ 839   2                      FactoryColorUp(&ucG_Gain);
+ 840   2                      FactoryShowValue(0, mf7500G, (unsigned short)ucG_Gain);
+ 841   2                      break;
+ 842   2              case mf7500B:
+ 843   2                      FactoryColorUp(&ucB_Gain);
+ 844   2                      FactoryShowValue(0, mf7500B, (unsigned short)ucB_Gain);
+ 845   2                      break;
+ 846   2              case mf8200R:
+ 847   2                      FactoryColorUp(&ucR_Gain);
+ 848   2                      FactoryShowValue(0, mf8200R, (unsigned short)ucR_Gain);
+ 849   2                      break;
+ 850   2              case mf8200G:
+ 851   2                      FactoryColorUp(&ucG_Gain);
+ 852   2                      FactoryShowValue(0, mf8200G, (unsigned short)ucG_Gain);
+ 853   2                      break;
+ 854   2              case mf8200B:
+ 855   2                      FactoryColorUp(&ucB_Gain);
+ 856   2                      FactoryShowValue(0, mf8200B, (unsigned short)ucB_Gain);
+ 857   2                      break;
+ 858   2              case mf9300R:
+ 859   2                      FactoryColorUp(&ucR_Gain);
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 15  
+
+ 860   2                      FactoryShowValue(0, mf9300R, (unsigned short)ucR_Gain);
+ 861   2                      break;
+ 862   2              case mf9300G:
+ 863   2                      FactoryColorUp(&ucG_Gain);
+ 864   2                      FactoryShowValue(0, mf9300G, (unsigned short)ucG_Gain);
+ 865   2                      break;
+ 866   2              case mf9300B:
+ 867   2                      FactoryColorUp(&ucB_Gain);
+ 868   2                      FactoryShowValue(0, mf9300B, (unsigned short)ucB_Gain);
+ 869   2                      break;
+ 870   2              case mf11500R:
+ 871   2                      FactoryColorUp(&ucR_Gain);
+ 872   2                      FactoryShowValue(0, mf11500R, (unsigned short)ucR_Gain);
+ 873   2                      break;
+ 874   2              case mf11500G:
+ 875   2                      FactoryColorUp(&ucG_Gain);
+ 876   2                      FactoryShowValue(0, mf11500G, (unsigned short)ucG_Gain);
+ 877   2                      break;
+ 878   2              case mf11500B:
+ 879   2                      FactoryColorUp(&ucB_Gain);
+ 880   2                      FactoryShowValue(0, mf11500B, (unsigned short)ucB_Gain);
+ 881   2                      break;
+ 882   2              case mfADDRESS:
+ 883   2      //#ifdef _FULL_CODE_SIZE_
+ 884   2                      RegAddrInc(&reg_addr);
+ 885   2                      FactoryShowValue(0, mfADDRESS, (unsigned short)reg_addr);
+ 886   2                      break;
+ 887   2      //#endif
+ 888   2              case mfWR:
+ 889   2      //#ifdef _FULL_CODE_SIZE_
+ 890   2                      RegInc(&reg_value);
+ 891   2                      FactoryShowValue(0, mfWR, (unsigned short)reg_value);
+ 892   2      //#endif
+ 893   2                      break;
+ 894   2      /*              
+ 895   2              case mfTDRESET:
+ 896   2                      
+ 897   2                      Panel_PrevID();
+ 898   2                      FactoryShowPanel();
+ 899   2      
+ 900   2                      ucPanelIDX = Panel_t[ucPanelID].idx;
+ 901   2      
+ 902   2                      SetPanelIDX();
+ 903   2                      FactoryShowValue(0, mfIDX, ucPanelIDX);
+ 904   2      //              ucSavePointer = svPANELIDX;
+ 905   2                      break;
+ 906   2      */              
+ 907   2              }
+ 908   1      }
+ 909          
+ 910          void FactoryValueDown()
+ 911          {
+ 912   1      
+ 913   1              //if ( ucFactoryStatus != fsVALUE ) return;
+ 914   1              
+ 915   1              switch( ucFactoryIndex )
+ 916   1              {
+ 917   2              case mfBURNING:
+ 918   2                      bIsBurnInEnabled = !bIsBurnInEnabled;
+ 919   2                      FactoryShowBurnin();
+ 920   2                      break;
+ 921   2              case mfBLACKLEVEL:
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 16  
+
+ 922   2                      if(--ucBlackLevel == 0xFF){
+ 923   3                              ucBlackLevel = MIN_BLACKLEVEL;
+ 924   3                      }
+ 925   2                      else{
+ 926   3      //                      SetScalerOffset();
+ 927   3                              SetContrastRGB();
+ 928   3                              FactoryShowValue(0, mfBLACKLEVEL, ucBlackLevel);
+ 929   3                      }
+ 930   2                      break;
+ 931   2              case mfBRIGHTNESS:
+ 932   2                      if(--ucBrightness == 0xff)
+ 933   2                              ucBrightness = 0x00;
+ 934   2                      else{
+ 935   3                              SetBrightness();
+ 936   3      //#if _SmartBright_ == ON
+ 937   3      //                      SetBrightOffset();
+ 938   3      //#endif
+ 939   3                              FactoryShowValue(0, mfBRIGHTNESS, ucBrightness);
+ 940   3      //                      ucSavePointer = svBRIGHTNESS;
+ 941   3                      }       
+ 942   2                      break;
+ 943   2              case mfIDX:
+ 944   2                      if(--ucPanelIDX== 0xff)
+ 945   2                              ucPanelIDX = 0x00;
+ 946   2                      else{
+ 947   3                              SetPanelIDX();
+ 948   3                              FactoryShowValue(0, mfIDX, ucPanelIDX);
+ 949   3                      }       
+ 950   2                      break;
+ 951   2              case mfCONTRAST:
+ 952   2                      if(--ucRGB_OFFSET == 0xff)
+ 953   2                              ucRGB_OFFSET = 0x00;
+ 954   2                      else{
+ 955   3                              SetContrastRGB();
+ 956   3                              FactoryShowValue(0, mfCONTRAST, ucRGB_OFFSET);
+ 957   3      //                      ucSavePointer = svCONTRAST;
+ 958   3                      }
+ 959   2                      break;
+ 960   2              case mfGAINR:
+ 961   2                      ADC_R_Down();
+ 962   2                      //ADC_GainOffsetDown(RGAIN_HI,&ucR_ADC_Gain);
+ 963   2                      FactoryShowValue(0, mfGAINR, (unsigned short)ucR_ADC_Gain);
+ 964   2                      break;
+ 965   2              case mfGAING:
+ 966   2                      ADC_G_Down();
+ 967   2                      //ADC_GainOffsetDown(GGAIN_HI,&ucG_ADC_Gain);
+ 968   2                      FactoryShowValue(0, mfGAING, (unsigned short)ucG_ADC_Gain);     
+ 969   2                      break;
+ 970   2              case mfGAINB:
+ 971   2                      ADC_B_Down();
+ 972   2                      //ADC_GainOffsetDown(BGAIN_HI,&ucB_ADC_Gain);
+ 973   2                      FactoryShowValue(0, mfGAINB, (unsigned short)ucB_ADC_Gain);
+ 974   2                      break;
+ 975   2              case mfOFFSETR:
+ 976   2                      ADC_R_OffsetDown();
+ 977   2                      //ADC_GainOffsetDown(ROFFSET,&ucR_ADC_Offset);
+ 978   2                      FactoryShowValue(0, mfOFFSETR, (unsigned short)ucR_ADC_Offset);
+ 979   2                      break;
+ 980   2              case mfOFFSETG:
+ 981   2                      ADC_G_OffsetDown();
+ 982   2                      //ADC_GainOffsetDown(GOFFSET,&ucG_ADC_Offset);
+ 983   2                      FactoryShowValue(0, mfOFFSETG, (unsigned short)ucG_ADC_Offset);
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 17  
+
+ 984   2                      break;
+ 985   2              case mfOFFSETB:
+ 986   2                      ADC_B_OffsetDown();
+ 987   2                      //ADC_GainOffsetDown(BOFFSET,&ucB_ADC_Offset);
+ 988   2                      FactoryShowValue(0, mfOFFSETB, (unsigned short)ucB_ADC_Offset);
+ 989   2                      break;
+ 990   2              case mfSRGBR:
+ 991   2                      FactoryColorDown(&ucR_Gain);
+ 992   2                      FactoryShowValue(0, mfSRGBR, (unsigned short)ucR_Gain);
+ 993   2                      break;
+ 994   2              case mfSRGBG:
+ 995   2                      FactoryColorDown(&ucG_Gain);
+ 996   2                      FactoryShowValue(0, mfSRGBG, (unsigned short)ucG_Gain);
+ 997   2                      break;
+ 998   2              case mfSRGBB:
+ 999   2                      FactoryColorDown(&ucB_Gain);
+1000   2                      FactoryShowValue(0, mfSRGBB, (unsigned short)ucB_Gain);
+1001   2                      break;
+1002   2              case mf5000R:
+1003   2                      FactoryColorDown(&ucR_Gain);
+1004   2                      FactoryShowValue(0, mf5000R, (unsigned short)ucR_Gain);
+1005   2                      break;
+1006   2              case mf5000G:
+1007   2                      FactoryColorDown(&ucG_Gain);
+1008   2                      FactoryShowValue(0, mf5000G, (unsigned short)ucG_Gain);
+1009   2                      break;
+1010   2              case mf5000B:
+1011   2                      FactoryColorDown(&ucB_Gain);
+1012   2                      FactoryShowValue(0, mf5000B, (unsigned short)ucB_Gain);
+1013   2                      break;
+1014   2              case mf6500R:
+1015   2                      FactoryColorDown(&ucR_Gain);
+1016   2                      FactoryShowValue(0, mf6500R, (unsigned short)ucR_Gain);
+1017   2                      break;
+1018   2              case mf6500G:
+1019   2                      FactoryColorDown(&ucG_Gain);
+1020   2                      FactoryShowValue(0, mf6500G, (unsigned short)ucG_Gain);
+1021   2                      break;
+1022   2              case mf6500B:
+1023   2                      FactoryColorDown(&ucB_Gain);
+1024   2                      FactoryShowValue(0, mf6500B, (unsigned short)ucB_Gain);
+1025   2                      break;
+1026   2              case mf7500R:
+1027   2                      FactoryColorDown(&ucR_Gain);
+1028   2                      FactoryShowValue(0, mf7500R, (unsigned short)ucR_Gain);
+1029   2                      break;
+1030   2              case mf7500G:
+1031   2                      FactoryColorDown(&ucG_Gain);
+1032   2                      FactoryShowValue(0, mf7500G, (unsigned short)ucG_Gain);
+1033   2                      break;
+1034   2              case mf7500B:
+1035   2                      FactoryColorDown(&ucB_Gain);
+1036   2                      FactoryShowValue(0, mf7500B, (unsigned short)ucB_Gain);
+1037   2                      break;
+1038   2              case mf8200R:
+1039   2                      FactoryColorDown(&ucR_Gain);
+1040   2                      FactoryShowValue(0, mf8200R, (unsigned short)ucR_Gain);
+1041   2                      break;
+1042   2              case mf8200G:
+1043   2                      FactoryColorDown(&ucG_Gain);
+1044   2                      FactoryShowValue(0, mf8200G, (unsigned short)ucG_Gain);
+1045   2                      break;
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 18  
+
+1046   2              case mf8200B:
+1047   2                      FactoryColorDown(&ucB_Gain);
+1048   2                      FactoryShowValue(0, mf8200B, (unsigned short)ucB_Gain);
+1049   2                      break;
+1050   2              case mf9300R:
+1051   2                      FactoryColorDown(&ucR_Gain);
+1052   2                      FactoryShowValue(0, mf9300R, (unsigned short)ucR_Gain);
+1053   2                      break;
+1054   2              case mf9300G:
+1055   2                      FactoryColorDown(&ucG_Gain);
+1056   2                      FactoryShowValue(0, mf9300G, (unsigned short)ucG_Gain);
+1057   2                      break;
+1058   2              case mf9300B:
+1059   2                      FactoryColorDown(&ucB_Gain);
+1060   2                      FactoryShowValue(0, mf9300B, (unsigned short)ucB_Gain);
+1061   2                      break;
+1062   2              case mf11500R:
+1063   2                      FactoryColorDown(&ucR_Gain);
+1064   2                      FactoryShowValue(0, mf11500R, (unsigned short)ucR_Gain);
+1065   2                      break;
+1066   2              case mf11500G:
+1067   2                      FactoryColorDown(&ucG_Gain);
+1068   2                      FactoryShowValue(0, mf11500G, (unsigned short)ucG_Gain);
+1069   2                      break;
+1070   2              case mf11500B:
+1071   2                      FactoryColorDown(&ucB_Gain);
+1072   2                      FactoryShowValue(0, mf11500B, (unsigned short)ucB_Gain);
+1073   2                      break;
+1074   2              case mfADDRESS:
+1075   2      //#ifdef _FULL_CODE_SIZE_
+1076   2                      RegAddrDec(&reg_addr);
+1077   2                      FactoryShowValue(0, mfADDRESS, (unsigned short)reg_addr);
+1078   2      //#endif
+1079   2                      break;
+1080   2              case mfWR:
+1081   2      //#ifdef _FULL_CODE_SIZE_
+1082   2                      RegDec(&reg_value);
+1083   2                      FactoryShowValue(0, mfWR, (unsigned short)reg_value);
+1084   2      //#endif
+1085   2                      break;
+1086   2      
+1087   2      /*              
+1088   2              case mfTDRESET:
+1089   2                      Panel_NextID();
+1090   2                      FactoryShowPanel();
+1091   2      
+1092   2                      ucPanelIDX = Panel_t[ucPanelID].idx;
+1093   2      
+1094   2                      SetPanelIDX();
+1095   2                      FactoryShowValue(0, mfIDX, ucPanelIDX);
+1096   2      //              ucSavePointer = svPANELIDX;
+1097   2                      break;
+1098   2      */              
+1099   2              }
+1100   1      }
+1101          
+1102          void FactoryMoveUp()
+1103          {
+1104   1      //unsigned char color_temp = ucColorTemperature;
+1105   1      
+1106   1              //if ( ucFactoryStatus != fsMENU ) return;
+1107   1              
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 19  
+
+1108   1              FactoryUnSelect();
+1109   1              if(--ucFactoryIndex > mfRETURN)
+1110   1                      ucFactoryIndex = mfRETURN;
+1111   1              FactorySelect();
+1112   1      
+1113   1              if(ucFactoryIndex == mfSRGBB){
+1114   2                      ucColorTemperature = COLOR_SRGB;
+1115   2                      SetColorTemp(ucColorTemperature);
+1116   2              }
+1117   1              else if(ucFactoryIndex == mf5000B){
+1118   2                      ucColorTemperature = COLOR_5000;
+1119   2                      SetColorTemp(ucColorTemperature);
+1120   2              }
+1121   1              else if(ucFactoryIndex == mf6500B){
+1122   2                      ucColorTemperature = COLOR_6500;
+1123   2                      SetColorTemp(ucColorTemperature);
+1124   2              }
+1125   1              else if(ucFactoryIndex == mf7500B){
+1126   2                      ucColorTemperature = COLOR_7500;
+1127   2                      SetColorTemp(ucColorTemperature);
+1128   2              }
+1129   1              else if(ucFactoryIndex == mf8200B){
+1130   2                      ucColorTemperature = COLOR_8200;
+1131   2                      SetColorTemp(ucColorTemperature);
+1132   2              }
+1133   1              else if(ucFactoryIndex == mf9300B){
+1134   2                      ucColorTemperature = COLOR_9300;
+1135   2                      SetColorTemp(ucColorTemperature);
+1136   2              }
+1137   1              else if(ucFactoryIndex == mf11500B){
+1138   2                      ucColorTemperature = COLOR_11500;
+1139   2                      SetColorTemp(ucColorTemperature);
+1140   2              }
+1141   1              else if(ucFactoryIndex == mfOFFSETB){
+1142   2                      ucColorTemperature = Read24C16(EPADDR_COLOR_TEMP);
+1143   2                      SetColorTemp(ucColorTemperature);
+1144   2              }
+1145   1              
+1146   1      }
+1147          
+1148          void FactoryMoveDown()
+1149          {
+1150   1              //if ( ucFactoryStatus != fsMENU ) return;
+1151   1              
+1152   1              FactoryUnSelect();
+1153   1              if(++ucFactoryIndex > mfRETURN)
+1154   1                      ucFactoryIndex = mfAUTO;
+1155   1              FactorySelect();
+1156   1      
+1157   1              if(ucFactoryIndex == mfSRGBR){
+1158   2                      ucColorTemperature = COLOR_SRGB;
+1159   2                      SetColorTemp(ucColorTemperature);
+1160   2              }
+1161   1              else if(ucFactoryIndex == mf5000R){
+1162   2                      ucColorTemperature = COLOR_5000;
+1163   2                      SetColorTemp(ucColorTemperature);
+1164   2              }
+1165   1              else if(ucFactoryIndex == mf6500R){
+1166   2                      ucColorTemperature = COLOR_6500;
+1167   2                      SetColorTemp(ucColorTemperature);
+1168   2              }
+1169   1              else if(ucFactoryIndex == mf7500R){
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 20  
+
+1170   2                      ucColorTemperature = COLOR_7500;
+1171   2                      SetColorTemp(ucColorTemperature);
+1172   2              }
+1173   1              else if(ucFactoryIndex == mf8200R){
+1174   2                      ucColorTemperature = COLOR_8200;
+1175   2                      SetColorTemp(ucColorTemperature);
+1176   2              }
+1177   1              else if(ucFactoryIndex == mf9300R){
+1178   2                      ucColorTemperature = COLOR_9300;
+1179   2                      SetColorTemp(ucColorTemperature);
+1180   2              }
+1181   1              else if(ucFactoryIndex == mf11500R){
+1182   2                      ucColorTemperature = COLOR_11500;
+1183   2                      SetColorTemp(ucColorTemperature);
+1184   2              }
+1185   1              else if(ucFactoryIndex == mfADDRESS){
+1186   2                      ucColorTemperature = Read24C16(EPADDR_COLOR_TEMP);
+1187   2                      SetColorTemp(ucColorTemperature);
+1188   2              }
+1189   1              
+1190   1      }
+1191          
+1192          //********************************
+1193          //
+1194          //      Move LightBar between Menu items
+1195          //
+1196          //********************************
+1197          void FactorySelect()
+1198          {
+1199   1              FillLineAttr(  LBar[ucFactoryIndex].x,
+1200   1                                      LBar[ucFactoryIndex].y,
+1201   1                                      LBar[ucFactoryIndex].len,
+1202   1                                      FactoryColorR);
+1203   1      }
+1204                  
+1205          void FactoryUnSelect()
+1206          {
+1207   1              FillLineAttr(  LBar[ucFactoryIndex].x,
+1208   1                                      LBar[ucFactoryIndex].y,
+1209   1                                      LBar[ucFactoryIndex].len,
+1210   1                                      FactoryColorW);
+1211   1      }
+1212          
+1213          //********************************
+1214          //
+1215          //      Move LightBar between Item and its value
+1216          //
+1217          //********************************
+1218          void FactorySelectValue()
+1219          {
+1220   1              if ( ucFactoryIndex >= mfGAINR && ucFactoryIndex <= mf9300B ) {
+1221   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1222   2                                              LBar[ucFactoryIndex].y,
+1223   2                                              3,
+1224   2                                              FactoryColorR);
+1225   2              }
+1226   1              else if ( ucFactoryIndex == mfBURNING ) {
+1227   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1228   2                                              LBar[ucFactoryIndex].y,
+1229   2                                              5,
+1230   2                                              FactoryColorR);
+1231   2              }
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 21  
+
+1232   1              else if ( ucFactoryIndex == mfWR ) {
+1233   2                      FillLineAttr(   LBar[ucFactoryIndex].x-5,
+1234   2                                              LBar[ucFactoryIndex].y,
+1235   2                                              4,
+1236   2                                              FactoryColorR);
+1237   2              }
+1238   1      /*      
+1239   1              else if ( ucFactoryIndex == mfTDRESET ) {
+1240   1                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1241   1                                              LBar[ucFactoryIndex].y,
+1242   1                                              10,
+1243   1                                              FactoryColorR);
+1244   1              }
+1245   1      */
+1246   1              else
+1247   1              {
+1248   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1249   2                                              LBar[ucFactoryIndex].y,
+1250   2                                              4,
+1251   2                                              FactoryColorR );
+1252   2              }
+1253   1      }
+1254          
+1255          void FactoryUnSelectValue()
+1256          {
+1257   1              if ( ucFactoryIndex >= mfGAINR && ucFactoryIndex <= mf9300B ) {
+1258   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1259   2                                              LBar[ucFactoryIndex].y,
+1260   2                                              3,
+1261   2                                              FactoryColorW );
+1262   2              }
+1263   1              else if ( ucFactoryIndex == mfBURNING ) {
+1264   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1265   2                                              LBar[ucFactoryIndex].y,
+1266   2                                              5,
+1267   2                                              FactoryColorW);
+1268   2              }
+1269   1              else if ( ucFactoryIndex == mfWR ) {
+1270   2                      FillLineAttr(   LBar[ucFactoryIndex].x-5,
+1271   2                                              LBar[ucFactoryIndex].y,
+1272   2                                              3,
+1273   2                                              FactoryColorW );
+1274   2              }
+1275   1      /*      
+1276   1              else if ( ucFactoryIndex == mfTDRESET) {
+1277   1                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1278   1                                              LBar[ucFactoryIndex].y,
+1279   1                                              10,
+1280   1                                              FactoryColorW);
+1281   1              }
+1282   1      */
+1283   1              else
+1284   1              {
+1285   2                      FillLineAttr(   LBar[ucFactoryIndex].x+LBar[ucFactoryIndex].len,
+1286   2                                              LBar[ucFactoryIndex].y,
+1287   2                                              4,
+1288   2                                              FactoryColorW );
+1289   2              }
+1290   1      }
+1291          
+1292          
+1293          void FactoryShowAutoColor(bit is_ok)
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 22  
+
+1294          {
+1295   1              ucStrAlignment = 0;
+1296   1              ucStrWidth = 3;
+1297   1              usFontIndex = 0xf0;
+1298   1      
+1299   1              if ( is_ok )
+1300   1                      WriteArialFont(OK);
+1301   1              else
+1302   1                      WriteArialFont(NO);
+1303   1      
+1304   1              WriteXY_String(0, LBar[mfAUTO].x+8, LBar[mfAUTO].y);
+1305   1      }
+1306          
+1307          void FactoryShowBurnin()
+1308          {
+1309   1              ucStrAlignment = 0;
+1310   1              ucStrWidth = 3;
+1311   1              usFontIndex = 0xf8;
+1312   1      
+1313   1              if ( TRUE == bIsBurnInEnabled )
+1314   1                      WriteArialFont(YES);
+1315   1              else
+1316   1                      WriteArialFont(NO);
+1317   1      
+1318   1              WriteXY_String(0, LBar[mfBURNING].x+8, LBar[mfBURNING].y);
+1319   1      }
+1320          
+1321          #if 1
+1322          
+1323          void ADC_R_Up(void)
+1324          {
+1325   1              if(--ucR_ADC_Gain == 0xff){
+1326   2                      ucR_ADC_Gain = 0x00;
+1327   2              }       
+1328   1              else{
+1329   2                      WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+1330   2              }
+1331   1      }
+1332          
+1333          void ADC_R_Down(void)
+1334          {
+1335   1              if(++ucR_ADC_Gain == 0x00){
+1336   2                      ucR_ADC_Gain = 0xff;
+1337   2              }
+1338   1              else{
+1339   2                      WriteIIC560(RGAIN_HI,ucR_ADC_Gain);
+1340   2              }
+1341   1      }
+1342          
+1343          void ADC_G_Up(void)
+1344          {
+1345   1              if(--ucG_ADC_Gain == 0xff){
+1346   2                      ucG_ADC_Gain = 0x00;
+1347   2              }
+1348   1              else{
+1349   2                      WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+1350   2              }
+1351   1      }
+1352          
+1353          void ADC_G_Down(void)
+1354          {
+1355   1              if(++ucG_ADC_Gain == 0x00){
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 23  
+
+1356   2                      ucG_ADC_Gain = 0xff;
+1357   2              }
+1358   1              else{
+1359   2                      WriteIIC560(GGAIN_HI,ucG_ADC_Gain);
+1360   2              }
+1361   1      }
+1362          
+1363          void ADC_B_Up(void)
+1364          {
+1365   1              if(--ucB_ADC_Gain == 0xff){
+1366   2                      ucB_ADC_Gain = 0x00;
+1367   2              }
+1368   1              else{
+1369   2                      WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+1370   2              }
+1371   1      }
+1372          
+1373          void ADC_B_Down(void)
+1374          {
+1375   1              if(++ucB_ADC_Gain == 0x00){
+1376   2                      ucB_ADC_Gain = 0xff;
+1377   2              }
+1378   1              else{
+1379   2                      WriteIIC560(BGAIN_HI,ucB_ADC_Gain);
+1380   2              }
+1381   1      }
+1382          
+1383          
+1384          void ADC_R_OffsetUp(void)
+1385          {
+1386   1              if(--ucR_ADC_Offset == 0xff){
+1387   2                      ucR_ADC_Offset = 0x00;
+1388   2              }
+1389   1              else{
+1390   2                      WriteIIC560(ROFFSET,ucR_ADC_Offset);
+1391   2              }
+1392   1      }
+1393          
+1394          void ADC_R_OffsetDown(void)
+1395          {
+1396   1              if(++ucR_ADC_Offset == 0x00){
+1397   2                      ucR_ADC_Offset = 0xff;
+1398   2              }
+1399   1              else{
+1400   2                      WriteIIC560(ROFFSET,ucR_ADC_Offset);
+1401   2              }
+1402   1      }
+1403          
+1404          void ADC_G_OffsetUp(void)
+1405          {
+1406   1              if(--ucG_ADC_Offset == 0xff){
+1407   2                      ucG_ADC_Offset = 0x00;
+1408   2              }
+1409   1              else{
+1410   2                      WriteIIC560(GOFFSET,ucG_ADC_Offset);
+1411   2              }
+1412   1      }
+1413          
+1414          void ADC_G_OffsetDown(void)
+1415          {
+1416   1              if(++ucG_ADC_Offset == 0x00){
+1417   2                      ucG_ADC_Offset = 0xff;
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 24  
+
+1418   2              }
+1419   1              else{
+1420   2                      WriteIIC560(GOFFSET,ucG_ADC_Offset);
+1421   2              }
+1422   1      }
+1423          
+1424          void ADC_B_OffsetUp(void)
+1425          {
+1426   1              if(--ucB_ADC_Offset == 0xff){
+1427   2                      ucB_ADC_Offset = 0x00;
+1428   2              }
+1429   1              else{
+1430   2                      WriteIIC560(BOFFSET,ucB_ADC_Offset);
+1431   2              }
+1432   1      }
+1433          
+1434          void ADC_B_OffsetDown(void)
+1435          {
+1436   1              if(++ucB_ADC_Offset == 0x00){
+1437   2                      ucB_ADC_Offset = 0xff;
+1438   2              }
+1439   1              else{
+1440   2                      WriteIIC560(BOFFSET,ucB_ADC_Offset);
+1441   2              }
+1442   1      }
+1443          #else
+              
+              void ADC_GainOffsetUp(unsigned short addr, unsigned char *value)
+              {
+                      if(--(*value) == 0xff){
+                              (*value) = 0x00;
+                      }
+                      else{
+                              WriteIIC560(addr,(*value));
+                      }
+              }
+              
+              void ADC_GainOffsetDown(unsigned short addr, unsigned char *value)
+              {
+                      if(++(*value) == 0x00){
+                              (*value) = 0xff;
+                      }
+                      else{
+                              WriteIIC560(addr,(*value));
+                      }
+              }
+              
+              #endif
+1466          
+1467          void FactoryColorUp(unsigned char *val)
+1468          {
+1469   1              if(++(*val) == 0){
+1470   2                      (*val) = 255;
+1471   2              }
+1472   1              else{
+1473   2                      SetContrastRGB();
+1474   2              }
+1475   1      }
+1476          
+1477          void FactoryColorDown(unsigned char *val)
+1478          {
+1479   1              if(--(*val) == 0xff){
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 25  
+
+1480   2                      (*val) = 0;
+1481   2              }
+1482   1              else{
+1483   2                      SetContrastRGB();
+1484   2              }
+1485   1      }
+1486          
+1487          
+1488          
+1489          //#ifdef _FULL_CODE_SIZE_
+1490          void RegAddrInc(unsigned short *i)
+1491          {
+1492   1              if ( ++(*i) == 0x200 )
+1493   1                      (*i) = 0;
+1494   1      }
+1495          
+1496          void RegAddrDec(unsigned short *i)
+1497          {
+1498   1              if ( --(*i) == 0xffff )
+1499   1                      (*i) = 0x1ff;
+1500   1      }
+1501          
+1502          void RegInc(unsigned char *i)
+1503          {
+1504   1              ++(*i);
+1505   1              //if ( ++(*i) == 0 )
+1506   1              //      (*i) = 0xff;
+1507   1      }
+1508          
+1509          void RegDec(unsigned char *i)
+1510          {
+1511   1              --(*i);
+1512   1              //if ( --(*i) == 0xff )
+1513   1              //      (*i) = 0x00;
+1514   1      }
+1515          
+1516          void RegWrite()
+1517          {
+1518   1              if ( reg_addr == 0x0f && reg_value == 0x55 )
+1519   1                      ClearEEPROM();
+1520   1              else
+1521   1                      WriteIIC560(reg_addr, reg_value);
+1522   1      }
+1523          
+1524          void RegRead()
+1525          {
+1526   1              reg_value = ReadIIC560(reg_addr);
+1527   1      }
+1528          //#endif
+1529          
+1530          void ClearEEPROM()
+1531          {       
+1532   1      /*      
+1533   1      unsigned short i;
+1534   1              for (i=0x00; i< NVRAM_FINAL_ADDR; i++ )
+1535   1                      Write24C16(i, 0x00);
+1536   1      */
+1537   1      InitEEPROM(1);
+1538   1      EA = 0;
+1539   1      while(1){};
+1540   1      
+1541   1      }
+C51 COMPILER V8.12   FACTORY                                                               11/09/2015 19:43:37 PAGE 26  
+
+1542          
+1543          
+1544          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   5065    ----
+   CONSTANT SIZE    =    329    ----
+   XDATA SIZE       =      3      19
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =      2    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

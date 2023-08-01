@@ -1,0 +1,815 @@
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE NVRAM
+OBJECT MODULE PLACED IN .\BIN\NVRAM.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\NVRAM.C LARGE OPTIMIZE(9,SPEED) BROWSE DEFINE(PanelID=INL_190AW01,Model
+                    -Name=QL19W,BF_MOVING_WINDOW) DEBUG OBJECTEXTEND PRINT(.\LST\NVRAM.lst) OBJECT(.\BIN\NVRAM.obj)
+
+line level    source
+
+   1          #include "NVRAM.H"
+   2          #include "stdio.h"
+   3          #include "8051.H"
+   4          #include "RAM.H"
+   5          #include "IIC.H"
+   6          #include "MCU.H"
+   7          #include "ROM_MAP.H"
+   8          #include "MyDef.H"
+   9          #include "NT686xx_MCU_REG.H"
+  10          #include "Board.H"
+  11          #include "Mis.H"
+  12          #include "ddc_ci.H"
+  13          #include "Factory.H"
+  14          #include "HDCP.h"
+  15          #if FE2P_LIB==ON
+                      #if NT68167
+                              #include "fe2p_nt68167 v1.1.h"
+                      #elif NT68667
+                              #include "fe2p_nt68667.h"
+                      #endif
+              #endif
+  22          
+  23          
+  24          #if FE2P_LIB==ON
+              
+              #define ValidFlagAddr 0xfff
+              #define BLOCK0 0x0000
+              #define BLOCK1 0x1000
+              #define FE2P_SAVE_TIME 100      // 100x10ms
+              
+              unsigned char FE2P_CheckValidBlock()
+              {
+                      unsigned char Dat;
+                      
+                      Fe2p_ByteRead(ValidFlagAddr,&Dat);
+                      //NVTprint1("block0 flag %02d\r\n",(unsigned short)Dat);
+                      if(Dat == 0x55)
+                              return 0;
+                      Fe2p_ByteRead(ValidFlagAddr+BLOCK1,&Dat);
+                      //NVTprint1("block1 flag %02d\r\n",(unsigned short)Dat);
+                      if(Dat == 0x55)
+                              return 1;
+              
+                      return 0xff;    //FE2P block damage
+              }
+              
+              void FE2P_LoadToSram()
+              {
+                      feValid_Block = FE2P_CheckValidBlock();
+                      if(feValid_Block > 1)
+                              {
+                              feValid_Block = 0;
+                              InitEEPROM(1);                          
+                              FE2P_Process(1);
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 2   
+
+                              #if FE2P_DEBUG
+                                      printf("FE2P Initialization\n\r");
+                              #endif
+                              }
+                              
+                      else            //JERRY+
+                      {
+                      if(feValid_Block == 0)
+                              Fe2p_PageRead(BLOCK0,Fe2pBuf,2048);     //block0 first 2k
+                      else
+                              Fe2p_PageRead(BLOCK1,Fe2pBuf,2048);     //block1 first 2k
+              //              #if FE2P_DEBUG
+                                      printf("FE2P Load Flash To SRAM 9000h,Block %02d\n\r",(unsigned short)feValid_Block);
+              //              #endif
+                      }
+              }
+              
+              void FE2P_SaveToFlash()
+              {
+                      unsigned short Offset,i;
+                      
+                      if(feValid_Block > 1)
+                              feValid_Block = 1;
+                      if(feValid_Block == 0)
+                              Offset = BLOCK1;        //save to block 1
+                      else
+                              Offset = BLOCK0;
+              
+              //      if ( IsAC_PowerOff() )  return;
+                              
+                              
+              #if NT68670 || NT68670B || NT68167
+                              
+                      Fe2p_WriteEnable();
+                      Fe2p_SectorErase(Offset);       // 100~150ms
+                      
+              
+                      for(i=0;i<2048;i+=0x100)
+                      {
+                              Fe2p_WriteEnable();
+                              Fe2p_PageWrite(i+Offset,Fe2pBufAddr+i, 0x100);  // 256bytes 3~4.5ms
+                      }
+                      Fe2p_WriteEnable();
+                      Fe2p_ByteWrite(ValidFlagAddr+Offset,0x55);      //set new valid flag
+                      Offset ^= BLOCK1;
+                      Fe2p_WriteEnable();
+                      Fe2p_ByteWrite(ValidFlagAddr+Offset,0x00);      //clear old valid flag
+                      feValid_Block ^= 1;
+              
+              
+              #else
+                      Fe2p_BlockErase(Offset);        // 100~150ms
+                      
+                              
+                      for(i=0;i<2048;i++)
+                      {
+                              Fe2p_ByteWrite(i+Offset,Fe2pBuf[i]);
+                      }
+                      Fe2p_ByteWrite(ValidFlagAddr+Offset,0x55);      //set new valid flag
+                      Offset ^= BLOCK1;
+                      Fe2p_ByteWrite(ValidFlagAddr+Offset,0x00);      //clear old valid flag
+                      feValid_Block ^= 1;
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 3   
+
+              #endif
+                      
+              //      #if FE2P_DEBUG
+                              printf("FE2P Save SRAM To Flash ,Block %02d\n\r",(unsigned short)feValid_Block);
+              //      #endif
+              }
+              
+              void FE2P_Process(bit ForceUpdate)
+              {
+                      if((feSave && feSave_Timer == 0) || ForceUpdate)
+                              {
+                              FE2P_SaveToFlash();
+                              feSave = 0;
+                      }
+              }
+              
+              void FE2P_ClearBuffer()
+              {
+                      unsigned short i;
+                      for(i=0;i<2048;i++)
+                              Fe2pBuf[i] = 0xff;
+              }
+              #endif
+ 140          
+ 141          
+ 142          code unsigned char initTab[]={
+ 143                  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+ 144          };
+ 145          
+ 146          unsigned char Read24C16(unsigned short addr16)
+ 147          {
+ 148   1      
+ 149   1      unsigned char ch;
+ 150   1      #if FE2P_LIB==ON
+                      ch = Fe2pBuf[addr16];
+              #else
+ 153   1      unsigned short device,addr;
+ 154   1              addr = addr16 & 0x0ff;
+ 155   1              device = (addr16 >> 7) & 0x0e;
+ 156   1              device |= EEPROM_ADDR;
+ 157   1              ch = ReadIIC(device,addr);
+ 158   1      #endif
+ 159   1              return ch;
+ 160   1      
+ 161   1      
+ 162   1              
+ 163   1      }
+ 164          
+ 165          unsigned short Read24C16_Short(unsigned short addr16)
+ 166          {
+ 167   1      unsigned short ret = 0;
+ 168   1      #if FE2P_LIB==ON
+                      ret = Fe2pBuf[addr16];
+                      ret <<= 8;
+                      ret += Fe2pBuf[addr16+1];
+              #else
+ 173   1              ret = Read24C16(addr16);
+ 174   1              addr16++;
+ 175   1              ret <<= 8;
+ 176   1              ret += Read24C16(addr16);
+ 177   1      #endif
+ 178   1              return ret;
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 4   
+
+ 179   1      }
+ 180          
+ 181          #if 0
+              void ReadPage24C16(unsigned short addr16,unsigned char *ReadBuffer,unsigned char l)     //xyy 2007.10.22   22:
+             -24:25
+              {
+              #if FE2P_LIB==ON
+              unsigned char i;
+                      for(i=0;i<l;i++){
+                              ReadBuffer[i] = Fe2pBuf[addr16++];
+                      }
+              #else
+              unsigned char device,addr,i;
+                      device = (addr16 >> 7) & 0x0e;
+                      device |= EEPROM_ADDR;
+                      addr = (unsigned char)addr16;
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device);
+                      WriteByte(addr);
+                      ISCL = 1;
+                      SetISCL();              /* SCL=1 */
+              /* start bit */
+                      IIC_Start();
+              /* transmit data */
+                      WriteByte(device+1);
+                      for(i=0;i<(l-1);i++){
+                              ReadBuffer[i] = ReadByte();
+                              MasterACK();
+                      }
+                      ReadBuffer[l-1] = ReadByte();
+              /* no ack */
+                      MasterNACK();
+              /* stop bit */
+                      IIC_Stop();
+              #endif
+              }
+              #endif
+ 217          
+ 218          void Write24C16(unsigned short target,unsigned char value)
+ 219          {
+ 220   1      #if FE2P_LIB==ON
+                              Fe2pBuf[target] = value;
+                              feSave = 1;
+                              feSave_Timer = FE2P_SAVE_TIME;
+              #else
+ 225   1      unsigned char device,addr;
+ 226   1      //      if( NVRAM_IsEnabled() )
+ 227   1              {
+ 228   2                      EEP_WP_OFF();
+ 229   2                      addr = (unsigned char)target;
+ 230   2                      device = (unsigned char)((target>>7)&0x0e);
+ 231   2                      device |= EEPROM_ADDR;
+ 232   2                      WriteIIC(device,addr,value);
+ 233   2                      Sleep(12);
+ 234   2                      EEP_WP_ON();
+ 235   2              }
+ 236   1      #endif
+ 237   1      }
+ 238          
+ 239          void Write24C16_Short(unsigned short target, unsigned short value)
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 5   
+
+ 240          {
+ 241   1      #if FE2P_LIB==ON
+                      Fe2pBuf[target] = value>>8;
+                      Fe2pBuf[target+1] = (unsigned char)value;
+                      feSave = 1;
+                      feSave_Timer = FE2P_SAVE_TIME;
+              #else
+ 247   1              Write24C16(target,(unsigned char)(value >> 8));
+ 248   1              target++;
+ 249   1              Write24C16(target,(unsigned char)value);
+ 250   1      #endif
+ 251   1      }
+ 252          
+ 253          
+ 254          void WritePage24C16(unsigned short target,unsigned short offset,unsigned char *value,unsigned char length)
+ 255          {
+ 256   1      #if FE2P_LIB==ON
+              unsigned char i;
+              //JERRY         for(i=0;i<256;i++)
+              //JERRY                 Fe2pBuf[target+i] = value[offset+i];
+                              for(i=0;i<length;i++)
+                                      Fe2pBuf[target+i] = value[offset+i];
+                              feSave = 1;
+                              feSave_Timer = FE2P_SAVE_TIME;
+              #else
+ 265   1      unsigned char i,ch;
+ 266   1      //      if( NVRAM_IsEnabled() )
+ 267   1              {
+ 268   2                      EEP_WP_OFF();
+ 269   2              /* start bit */
+ 270   2                      IIC_Start();
+ 271   2              /* transmit data */
+ 272   2                      i = (unsigned char)((target >>7 ) & 0x0e);
+ 273   2                      i |= EEPROM_ADDR;
+ 274   2                      WriteByte(i);
+ 275   2                      i = (unsigned char)target;
+ 276   2                      WriteByte(i);
+ 277   2                      for(i=0; i<length; i++){
+ 278   3                              ch = value[offset + i];
+ 279   3                              WriteByte(ch);
+ 280   3                      }
+ 281   2              /* stop bit */
+ 282   2                      IIC_Stop();
+ 283   2                      Sleep(12);
+ 284   2                      EEP_WP_ON();
+ 285   2              }
+ 286   1      #endif
+ 287   1      }
+ 288          
+ 289          void InitEEPROM(bit k)
+ 290          {
+ 291   1      unsigned short addr;
+ 292   1      unsigned short i;
+ 293   1      unsigned char temp;
+ 294   1      
+ 295   1              if(k == 0){
+ 296   2                      WritePage24C16(0x00,0,MCU_DataMap,16);
+ 297   2                      Write24C16(EPADDR_EMPTY0, 0x55);
+ 298   2                      Write24C16(EPADDR_EMPTY1, 0xaa);
+ 299   2                      for(addr=0x10; addr<0x40; addr=addr+16){
+ 300   3                              WritePage24C16(addr,addr,MCU_DataMap,16);
+ 301   3                      }
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 6   
+
+ 302   2      
+ 303   2                      bExitSysLoop = TRUE;
+ 304   2      //              Write24C16(EPADDR_FACTORY, 1);
+ 305   2                      Write24C16(EPADDR_POT_BYTE0,(unsigned char)ulPOTTimerH);//0x1a = POT byte 0
+ 306   2                      Write24C16(EPADDR_POT_BYTE1,(unsigned char)(ulPOTTimerH >> 8));//0x1b = POT byte 1
+ 307   2                      Write24C16(EPADDR_POT_15M, ucPOTTimerM_4);      //0x2d = POT_15M
+ 308   2              }
+ 309   1              else{
+ 310   2                      temp = Read24C16(EPADDR_PERFECTUNE);
+ 311   2                      for(addr=0x00; addr<0x70; addr=addr+16){
+ 312   3                              WritePage24C16(addr,addr,MCU_DataMap,16);
+ 313   3                      }
+ 314   2                      Write24C16(EPADDR_BURNIN, 0x01);                                
+ 315   2      #ifndef Use24C02
+ 316   2                      for(i=0;i <0x80; i+=16){        //INITAL        EDID
+ 317   3                              WritePage24C16(DDC_ADDR_ANALOG+i,i,_Default_Analog_EDID,16);
+ 318   3                              WritePage24C16(DDC_ADDR_DIGITAL+i,i,_Default_Digital_EDID,16);
+ 319   3                      }
+ 320   2      #endif
+ 321   2                      if(temp == 1){  //FGA done
+ 322   3                              Write24C16(EPADDR_PERFECTUNE, 1);
+ 323   3                      }
+ 324   2      //              else{
+ 325   2      //                      for(i=0; i<0x60; i+=16){        //INITAL        TRUECOLOR
+ 326   2      //                              WritePage24C16(NVRAM_TRUECOLOR+i,i,_Default_TrueColor_Value,16);
+ 327   2      //                      }
+ 328   2      //              }
+ 329   2                      bExitSysLoop = TRUE;    
+ 330   2              }
+ 331   1      
+ 332   1              Write24C16(EPADDR_RGB_OFFSET, MCU_DataMap[EPADDR_RGB_OFFSET]);
+ 333   1              
+ 334   1      //WRITE NEW MODE
+ 335   1              for(i=0; i<0x80; i+=16){
+ 336   2                      WritePage24C16(NVRAM_SYNC(0)+i,0,initTab,16);
+ 337   2              }
+ 338   1      
+ 339   1      //write factory mode in user area
+ 340   1              //for(i=0; i<NUMBER_OF_USER_MODE; i++){
+ 341   1              //      InitModeData(i);
+ 342   1              //}
+ 343   1      
+ 344   1              InitModeData16();
+ 345   1      
+ 346   1              Write24C16(EPADDR_TD_ACMODE, 0);
+ 347   1              Write24C16(EPADDR_TD_STATE, TD_NORMAL);
+ 348   1      
+ 349   1              Write24C16(EPADDR_RSO_NOTF, 0x00);      // REQUEST BY FACTORY 2007-04-20
+ 350   1      
+ 351   1              Write24C16(EPADDR_EMPTY0, 0x55);
+ 352   1              Write24C16(EPADDR_EMPTY1, 0xaa);
+ 353   1              Write24C16(EPADDR_FWVER, VERSION);
+ 354   1              Write24C16(EPADDR_FWREVER, REVERSION);
+ 355   1      
+ 356   1      #if FE2P_LIB==ON
+              // IGNORED BY NT68631B; HERE IS FOR COMPILER WARNING MESSAGE
+                      FE2P_Process(1);
+              
+                      #if (NT68670||NT68670B||NT68167)
+                              Fe2p_WriteStatus(0);
+                      #else
+              /*              if ( !bExitSysLoop )
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 7   
+
+                              {
+                                      Fe2p_Configure(0,0);
+                                      Fe2p_SectorErase(0);
+                              }
+               */
+                              Fe2p_WriteStatus(0);
+                      #endif
+              
+              #endif
+ 373   1      
+ 374   1              EA = 0;
+ 375   1              while(1){};
+ 376   1      
+ 377   1      }
+ 378          
+ 379          void InitModeData16()
+ 380          {
+ 381   1      xdata unsigned char ucbuf16[16];
+ 382   1      _Monitor_Timing_ table;
+ 383   1      unsigned char i;
+ 384   1              
+ 385   1              for(i=0; i<((NUMBER_OF_USER_MODE>>1)<<1); i +=2 ){
+ 386   2                      table = EEPROM_TimingTable[i];
+ 387   2                      ucbuf16[0] = (unsigned char)(table.usHStart>>8);
+ 388   2      #if NT68167
+                              ucbuf16[1] = (unsigned char)table.usHStart-18;
+              #else
+ 391   2                      ucbuf16[1] = (unsigned char)table.usHStart;
+ 392   2      #endif
+ 393   2                      ucbuf16[2] = (unsigned char)table.ucResolution;
+ 394   2                      ucbuf16[3] = 32;
+ 395   2                      ucbuf16[4] = (unsigned char)(table.usHTotal>>8);
+ 396   2                      ucbuf16[5] = (unsigned char)table.usHTotal;
+ 397   2                      ucbuf16[6] = (unsigned char)(table.usVStart>>8);
+ 398   2                      ucbuf16[7] = (unsigned char)table.usVStart;
+ 399   2                      Write24C16_Short(NVRAM_HTOTAL50(i), table.usHTotal);            // 50%
+ 400   2                      
+ 401   2                      table = EEPROM_TimingTable[i+1];
+ 402   2                      ucbuf16[8] = (unsigned char)(table.usHStart>>8);
+ 403   2      #if NT68167
+                              ucbuf16[9] = (unsigned char)table.usHStart-18;
+              #else
+ 406   2                      ucbuf16[9] = (unsigned char)table.usHStart;
+ 407   2      #endif
+ 408   2                      ucbuf16[10] = (unsigned char)table.ucResolution;
+ 409   2                      ucbuf16[11] = 32;
+ 410   2                      ucbuf16[12] = (unsigned char)(table.usHTotal>>8);
+ 411   2                      ucbuf16[13] = (unsigned char)table.usHTotal;
+ 412   2                      ucbuf16[14] = (unsigned char)(table.usVStart>>8);
+ 413   2                      ucbuf16[15] = (unsigned char)table.usVStart;
+ 414   2                      Write24C16_Short(NVRAM_HTOTAL50((i+1)), table.usHTotal);                // 50%
+ 415   2      
+ 416   2                      WritePage24C16( NVRAM_TIMING(i), 0, ucbuf16, 16);
+ 417   2              }
+ 418   1      
+ 419   1              if ( (NUMBER_OF_USER_MODE & BIT_0) ==1 ) {
+ 420   2      
+ 421   2                      table = EEPROM_TimingTable[NUMBER_OF_USER_MODE-1];
+ 422   2                      ucbuf16[0] = (unsigned char)(table.usHStart>>8);
+ 423   2      #if NT68167
+                              ucbuf16[1] = (unsigned char)table.usHStart-18;
+              #else
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 8   
+
+ 426   2                      ucbuf16[1] = (unsigned char)table.usHStart;
+ 427   2      #endif
+ 428   2                      ucbuf16[2] = (unsigned char)table.ucResolution;
+ 429   2                      ucbuf16[3] = 32;
+ 430   2                      ucbuf16[4] = (unsigned char)(table.usHTotal>>8);
+ 431   2                      ucbuf16[5] = (unsigned char)table.usHTotal;
+ 432   2                      ucbuf16[6] = (unsigned char)(table.usVStart>>8);
+ 433   2                      ucbuf16[7] = (unsigned char)table.usVStart;
+ 434   2                      Write24C16_Short(NVRAM_HTOTAL50((NUMBER_OF_USER_MODE-1)), table.usHTotal);              // 50%
+ 435   2      
+ 436   2                      WritePage24C16( NVRAM_TIMING(NUMBER_OF_USER_MODE-1), 0, ucbuf16, 8);
+ 437   2              }
+ 438   1      
+ 439   1      }
+ 440          
+ 441          
+ 442          /*
+ 443          void ClearAutoAdjTag(void)
+ 444          {
+ 445          unsigned short addr;
+ 446                  for(addr=0x5b0; addr<0x5be; addr++){
+ 447                          Write24C16(addr,0x00);
+ 448                  }
+ 449          }
+ 450          */
+ 451          
+ 452          
+ 453          #ifndef Use24C02
+ 454          void LoadDDCData(unsigned char ddcsw)
+ 455          {
+ 456   1      #if FE2P_LIB==ON
+              unsigned char *p;
+              unsigned short addr,len,i;
+                      switch(ddcsw){
+                      case 1:
+                              DDC_CTRL_0 = 0;
+                              p = &DDCPtr0;
+                              addr = DDC_ADDR_ANALOG;
+                              len = 128;
+                              break;
+                      case 2:
+                              DDC_CTRL_1 = 0;
+                              p = &DDCPtr1;
+                              addr = DDC_ADDR_ANALOG;
+                              len = 128;
+                              break;
+                      }
+                      for(i=0; i<len; i++){
+                              *p = Read24C16(addr + i);
+                              p++;
+                      }
+              #else   
+ 478   1      unsigned char *p,i;
+ 479   1      unsigned short device,addr;
+ 480   1              if(ddcsw == 1){
+ 481   2                      DDC_CTRL_0 = 0;
+ 482   2                      p = &DDCPtr0;
+ 483   2                      bGLEDState = TRUE;
+ 484   2      #if NT68167
+                              addr = (unsigned char)DDC_ADDR_ANALOG;
+                              device = (unsigned char)(DDC_ADDR_ANALOG >> 7) & 0x0e;
+              #else
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 9   
+
+ 488   2                      addr = (unsigned char)DDC_ADDR_DIGITAL;
+ 489   2                      device = (unsigned char)(DDC_ADDR_DIGITAL >> 7) & 0x0e;
+ 490   2      #endif
+ 491   2              }
+ 492   1              else{
+ 493   2                      DDC_CTRL_1 = 0;
+ 494   2                      p = &DDCPtr1;
+ 495   2                      bGLEDState = FALSE;
+ 496   2                      addr = (unsigned char)DDC_ADDR_ANALOG;
+ 497   2                      device = (unsigned char)(DDC_ADDR_ANALOG >> 7) & 0x0e;
+ 498   2              }
+ 499   1              
+ 500   1                      device |= EEPROM_ADDR;
+ 501   1              /* start bit */
+ 502   1                      IIC_Start();
+ 503   1              /* transmit data */
+ 504   1                      WriteByte(device);
+ 505   1                      WriteByte(addr);
+ 506   1                      ISCL = 1;
+ 507   1                      SetISCL();              /* SCL=1 */
+ 508   1              //      IIC_DelayHigh();
+ 509   1              /* start bit */
+ 510   1                      IIC_Start();
+ 511   1              /* transmit data */
+ 512   1                      WriteByte(device+1);
+ 513   1                      for(i=0; i<128; i++){
+ 514   2                              *p = ReadByte();
+ 515   2                              if(i != 127)
+ 516   2                                      MasterACK();
+ 517   2                              p++;
+ 518   2                      }
+ 519   1              /* no ack */
+ 520   1                      MasterNACK();
+ 521   1              /* stop bit */
+ 522   1                      IIC_Stop();
+ 523   1      #endif
+ 524   1      
+ 525   1      
+ 526   1      
+ 527   1              if(ddcsw == 1){
+ 528   2                      
+ 529   2      //#ifdef EDID_FROM_A_ONLY
+ 530   2      //              unsigned char *pAnalog;
+ 531   2      //              
+ 532   2      //              pAnalog = &DDCPtr1;
+ 533   2      //              p =  &DDCPtr0;
+ 534   2      //              
+ 535   2      //              *(p+0x14) = 0x80;
+ 536   2      //              //*(p+0x7f) = *(p+0x7f)+0x0E-0x80;
+ 537   2      //              *(p+0x18) = 0x2A;
+ 538   2      //              *(p+0x7f) = *(pAnalog+0x7f)+(unsigned char)(*(pAnalog+0x14)-0x80+*(pAnalog+0x18)-0x2A);
+ 539   2      //              
+ 540   2      //#endif
+ 541   2      
+ 542   2                      DDC_CTRL_0 = (EN_DDC | WPT_DDC | MODE_DDC | CLR_UPD | CLR_PTR);
+ 543   2                      DDC_CTRL_0 = (EN_DDC | WPT_DDC | MODE_DDC);
+ 544   2              }
+ 545   1              else if(ddcsw == 2){
+ 546   2                      DDC_CTRL_1 = (EN_DDC | WPT_DDC | MODE_DDC | CLR_UPD | CLR_PTR);
+ 547   2                      DDC_CTRL_1 = (EN_DDC | WPT_DDC | MODE_DDC);
+ 548   2              }
+ 549   1              
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 10  
+
+ 550   1      
+ 551   1      
+ 552   1      }
+ 553          #endif
+ 554          
+ 555          #ifndef Use24C02
+ 556          void SaveDDCData(unsigned char ddcsw)
+ 557          {
+ 558   1      unsigned char *p,i;
+ 559   1      unsigned short k;
+ 560   1      
+ 561   1      //      LED_GrnOff();
+ 562   1      //      LED_RedOn();
+ 563   1              if(ddcsw == 1){
+ 564   2                      DDC_CTRL_0 = (EN_DDC | MODE_DDC | CLR_UPD);
+ 565   2                      i = IIC0_STATUS & 0x03;
+ 566   2              }
+ 567   1              else{
+ 568   2                      DDC_CTRL_1 = (EN_DDC | MODE_DDC | CLR_UPD);
+ 569   2                      i = IIC1_STATUS & 0x03;
+ 570   2              }
+ 571   1              ucLoopTimer_10ms = DDC_DELAY_TIME;
+ 572   1              while(ucLoopTimer_10ms != 0){
+ 573   2                      if(ddcsw == 1){
+ 574   3                              if((IIC0_STATUS & 0x03) != i){
+ 575   4                                      i = IIC0_STATUS & 0x03;
+ 576   4                                      ucLoopTimer_10ms = DDC_DELAY_TIME;
+ 577   4                              }
+ 578   3                              if((DDC_CTRL_0 & UPD_DDC) != 0){                //up date ddc
+ 579   4                                      DDC_CTRL_0 = (EN_DDC | MODE_DDC | CLR_UPD);
+ 580   4                                      ucLoopTimer_10ms = DDC_DELAY_TIME;
+ 581   4                              }
+ 582   3                      }
+ 583   2                      else{
+ 584   3                              if((IIC1_STATUS & 0x03) != i){
+ 585   4                                      i = IIC1_STATUS & 0x03;
+ 586   4                                      ucLoopTimer_10ms = DDC_DELAY_TIME;
+ 587   4                              }
+ 588   3                              if((DDC_CTRL_1 & UPD_DDC) != 0){                //up date ddc
+ 589   4                                      DDC_CTRL_1 = (EN_DDC | MODE_DDC | CLR_UPD);
+ 590   4                                      ucLoopTimer_10ms = DDC_DELAY_TIME;
+ 591   4                              }
+ 592   3                      }
+ 593   2              }
+ 594   1              if(ddcsw == 1){
+ 595   2                      p = &DDCPtr0;
+ 596   2                      for(k=0; k<128; k=k+16){
+ 597   3      #if NT68167
+                                      WritePage24C16(DDC_ADDR_ANALOG+k,k,p,16);
+              #else
+ 600   3                              WritePage24C16(DDC_ADDR_DIGITAL+k,k,p,16);
+ 601   3      #endif
+ 602   3                              if((DDC_CTRL_0 & UPD_DDC) != 0){                //up date ddc
+ 603   4                                      break;
+ 604   4                              }
+ 605   3                      }
+ 606   2                      
+ 607   2                      DDC_CTRL_0 = EN_DDC|MODE_DDC|WPT_DDC;
+ 608   2              }
+ 609   1              else{
+ 610   2                      p = &DDCPtr1;
+ 611   2                      for(k=0; k<128; k=k+16){
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 11  
+
+ 612   3      #if (!NT68167)
+ 613   3                              WritePage24C16(DDC_ADDR_ANALOG+k,k,p,16);
+ 614   3      #endif
+ 615   3                              if((DDC_CTRL_1 & UPD_DDC) != 0){                //up date ddc
+ 616   4                                      break;
+ 617   4                              }
+ 618   3                      }
+ 619   2                      
+ 620   2                      DDC_CTRL_1 = EN_DDC|MODE_DDC|WPT_DDC;
+ 621   2      
+ 622   2      #ifdef EDID_FROM_A_ONLY
+                              {
+                                      unsigned char *pDigital;
+                                      DDC_CTRL_0 = 0;
+                                      pDigital = &DDCPtr0;
+                                      
+                                      for ( k=0; k<128;k++)
+                                              *(pDigital+k) = *(p+k);
+                                      
+                                      *(pDigital+0x14) = 0x80;
+                                      //*(pDigital+0x7f) = *(p+0x7f)+0x0E-0x80;
+                                      *(pDigital+0x18) = 0x2A;
+                                      *(pDigital+0x7f) = *(p+0x7f)+(unsigned char)(*(p+0x14)-0x80+*(p+0x18)-0x2A);
+                                      
+                                      for(k=0; k<128; k=k+16){
+                                      WritePage24C16(DDC_ADDR_DIGITAL+k,k,pDigital,16);
+                                              if((DDC_CTRL_0 & UPD_DDC) != 0){                //up date ddc
+                                                      break;
+                                              }
+                                      }
+                                      
+                                      DDC_CTRL_0 = (EN_DDC |WPT_DDC | CLR_UPD | CLR_PTR);
+                                      DDC_CTRL_0 = EN_DDC|MODE_DDC|WPT_DDC;
+                              }
+              #endif
+ 647   2      
+ 648   2                      for ( i=0;i<SN_LEN; i++)                        //ucSerialNum[i] = Read24C16( EPADDR_SN0+i );
+ 649   2                              ucSerialNum[i] = Read24C16( DDC_ADDR_ANALOG+0x4d+i );
+ 650   2              }
+ 651   1      #if FE2P_LIB==ON
+                      FE2P_Process(1);        
+              #endif
+ 654   1              LED_GrnOn();
+ 655   1              LED_RedOff();
+ 656   1      }
+ 657          #endif
+ 658          
+ 659          
+ 660          void NVRAM_Init()
+ 661          {
+ 662   1      unsigned char i;
+ 663   1      unsigned long temp;
+ 664   1      
+ 665   1      //              printf(" %x \r\n", (unsigned short)Read24C16(EPADDR_EMPTY0));   // +jwshin 111208
+ 666   1                      
+ 667   1                      if(Read24C16(EPADDR_EMPTY0) != 0x55){//0x00 = eeprom empty
+ 668   2                              InitEEPROM(1);
+ 669   2                      }
+ 670   1                      if(Read24C16(EPADDR_EMPTY1) != 0xaa){//0x01 = eeprom empty
+ 671   2                              InitEEPROM(1);
+ 672   2                      }
+ 673   1                      if(Read24C16(EPADDR_FWVER) != VERSION){//0x02 = F/W version
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 12  
+
+ 674   2                              InitEEPROM(1);
+ 675   2                      }
+ 676   1                      if(Read24C16(EPADDR_FWREVER) != REVERSION){//0x03 = F/W reversion
+ 677   2                              InitEEPROM(0);
+ 678   2                      }
+ 679   1      
+ 680   1              //set power status
+ 681   1                      ucPowerStatus = Read24C16(EPADDR_POWER);//0x04 = Power Status
+ 682   1                      ucSource = ucPowerStatus & ~SoftPowerOnFlag;
+ 683   1      
+ 684   1                      temp = Read24C16(EPADDR_POT_BYTE1);//0x1b = POT byte 1
+ 685   1                      temp <<= 8;
+ 686   1                      temp += Read24C16(EPADDR_POT_BYTE0);//0x1a = POT byte 0
+ 687   1                      ucPOTTimerM_4 = Read24C16(EPADDR_POT_15M);
+ 688   1                      Set_ulPOTTimerH(temp);
+ 689   1                      bIsDDCCiSupported = Read24C16(EPADDR_DDCCI);
+ 690   1                      
+ 691   1                      for(i=0;i<SN_LEN; i++)
+ 692   1                      
+ 693   1                              //---------------- +jwshin 111214
+ 694   1                              ucSerialNum[i] = Read24C16( EPADDR_SN0+i );     
+ 695   1      
+ 696   1      //----------- -jwshin 111214 Serial Number 사용을 위해
+ 697   1      /*              
+ 698   1      #ifdef Use24C02
+ 699   1                              ucSerialNum[i] = Read24C16( EPADDR_SN0+i );
+ 700   1      #else
+ 701   1                              ucSerialNum[i] = Read24C16( DDC_ADDR_ANALOG+0x4d+i );
+ 702   1      #endif
+ 703   1      */
+ 704   1      
+ 705   1      //              bFactoryMode = Read24C16(EPADDR_FACTORY);
+ 706   1      //---------------------- -jwshin 111205
+ 707   1      /*
+ 708   1                      if(Read24C16(EPADDR_BURNIN) != 0){
+ 709   1                              printf("Factroy Mode\n\r");                             
+ 710   1                              FactoryEnterMode();
+ 711   1              #ifdef BenQ_FACTORY
+ 712   1                              BenQ_EnterFactoryMode();
+ 713   1              #endif                                                          
+ 714   1                      }
+ 715   1      */              
+ 716   1      //-------------------------------------------   
+ 717   1              if(bIsDDCCiSupported)
+ 718   1                      StartDDCCI();
+ 719   1              else
+ 720   1                      StopDDCCI();
+ 721   1      
+ 722   1      }
+ 723          
+ 724          void Check_DDC_Update(void)
+ 725          {
+ 726   1      #ifdef Use24C02
+              /*
+              //      if( (IsDVIconnected() == TRUE) || (IsVGAconnected() == TRUE) ){
+                      if(bFactoryMode == FALSE){
+                              EDID_WP_ON();
+                      }
+                      else{
+                              EDID_WP_OFF();
+                      }
+              */
+C51 COMPILER V8.12   NVRAM                                                                 04/16/2014 18:12:33 PAGE 13  
+
+              #else
+ 737   1      //check ddc update
+ 738   1      //      if( ((IsDVIconnected() != TRUE) && (IsVGAconnected() != TRUE)) || bFactoryMode ){
+ 739   1              if(bFactoryMode == FALSE){
+ 740   2      
+ 741   2                      DDC_CTRL_0 = EN_DDC|MODE_DDC;
+ 742   2                      DDC_CTRL_1 = EN_DDC|MODE_DDC;
+ 743   2              }
+ 744   1              else{
+ 745   2                      DDC_CTRL_0 = EN_DDC|MODE_DDC|WPT_DDC;
+ 746   2                      DDC_CTRL_1 = EN_DDC|MODE_DDC|WPT_DDC;           
+ 747   2              }
+ 748   1              
+ 749   1              #if NT68167
+                              if((DDC_CTRL_0 & UPD_DDC) != 0){        //up date ddc
+                                      SaveDDCData(1);
+                              }
+                      #else
+ 754   1                      if((DDC_CTRL_0 & UPD_DDC) != 0){        //up date ddc
+ 755   2                              SaveDDCData(1);
+ 756   2                      }
+ 757   1                      if((DDC_CTRL_1 & UPD_DDC) != 0){        //up date ddc
+ 758   2                              SaveDDCData(2);
+ 759   2                      }
+ 760   1              #endif
+ 761   1      #endif
+ 762   1      }
+ 763          
+ 764          
+ 765          
+ 766          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1971    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----      78
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

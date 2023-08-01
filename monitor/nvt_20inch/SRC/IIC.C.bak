@@ -1,0 +1,657 @@
+#include "stdio.h"
+#include "8051.H"
+#include "RAM.H"
+#include "IIC.H"
+#include "MCU.H"
+#include "ROM_MAP.H"
+#include "MyDef.H"
+#include "F63XREG.H"
+#include "F63XDEF.H"
+#include "osd.h"
+#include "INTRINS.H"
+void DDC2(void)
+{
+	ISCL = 0;
+	ISCL = 1;
+}
+
+void IIC_Start(void)
+{
+	ISDA = 0;
+	ISCL = 0;
+}
+
+void IIC_Stop(void)
+{
+	ISDA = 0;
+	ISCL = 1;
+	ISDA = 1;
+}
+
+void CheckIIC(void)
+{
+	ISCL = 1;
+	ISDA = 1;
+	while(!ISDA || !ISCL)	//waiting for IIC released
+		{
+		ISCL = 0;
+		IIC_Stop();
+		}
+}
+
+Byte IIC_Tx(Byte Data)
+{	//subroutine total time 630us
+	Byte AckLoop,Ack;
+
+#if SOFTWAREIIC_220K == 0
+	Byte i;
+	for(i=0;i<8;i++)
+		{
+	    ISCL = 0;
+		ISDA = (Data & 0x80);
+		_nop_();
+		_nop_();
+		ISCL = 1;
+		_nop_();
+		_nop_();
+		Data <<= 1;
+		}
+#else
+	ISCL = 0;
+	ISDA = (Data & 0x80);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x40);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x20);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x10);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x08);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x04);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x02);
+	ISCL = 1;
+    ISCL = 0;
+	ISDA = (Data & 0x01);
+	ISCL = 1;
+#endif
+	//
+	ISCL = 0;
+	ISDA = 1;
+	ISCL = 1;
+	Ack = NACK;
+	for(AckLoop=0;AckLoop<20;AckLoop++) //260us
+		{
+		if(!ISDA)
+			{
+			Ack = ACK;
+			break;
+			}
+		}
+	ISCL = 0;
+	return Ack;			//return success=0 / failure=1
+}
+
+/*
+Byte IIC_TxV(Byte Data)
+{	//subroutine total time 630us
+	Byte AckLoop,Ack;
+	Byte i;
+	for(i=0;i<8;i++)
+		{
+	    ISCL = 0;
+		if(i == 7)
+			WaitVblank();
+		ISDA = (Data & 0x80);
+		ISCL = 1;
+		Data <<= 1;
+		}
+	ISCL = 0;
+	ISDA = 1;
+	ISCL = 1;
+	Ack = NACK;
+	for(AckLoop=0;AckLoop<20;AckLoop++) //260us
+		{
+		if(!ISDA)
+			{
+			Ack = ACK;
+			break;
+			}
+		}
+	ISCL = 0;
+	return Ack;			//return success=0 / failure=1
+}
+*/
+Byte IIC_Rx(Bit Ack)
+{
+	Byte Data;
+	Byte i;
+	Data = 0;
+	for(i=0;i<8;i++)
+		{
+		Data <<= 1;
+		ISCL = 0;
+		ISDA = 1;
+		ISCL = 1;
+		if(ISDA)
+			Data |= 1;
+		else
+			Data &= 0xfe;
+		}
+	ISCL = 0;
+	ISDA = Ack;
+	ISCL = 1;
+	ISCL = 0;
+	return Data;
+}
+
+
+void SetISCL(void)
+{
+	ISCL = 1;
+	while(ISCL == 0){};
+}
+void IIC_Delay(void)
+{
+	unsigned char i;
+	i = 5;		//24MHz = 10, 12MHz = 5
+	while(i--);
+}
+void IIC_ACK(void)
+{
+	ISDA=1; 
+	SetISCL();		/* SCL=1 */
+	IIC_Delay();
+	Timer1 = 100;			// timeout 100ms 
+	while(ISDA != 0){
+		if(Timer1 == 0){
+//			EA = 0;
+			break;
+		}
+	}
+	ISCL = 0;		/* SCL=0 */
+//	ISDA = 1;		/* SDA=1 */
+	IIC_Delay();
+}
+void MasterACK(void)
+{
+	ISDA=0; 
+	SetISCL();		// SCL=1   
+	IIC_Delay();
+	ISCL = 0;
+	ISDA=1; 
+	IIC_Delay();
+}
+
+void MasterNACK(void)
+{
+	ISDA=1; 
+	SetISCL();		// SCL=1   
+	IIC_Delay();
+	ISCL = 0;
+	IIC_Delay();
+}
+
+void WriteByte(unsigned char temp)
+{
+unsigned char i,j;
+	j=temp;
+	for (i=0; i<8; i++){
+		if ((j & 0x80) ==0)
+			ISDA = 0;	/* SDA=0 */
+		else
+			ISDA = 1;	/* SDA=1 */
+		j = j << 1;
+		SetISCL();		/* SCL=1 */
+		IIC_Delay();
+		ISCL = 0;		/* SCL=0 */
+		IIC_Delay();
+	}
+}
+
+unsigned char ReadByte(void)
+{
+unsigned char i,j;
+	j=0;
+	ISDA = 1;		/* SDA=1 */
+	for (i=0; i<8; i++){
+		j = j << 1;
+		SetISCL();		/* SCL=1 */
+		IIC_Delay();
+		if (ISDA ==0)
+			j &= 0xfe;	/* SDA=0 */
+		else
+			j |= 0x01;	/* SDA=1 */
+		ISCL = 0;		/* SCL=0 */
+		IIC_Delay();
+	}
+	return j;
+}
+
+void Fill24C16(unsigned short addr,unsigned char ch)
+{
+unsigned char i;
+//	EEP_WP_OFF;
+	IIC_Delay();
+/* start bit */
+	IIC_Start();
+/* transmit data */
+	i = (unsigned char)((addr >>7 ) & 0x0e);
+	i |= EEPROM;
+	WriteByte(i);
+	IIC_ACK();
+	i = (unsigned char)addr;
+	WriteByte(i);
+	IIC_ACK();
+	for(i=0; i<16; i++){
+		WriteByte(ch);
+		IIC_ACK();
+	}
+/* stop bit */
+	IIC_Stop();
+	Sleep(12);
+//	EEP_WP_ON;
+}
+
+void WaitEEprom(void)
+{
+	Byte i,ack;
+	for(i=0;i<100;i++)  //10ms 
+		{
+		IIC_Start();
+		ack = IIC_Tx(0xa0);	//polling ACKnowledge
+		IIC_Stop();
+		if(ack == ACK)
+			break;
+		CLRWDT = 0x55;
+		}
+}
+
+void WriteIIC(Byte device,Byte addr,Byte ch)
+{
+	IIC_Start();
+	IIC_Tx(device);
+	IIC_Tx(addr);
+	IIC_Tx(ch);
+	IIC_Stop();
+}
+/*
+void WriteWordIIC(unsigned char device,unsigned char addr,unsigned short value)
+{
+	IIC_Start();
+	IIC_Tx(device);
+	IIC_Tx(addr);
+	IIC_Tx((Byte)value);
+	IIC_Tx((Byte)(value>>8));
+	IIC_Stop();
+}
+*/
+void WriteIIC563(unsigned short addr,unsigned char ch)
+{
+	CheckRegPage(addr);
+	IIC_Start();
+	IIC_Tx(SCALER_ADDR);
+	IIC_Tx(addr);
+	IIC_Tx(ch);
+	IIC_Stop();
+}
+
+void WriteWordIIC563(unsigned short addr,unsigned short value)
+{
+	CheckRegPage(addr);
+	IIC_Start();
+	IIC_Tx(SCALER_ADDR);
+	IIC_Tx((Byte)addr);
+	IIC_Tx((Byte)value);
+	IIC_Tx((Byte)(value>>8));
+	IIC_Stop();
+}
+
+Byte ReadIIC(Byte device,Byte addr)
+{
+	Byte value;
+	IIC_Start();
+	IIC_Tx(device);
+	IIC_Tx(addr);
+	ISDA = 1;	//repeat start
+	ISCL = 1;
+	ISDA = 0;
+	ISCL = 0;
+	IIC_Tx(device+1);
+	value = IIC_Rx(NACK);	//nack
+	IIC_Stop();
+	return value;
+}
+
+unsigned char ReadIIC563(unsigned short addr)
+{
+	Byte value;
+	CheckRegPage(addr);
+	IIC_Start();
+	IIC_Tx(SCALER_ADDR);
+	IIC_Tx(addr);
+	ISDA = 1;	//repeat start
+	ISCL = 1;
+	ISDA = 0;
+	ISCL = 0;
+	IIC_Tx(SCALER_ADDR+1);
+	value = IIC_Rx(NACK);	//nack
+	IIC_Stop();
+	return value;
+}
+
+unsigned short ReadWordIIC563(unsigned short addr)
+{
+	Byte temp;
+	Word value;
+	CheckRegPage(addr);
+	IIC_Start();
+	IIC_Tx(SCALER_ADDR);
+	IIC_Tx(addr);
+	ISDA = 1;	//repeat start
+	ISCL = 1;
+	ISDA = 0;
+	ISCL = 0;
+	IIC_Tx(SCALER_ADDR+1);
+	temp = IIC_Rx(ACK);
+	value = IIC_Rx(NACK);	//nack
+	value <<= 8;
+	value += temp;
+	IIC_Stop();
+	return value;
+}
+unsigned char Read24C16(unsigned short addr16)
+{
+	Byte ch;
+	Byte device,addr;
+	addr = addr16 & 0x0ff;
+	device = (addr16 >> 7) & 0x0e;
+	device |= EEPROM;
+	ch = ReadIIC(device,addr);
+	return ch;
+}
+
+void CheckRegPage(unsigned short addr)
+{
+	Byte page;
+	IIC_Start();
+	IIC_Stop();
+	page = (Byte)((addr/256) & 0x003);
+	if(page != RegPage)
+		{
+		RegPage = page;
+		WriteIIC(SCALER_ADDR,0xff,RegPage);
+		}
+}
+
+// 0x000 ... 0x07f ==>analog DDC
+// 0x080 ... 0x0ff ==>digiatl DDC
+// 0x100 ...0x17f ==> TV channel fine tune,PR. NO. TV CH.
+// 0x180 ...0x1ff ==> CATV channel fine tune,PR. NO. CATV CH.
+// 0x200 ... 0x244 ==>EEP_GeoMap
+// 0x245 ... 0x27F ==> Free
+// 0x280 ... 0x28f ==>TV channel mask(ADD/DEL),PR. NO. TV channel mask
+// 0x290 ... 0x29f ==>CATV channel mask(ADD/DEL),PR. NO. CATV channel mask
+// 0x300 ... 0x468 ==>EEP_FreqMap
+// 0x469 ... 0x4ff ==> Free
+// 0x500 ... 0x7D0 ==>EEP_SyncMap
+// 0x7d1 ... 0x7EF ==>Free
+
+// 0x7F0 ... 0x7Fb  ==> Closed-Caption & V-Chip
+//0x7F0: caption on/off //INIT STATUS==OFF
+//0x7F1: caption mode
+//0x7F2: display box/shadow
+//0x7F3: VChip Enable
+//0x7F4...0x7F7: password default(0000)
+//0x7F8: MPAA Rating
+		//BIT_0:MPAA_G
+		//BIT_1:MPAA_PG
+		//BIT_2:MPAA_PG13
+		//BIT_3:MPAA_R
+		//BIT_4:MPAA_NC17
+		//BIT_5:MPAA_X
+		//BIT_6:MPAA_NR
+//0x7F9: TV Guidences 1
+		//BIT_0:TV-Y
+		//BIT_1:TV-Y7
+		//BIT_2:TV-Y7-FV
+		//BIT_3:
+		//BIT_4:TV-G
+		//BIT_5:TV-PG
+		//BIT_6:TV-14
+		//BIT_7:TV-MA
+//0x7Fa: TV Guidences 2
+		//BIT_0:TV-PG-V
+		//BIT_1:TV-14-V
+		//BIT_2:TV-MA-V
+		//BIT_3:
+		//BIT_4:TV-PG-S
+		//BIT_5:TV-14-S
+		//BIT_6:TV-MA-S
+		//BIT_7:
+//0x7Fb: TV Guidences 3
+		//BIT_0:TV-PG-L
+		//BIT_1:TV-14-L
+		//BIT_2:TV-MA-L
+		//BIT_3:
+		//BIT_4:TV-PG-D
+		//BIT_5:TV-14-D
+		//BIT_6:
+		//BIT_7:
+		
+void InitEEPROM(void)
+{
+	unsigned short addr;
+	#if PRINT_MESSAGE
+		printf("Initial EEPROM.\n");
+	#endif
+	LED_GrnOff();
+//	LED_RedOn();		// -jwshin 051101
+
+	Write24C16(ep_RGBStatus,0); // +jwshin 060908
+	//Dsub EDID
+	for(addr=0;addr<0x80;addr++)
+		Write24C16(ep_DDC_Analog+addr,DsubEdidTab[addr]);
+	//Dvi EDID
+//		printf("initeep\r\n");
+	for(addr=0;addr<0x80;addr++){
+		Write24C16(ep_DDC_DVI+addr,DviEdidTab[addr]);
+//		printf("%x ",(Word)DviEdidTab[addr]);
+	}
+//		printf("\r\n");
+
+//	InitEDID_Save();
+	//Geo
+//	LED_RedOff();		// -jwshin 051101
+//clear tv channel
+	for(addr=0x280; addr<0x2a0; addr+=16){
+		Fill24C16(addr,0xff);
+	}
+	for(addr=0x100; addr<0x200; addr+=16){
+		Fill24C16(addr,0x32);
+	}
+
+//	Write24C16(0x500,0x01);//mask PR NO1. TV CH.
+//	Write24C16(0x510,0x01);//mask PR NO1. CATV CH.
+
+//		printf("Initial EEPROM2\n");
+	
+	for(addr=0;addr<0x45;addr++)
+		Write24C16(0x200+addr,EEP_GeoMap[addr]);
+	//Mode
+//	LED_RedOn();		// -jwshin 051101
+	for(addr=0;addr<UserModeSt*4;addr++)
+		Write24C16(0x300+addr,EEP_FreqMap[addr]);
+//	LED_RedOff();		// -jwshin 051101
+	for(;addr<ModeNum*4;addr++)
+		Fill24C16(0x300+addr,0xff);
+//		Write24C16(0x300+addr,0xff);
+	//Sync
+//	LED_RedOn();		// -jwshin 051101
+	for(addr=0;addr<UserModeSt*8;addr++)
+		Write24C16(0x500+addr,EEP_SyncMap[addr]);
+//	LED_RedOff();		// -jwshin 051101
+	for(;addr<ModeNum*8;addr++)
+		Fill24C16(0x500+addr,0xff);
+//		Write24C16(0x500+addr,0xff);
+//closed caption setting
+	Write24C16(0x7F0,0x00);		// 0x7F0 = caption on/
+//	Write24C16(0x720,0x01);		// 0x7F0 = caption on/off //INIT SATATUS==OFF
+	Write24C16(0x7F1,0x01);		// 0x7F1 = caption mode -->cc1 Mode
+	Write24C16(0x7F2,0x00);		// 0x7F2 = display box/shadow
+	Write24C16(0x7F3,0x00);		// 0x7F3 = VChip Enable  init= off
+	for(addr=0x7F4;addr<0x7FC;addr++)
+					Write24C16(addr,0x00);		// 0x7F4 = Password 1
+	
+	Write24C16(ep_FirmWare_Ver,Version);
+	Write24C16(ep_FirmWare_Rev,Reversion);
+//	Write24C16(0x246,7);
+//	Write24C16(0x247,7);
+// 0x246....Base
+// 0x247....Treble
+	Write24C16(ep_Bass,7);// 0x246....Bass
+	Write24C16(ep_Treble,7);// 0x247....Treble
+	Write24C16(ep_Volume,50);// Volume
+	Write24C16(ep_VCMVol,0);// Volume
+
+	LED_GrnOn();
+}
+
+void Write24C16(unsigned short k,unsigned char ch)
+{
+unsigned char device,addr;
+	addr = (unsigned char)k;
+	device = (unsigned char)((k>>7)&0x0e);
+	device |= EEPROM;
+	WriteIIC(device,addr,ch);
+	WaitEEprom();
+}
+/*
+void WritePage24C16(unsigned short addr1,unsigned short addr2,unsigned char *p)
+{
+unsigned char i,ch;
+	IIC_Start();
+	i = (unsigned char)((addr1 >>7 ) & 0x0e);
+	i |= EEPROM;
+	IIC_Tx(i);
+	IIC_Tx((Byte)addr1);
+	for(i=0; i<16; i++)
+		{
+		ch = p[addr2 + i];
+		IIC_Tx(ch);
+		}
+	IIC_Stop();
+	WaitEEprom();
+}
+*/
+void LoadDDCData()
+{
+	Byte xdata *DDCptr;
+	Byte i;
+	DDC_CTL0 = 0;		//disable DDC
+	DDC_CTL1 = 0;		//disable DDC
+	DDCptr = 0xf800;  
+//		printf("\r\n");
+	for(i=0;i<128;i++)
+		{
+		CLRWDT = 0x55;
+		*DDCptr++ = Read24C16(ep_DDC_DVI+i);
+//		printf("%x ",(Word)*(DDCptr-1));
+		}
+//		printf("\r\n");
+	DDCptr = 0xf900;  
+	for(i=0;i<128;i++)
+		{
+		CLRWDT = 0x55;
+		*DDCptr++ = Read24C16(ep_DDC_Analog+i);
+		}
+	DDC_CTL0 = (EN_DDC|CLR_UPD|CLR_PTR);	
+	DDC_CTL1 = (EN_DDC|CLR_UPD|CLR_PTR);	
+}
+
+void SaveDDCData(Bit Channel)
+{
+	Byte xdata *DDCptr;
+	Byte i,ptr;
+	DDC_CTL0 = 0;		//disable DDC
+	DDC_CTL1 = 0;		//disable DDC
+	if(Channel == 0)
+		{
+		DDCptr = 0xf800;
+		for(i=0;i<16;i++)
+			{
+			IIC_Start();
+			IIC_Tx(0xa0);		// DVI :0x80
+			IIC_Tx(i*8+ep_DDC_DVI);
+			for(ptr=0;ptr<8;ptr++) //page write 8bytes(16bytes max)
+				IIC_Tx(*DDCptr++);
+			IIC_Stop();
+			WaitEEprom();	//polling acknowledge
+			CLRWDT = 0x55;
+			}
+		}
+	else
+		{
+		DDCptr = 0xf900;		//analog:0x00
+		for(i=0;i<16;i++)
+			{
+			IIC_Start();
+			IIC_Tx(0xa0);
+			IIC_Tx(i*8);
+			for(ptr=0;ptr<8;ptr++) //page write 8bytes(16bytes max)
+				IIC_Tx(*DDCptr++);
+			IIC_Stop();
+			WaitEEprom();	//polling acknowledge
+			CLRWDT = 0x55;
+			}
+		}
+	DDC_CTL0 = (EN_DDC|CLR_UPD|CLR_PTR);	
+	DDC_CTL1 = (EN_DDC|CLR_UPD|CLR_PTR);	
+	if(!Channel)
+		SaveDDC0 = 0;
+	else
+		SaveDDC1 = 0;
+}
+
+void CheckVersion()
+{
+	Byte i,Ver1,Ver2;
+	for(i=0;i<10;i++)
+		{
+		Ver1 = Read24C16(ep_FirmWare_Ver);
+		Ver2 = Read24C16(ep_FirmWare_Rev);
+		if(Ver1 == Version && Ver2 == Reversion)
+			break;
+		Sleep(10);
+		}
+	if(i==10)
+		{
+//		#if PRINT_MESSAGE
+//			printf("Version error.\n");
+//		#endif
+		InitEEPROM();
+		}
+}
+
+void CheckDevice(void)
+{
+	Byte i;
+//	WriteIIC(TW990x_Addr,0x2F,0x55);
+	i = ReadIIC(TW990x_Addr,0x00);
+//	printf("TW data=0x%x\r\n",(Word)i);
+//	DecoderICEn = 1;			// +jwshin 050722
+	DecoderICEn = 0;			// +jwshin 061030
+//	if(i == 0x1a) DecoderICEn =1;
+//	else DecoderICEn =0;
+
+
+}
+
+

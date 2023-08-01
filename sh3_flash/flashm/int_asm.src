@@ -1,0 +1,330 @@
+;/****************************************************************************/
+;/*                                                                          */
+;/*      Startup Code				                             */
+;/*                                                                          */
+;/*          Copyright   :: Phoenix Information Technology                   */
+;/*          Cpu         :: SH3                                              */
+;/*          Language    :: SHC						     */
+;/*          File Name   :: rom_asm.src                                      */
+;/*                                                                          */
+;/****************************************************************************/
+
+        .cpu    SH3
+
+;/*=========================== External Symbols =============================*/
+
+        .import         _int100,_int400,_vec,_boot
+
+;/*============================ Global Symbols ==============================*/
+
+        .export         startup,ill_prog,tlb_prog,int_prog
+
+;/*============================= Program Area ================================*/
+
+        .section start,code,align=4     ;/* Startup */
+
+        .align 2
+startup:
+        mov.l   Stack,r15
+        mov.l   Boot,r0
+        jmp     @r0
+        nop
+        
+        .align 4
+Stack:  .data.l H'0cfffff0              ;/* Stack Pointer Init Value */
+Boot:   .data.l (_boot + H'a0000000)    ;/* C Start Function (Non-Cache Area )*/
+
+        .section int100,code,align=4    ;/* General Exception Event 1 */
+
+ill_prog:
+        stc.l   ssr,@-sp                ;/* Register PUSH */
+        stc.l   spc,@-sp
+
+        mov.l   r0,@-sp
+        mov.l   r1,@-sp
+        mov.l   r2,@-sp
+        mov.l   r3,@-sp
+        mov.l   r4,@-sp
+        mov.l   r5,@-sp
+        mov.l   r6,@-sp
+        mov.l   r7,@-sp
+        mov.l   r8,@-sp
+        mov.l   r9,@-sp
+        mov.l   r10,@-sp
+        mov.l   r11,@-sp
+        mov.l   r12,@-sp
+        mov.l   r13,@-sp
+        mov.l   r14,@-sp
+
+        stc     gbr,r0
+        mov.l   r0,@-sp
+        stc     vbr,r0
+        mov.l   r0,@-sp
+        sts     mach,r0
+        mov.l   r0,@-sp
+        sts     macl,r0
+        mov.l   r0,@-sp
+        sts     pr,r0
+        mov.l   r0,@-sp
+        
+        stc.l   r0_bank,@-sp
+        stc.l   r1_bank,@-sp
+        stc.l   r2_bank,@-sp
+        stc.l   r3_bank,@-sp
+        stc.l   r4_bank,@-sp
+        stc.l   r5_bank,@-sp
+        stc.l   r6_bank,@-sp
+        stc.l   r7_bank,@-sp
+        
+        mov.l   L_ILL_PROG,r0
+        jsr     @r0                     ;/* Jump */
+        nop
+
+        ldc.l   @sp+,r7_bank            ;/* Register POP */
+        ldc.l   @sp+,r6_bank
+        ldc.l   @sp+,r5_bank
+        ldc.l   @sp+,r4_bank
+        ldc.l   @sp+,r3_bank
+        ldc.l   @sp+,r2_bank
+        ldc.l   @sp+,r1_bank
+        ldc.l   @sp+,r0_bank
+
+        mov.l   @sp+,r0
+        lds     r0,pr
+        mov.l   @sp+,r0
+        lds     r0,macl
+        mov.l   @sp+,r0
+        lds     r0,mach
+        mov.l   @sp+,r0
+        ldc     r0,vbr
+        mov.l   @sp+,r0
+        ldc     r0,gbr
+
+        mov.l   @sp+,r14
+        mov.l   @sp+,r13
+        mov.l   @sp+,r12
+        mov.l   @sp+,r11
+        mov.l   @sp+,r10
+        mov.l   @sp+,r9
+        mov.l   @sp+,r8
+        mov.l   @sp+,r7
+        mov.l   @sp+,r6
+        mov.l   @sp+,r5
+        mov.l   @sp+,r4
+        mov.l   @sp+,r3
+        mov.l   @sp+,r2
+        mov.l   @sp+,r1
+        mov.l   @sp+,r0
+
+        ldc.l   @sp+,spc
+        ldc.l   @sp+,ssr
+
+        rte
+        nop
+
+        .align  4
+L_ILL_PROG:     .data.l _int100
+
+
+        .section int400,code,align=4    ;/* General Exception Event 2 */
+
+tlb_prog:
+        stc.l   ssr,@-sp                ;/* Register PUSH */
+        stc.l   spc,@-sp
+        
+        mov.l   r0,@-sp
+        mov.l   r1,@-sp
+        mov.l   r2,@-sp
+        mov.l   r3,@-sp
+        mov.l   r4,@-sp
+        mov.l   r5,@-sp
+        mov.l   r6,@-sp
+        mov.l   r7,@-sp
+        mov.l   r8,@-sp
+        mov.l   r9,@-sp
+        mov.l   r10,@-sp
+        mov.l   r11,@-sp
+        mov.l   r12,@-sp
+        mov.l   r13,@-sp
+        mov.l   r14,@-sp
+
+        stc     gbr,r0
+        mov.l   r0,@-sp
+        stc     vbr,r0
+        mov.l   r0,@-sp
+        sts     mach,r0
+        mov.l   r0,@-sp
+        sts     macl,r0
+        mov.l   r0,@-sp
+        sts     pr,r0
+        mov.l   r0,@-sp
+        
+        stc.l   r0_bank,@-sp
+        stc.l   r1_bank,@-sp
+        stc.l   r2_bank,@-sp
+        stc.l   r3_bank,@-sp
+        stc.l   r4_bank,@-sp
+        stc.l   r5_bank,@-sp
+        stc.l   r6_bank,@-sp
+        stc.l   r7_bank,@-sp
+        
+        mov.l   L_TLB_PROG,r0
+        jsr     @r0                     ;/* Jump */
+        nop
+        
+        ldc.l   @sp+,r7_bank            ;/* Register POP */
+        ldc.l   @sp+,r6_bank
+        ldc.l   @sp+,r5_bank
+        ldc.l   @sp+,r4_bank
+        ldc.l   @sp+,r3_bank
+        ldc.l   @sp+,r2_bank
+        ldc.l   @sp+,r1_bank
+        ldc.l   @sp+,r0_bank
+
+        mov.l   @sp+,r0
+        lds     r0,pr
+        mov.l   @sp+,r0
+        lds     r0,macl
+        mov.l   @sp+,r0
+        lds     r0,mach
+        mov.l   @sp+,r0
+        ldc     r0,vbr
+        mov.l   @sp+,r0
+        ldc     r0,gbr
+        
+        mov.l   @sp+,r14
+        mov.l   @sp+,r13
+        mov.l   @sp+,r12
+        mov.l   @sp+,r11
+        mov.l   @sp+,r10
+        mov.l   @sp+,r9
+        mov.l   @sp+,r8
+        mov.l   @sp+,r7
+        mov.l   @sp+,r6
+        mov.l   @sp+,r5
+        mov.l   @sp+,r4
+        mov.l   @sp+,r3
+        mov.l   @sp+,r2
+        mov.l   @sp+,r1
+        mov.l   @sp+,r0
+
+        ldc.l   @sp+,spc
+        ldc.l   @sp+,ssr
+
+        rte
+        nop
+
+        .align  4
+L_TLB_PROG:     .data.l _int400
+
+        .section int600,code,align=4    ;/* INT Handler */
+
+int_prog:
+        stc.l   ssr,@-sp                ;/*Register PUSH */
+        stc.l   spc,@-sp
+
+        mov.l   r0,@-sp
+        mov.l   r1,@-sp
+        mov.l   r2,@-sp
+        mov.l   r3,@-sp
+        mov.l   r4,@-sp
+        mov.l   r5,@-sp
+        mov.l   r6,@-sp
+        mov.l   r7,@-sp
+        mov.l   r8,@-sp
+        mov.l   r9,@-sp
+        mov.l   r10,@-sp
+        mov.l   r11,@-sp
+        mov.l   r12,@-sp
+        mov.l   r13,@-sp
+        mov.l   r14,@-sp
+
+        stc     gbr,r0
+        mov.l   r0,@-sp
+        stc     vbr,r0
+        mov.l   r0,@-sp
+        sts     mach,r0
+        mov.l   r0,@-sp
+        sts     macl,r0
+        mov.l   r0,@-sp
+        sts     pr,r0
+        mov.l   r0,@-sp
+
+        stc.l   r0_bank,@-sp
+        stc.l   r1_bank,@-sp
+        stc.l   r2_bank,@-sp
+        stc.l   r3_bank,@-sp
+        stc.l   r4_bank,@-sp
+        stc.l   r5_bank,@-sp
+        stc.l   r6_bank,@-sp
+        stc.l   r7_bank,@-sp
+
+        mov.l   L_INT_PROG,r0
+        jsr     @r0                     ;/*Jump */
+        nop
+
+        ldc.l   @sp+,r7_bank            ;/* Register POP */
+        ldc.l   @sp+,r6_bank
+        ldc.l   @sp+,r5_bank
+        ldc.l   @sp+,r4_bank
+        ldc.l   @sp+,r3_bank
+        ldc.l   @sp+,r2_bank
+        ldc.l   @sp+,r1_bank
+        ldc.l   @sp+,r0_bank
+        
+        mov.l   @sp+,r0
+        lds     r0,pr
+        mov.l   @sp+,r0
+        lds     r0,macl
+        mov.l   @sp+,r0
+        lds     r0,mach
+        mov.l   @sp+,r0
+        ldc     r0,vbr
+        mov.l   @sp+,r0
+        ldc     r0,gbr
+        
+        mov.l   @sp+,r14
+        mov.l   @sp+,r13
+        mov.l   @sp+,r12
+        mov.l   @sp+,r11
+        mov.l   @sp+,r10
+        mov.l   @sp+,r9
+        mov.l   @sp+,r8
+        mov.l   @sp+,r7
+        mov.l   @sp+,r6
+        mov.l   @sp+,r5
+        mov.l   @sp+,r4
+        mov.l   @sp+,r3
+        mov.l   @sp+,r2
+        mov.l   @sp+,r1
+        mov.l   @sp+,r0
+
+        ldc.l   @sp+,spc
+        ldc.l   @sp+,ssr
+
+        rte
+        nop
+
+        .align  4
+L_INT_PROG:     .data.l _vec
+
+;/*===========================================================*/
+
+        .section D,data,align=4
+        .section R,data,align=4
+        .section B,data,align=4
+        .section C,data,align=4
+
+__D_ROM .data.l (startof D)              ; Section D Start Address 
+__D_BGN .data.l (startof R)              ; Section R Start Address 
+__D_END .data.l (startof R) + (sizeof R) ; Section R End Address 
+__B_BGN .data.l (startof B)              ; Section B Start Address 
+__B_END .data.l (startof B) + (sizeof B) ; Section B End Address 
+
+        .export __D_ROM
+        .export __D_BGN
+        .export __D_END
+        .export __B_BGN
+        .export __B_END
+
+        .end

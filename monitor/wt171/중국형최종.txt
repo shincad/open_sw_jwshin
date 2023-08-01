@@ -1,0 +1,24 @@
+phoenix information technology WT-171P 중국형 최종 버전
+
+ORG SOURCE : 040720_pal_k.zip
+
+DEBUG FILES : BTC_230OSDDEF.H, BTC_OSDMENU.C, EXTERN.H, INT_EXTOSD.C, KEYDETECT.C
+              KEYMENU.C, MAIN.C, MTV230_INTERRUPT.C, TOPHEADER.H
+
+DATE : 2004.06.01, 2004.07.30, 2004.08.01, 2004.07.28, 2004.08.12
+       2004.08.13, 
+
+AUTHOR : R&D CENTER SHIN JUNG WOOK, JEON HWAN YOUNG
+
+Search Tag : +jwshin,+jeonhy
+
+STORY:
+1. 중국어 FONT 적용
+2. DDC Communication Routine 적용
+3. Burning Mode 적용
+4. PC Mode에서 Source 전환 후 바로 Menu Key를 push 했을 경우, OSD 깨지는 증상 제거
+   (단, PC의 RGB Source는 입력해야 함)
+5. Code Size 부족으로 인한 Routine optimize 및 불필요한 Routine Remark
+6. TV Mode에서 remocon으로 0을 누른 후, recall을 누르면 TV Screen Black을 제거
+
+

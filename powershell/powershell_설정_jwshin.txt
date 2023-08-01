@@ -1,0 +1,72 @@
+Powershell 설정방법
+									2017.03.16 jwshin
+
+Remote Server 설정 (원격조종을 당하는 장비)
+1.	Powershell을 권리자권한으로 실행
+2.	Enable-psremoting ?Force
+3.	cmd에서 다음명령실행
+4.	winrm 서비스 자동실행등록
+5.	winrm set winrm/config/client @{AllowUnencrypted = “true”}
+6.	방화벽에서 인바운드 5985,5986 port open 
+
+Client 설정(원격하는 장비)
+1.	Powershell 관리자권한 실행
+2.	Set-item WSMan:\localhost\Client\TrustedHosts ?Value “10.10.10.143,10.10.10.144” ?Force
+3.	invoke-command -computername 10.10.10.143 -credential smartlib -command {shutdown -s -t 0}
+
+
+전체적으로 허용할 경우
+Set-item WSMan:\localhost\Client\TrustedHosts -value *
+
+변수저장
+$Username = 'smartlib'
+$Password = '`1qaz'
+$pass = ConvertTo-SecureString -AsPlainText $Password -Force
+$Cred = New-Object System.Management.Automation.PSCredential -ArgumentList $Username,$pass
+invoke-command -computername 10.10.10.143 -credential $Cred -command {shutdown -s -t 0}
+
+winrm은 자동지연 서비스로 부팅 후 한참후에 올라옴.
+
+comodo 명령
+
+ctmcmd /r /baseline
+ctmcmd /r /current
+
+
+windows 10 update 강제 disable 및 service off
+반드시 스케줄러에 작성할 때,
+프로그램/스크립트에는 프로그램 명만 넣는다.   Updatedis.bat
+그리고, 시작위치에 프로그램 경로를 넣는다. ( C:\MQS)
+updatedis.bat 생성
+sc config wuauserv start= disabled
+net stop wuauserv
+이 파일을 스케줄러에서 최고의 권한으로 등록
+
+
+추가사항
+Net stop wuauserv
+Net stop bits
+Net stop dosvc
+업데이트 삭제
+Sc delete wuauserv
+
+
+
+원격 스케줄 관리
+schtasks /create /s 10.10.10.212 /tn "calc" /tr c:\windows\system32\calc.exe /sc once /st 10:55 /u "owner" /p "1234!" /RL HIGHEST
+schtasks /delete /s 10.10.10.212 /tn "calc"  /u "owner" /p "1234!" /F
+
+schtasks /create /s 10.10.10.212 /tn "patch" /tr c:\MQS\KIOSK\patch.bat /sc onstart /u "owner" /p "1234!" /RL HIGHEST /delay 0002:00
+
+patch.bat
+@echo off
+net stop wuauserv
+rmdir /s /q C:\Windows\SoftwareDistribution
+net start wuauserv
+schtasks /delete /tn "patch" /f
+wusa C:\MQS\KIOSK\Windows6.1-KB2454826-v2-x86.msu /quiet /forcerestart
+
+ieinstall.bat
+@echo off
+schtasks /delete /tn "patch" /f
+C:\MQS\KIOSK\IE9-Windows7-x86-kor.exe /quiet /forcerestart	

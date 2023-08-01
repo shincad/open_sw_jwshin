@@ -1,0 +1,1862 @@
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 1   
+
+
+C51 COMPILER V7.03, COMPILATION OF MODULE AUTOADJ
+OBJECT MODULE PLACED IN .\BIN\AutoAdj.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE SRC\AutoAdj.C OPTIMIZE(9,SPEED) DEFINE(X21) DEBUG OBJECTEXTEND PRINT(.\LST\
+                    -AutoAdj.lst) OBJECT(.\BIN\AutoAdj.obj)
+
+stmt level    source
+
+   1          #include "8051.H"
+   2          #include "MATH.H"
+   3          #include "Scaler.H"
+   4          #include "AutoAdj.H"
+   5          #include "MyDef.H"
+   6          #include "IIC.H"
+   7          #include "RAM.H"
+   8          #include "stdio.h"
+   9          #include "F63XREG.H"
+  10          #include "F63XDEF.H"
+  11          #include "MCU.H"
+  12          #include "UserAdj.H"
+  13          #include "ModeHandle.H"
+  14          #include "ROM_MAP.H"
+  15          #include "OSD.H"
+  16          #include "Tuner.h"
+  17          
+  18          void TunePositionOnly()
+  19          {
+  20   1              Abort = 0;
+  21   1              WriteIIC563(0x001,FuncBuf[pRADC]);
+  22   1              WriteIIC563(0x004,FuncBuf[pGADC]);
+  23   1              WriteIIC563(0x007,FuncBuf[pBADC]);
+  24   1              AutoPosition();
+  25   1              if(Abort)
+  26   1                      {       //fail
+  27   2                      LoadModeDependentSettings();
+  28   2                      SetHP();
+  29   2                      SetVP();
+  30   2                      #if PRINT_MESSAGE
+  31   2                              printf("Auto Position fail\n");
+  32   2                      #endif
+  33   2                      }
+  34   1              else{           //ok
+  35   2                      SaveModeDependentSettings();
+  36   2                      #if PRINT_MESSAGE
+  37   2                              printf("Auto Position OK\n");
+  38   2                      #endif
+  39   2                      }
+  40   1              SetContrast();
+  41   1      }
+  42          
+  43          void AutoTune(void)
+  44          {
+  45   1              Word addr;
+  46   1      //      Byte PixelRate;
+  47   1              Abort = 0;
+  48   1              NonFullScreen = 0;
+  49   1              WriteIIC563(0x001,FuncBuf[pRADC]);
+  50   1              WriteIIC563(0x004,FuncBuf[pGADC]);
+  51   1              WriteIIC563(0x007,FuncBuf[pBADC]);
+  52   1      //      if(ModePoint < UserModeSt)
+  53   1      //              Recall();
+  54   1              AutoPosition();
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 2   
+
+  55   1              if(!Abort)
+  56   1                      AutoClock();
+  57   1      //      PixelRate = ((unsigned long)FuncBuf[pCLOCK] * H_SYNC)/10000;
+  58   1      //      if(PixelRate >= PanelMaxPClk/1000)
+  59   1      //              Abort = 1;
+  60   1              if(NonFullScreen && !Abort)     //non fullscreen recall
+  61   1                      {
+  62   2                      //addr = ep_Sync_Data + (ModePoint * 8);
+  63   2                      //FuncBuf[pCLOCK] = Read24C16(addr+4) << 8;
+  64   2                      //FuncBuf[pCLOCK] |= Read24C16(addr+5);
+  65   2                      LoadPresetModeSettings(2);
+  66   2                      SetADC_PLL();
+  67   2                      }
+  68   1              CheckAnyKey();
+  69   1      #if 0
+                      if(Abort){
+                              if(NonFullScreen == 0){
+                                      //goto Error;
+                              }
+                              else{
+                                      Abort = 0;
+                                      AutoClockByPhase(1);
+                              }
+                      }
+                      else{
+                              AutoClockByPhase(0);
+                      }
+              #else
+  83   1              if(!Abort)
+  84   1                      AutoClockByPhase(0);
+  85   1      #endif
+  86   1              CheckAnyKey();
+  87   1              if(!Abort)
+  88   1                      AutoPhaseFineTune(16);
+  89   1              CheckAnyKey();
+  90   1              if(!Abort)
+  91   1                      AutoPosition();
+  92   1              CheckAnyKey();
+  93   1              if(Abort)
+  94   1                      {       //fail
+  95   2                      Osd_Off();
+  96   2                      //if(ModePoint < UserModeSt)
+  97   2                      //      addr = ModePoint * 8;
+  98   2                      //else
+  99   2                      //      addr = UserModeRefReso * 8;
+ 100   2                      LoadPresetModeSettings(0);
+ 101   2                      //LoadModeDependentSettings();
+ 102   2                      SetADC_PLL();
+ 103   2                      SetADC_Phase();
+ 104   2      //-------------------------------------------------------
+ 105   2                      if(SyncMode != 3)
+ 106   2                              {
+ 107   3                              SetHP();
+ 108   3                              SetVP();
+ 109   3                              }
+ 110   2                      if(Interlance){
+ 111   3                              WriteWordIIC563(0x032,Vresolution);             // Capture V_Active
+ 112   3                      }
+ 113   2                      else{
+ 114   3                              WriteWordIIC563(0x032,Vresolution);     // Capture V_Active
+ 115   3                      }
+ 116   2                      WriteWordIIC563(0x036,Hresolution);     // Capture H_Active
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 3   
+
+ 117   2                      //WriteWordIIC563(0x036,Hresolution + H_ActErrTab[ResolutionPtr]);      // Capture H_Active
+ 118   2                      //SetScaler();
+ 119   2                      //--------------------------------------------------
+ 120   2                      addr = ep_Reso_Offset + (ModePoint * 8);
+ 121   2                      Write24C16(addr,Read24C16(addr));
+ 122   2                      //Write24C16(addr,(Read24C16(addr) & 0x7f));
+ 123   2                      #if PRINT_MESSAGE
+ 124   2                              printf("AutoTune fail\n");
+ 125   2                      #endif
+ 126   2                      }
+ 127   1              else{           //ok
+ 128   2                      Osd_Off();
+ 129   2                      SaveModeDependentSettings();
+ 130   2                      //Range.Hpos_Ref = FuncBuf[pHPOSITION];
+ 131   2                      //Range.Vpos_Ref = (Byte)FuncBuf[pVPOSITION];
+ 132   2                      //Range.Clock_Ref = FuncBuf[pCLOCK];
+ 133   2                      //SaveRangeRef();
+ 134   2                      Write24C16(ep_Reso_Offset + (ModePoint * 8), ResolutionPtr|0x80);
+ 135   2                      #if PRINT_MESSAGE
+ 136   2                              printf("AutoTune OK\n");
+ 137   2                      #endif
+ 138   2                      }
+ 139   1              LoadADC_Gain();
+ 140   1      }
+ 141          #if 0
+              void AutoPosition(void)
+              {
+                      Byte temp;
+                      #if PRINT_MESSAGE
+                              printf("AutoPosition\n");
+                      #endif
+                      WriteIIC563(0x02A,0);  // AutoPosition Pixel mask -> H
+                      WriteIIC563(0x02B,24);  // AutoPosition Pixel mask -> H
+                      WriteIIC563(0x02C,0x00);  // AutoPosition Pixel mask -> H
+                      WriteIIC563(0x02D,0x00);  // AutoPosition Pixel mask -> H
+                      WriteIIC563(0x107,0x30);  // Red Noise Margin
+                      WriteIIC563(0x106,0x00);
+                      if(SyncMode == 3)
+                              WriteIIC563(0x106,0x11);
+                      else
+                              WriteIIC563(0x106,0x01);
+                      #if DVImode == HVmode
+                      if(SyncMode == 3)
+                              WaitSetup(5);
+                              //Sleep(50);
+                      #endif
+                      LocalTimer = 10;
+                      while((ReadIIC563(0x106) & BIT_0) && LocalTimer != 0)
+                              {
+                              CheckModeChange();
+                              if(Abort)
+                                      return;
+                              }
+                      if(LocalTimer != 0)
+                              {                               // Auto-Position OK
+                      FuncBuf[pVPOSITION] = ReadIIC563(0x109) & 0x07;
+                              FuncBuf[pVPOSITION] <<= 8;
+                      FuncBuf[pVPOSITION] |= ReadIIC563(0x108);
+                      FuncBuf[pHPOSITION] = ReadIIC563(0x10F) & 0x07;
+                              FuncBuf[pHPOSITION] <<= 8;
+                      FuncBuf[pHPOSITION] |= ReadIIC563(0x10E);
+                              #if PRINT_MESSAGE
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 4   
+
+                                      printf("VP_Start = %d\n",FuncBuf[pVPOSITION]);
+                                      printf("HP_Start = %d\n",FuncBuf[pHPOSITION]);
+                              #endif
+                              if(((FuncBuf[pVPOSITION] > 0xff) || (FuncBuf[pHPOSITION] > (FuncBuf[pCLOCK]-H_Act)))&&(SyncMode != 3))
+                                      {
+                                      Abort = 1;                      // abort
+                                      #if PRINT_MESSAGE
+                                              printf("AutoPosition fail\n");
+                                      #endif
+                                      }
+                              else{
+                                      if(ResolutionPtr < 4)
+                                              {
+                                              if(FuncBuf[pVPOSITION] > (VTotal - Vresolution-1))
+                                                      FuncBuf[pVPOSITION] = VTotal - Vresolution-14;
+                                              }
+                                      SetHP();
+                                      SetVP();
+                                      }
+                              }
+                      else
+                              {
+                              Abort = 1;                      // abort
+                              #if PRINT_MESSAGE
+                                      printf("AutoPosition fail\n");
+                              #endif
+                              }
+                      // wait for next V pulse coming to latch data
+                      WriteIIC563(0x1ab,BIT_1);
+                      LocalTimer = 100;
+                      while(LocalTimer != 0)
+                              {
+                              Sleep(1);
+                              temp = ReadIIC563(0x1ab);
+                              if(temp & BIT_1)
+                                      break;
+                              }
+              }
+              #endif
+ 218          
+ 219          void AutoPosition(void)
+ 220          {
+ 221   1              Word OldVp,NewVp,Vact,Hact;
+ 222   1              #if PRINT_MESSAGE
+ 223   1                      printf("AutoPosition\n");
+ 224   1              #endif
+ 225   1              WriteIIC563(0x02A,0);  // AutoPosition Pixel mask -> H
+ 226   1              WriteIIC563(0x02B,24);  // AutoPosition Pixel mask -> H
+ 227   1              WriteIIC563(0x02C,0x00);  // AutoPosition Pixel mask -> H
+ 228   1              WriteIIC563(0x02D,0x00);  // AutoPosition Pixel mask -> H
+ 229   1              WriteIIC563(0x107,0x30);  // Red Noise Margin
+ 230   1              WriteIIC563(0x106,0x00);
+ 231   1              if(SyncMode == 3)
+ 232   1                      WriteIIC563(0x106,0x11);
+ 233   1              else
+ 234   1                      WriteIIC563(0x106,0x01);
+ 235   1              #if DVImode == HVmode
+                      if(SyncMode == 3)
+                              WaitSetup(5);
+                      #endif
+ 239   1              OldVp = FuncBuf[pVPOSITION];
+ 240   1              LocalTimer = 100;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 5   
+
+ 241   1              while((ReadIIC563(0x106) & BIT_0) && LocalTimer != 0)
+ 242   1                      {
+ 243   2                      CheckModeChange();
+ 244   2                      if(Abort)
+ 245   2                              return;
+ 246   2                      }
+ 247   1              if(LocalTimer != 0)
+ 248   1                      {                               // Auto-Position OK
+ 249   2                      Hact = ReadWordIIC563(0x110) & 0x0fff;
+ 250   2              //Hact = ReadIIC563(0x111) & 0x3f;
+ 251   2                      //Hact <<= 8;
+ 252   2              //Hact |= ReadIIC563(0x110);
+ 253   2      //              if(Hact < 300)
+ 254   2                      if(Hact < Hresolution - 100)
+ 255   2                      {
+ 256   3                              Abort = 1;
+ 257   3                              return;
+ 258   3                      }
+ 259   2                      FuncBuf[pVPOSITION] = ReadWordIIC563(0x108) & 0x07ff;
+ 260   2              //FuncBuf[pVPOSITION] = ReadIIC563(0x109) & 0x07;
+ 261   2                      //FuncBuf[pVPOSITION] <<= 8;
+ 262   2              //FuncBuf[pVPOSITION] |= ReadIIC563(0x108);
+ 263   2                      GetFuncRange(pVPOSITION);
+ 264   2                      if(FuncBuf[pVPOSITION] > FuncMax)//over VPosition Max
+ 265   2                      {
+ 266   3                              FuncBuf[pVPOSITION] = FuncMax;
+ 267   3                              #if PRINT_MESSAGE
+ 268   3                                      printf("VPositon over Max");
+ 269   3                              #endif
+ 270   3                      }
+ 271   2                      FuncBuf[pHPOSITION] = ReadWordIIC563(0x10e) & 0x07ff;
+ 272   2              //FuncBuf[pHPOSITION] = ReadIIC563(0x10F) & 0x07;
+ 273   2                      //FuncBuf[pHPOSITION] <<= 8;
+ 274   2              //FuncBuf[pHPOSITION] |= ReadIIC563(0x10E);
+ 275   2                      GetFuncRange(pHPOSITION);
+ 276   2                      if(FuncBuf[pHPOSITION] > FuncMax)//over VPosition Max
+ 277   2                      {
+ 278   3                              FuncBuf[pHPOSITION] = FuncMax;
+ 279   3                              #if PRINT_MESSAGE
+ 280   3                                      printf("HPositon over Max");
+ 281   3                              #endif
+ 282   3                      }
+ 283   2      
+ 284   2                      Vact = ReadWordIIC563(0x10c) & 0x07ff;
+ 285   2              //Vact = ReadIIC563(0x10d) & 0x07;
+ 286   2                      //Vact <<= 8;
+ 287   2              //Vact |= ReadIIC563(0x10c);
+ 288   2                      NewVp = FuncBuf[pVPOSITION];
+ 289   2                      #if PRINT_MESSAGE
+ 290   2                              printf("VP_Start = %d\n",FuncBuf[pVPOSITION]);
+ 291   2                              printf("HP_Start = %d\n",FuncBuf[pHPOSITION]);
+ 292   2                      #endif
+ 293   2                              
+ 294   2                      if(((FuncBuf[pVPOSITION] > 0x40) || ((FuncBuf[pHPOSITION]>>1)  > (FuncBuf[pCLOCK]-Hresolution))||(Vact <
+             - 340))&&(SyncMode != 3))
+ 295   2                      //if((FuncBuf[pVPOSITION] > 0xff) || ((FuncBuf[pHPOSITION]>>1) > (FuncBuf[pCLOCK]-Hresolution)))
+ 296   2                      {
+ 297   3                              Abort = 1;                      // abort
+ 298   3                              #if PRINT_MESSAGE
+ 299   3                                      printf("AutoPosition fail\n");
+ 300   3                              #endif
+ 301   3                      }
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 6   
+
+ 302   2                      else
+ 303   2                      {
+ 304   3                              //if(ResolutionPtr < 4)
+ 305   3                              //      {
+ 306   3                              //      if(FuncBuf[pVPOSITION] > (VTotal - Vresolution-1))
+ 307   3                              //              FuncBuf[pVPOSITION] = VTotal - Vresolution-14;
+ 308   3                              //      }
+ 309   3                              SetHP();
+ 310   3                              if(ResolutionPtr < 5 && Vact > 300)
+ 311   3                              {
+ 312   4                                      if(NewVp >= (Vresolution - Vact) / 2)
+ 313   4                                              NewVp = NewVp - (Vresolution - Vact) / 2;
+ 314   4                                      else
+ 315   4                                      {
+ 316   5                                              Abort = 1;
+ 317   5                                              return;
+ 318   5                                      }
+ 319   4                              }
+ 320   3                              if(OldVp > NewVp)
+ 321   3                              {
+ 322   4                                      for(;OldVp>=NewVp;OldVp--)
+ 323   4                                      {
+ 324   5                                              FuncBuf[pVPOSITION] = OldVp;
+ 325   5                                              SetVP();
+ 326   5                                      }
+ 327   4                              }
+ 328   3                              else if(OldVp < NewVp)
+ 329   3                              {
+ 330   4                                      for(;OldVp<=NewVp;OldVp++)
+ 331   4                                      {
+ 332   5                                              FuncBuf[pVPOSITION] = OldVp;
+ 333   5                                              SetVP();
+ 334   5                                      }
+ 335   4                              }
+ 336   3                              else
+ 337   3                              {
+ 338   4                                      FuncBuf[pVPOSITION] = OldVp;
+ 339   4                                      SetVP();
+ 340   4                              }
+ 341   3                      }
+ 342   2              }
+ 343   1              else
+ 344   1              {
+ 345   2                      Abort = 1;                      // abort
+ 346   2                      #if PRINT_MESSAGE
+ 347   2                              printf("AutoPosition fail\n");
+ 348   2                      #endif
+ 349   2              }
+ 350   1              // wait for next V pulse coming to latch data
+ 351   1              WaitVblank();
+ 352   1      }
+ 353          
+ 354          void AutoClock()
+ 355          {
+ 356   1              //preset mode total
+ 357   1              bit FirstDo;
+ 358   1              Byte H_Difference,i,Compare;
+ 359   1              Word H_Ref,H_Act,TempClock;
+ 360   1              #if PRINT_MESSAGE
+ 361   1                      printf("AutoClock\n");
+ 362   1              #endif
+ 363   1              TempClock = FuncBuf[pCLOCK];
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 7   
+
+ 364   1              if(VTotal > (Vresolution + 190))        //not full screen
+ 365   1                      {
+ 366   2                      NonFullScreen = 1;
+ 367   2                      #if PRINT_MESSAGE
+ 368   2                              printf("Non Full Screen");
+ 369   2                      #endif
+ 370   2                      return;
+ 371   2                      }
+ 372   1              H_Ref = Hresolution;
+ 373   1              if(H_Ref >= FuncBuf[pCLOCK])
+ 374   1                      {
+ 375   2                      Abort = 1;
+ 376   2                      FuncBuf[pCLOCK] = H_Ref + FuncBuf[pHPOSITION];
+ 377   2                      SetADC_PLL();
+ 378   2      //              return;
+ 379   2                      }
+ 380   1              WriteWordIIC563(0x117, H_Ref);
+ 381   1              FirstDo = 0;
+ 382   1              for(i=0;i<20;i++)
+ 383   1              {
+ 384   2                      WriteIIC563(0x106,0x01);
+ 385   2                      LocalTimer = 10;
+ 386   2                      while((ReadIIC563(0x106) & BIT_0) && LocalTimer != 0)
+ 387   2                      {
+ 388   3                              CheckModeChange();
+ 389   3                              if(Abort)
+ 390   3                                      return;
+ 391   3                      }
+ 392   2                      H_Act = ReadWordIIC563(0x110) & 0x0fff;
+ 393   2                      //H_Act = ReadIIC563(0x111) & 0x0f;
+ 394   2                      //H_Act <<= 8;
+ 395   2                      //H_Act |= ReadIIC563(0x110);
+ 396   2                      
+ 397   2                      // 20040224 Jacky
+ 398   2                      if(H_Act < (H_Ref - 124)){
+ 399   3                              i = 0xff;
+ 400   3                              break;
+ 401   3                      }
+ 402   2                      //------------------------
+ 403   2                      H_Difference = ReadIIC563(0x119);
+ 404   2                      Compare = (H_Difference & 0xC0) >> 6;
+ 405   2      //              H_Difference = (H_Difference & 0x3F);
+ 406   2                      H_Difference = (H_Difference & 0x3F) > AutoClock_Step ? AutoClock_Step : (H_Difference & 0x3f); // rev3
+ 407   2                      if(Compare == 0){       //H_Act == H_Ref jacky20040326 for AutoPhasebyClock
+ 408   3                              if(!FirstDo){
+ 409   4                                      FirstDo = 1;
+ 410   4                                      AutoPhaseByClock();
+ 411   4                                      if(Abort)
+ 412   4                                              return;
+ 413   4                              }
+ 414   3                              else
+ 415   3                                      break;                          
+ 416   3                      }
+ 417   2                      //if(Compare == 0){     //H_Act == H_Ref
+ 418   2                      //      break;
+ 419   2                      //}
+ 420   2                      if(Compare == 1)
+ 421   2                      {
+ 422   3                              FuncBuf[pCLOCK] += H_Difference;
+ 423   3                              if(FuncBuf[pCLOCK] > 2248)// rev3
+ 424   3                              {
+ 425   4                                      i = 0xff;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 8   
+
+ 426   4                                      break;
+ 427   4                              }
+ 428   3                      }
+ 429   2                      if(Compare == 2 || Compare == 3)
+ 430   2                      {
+ 431   3                              FuncBuf[pCLOCK] -= H_Difference;
+ 432   3                              if(FuncBuf[pCLOCK] < H_Ref)
+ 433   3                              {
+ 434   4                                      i = 0xff;
+ 435   4                                      break;
+ 436   4                              }
+ 437   3                      }
+ 438   2                      SetADC_PLL();
+ 439   2              }
+ 440   1              //printf("Clock divider 0 = %d\n",FuncBuf[pCLOCK]);
+ 441   1              if(i == 0xff)
+ 442   1              {
+ 443   2              #if PRINT_MESSAGE
+ 444   2                      printf("None full screen\n");
+ 445   2              #endif
+ 446   2                      Abort = 1;
+ 447   2                      NonFullScreen = 1;
+ 448   2                      return;
+ 449   2              }
+ 450   1              else
+ 451   1              {
+ 452   2              #if PRINT_MESSAGE
+ 453   2                      if(i == 20)
+ 454   2                              printf("AutoClock fail.\n");
+ 455   2              #endif
+ 456   2                      if(abs(FuncBuf[pCLOCK] - TempClock) > (TempClock / 11))
+ 457   2      //                      FuncBuf[pCLOCK] = TempClock;
+ 458   2                              Abort = 1;
+ 459   2                      else
+ 460   2                              FuncBuf[pCLOCK] = (FuncBuf[pCLOCK] + 2) & 0xfffc;
+ 461   2                      
+ 462   2                      GetFuncRange(pCLOCK);
+ 463   2                      if(FuncBuf[pCLOCK] > FuncMax)//over VPosition Max
+ 464   2                      {
+ 465   3                              FuncBuf[pCLOCK] = FuncMax;
+ 466   3              #if PRINT_MESSAGE
+ 467   3                                      printf("Clock over Max");
+ 468   3              #endif
+ 469   3                      }
+ 470   2                      
+ 471   2                      SetADC_PLL();
+ 472   2              }
+ 473   1      }
+ 474          
+ 475          void AutoClockByPhase(bit h)
+ 476          {
+ 477   1              bit R_L,U_D;
+ 478   1              Byte k,temp;
+ 479   1              Word GoodClk;
+ 480   1              xdata unsigned long MaxMin,Value;
+ 481   1      #if PRINT_MESSAGE
+ 482   1                      printf("AutoClockByPhase\r\n");
+ 483   1      #endif
+ 484   1      //      if((ModePoint < UserModeSt)&&(h == 1)){
+ 485   1      //              i = 0x104 + (ModePoint * 8);
+ 486   1      //              FuncBuf[pCLOCK] = EEP_SyncMap[i];
+ 487   1      //              i++;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 9   
+
+ 488   1      //              FuncBuf[pCLOCK] <<= 8;
+ 489   1      //              FuncBuf[pCLOCK] += EEP_SyncMap[i];
+ 490   1      //      }
+ 491   1              if(h == 1)
+ 492   1                      LoadPresetModeSettings(2);
+ 493   1      
+ 494   1              //printf("Phase ok = %d\n",(unsigned short)FuncBuf[pPHASE]);
+ 495   1              GoodClk = FuncBuf[pCLOCK];
+ 496   1              SetADC_PLL();
+ 497   1              WaitSetup(4);
+ 498   1              if(Abort)
+ 499   1                      return;
+ 500   1              //Sleep(25);
+ 501   1              MaxMin = CheckPhaseData();
+ 502   1              //printf("Clock Value Original = %x %x\n",(unsigned short)(MaxMin >> 16),(unsigned short)MaxMin);
+ 503   1              temp = TempPhase;
+ 504   1              if(Abort)
+ 505   1                      return;
+ 506   1              U_D = 0;
+ 507   1              R_L = 0;
+ 508   1              for(k=0; k<16; k++)
+ 509   1                      {
+ 510   2                      if(R_L)
+ 511   2                              {
+ 512   3                              FuncBuf[pCLOCK] += 2;
+ 513   3                              SetADC_PLL();
+ 514   3                              //printf("Clock divider 1 = %d\n",FuncBuf[pCLOCK]);
+ 515   3                              WaitSetup(4);
+ 516   3                              if(Abort)
+ 517   3                                      return;
+ 518   3                              //Sleep(25);
+ 519   3                              Value = CheckPhaseData();
+ 520   3                              //printf("Clock Value %d = %x %x\n",(unsigned short)k,(unsigned short)(Value >> 16),(unsigned short)Val
+             -ue);
+ 521   3                              if(Abort)
+ 522   3                                      return;
+ 523   3                              if(MaxMin < Value)
+ 524   3                                      {
+ 525   4                                      GoodClk = FuncBuf[pCLOCK];
+ 526   4                                      MaxMin = Value;
+ 527   4                                      temp = TempPhase;
+ 528   4                                      U_D = 1;
+ 529   4                                      }
+ 530   3                              else
+ 531   3                                      {
+ 532   4                                      if(U_D == 0)
+ 533   4                                              {
+ 534   5                                              R_L = 0;
+ 535   5                                              FuncBuf[pCLOCK] -= 2;
+ 536   5                                              U_D = 1;
+ 537   5                                              }
+ 538   4                                      else
+ 539   4                                              break;
+ 540   4                                      }
+ 541   3                              }
+ 542   2                      else{
+ 543   3                              FuncBuf[pCLOCK] -= 2;
+ 544   3                              SetADC_PLL();
+ 545   3                              //printf("Clock divider 2 = %d\n",FuncBuf[pCLOCK]);
+ 546   3                              WaitSetup(4);
+ 547   3                              if(Abort)
+ 548   3                                      return;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 10  
+
+ 549   3                              //Sleep(25);
+ 550   3                              Value = CheckPhaseData();
+ 551   3                              //printf("Clock Value %d = %x %x\n",(unsigned short)k,(unsigned short)(Value >> 16),(unsigned short)Val
+             -ue);
+ 552   3                              if(Abort)
+ 553   3                                      return;
+ 554   3                              if(MaxMin < Value)
+ 555   3                                      {
+ 556   4                                      GoodClk = FuncBuf[pCLOCK];
+ 557   4                                      MaxMin = Value;
+ 558   4                                      temp = TempPhase;
+ 559   4                                      U_D = 1;
+ 560   4                                      }
+ 561   3                              else
+ 562   3                                      {
+ 563   4                                      if(U_D == 0)
+ 564   4                                              {
+ 565   5                                              R_L = 1;
+ 566   5                                              FuncBuf[pCLOCK] += 2;
+ 567   5                                              U_D = 1;
+ 568   5                                              }
+ 569   4                                      else
+ 570   4                                              break;
+ 571   4                                      }
+ 572   3                              }
+ 573   2                      }
+ 574   1              FuncBuf[pCLOCK] = GoodClk;
+ 575   1              //printf("Clock divider 3 = %d\n",FuncBuf[pCLOCK]);
+ 576   1              SetADC_PLL();
+ 577   1              FuncBuf[pPHASE] = (temp + 24) & 0x3f;
+ 578   1      //      Repeat = 32;
+ 579   1              SetADC_Phase();
+ 580   1      }
+ 581          
+ 582          unsigned long CheckPhaseData()
+ 583          {
+ 584   1              Byte ch;
+ 585   1              Word zz;
+ 586   1              xdata unsigned long Value,MinValueTemp,MaxValueTemp;
+ 587   1              MaxValueTemp = 0;
+ 588   1              MinValueTemp = 0xffffffff;
+ 589   1              FuncBuf[pPHASE] = 0;
+ 590   1              SetADC_Phase();
+ 591   1              WriteIIC563(0x106,0x02); 
+ 592   1              LocalTimer = 10;
+ 593   1              for(FuncBuf[pPHASE]=4; FuncBuf[pPHASE]<0x42; FuncBuf[pPHASE] += 4)
+ 594   1                      {
+ 595   2                      while((ReadIIC563(0x106) & BIT_1) && LocalTimer != 0)
+ 596   2                              {
+ 597   3                              CheckModeChange();
+ 598   3                              if(Abort)
+ 599   3                                      return 0;
+ 600   3                              }
+ 601   2                      SetADC_Phase();
+ 602   2                      WriteIIC563(0x106,0x02);
+ 603   2                      LocalTimer = 10;
+ 604   2              Value = 0x00000000;
+ 605   2              for(zz=0x116; zz>0x112; zz--)
+ 606   2                              {
+ 607   3                      ch = ReadIIC563(zz);
+ 608   3                  Value  = Value << 8;
+ 609   3                  Value  = Value + ch;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 11  
+
+ 610   3                      }
+ 611   2                      if(Value < MinValueTemp)
+ 612   2                              {
+ 613   3                              MinValueTemp = Value;
+ 614   3                              TempPhase = (FuncBuf[pPHASE] - 4) & 0x3f;
+ 615   3                              }
+ 616   2                      if(Value > MaxValueTemp)
+ 617   2                              MaxValueTemp = Value;
+ 618   2              }
+ 619   1              Value = MaxValueTemp - MinValueTemp;
+ 620   1              return Value;
+ 621   1      }
+ 622          
+ 623          /*
+ 624          Byte AutoPhase(void)
+ 625          {
+ 626          unsigned short  zz;
+ 627          unsigned char PhaseTemp1,PhaseTemp2,value,i,temp;
+ 628          unsigned long Value,MinValueTemp,MaxValueTemp;
+ 629                  if(Abort)
+ 630                          return 0;
+ 631                  #if PRINT_MESSAGE
+ 632                          printf("Auto Phase\n");
+ 633                  #endif
+ 634                  MaxValueTemp = 0;
+ 635                  MinValueTemp = 0xffffffff;
+ 636                  PhaseTemp1 = 0;
+ 637                  PhaseTemp2 = 0;
+ 638                  FuncBuf[pPHASE] = 0;
+ 639                  SetADC_Phase();
+ 640                  WriteIIC563(0x106,0x02); // 0X01 --> 0X09
+ 641                  LocalTimer = 100;
+ 642                  for(FuncBuf[pPHASE]=0; FuncBuf[pPHASE]<0x40; FuncBuf[pPHASE] = FuncBuf[pPHASE] + 2)
+ 643                          {
+ 644                          while((ReadIIC563(0x106) & BIT_1) && LocalTimer != 0)
+ 645                                  {
+ 646                                  if(Abort)
+ 647                                          return 0;
+ 648                                  }
+ 649                          SetADC_Phase();
+ 650                          WriteIIC563(0x106,0x02);
+ 651                          LocalTimer = 100;
+ 652                  Value = 0x00000000;
+ 653                  for (zz=0x116; zz>0x112; zz--)
+ 654                                  {
+ 655                          value = ReadIIC563(zz);
+ 656                      Value  = Value << 8;
+ 657                      Value  = Value + value;
+ 658                          }
+ 659                          i = (FuncBuf[pPHASE] - 2) & 0x3f;
+ 660                          #if PRINT_MESSAGE
+ 661                                  printf("Phase %d = %x %x\n",(unsigned short)i,(unsigned short)(Value >> 16),(unsigned short)Value);
+ 662                          #endif
+ 663                          if(Value < MinValueTemp)
+ 664                                  {
+ 665                                  MinValueTemp = Value;
+ 666                                  PhaseTemp1 = i;
+ 667                                  }
+ 668                          if(Value > MaxValueTemp)
+ 669                                  {
+ 670                                  MaxValueTemp = Value;
+ 671                                  PhaseTemp2 = i;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 12  
+
+ 672                                  }
+ 673                          }
+ 674                  Value = (unsigned long)FuncBuf[pHPOSITION] * H_SYNC;
+ 675                  if(Value > 1000000)
+ 676                          {
+ 677                          i = (PhaseTemp1 + 4) & 0x3f;
+ 678                          temp = 60;
+ 679                          }
+ 680                  else
+ 681                          {
+ 682                          i = (PhaseTemp1 + 26) & 0x3f;
+ 683                          temp = 16;
+ 684                          }
+ 685                  FuncBuf[pPHASE] = i;
+ 686                  SetADC_Phase();
+ 687                  #if PRINT_MESSAGE
+ 688                          printf("phase ok = %d\n",(unsigned short)FuncBuf[pPHASE]);
+ 689                  #endif
+ 690                  return temp;
+ 691          }
+ 692          */
+ 693          void AutoPhaseFineTune(Byte Val)
+ 694          {
+ 695   1      unsigned short   zz;
+ 696   1      unsigned char   qq,uu,yy,i;
+ 697   1      unsigned long   Phase_0, Phase_1, Phase_2, Phase_Pre3, Phase_Now3, Phase_Delta;
+ 698   1      unsigned char   value;
+ 699   1              if(Abort)
+ 700   1                      return;
+ 701   1          #if PRINT_MESSAGE
+ 702   1              printf("Auto Phase Fine Tune\n");
+ 703   1              #endif
+ 704   1      //-------------------------at color xx , calculate phase-------------------------
+ 705   1          Phase_1 = 0x00000000;   // (i-1)
+ 706   1          Phase_2 = 0x00000000;   // (i-2)
+ 707   1          Phase_Pre3 = 0x00000000;   // (pre sum)->(delta)->(now sum)
+ 708   1          Phase_Delta = 0xffffffff;   // (min delta)
+ 709   1              qq = FuncBuf[pPHASE];
+ 710   1              WriteIIC563(0x106,0x02); // 0x01 --> 0x09
+ 711   1              LocalTimer = 10;
+ 712   1              for(yy=1; yy<Val; yy++)
+ 713   1                      {
+ 714   2                      while((ReadIIC563(0x106) & BIT_1) && LocalTimer != 0)
+ 715   2                              {
+ 716   3                              CheckModeChange();
+ 717   3                              if(Abort)
+ 718   3                                      return;
+ 719   3                              }
+ 720   2                      FuncBuf[pPHASE] = (qq + yy) & 0x3f;
+ 721   2                      SetADC_Phase();
+ 722   2                      WriteIIC563(0x106,0x02); // 0x01 --> 0x09
+ 723   2                      LocalTimer = 100;
+ 724   2              Phase_Now3  = 0x00000000;
+ 725   2              for (zz=0x116; zz>0x112; zz--)
+ 726   2                              {
+ 727   3                      value = ReadIIC563(zz);
+ 728   3                  Phase_Now3  = Phase_Now3 << 8;
+ 729   3                  Phase_Now3  = Phase_Now3 + value;
+ 730   3                      }
+ 731   2                      i = (FuncBuf[pPHASE] - 1) & 0x3f;
+ 732   2                      #if PRINT_MESSAGE
+ 733   2                              printf("Phase %d = %x %x\n",(unsigned short)i,(unsigned short)(Phase_Now3>>16),(unsigned short)Phase_No
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 13  
+
+             -w3);        
+ 734   2                      #endif
+ 735   2              Phase_2 = Phase_1;  // Shift    
+ 736   2              Phase_1 = Phase_0;
+ 737   2              Phase_0 = Phase_Now3;
+ 738   2                      Phase_Now3 = (Phase_0>>1) + (Phase_1>>1) + (Phase_2>>2); // Phase_Now3
+ 739   2                      if(yy < 4)
+ 740   2                              Phase_Pre3  = Phase_Now3;   // Phase_Pre3 = Phase_Now3
+ 741   2                      else
+ 742   2                              {
+ 743   3                              if(Phase_Now3 > Phase_Pre3)
+ 744   3                                      Phase_Pre3  = Phase_Now3 - Phase_Pre3;
+ 745   3                              else
+ 746   3                                      Phase_Pre3  = Phase_Pre3 - Phase_Now3;  // Phase_Pre3=delta
+ 747   3                              if(Phase_Pre3 < Phase_Delta)
+ 748   3                                      {
+ 749   4                                      uu = i;           
+ 750   4                                      Phase_Delta = Phase_Pre3;
+ 751   4                                      }
+ 752   3                              Phase_Pre3  = Phase_Now3;   // Phase_Pre3 = Phase_Now3
+ 753   3                              }     
+ 754   2                      }
+ 755   1              FuncBuf[pPHASE] = (uu - 3) & 0x3f;
+ 756   1              SetADC_Phase();
+ 757   1              #if PRINT_MESSAGE
+ 758   1                      printf("Phase ok = %d\n",(unsigned short)FuncBuf[pPHASE]);
+ 759   1              #endif
+ 760   1      }
+ 761          
+ 762          void AutoPhaseByClock()
+ 763          {
+ 764   1              //preset mode total
+ 765   1              Byte PhaseTemp;
+ 766   1              Word H_Act,MinHActiveTemp;
+ 767   1              #if PRINT_MESSAGE
+ 768   1                      printf("AutoPhaseByClock\n");
+ 769   1              #endif
+ 770   1              MinHActiveTemp = 0xffff;
+ 771   1              FuncBuf[pPHASE] = 0;
+ 772   1              SetADC_Phase();
+ 773   1              
+ 774   1              for(FuncBuf[pPHASE]=4; FuncBuf[pPHASE]<0x42; FuncBuf[pPHASE] += 4)
+ 775   1              {
+ 776   2                      WriteIIC563(0x106,0x01);
+ 777   2                      LocalTimer = 10;
+ 778   2                      while((ReadIIC563(0x106) & BIT_0) && LocalTimer != 0)
+ 779   2                      {
+ 780   3                              CheckModeChange();
+ 781   3                              if(Abort)
+ 782   3                                      return;
+ 783   3                      }
+ 784   2                      SetADC_Phase();
+ 785   2                      H_Act = ReadWordIIC563(0x110) & 0x0fff;
+ 786   2                      //H_Act = ReadIIC563(0x111) & 0x0f;
+ 787   2                      //H_Act <<= 8;
+ 788   2                      //H_Act |= ReadIIC563(0x110);
+ 789   2                      
+ 790   2                      // 20040224 Jacky
+ 791   2                      //if(H_Act < (H_Ref - 124)){
+ 792   2                      //      i = 0xff;
+ 793   2                      //      break;
+ 794   2                      //}
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 14  
+
+ 795   2                      //------------------------
+ 796   2                      if(H_Act < MinHActiveTemp)
+ 797   2                      {
+ 798   3                              MinHActiveTemp = H_Act;
+ 799   3                              PhaseTemp = (FuncBuf[pPHASE] - 4) & 0x3f;
+ 800   3                      }
+ 801   2      #if PRINT_MESSAGE
+ 802   2                      printf("AutoPhaseByClock H_Act %d = %d\n",(unsigned short)FuncBuf[pPHASE],H_Act);
+ 803   2      #endif
+ 804   2              }
+ 805   1              FuncBuf[pPHASE] = PhaseTemp;
+ 806   1              SetADC_Phase();
+ 807   1      #if PRINT_MESSAGE
+ 808   1                      printf("AutoPhaseByClock Phase = %d\n",(unsigned short)FuncBuf[pPHASE]);
+ 809   1      #endif
+ 810   1      }
+ 811          
+ 812          #if AUTO_COLOR == GaugeGain
+ 813          void SetADC_Offset(unsigned char OffSet)
+ 814          {
+ 815   1              xdata unsigned short l;
+ 816   1              xdata unsigned char i,j,k,m,n,value;
+ 817   1              xdata unsigned long PhaseResult,Temp;
+ 818   1              WriteIIC563(0x0fa,0x00);
+ 819   1              for(m=0; m<3; m++)
+ 820   1                      {
+ 821   2                      for(k=OffSet; k<128; k=k+8)
+ 822   2                              {
+ 823   3                              WriteIIC563(0x0f8,0x00);
+ 824   3                              l = 0x003 + m*3;
+ 825   3                              if(SCRev <= 2)  //Jacky 20041216 rev3
+ 826   3                                      WriteIIC563(l,k);
+ 827   3                              else
+ 828   3                                      WriteIIC563(l,2*k);
+ 829   3                              WaitSetup(5);
+ 830   3                              //Sleep(5);
+ 831   3                              i = 0x80 + (2-m)*0x08;
+ 832   3                              WriteIIC563(0x0f8,i);
+ 833   3                              LocalTimer = 10;
+ 834   3                              while((ReadIIC563(0x0f8) & BIT_7) && LocalTimer != 0)
+ 835   3                                      {
+ 836   4                                      if(Abort)
+ 837   4                                              return;
+ 838   4                                      }
+ 839   3                              if(LocalTimer == 0){
+ 840   4                                      Abort = 1;
+ 841   4                                      return;
+ 842   4                              }
+ 843   3                              j = 0;
+ 844   3                              Temp = 0;
+ 845   3                              for(i=0; i<8; i++)
+ 846   3                                      {
+ 847   4                                      WriteIIC563(0x0f9,i);
+ 848   4                                      value = ReadIIC563(0x0fd);
+ 849   4                                      PhaseResult = value;
+ 850   4                                      PhaseResult <<= 8;
+ 851   4                                      value = ReadIIC563(0x0fc);
+ 852   4                                      PhaseResult += value;
+ 853   4                                      PhaseResult <<= 8;
+ 854   4                                      value = ReadIIC563(0x0fb);
+ 855   4                                      PhaseResult += value;
+ 856   4                                      #if PRINT_MESSAGE
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 15  
+
+ 857   4                                              //printf("PhaseResult %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)(PhaseResult>
+             ->8));
+ 858   4                                              printf("PhaseResult %x = %x %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)(PhaseResult
+             - >> 16),(unsigned short)PhaseResult);
+ 859   4                                      #endif
+ 860   4                                      if(PhaseResult > Temp)
+ 861   4                                              {
+ 862   5                                              Temp = PhaseResult;
+ 863   5                                              j = i;
+ 864   5                                              }
+ 865   4                                      }
+ 866   3                              if(Temp > (Vresolution*15)) //rev3
+ 867   3                                      {
+ 868   4                                      l = 0x003 + m*3;
+ 869   4                                      if(SCRev <= 2)  //Jacky 20041216 rev3
+ 870   4                                              j = k+j;
+ 871   4                                      else
+ 872   4                                              j = 2*(k+j);
+ 873   4                                      //j = k+j+OffSet2;
+ 874   4                                      WriteIIC563(l,j);
+ 875   4                                      #if PRINT_MESSAGE
+ 876   4                                      printf("Offset %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 877   4                                      #endif
+ 878   4                                      break;
+ 879   4                                      }
+ 880   3                              }
+ 881   2                      for(n=0; n<16; n++)
+ 882   2                              {
+ 883   3                              WriteIIC563(0x0f8,0x00);
+ 884   3                              l = 0x003 + 3*m;
+ 885   3                              if(SCRev <= 2)  //Jacky 20041216 rev3
+ 886   3                              {
+ 887   4                                      if(n%2)
+ 888   4                                              WriteIIC563(l,(k+n/2)+0x80);
+ 889   4                                      else
+ 890   4                                              WriteIIC563(l,k+n/2);
+ 891   4                              }
+ 892   3                              else
+ 893   3                                      WriteIIC563(l,2*k+n);   // Jacky 20041210
+ 894   3                              WaitSetup(2);
+ 895   3                              //Sleep(5);
+ 896   3                              LocalTimer = 10;
+ 897   3                              i = 0x80 + (2-m)*0x08;
+ 898   3                              WriteIIC563(0x0f8,i);
+ 899   3                              while((ReadIIC563(0x0f8) & BIT_7) && LocalTimer != 0)
+ 900   3                                      {
+ 901   4                                      if(Abort)
+ 902   4                                              return;
+ 903   4                                      }
+ 904   3                              if(LocalTimer == 0){
+ 905   4                                      Abort = 1;
+ 906   4                                      return;
+ 907   4                              }
+ 908   3                              j = 0;
+ 909   3                              Temp = 0;
+ 910   3                              for(i=0; i<8; i++)
+ 911   3                                      {
+ 912   4                                      WriteIIC563(0x0f9,i);
+ 913   4                                      value = ReadIIC563(0x0fd);
+ 914   4                                      PhaseResult = value;
+ 915   4                                      PhaseResult <<= 8;
+ 916   4                                      value = ReadIIC563(0x0fc);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 16  
+
+ 917   4                                      PhaseResult += value;
+ 918   4                                      PhaseResult <<= 8;
+ 919   4                                      value = ReadIIC563(0x0fb);
+ 920   4                                      PhaseResult += value;
+ 921   4                                      #if PRINT_MESSAGE
+ 922   4                                              //printf("PhaseResult %x = %x %x\n",(unsigned short)m,(unsigned short)n,(unsigned short)(PhaseResult>
+             ->8));
+ 923   4                                              printf("PhaseResult %x = %x %x %x\n",(unsigned short)m,(unsigned short)n,(unsigned short)(PhaseResult
+             - >> 16),(unsigned short)PhaseResult);
+ 924   4                                      #endif
+ 925   4                                      if(PhaseResult > Temp)
+ 926   4                                              {
+ 927   5                                              Temp = PhaseResult;
+ 928   5                                              j = i;
+ 929   5                                              }
+ 930   4                                      }
+ 931   3                              if(j == 0)
+ 932   3                                      break;
+ 933   3                              }
+ 934   2                      l = 0x003 + 3*m;
+ 935   2                      if(SCRev <= 2)  //Jacky 20041216 rev3
+ 936   2                      {
+ 937   3                              if(n%2)
+ 938   3                                      j = (k+n/2)+0x80;
+ 939   3                              else
+ 940   3                                      j = k+n/2;
+ 941   3                      }
+ 942   2                      else
+ 943   2                              j = 2*k+n;      // Jacky 20041210
+ 944   2                      //j = k+n+OffSet2;
+ 945   2                      WriteIIC563(l,j);
+ 946   2                      #if PRINT_MESSAGE
+ 947   2                              printf("Offset %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+ 948   2                      #endif
+ 949   2                      }
+ 950   1              Temp = ReadIIC563(0x003);
+ 951   1              if(SCRev <= 2)  //Jacky 20041216
+ 952   1                      FuncBuf[pROFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+ 953   1              else
+ 954   1                      FuncBuf[pROFFSET] = Temp;
+ 955   1              Write24C16(ep_ADC_R_Offset,FuncBuf[pROFFSET]);
+ 956   1      //      printf("R offset=%x\r\n",(unsigned short)FuncBuf[pROFFSET]);
+ 957   1              Temp = ReadIIC563(0x006);
+ 958   1              if(SCRev <= 2)  //Jacky 20041216
+ 959   1                      FuncBuf[pGOFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+ 960   1              else
+ 961   1                      FuncBuf[pGOFFSET] = Temp;
+ 962   1              Write24C16(ep_ADC_G_Offset,FuncBuf[pGOFFSET]);
+ 963   1      //      printf("G offset=%x\r\n",(unsigned short)FuncBuf[pGOFFSET]);
+ 964   1              Temp = ReadIIC563(0x009);
+ 965   1              if(SCRev <= 2)  //Jacky 20041216
+ 966   1                      FuncBuf[pBOFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+ 967   1              else
+ 968   1                      FuncBuf[pBOFFSET] = Temp;
+ 969   1              Write24C16(ep_ADC_B_Offset,FuncBuf[pBOFFSET]);
+ 970   1      //      printf("B offset=%x\r\n",(unsigned short)FuncBuf[pBOFFSET]);
+ 971   1      
+ 972   1      //      FuncBuf[pROFFSET] = ReadIIC563(0x003);
+ 973   1      //      Write24C16(ep_ADC_R_Offset,FuncBuf[pROFFSET]);
+ 974   1      //      FuncBuf[pGOFFSET] = ReadIIC563(0x006);
+ 975   1      //      Write24C16(ep_ADC_G_Offset,FuncBuf[pGOFFSET]);
+ 976   1      //      FuncBuf[pBOFFSET] = ReadIIC563(0x009);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 17  
+
+ 977   1      //      Write24C16(ep_ADC_B_Offset,FuncBuf[pBOFFSET]);
+ 978   1      //      WriteIIC563(0x003,Read24C16(ep_ADC_R_Offset));
+ 979   1      //      WriteIIC563(0x006,Read24C16(ep_ADC_G_Offset));
+ 980   1      //      WriteIIC563(0x009,Read24C16(ep_ADC_B_Offset));
+ 981   1      }
+ 982          
+ 983          void SetADC_Gain(unsigned char OffSet)
+ 984          {
+ 985   1      unsigned short l;
+ 986   1      unsigned char i,j,k,m,n,value;
+ 987   1      unsigned long PhaseResult,Temp;
+ 988   1              WriteIIC563(0x0f8,0x00);
+ 989   1              WriteIIC563(0x0fa,0xf8);
+ 990   1              for(m=0; m<3; m++)
+ 991   1              {
+ 992   2                      for(k=OffSet; k>7; k=k-8)
+ 993   2                      {
+ 994   3                              l = 0x001 + m * 3;
+ 995   3                              WriteIIC563(l,k);
+ 996   3                              WriteIIC563(0x0f8,0x00);
+ 997   3                              WaitSetup(2);
+ 998   3                              //Sleep(5);
+ 999   3                              LocalTimer = 10;
+1000   3                              i = 0x80 + (2-m)*0x08;
+1001   3                              WriteIIC563(0x0f8,i);
+1002   3                              while((ReadIIC563(0x0f8) & BIT_7) && LocalTimer != 0)
+1003   3                              {
+1004   4                                      if(Abort)
+1005   4                                              return;
+1006   4                              }
+1007   3                              if(LocalTimer == 0){
+1008   4                                      Abort = 1;
+1009   4                                      return;
+1010   4                              }
+1011   3                              j = 0;
+1012   3                              Temp = 0;
+1013   3                              for(i=0; i<8; i++)
+1014   3                                      {
+1015   4                                      WriteIIC563(0x0f9,i);
+1016   4                                      value = ReadIIC563(0x0fd);
+1017   4                                      PhaseResult = value;
+1018   4                                      PhaseResult <<= 8;
+1019   4                                      value = ReadIIC563(0x0fc);
+1020   4                                      PhaseResult += value;
+1021   4                                      PhaseResult <<= 8;
+1022   4                                      value = ReadIIC563(0x0fb);
+1023   4                                      PhaseResult += value;
+1024   4                                      #if PRINT_MESSAGE
+1025   4                                              printf("PhaseResult %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)(PhaseResult>>8
+             -));
+1026   4                                      #endif
+1027   4                                      if(PhaseResult > Temp)
+1028   4                                              {
+1029   5                                              Temp = PhaseResult;
+1030   5                                              j = i;
+1031   5                                              }
+1032   4                                      }
+1033   3                              if(Temp > 0x300)
+1034   3                                      {
+1035   4                                      i = 0x01 + m * 3;
+1036   4                                      j = k+j;
+1037   4      //                              WriteIIC563(i,j);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 18  
+
+1038   4                                      #if PRINT_MESSAGE
+1039   4                                              printf("Gain %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+1040   4                                      #endif
+1041   4                                      break;
+1042   4                              }
+1043   3                      }
+1044   2                      if(k == 0){
+1045   3                              LoadADC_Gain();
+1046   3                              return;
+1047   3                      }
+1048   2                      for(n=0; n<16; n++)
+1049   2                              {
+1050   3                              WriteIIC563(0x0f8,0x00);
+1051   3                              l = 0x001 + m * 3;
+1052   3                              WriteIIC563(l,k-n);
+1053   3                              WaitSetup(2);
+1054   3                              //Sleep(5);
+1055   3                              LocalTimer = 10;
+1056   3                              i = 0x80 + (2-m)*0x08;
+1057   3                              WriteIIC563(0x0f8,i);
+1058   3                              while((ReadIIC563(0x0f8) & BIT_7) && LocalTimer != 0){
+1059   4                                      if(Abort)
+1060   4                                              return;
+1061   4                              }
+1062   3                              if(LocalTimer == 0){
+1063   4                                      Abort = 1;
+1064   4                                      return;
+1065   4                              }
+1066   3                              j = 0;
+1067   3                              Temp = 0;
+1068   3                              for(i=0; i<8; i++)
+1069   3                                      {
+1070   4                                      WriteIIC563(0x0f9,i);
+1071   4                                      value = ReadIIC563(0x0fd);
+1072   4                                      PhaseResult = value;
+1073   4                                      PhaseResult <<= 8;
+1074   4                                      value = ReadIIC563(0x0fc);
+1075   4                                      PhaseResult += value;
+1076   4                                      PhaseResult <<= 8;
+1077   4                                      value = ReadIIC563(0x0fb);
+1078   4                                      PhaseResult += value;
+1079   4                                      #if PRINT_MESSAGE
+1080   4                                              printf("PhaseResult %x = %x %x\n",(unsigned short)m,(unsigned short)n,(unsigned short)(PhaseResult>>8
+             -));
+1081   4                                      #endif
+1082   4                                      if(PhaseResult > Temp)
+1083   4                                              {
+1084   5                                              Temp = PhaseResult;
+1085   5                                              j = i;
+1086   5                                              }
+1087   4                                      }
+1088   3                              if(j == 7)
+1089   3                                      break;
+1090   3                              }               
+1091   2                      l = 0x001 + m * 3;
+1092   2                      j = k-n+5;
+1093   2                      WriteIIC563(l,j);
+1094   2                      #if PRINT_MESSAGE
+1095   2                              printf("Gain %x = %x %x\n",(unsigned short)m,(unsigned short)k,(unsigned short)j);
+1096   2                      #endif
+1097   2                      }
+1098   1              FuncBuf[pRADC] = ReadIIC563(0x001);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 19  
+
+1099   1              Write24C16(ep_ADC_R_Gain,FuncBuf[pRADC]);
+1100   1      //      printf("R gain=%x\r\n",(unsigned short)FuncBuf[pRADC]);
+1101   1              FuncBuf[pGADC] = ReadIIC563(0x004);
+1102   1              Write24C16(ep_ADC_G_Gain,FuncBuf[pGADC]);
+1103   1      //      printf("G gain=%x\r\n",(unsigned short)FuncBuf[pGADC]);
+1104   1              FuncBuf[pBADC] = ReadIIC563(0x007);
+1105   1              Write24C16(ep_ADC_B_Gain,FuncBuf[pBADC]);
+1106   1      //      printf("B gain=%x\r\n",(unsigned short)FuncBuf[pGADC]);
+1107   1      }
+1108          
+1109          void AutoColor(void)
+1110          {
+1111   1      
+1112   1      xdata unsigned char r1,g1,b1,m,r2,g2,b2,temp;
+1113   1              Abort = 0;
+1114   1              WriteWordIIC563(0x034,FuncBuf[pHPOSITION] - 20);
+1115   1              SetADC_Offset(0x20);
+1116   1              m = 0xff;
+1117   1              if(SCRev <= 2)  //Jacky 20041216
+1118   1              {
+1119   2                      r1 = ReadIIC563(0x003);
+1120   2                      if(m > r1)
+1121   2                              m = r1;
+1122   2                      g1 = ReadIIC563(0x006);
+1123   2                      if(m > g1)
+1124   2                              m = g1;
+1125   2                      b1 = ReadIIC563(0x009);
+1126   2                      if(m > b1)
+1127   2                              m = b1;
+1128   2              }
+1129   1              else
+1130   1              {
+1131   2                      temp = ReadIIC563(0x003);
+1132   2                      if(SCRev <= 2)  //Jacky 20041216
+1133   2                              r1 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1134   2                      else
+1135   2                              r1 = temp;
+1136   2                      if(m > r1)
+1137   2                              m = r1;
+1138   2                      temp = ReadIIC563(0x006);
+1139   2                      if(SCRev <= 2)  //Jacky 20041216
+1140   2                              g1 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1141   2                      else
+1142   2                              g1 = temp;
+1143   2                      if(m > g1)
+1144   2                              m = g1;
+1145   2                      temp = ReadIIC563(0x009);
+1146   2                      if(SCRev <= 2)  //Jacky 20041216
+1147   2                              b1 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1148   2                      else
+1149   2                              b1 = temp;
+1150   2                      if(m > b1)
+1151   2                              m = b1;
+1152   2              }
+1153   1              WriteIIC563(0x034,FuncBuf[pHPOSITION]);
+1154   1              SetADC_Gain(0x80);
+1155   1              if(m > 0)
+1156   1                      m = ((m / 8) - 1) * 8 / 2;
+1157   1              WriteWordIIC563(0x034,FuncBuf[pHPOSITION] - 20);
+1158   1              SetADC_Offset(m);
+1159   1              temp = ReadIIC563(0x003);
+1160   1              if(SCRev <= 2)  //Jacky 20041216
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 20  
+
+1161   1                      r2 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1162   1              else
+1163   1                      r2 = temp;
+1164   1              temp = ReadIIC563(0x006);
+1165   1              if(SCRev <= 2)  //Jacky 20041216
+1166   1                      g2 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1167   1              else
+1168   1                      g2 = temp;
+1169   1              temp = ReadIIC563(0x009);
+1170   1              if(SCRev <= 2)  //Jacky 20041216
+1171   1                      b2 = (temp & 0x7F) * 2 + ((temp & 0x80) ? 1:0);
+1172   1              else
+1173   1                      b2 = temp;
+1174   1              WriteWordIIC563(0x034,FuncBuf[pHPOSITION]);
+1175   1      #if 1
+1176   1              if(r1 > r2){
+1177   2                      r1 = r1 - r2;
+1178   2              }
+1179   1              else{
+1180   2                      r1 = r2 - r1;
+1181   2              }
+1182   1              if(g1 > g2){
+1183   2                      g1 = g1 - g2;
+1184   2              }
+1185   1              else{
+1186   2                      g1 = g2 - g1;
+1187   2              }
+1188   1              if(b1 > b2){
+1189   2                      b1 = b1 - b2;
+1190   2              }
+1191   1              else{
+1192   2                      b1 = b2 - b1;
+1193   2              }
+1194   1              if((r1 > 2) || (g1 > 2) || (b1 > 2))
+1195   1                      SetADC_Gain(0x80);
+1196   1      #else
+                      if((r1 != r2) || (g1 != g2) || (b1 != b2))
+                              SetADC_Gain(0xa0);
+              #endif
+1200   1      
+1201   1      /*
+1202   1              Abort = 0;
+1203   1              WriteWordIIC563(0x034,FuncBuf[pHPOSITION] - 20);
+1204   1              SetADC_Offset(0);
+1205   1              WriteWordIIC563(0x034,FuncBuf[pHPOSITION]);
+1206   1              SetADC_Gain(0);
+1207   1              if(Abort)
+1208   1                      LoadADC_Gain();
+1209   1      */
+1210   1      }
+1211          #else
+              void SetADC_Offset(unsigned char OffSet2)
+              {
+                      unsigned char i,value,rgb[3],Temp;
+                      unsigned short k;
+                      WriteIIC563(0x001,0xff);
+                      WriteIIC563(0x004,0xff);
+                      WriteIIC563(0x007,0xff);
+                      rgb[0] = Read24C16(ep_ADC_R_Offset);
+                      if((rgb[0] > 0xff)||(rgb[0] == 0))
+                              rgb[0] = 0x40;
+                      rgb[1] = Read24C16(ep_ADC_G_Offset);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 21  
+
+                      if((rgb[1] > 0xff)||(rgb[1] == 0))
+                              rgb[1] = 0x40;
+                      rgb[2] = Read24C16(ep_ADC_B_Offset);
+                      if((rgb[2] > 0xff)||(rgb[2] == 0))
+                              rgb[2] = 0x40;
+                      WriteADC_Offset(rgb[0],rgb[1],rgb[2]);
+              
+                      for(k=0; k<256; k++){
+                              if(OffSet2 != 0)
+                                      WriteIIC563(0x106,0x2a);
+                              else
+                                      WriteIIC563(0x106,0x2e);
+                              LocalTimer = 10;
+                              while((ReadIIC563(0x106) & BIT_1) && LocalTimer != 0)
+                              {
+                                      CheckModeChange();
+                                      if(Abort)
+                                              return;
+                              }
+                              i = 0;
+                              value = ReadIIC563(0x113);
+              //              printf("%d r = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value > 2) && (rgb[0] > 0)){
+                                      rgb[0]++;
+                                      i = 0xff;
+                              }
+                              if((value == 0) && (rgb[0] < 0xff)){
+                                      rgb[0]--;
+                                      i = 0xff;
+                              }
+                              value = ReadIIC563(0x114);
+              //              printf("%d g = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value > 2) && (rgb[1] > 0)){
+                                      rgb[1]++;
+                                      i = 0xff;
+                              }
+                              if((value == 0) && (rgb[1] < 0xff)){
+                                      rgb[1]--;
+                                      i = 0xff;
+                              }
+                              value = ReadIIC563(0x115);
+              //              printf("%d b = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value > 2) && (rgb[2] > 0)){
+                                      rgb[2]++;
+                                      i = 0xff;
+                              }
+                              if((value == 0) && (rgb[2] < 0xff)){
+                                      rgb[2]--;
+                                      i = 0xff;
+                              }
+                              if(i == 0){
+                                      if(OffSet2 != 0){
+                                              rgb[0] = rgb[0] - OffSet2;
+                                              rgb[1] = rgb[1] - OffSet2;
+                                              rgb[2] = rgb[2] - OffSet2;
+                                              WriteADC_Offset(rgb[0],rgb[1],rgb[2]);
+                                      }
+                                      Write24C16(ep_ADC_R_Offset,rgb[0]);
+                                      Write24C16(ep_ADC_G_Offset,rgb[1]);
+                                      Write24C16(ep_ADC_B_Offset,rgb[2]);
+                                      #if PRINT_MESSAGE
+                                      printf("RGB %x;%x;%x\r\n",(unsigned short)rgb[0],(unsigned short)rgb[1],(unsigned short)rgb[2]);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 22  
+
+                                      #endif
+                                      break;
+                              }
+                              else{
+                                      WriteADC_Offset(rgb[0],rgb[1],rgb[2]);
+                                      WaitSetup(4);
+                              }
+                      }
+                      Temp = ReadIIC563(0x003);
+                      if(SCRev <= 2)  //Jacky 20041216
+                              FuncBuf[pROFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+                      else
+                              FuncBuf[pROFFSET] = Temp;
+                      Write24C16(ep_ADC_R_Offset,FuncBuf[pROFFSET]);
+              //      printf("R offset=%x\r\n",(unsigned short)FuncBuf[pROFFSET]);
+                      Temp = ReadIIC563(0x006);
+                      if(SCRev <= 2)  //Jacky 20041216
+                              FuncBuf[pGOFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+                      else
+                              FuncBuf[pGOFFSET] = Temp;
+                      Write24C16(ep_ADC_G_Offset,FuncBuf[pGOFFSET]);
+              //      printf("G offset=%x\r\n",(unsigned short)FuncBuf[pGOFFSET]);
+                      Temp = ReadIIC563(0x009);
+                      if(SCRev <= 2)  //Jacky 20041216
+                              FuncBuf[pBOFFSET] = (Temp & 0x7F) * 2 + ((Temp & 0x80) ? 1:0);
+                      else
+                              FuncBuf[pBOFFSET] = Temp;
+                      Write24C16(ep_ADC_B_Offset,FuncBuf[pBOFFSET]);
+              //      printf("B offset=%x\r\n",(unsigned short)FuncBuf[pBOFFSET]);
+              }
+              
+              void WriteADC_Offset(unsigned char r,unsigned char g,unsigned char b)
+              {
+                      if(SCRev <= 2)  //Jacky 20041216
+                      {
+                              if(r%2)
+                                      r = r/2+0x80;
+                              else
+                                      r = r/2;
+                      }
+                      WriteIIC563(0x003,r);
+                      if(SCRev <= 2)  //Jacky 20041216
+                      {
+                              if(g%2)
+                                      g = g/2+0x80;
+                              else
+                                      g = g/2;
+                      }
+                      WriteIIC563(0x006,g);
+                      if(SCRev <= 2)  //Jacky 20041216
+                      {
+                              if(b%2)
+                                      b = b/2+0x80;
+                              else
+                                      b = b/2;
+                      }
+                      WriteIIC563(0x009,b);
+              }
+              
+              void SetADC_Gain(void)
+              {
+                      unsigned char i,value;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 23  
+
+                      unsigned short k,rgb[3];
+                      rgb[0] = Read24C16(ep_ADC_R_Gain);
+                      rgb[1] = Read24C16(ep_ADC_G_Gain);
+                      rgb[2] = Read24C16(ep_ADC_B_Gain);
+                      if(rgb[0] > 0x100)
+                              rgb[0] = 0x80;
+                      WriteIIC563(0x001,rgb[0]);
+                      if(rgb[1] > 0x100)
+                              rgb[1] = 0x80;
+                      WriteIIC563(0x004,rgb[1]);
+                      if(rgb[2] > 0x100)
+                              rgb[2] = 0x80;
+                      WriteIIC563(0x007,rgb[2]);
+              
+                      for(k=0; k<256; k++){
+                              LocalTimer = 10;
+                              WriteIIC563(0x106,0x2e);
+                              while((ReadIIC563(0x106) & BIT_1) && LocalTimer != 0)
+                              {
+                                      CheckModeChange();
+                                      if(Abort)
+                                              return;
+                              }
+                              i = 0;
+              //              value = ReadIIC(NT68520_Addr,0x2b);
+                              value = ReadIIC563(0x113);
+              //              printf("%d r = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value == 0xff) && (rgb[0] > 0)){
+                                      rgb[0]++;
+                                      i = 0xff;
+                              }
+                              if((value < 0xfd) && (rgb[0] < 0xff)){
+                                      rgb[0]--;
+                                      i = 0xff;
+                              }
+              //              value = ReadIIC(NT68520_Addr,0x2c);
+                              value = ReadIIC563(0x114);
+              //              printf("%d g = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value == 0xff) && (rgb[1] > 0)){
+                                      rgb[1]++;
+                                      i = 0xff;
+                              }
+                              if((value < 0xfd) && (rgb[1] < 0xff)){
+                                      rgb[1]--;
+                                      i = 0xff;
+                              }
+              //              value = ReadIIC(NT68520_Addr,0x2d);
+                              value = ReadIIC563(0x115);
+              //              printf("%d b = %x\r\n",(unsigned short)k,(unsigned short)value);
+                              if((value == 0xff) && (rgb[2] > 0)){
+                                      rgb[2]++;
+                                      i = 0xff;
+                              }
+                              if((value < 0xfd) && (rgb[2] < 0xff)){
+                                      rgb[2]--;
+                                      i = 0xff;
+                              }
+                              if(i == 0){
+              //                      rgb[0] = rgb[0] + 1;
+              //                      rgb[1] = rgb[1] + 1;
+              //                      rgb[2] = rgb[2] + 1;
+              //                      WriteIIC(NT68520_Addr,0x02,rgb[0]);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 24  
+
+              //                      WriteIIC(NT68520_Addr,0x04,rgb[1]);
+              //                      WriteIIC(NT68520_Addr,0x06,rgb[2]);
+                                      Write24C16(ep_ADC_R_Gain,rgb[0]);
+                                      Write24C16(ep_ADC_G_Gain,rgb[1]);
+                                      Write24C16(ep_ADC_B_Gain,rgb[2]);
+              //                      printf("RGB %x;%x;%x\r\n",(unsigned short)rgb[0],(unsigned short)rgb[1],(unsigned short)rgb[2]);
+                                      break;
+                              }
+                              else{
+                                      WriteIIC563(0x001,rgb[0]);
+                                      WriteIIC563(0x004,rgb[1]);
+                                      WriteIIC563(0x007,rgb[2]);
+                                      WaitSetup(4);
+                              }
+                      }
+                      FuncBuf[pRADC] = ReadIIC563(0x001);
+                      Write24C16(ep_ADC_R_Gain,FuncBuf[pRADC]);
+              //      printf("R gain=%x\r\n",(unsigned short)FuncBuf[pRADC]);
+                      FuncBuf[pGADC] = ReadIIC563(0x004);
+                      Write24C16(ep_ADC_G_Gain,FuncBuf[pGADC]);
+              //      printf("G gain=%x\r\n",(unsigned short)FuncBuf[pGADC]);
+                      FuncBuf[pBADC] = ReadIIC563(0x007);
+                      Write24C16(ep_ADC_B_Gain,FuncBuf[pBADC]);
+              //      printf("B gain=%x\r\n",(unsigned short)FuncBuf[pBADC]);
+              }
+              /*
+              void AutoColor(void)
+              {
+                      //WriteIIC563(0x02A,0);  // AutoPosition Pixel mask -> H
+                      //WriteIIC563(0x02B,24);  // AutoPosition Pixel mask -> H
+                      //WriteIIC563(0x02C,0x00);  // AutoPosition Pixel mask -> H
+                      //WriteIIC563(0x02D,0x00);  // AutoPosition Pixel mask -> H
+                      //WriteIIC563(0x107,0x30);  // Red Noise Margin
+                      //WriteIIC563(0x106,0x00);
+                      WriteWordIIC563(0x034,FuncBuf[pHPOSITION] - 10);
+                      SetADC_Offset(2);
+                      SetADC_Gain();
+                      WriteWordIIC563(0x034,FuncBuf[pHPOSITION]);
+              }
+              
+              */
+              
+              #endif
+1452          //////////////////////////////////////////////////////////////////////////////
+1453          
+1454          void CheckRCV(void)
+1455          {
+1456   1      unsigned char i;
+1457   1              if(RI == 1){
+1458   2                      i = SBUF;
+1459   2              //      printf("Recieved data\n");
+1460   2                      RI = 0;
+1461   2                      CheckCmd(i);
+1462   2              }
+1463   1      }
+1464          
+1465          void CheckCmd(unsigned char i)
+1466          {
+1467   1              while(TI == 0){}
+1468   1              SBUF = i;
+1469   1              TI = 0;
+1470   1              if(i == 13){            //command over
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 25  
+
+1471   2                      while(TI == 0){}
+1472   2      //              printf("\n");
+1473   2                      switch(rwbuf){
+1474   3                      case 0x00:
+1475   3      //                      printf("\r\n");
+1476   3      //                      printf("W0 aaaa dd : Write 24C16\r\n");
+1477   3      //                      printf("R0 aaaa    : Read  24C16\r\n");
+1478   3      //                      printf("W1 aaaa dd : Write Scaler\r\n");
+1479   3      //                      printf("R1 aaaa    : Read  Scaler\r\n");
+1480   3      //                      printf("W2 aaaa dd : Write rgbGain\r\n");
+1481   3      //                      printf("R2 aaaa    : Read  rgbGain\r\n");
+1482   3      //                      printf("W3 aaaa dd :Z86229 0x%x \r\n");
+1483   3      //                      printf("R3 aaaa    : Read  TW9908\r\n");
+1484   3      //                      printf("R4 0       : Auto Black Level\r\n");
+1485   3      //                      printf("R4 1       : Auto White Level\r\n");
+1486   3      //                      printf("R4 2       : Auto Color\r\n");
+1487   3      //                      printf("R4 3       : Set 6500K\r\n");
+1488   3      //                      printf("R4 4       : Set 7500K\r\n");
+1489   3      //                      printf("R4 5       : Set 9300K\r\n");
+1490   3      //                      printf("R4 6       : Resive\r\n");
+1491   3      //                      printf("R4 7       : DDC Write Enable\r\n");
+1492   3                      //      printf("R4 8       : Disable Report Status\r\n");
+1493   3                      //      printf("R4 9       : Enable Report Status\r\n");
+1494   3      //                      printf("R4 a       : Enable CheckVideo\r\n");
+1495   3      //                      printf("R4 b       : Disable CheckVideo\r\n");
+1496   3                      //      printf("W4 0 dd    : Set IIC BaudRate\r\n");
+1497   3      //                      printf("   aaaa    : 16/8  bit Address\r\n");
+1498   3      //                      printf("   dd      : 8     bit Data\r\n");
+1499   3      //                      printf("Enter Key  : For help!\r\n");
+1500   3                              break;
+1501   3                      case 0xe0:
+1502   3                              Write24C16(abuf,dbuf);
+1503   3      //                      printf("EEPROM: 0x%x = 0x%x\r\n",abuf,(unsigned short)dbuf);
+1504   3                              break;
+1505   3                      case 0xc1:
+1506   3                              dbuf = Read24C16(abuf);
+1507   3      //                      printf("EEPROM: 0x%x = 0x%x\r\n",abuf,(unsigned short)dbuf);
+1508   3                              break;
+1509   3                      case 0xe2:
+1510   3                              abuf &= 0x1ff;
+1511   3                              WriteIIC563((unsigned short)abuf,dbuf);
+1512   3      //                      printf("Scaler: 0x%x = 0x%x\r\n",(unsigned short)abuf,(unsigned short)dbuf);
+1513   3                              break;
+1514   3                      case 0xc3:
+1515   3                              abuf &= 0x1ff;
+1516   3                              dbuf = ReadIIC563((unsigned short)abuf);
+1517   3      //                      printf("Scaler: 0x%x = 0x%x\r\n",(unsigned short)abuf,(unsigned short)dbuf);
+1518   3                              break;
+1519   3                      case 0xe4:
+1520   3                              abuf &= 0x03;
+1521   3                              switch(abuf){
+1522   4                              case 0:
+1523   4                                      FuncBuf[pRCOLOR] = dbuf;
+1524   4                                      break;
+1525   4                              case 1:
+1526   4                                      FuncBuf[pGCOLOR] = dbuf;
+1527   4                                      break;
+1528   4                              case 2:
+1529   4                                      FuncBuf[pBCOLOR] = dbuf;
+1530   4                                      break;
+1531   4                              }
+1532   3      //                      printf("rgbGain : %x = %x\r\n",(unsigned short)abuf,(unsigned short)dbuf);
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 26  
+
+1533   3      //                      SetContrast();
+1534   3                      //      sRGB(FuncBuf[pCONTRAST],FuncBuf[pRCOLOR],FuncBuf[pGCOLOR],FuncBuf[pBCOLOR]);
+1535   3                              CmdTxBuffer[0] = 0x5a;
+1536   3                              break;
+1537   3                      case 0xc5:
+1538   3                              abuf &= 0x03;
+1539   3                              switch(abuf){
+1540   4                              case 0:
+1541   4                                      dbuf=FuncBuf[pRCOLOR];
+1542   4                              //dbuf = R_Gain;
+1543   4                                      break;
+1544   4                              case 1:
+1545   4                                      dbuf = FuncBuf[pGCOLOR];
+1546   4                              //      dbuf = G_Gain;
+1547   4                                      break;
+1548   4                              case 2:
+1549   4                                      dbuf = FuncBuf[pBCOLOR];
+1550   4                              //      dbuf = B_Gain;
+1551   4                                      break;
+1552   4                              }
+1553   3      //                      printf("rgbGain : %x = %x\r\n",(unsigned short)abuf,(unsigned short)dbuf);
+1554   3                              break;
+1555   3                      case 0xe6:
+1556   3                              abuf &= 0x0ff;
+1557   3                              WriteIIC(TW990x_Addr,(unsigned char)abuf,dbuf);
+1558   3      //                      printf("SAA7114: 0x%x = 0x%x\r\n",abuf,(unsigned short)dbuf);
+1559   3      //                      SetCaptionTextDispMode((unsigned char)abuf);
+1560   3      //                      printf("Z86229 0x%x \r\n",abuf);
+1561   3                              break;
+1562   3                      case 0xc7:
+1563   3                              abuf &= 0x0ff;
+1564   3      //                      dbuf = ReadIIC_HW(SAA7114,(unsigned char)abuf);
+1565   3      //                      SetCaptionTextDispMode((unsigned char)abuf);
+1566   3      //                      printf("Z86229 0x%x \r\n",abuf);
+1567   3                              dbuf = ReadIIC(TW990x_Addr,(unsigned char)abuf);
+1568   3      //                      printf("TW9908: 0x%x = 0x%x\r\n",abuf,(unsigned short)dbuf);
+1569   3                              break;
+1570   3                      case 0xc9:
+1571   3                              abuf &= 0x0ff;
+1572   3                              switch(abuf){
+1573   4                              case 0:
+1574   4      //                              flag3 &= ~BIT_0;        //burn in mode off
+1575   4      //                              flag3 &= ~BIT_2;        //disable report
+1576   4      //                              Brightness = 50;
+1577   4      //                              SetBrightness();
+1578   4      //                              Contrast = 50;
+1579   4      //                              sRGB();
+1580   4                                      SetADC_Offset(0x00);
+1581   4      //                              printf("Set Dark OK!\r\n");
+1582   4                                      CmdTxBuffer[0] = 0x5a;
+1583   4                                      break;
+1584   4                              case 1:         //white
+1585   4                                      SetADC_Gain(0xf8);
+1586   4      //                              printf("Set white OK!\r\n");
+1587   4                                      CmdTxBuffer[0] = 0x5a;
+1588   4                                      break;
+1589   4                              case 2:         //Auto Color
+1590   4                                      AutoColor();
+1591   4      //                              printf("Set Auto Color OK!\r\n");
+1592   4                                      CmdTxBuffer[0] = 0x5a;
+1593   4                                      break;
+1594   4                              case 3:         // user and 6500K
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 27  
+
+1595   4                                      Write24C16(ep_Color4_R,FuncBuf[pRCOLOR]);       //user
+1596   4                                      Write24C16(ep_Color4_G,FuncBuf[pGCOLOR]);
+1597   4                                      Write24C16(ep_Color4_B,FuncBuf[pBCOLOR]);
+1598   4      //                              printf("Write USER\r\n");
+1599   4                                      Write24C16(ep_Color1_R,FuncBuf[pRCOLOR]);       //6500K
+1600   4                                      Write24C16(ep_Color1_G,FuncBuf[pGCOLOR]);
+1601   4                                      Write24C16(ep_Color1_B,FuncBuf[pGCOLOR]);
+1602   4      //                              printf("Write 6500K\r\n");
+1603   4                                      CmdTxBuffer[0] = 0x5a;
+1604   4                                      break;
+1605   4      //                              Write24C16(0xee,R_Gain);        //user
+1606   4      //                              Write24C16(0xef,G_Gain);
+1607   4      //                              Write24C16(0xf0,B_Gain);
+1608   4      //                              printf("Write USER\r\n");
+1609   4      //                              Write24C16(0xf1,R_Gain);        //6500K
+1610   4      //                              Write24C16(0xf2,G_Gain);
+1611   4      //                              Write24C16(0xf3,B_Gain);
+1612   4      //                              printf("Write 6500K\r\n");
+1613   4      //                              CmdTxBuffer[0] = 0x5a;
+1614   4      //                              break;
+1615   4      
+1616   4                              case 4:         //7500K
+1617   4                                      Write24C16(ep_Color2_R,FuncBuf[pRCOLOR]);       //7500K
+1618   4                                      Write24C16(ep_Color2_G,FuncBuf[pGCOLOR]);
+1619   4                                      Write24C16(ep_Color2_B,FuncBuf[pBCOLOR]);
+1620   4      //                              printf("Write 7500K\r\n");
+1621   4                                      CmdTxBuffer[0] = 0x5a;
+1622   4                                      break;
+1623   4                              case 5:         //9300K
+1624   4      //                              Write24C16(0xf7,R_Gain);        //9300K
+1625   4      //                              Write24C16(0xf8,G_Gain);
+1626   4      //                              Write24C16(0xf9,B_Gain);
+1627   4                              //      PowerStatus++;
+1628   4      //                              FuncBuf[pVIDEOSOURCE]++;
+1629   4      //                              SourceSelect();
+1630   4      //                              printf("source change\r\n");
+1631   4                                      CmdTxBuffer[0] = 0x5a;
+1632   4                                      FactMode = 1;
+1633   4                                      
+1634   4                                      break;
+1635   4      //                      case 4:         //7500K
+1636   4      ////                            Write24C16(0xf4,R_Gain);        //7500K
+1637   4      //                              Write24C16(0xf5,G_Gain);
+1638   4      //                              Write24C16(0xf6,B_Gain);
+1639   4      //                              printf("Write 7500K\r\n");
+1640   4      //                              CmdTxBuffer[0] = 0x5a;
+1641   4      //                              break;
+1642   4      //                      case 5:         //9300K
+1643   4      //                              Write24C16(0xf7,R_Gain);        //9300K
+1644   4      //                              Write24C16(0xf8,G_Gain);
+1645   4      //                              Write24C16(0xf9,B_Gain);
+1646   4      //                              PowerStatus++;
+1647   4      //                              SourceSelect();
+1648   4      //                              printf("source change\r\n");
+1649   4      //                              CmdTxBuffer[0] = 0x5a;
+1650   4      //                              break;                  
+1651   4                              case 6:         //Auto adjust
+1652   4      //                              AutoTune();
+1653   4      //                              AutoClockByPhase();
+1654   4      //                              printf("Auto adjust\r\n");
+1655   4                                      ScanChannel();
+1656   4                                      CmdTxBuffer[0] = 0x5a;
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 28  
+
+1657   4                                      break;
+1658   4              //              case 8:
+1659   4              //                      flag3 &= ~BIT_2;                //Disable report
+1660   4              //                      printf("Disable Report Status\r\n");
+1661   4              //                      break;
+1662   4              //              case 9:
+1663   4              //                      flag3 |= BIT_2;         //Set report
+1664   4              //                      printf("Report Status\r\n");
+1665   4              //                      break;
+1666   4                              case 0x0a:
+1667   4                                      VideoTest = 1;
+1668   4      //                              printf("Set Video test= 1\r\n");
+1669   4                                      break;
+1670   4                              case 0x0b:              
+1671   4                                      VideoTest = 0;
+1672   4      //                              printf("Set Video test= 0\r\n");
+1673   4                                      break;                  
+1674   4                              }
+1675   3                              break;
+1676   3              //      case 0xe8:              //Set IIC Baudrate
+1677   3              //              dbuf &= 0x03;
+1678   3              //              dbuf <<= 2;
+1679   3              //              IIC_BaudRate = dbuf;
+1680   3              //              printf("Set IIC Baudrate: %x\r\n",(unsigned short)dbuf);
+1681   3              //              break;
+1682   3                      default:
+1683   3                              RcvError();
+1684   3                              return;
+1685   3                              break;
+1686   3                      }
+1687   2                      rwbuf = 0;
+1688   2                      abuf = 0;
+1689   2                      dbuf = 0;
+1690   2      //              printf("OK\r\n");
+1691   2                      return;
+1692   2              }
+1693   1              if((rwbuf & 0x80) == 0){        //function
+1694   2                      switch(i){
+1695   3                      case 0x30:
+1696   3                      case 0x31:
+1697   3                      case 0x32:
+1698   3                      case 0x33:
+1699   3                      case 0x34:
+1700   3                              i = i & 0x0f;
+1701   3                              i = i << 1;
+1702   3                              rwbuf = rwbuf + i;
+1703   3                              rwbuf |= 0x80;
+1704   3                              break;
+1705   3                      case 0x57:              //W
+1706   3                      case 0x77:              //w
+1707   3                              rwbuf &= 0xfe;
+1708   3                              break;
+1709   3                      case 0x52:              //R
+1710   3                      case 0x72:              //r
+1711   3                              rwbuf |= 0x01;
+1712   3                              break;
+1713   3                      default:
+1714   3      //                      printf("\r\n");
+1715   3                              RcvError();
+1716   3                              break;
+1717   3                      }
+1718   2              }
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 29  
+
+1719   1              else{           //address or data
+1720   2                      if(i == 0x20){
+1721   3                              if((rwbuf & 0x40) == 0){
+1722   4                                      rwbuf |= 0x40;
+1723   4                              }
+1724   3                              else{
+1725   4                                      if((rwbuf & 0x20) == 0){
+1726   5                                              rwbuf |= 0x20;
+1727   5                                      }
+1728   4                                      else{
+1729   5                                              RcvError();
+1730   5                                      }
+1731   4                              }
+1732   3                              return;
+1733   3                      }
+1734   2                      if((i > 0x2f)&&(i < 0x3a)){
+1735   3                              i &= 0x0f;
+1736   3                      }
+1737   2                      else{
+1738   3                              if(i > 0x60){
+1739   4                                      i = i - 0x20;
+1740   4                              }
+1741   3                              if(i > 0x40){
+1742   4                                      i = i - 0x07;
+1743   4                              }
+1744   3                              if((i > 0x39)&&(i < 0x40)){
+1745   4                                      i &= 0x0f;
+1746   4                              }
+1747   3                              else{
+1748   4                                      RcvError();
+1749   4                                      return;
+1750   4                              }
+1751   3                      }
+1752   2                      if((rwbuf & 0x60) == 0x40){
+1753   3                              abuf <<= 4;
+1754   3                              abuf += i;
+1755   3                      }
+1756   2                      if((rwbuf & 0x60) == 0x60){
+1757   3                              dbuf <<= 4;
+1758   3                              dbuf += i;
+1759   3                      }
+1760   2              }
+1761   1      }
+1762          
+1763          void RcvError(void)
+1764          {
+1765   1              while(TI == 0){}
+1766   1      //      printf("\nError\r\n");
+1767   1              rwbuf = 0;
+1768   1              abuf = 0;
+1769   1              dbuf = 0;
+1770   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   5842    ----
+   CONSTANT SIZE    =    482    ----
+   XDATA SIZE       =   ----      44
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      77
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       4
+C51 COMPILER V7.03   AUTOADJ                                                               12/21/2006 16:55:06 PAGE 30  
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

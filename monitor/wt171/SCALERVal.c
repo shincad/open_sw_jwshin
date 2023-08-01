@@ -1,0 +1,572 @@
+/****************************************************************************
+   +----------------------------------------------------------------------+
+   | Copyright EDtech co.ltd 2002                                         |
+   | EDtech co.ltd reserves the right to change products                  |
+   | or specifications without notice.                                    |
+   +----------------------------------------------------------------------+
+   Project    : TFT LCD monitor & TV
+   Version    : 
+   File Name  : 
+   Functions  : 
+   Revision   :
+
+   2003-01-10 2:39오후  JDHAN           Modified for Monitor-TV
+****************************************************************************/
+
+#include	"TopHeader.h"
+#include	"VideoParameter.h"
+
+//In scaler_set.c
+#ifdef	USE_4BitInterface								//4bit통신 함수선언
+void WriteReg4bit(BYTE address, BYTE Recdata);
+#define WriteScaler(val1,val2) WriteReg4bit(val1,val2)	
+
+#else													//1bit통신 함수선언
+void WriteReg1bit(BYTE address, BYTE Recdata);
+#define	WriteScaler(val0, val1) WriteReg1bit(val0, val1)
+#endif
+	
+	
+	//{Adr,Dat}
+code BYTE DftScalerVal[][2] =
+{
+	 {0x00,BIN_TO_BYTE(0,0,0,0,1,1,0,0)}
+	,{0x01,BIN_TO_BYTE(0,0,0,0,1,1,0,0)}
+	,{0x0C,0x02}
+	,{0x0D,0x0f}
+	,{0x0E,0x04}							//IHLOCK High
+	,{0x0F,0x02}							//IHLOCK Low
+	,{0x17,0x50}							//DC level!
+	,{0x25,BIN_TO_BYTE(0,0,1,1,1,1,0,0)}
+	,{0x26,BIN_TO_BYTE(0,0,0,0,1,0,0,0)}
+	//,{0x27,BIN_TO_BYTE(0,1,1,0,1,0,1,0)}	//MCLK PLL 준비
+	,{0x27,BIN_TO_BYTE(0,1,0,0,1,0,1,0)}	//MCLK PLL 준비
+	//,{0x28,BIN_TO_BYTE(0,0,0,0,0,0,0,0)}	//DCLK PLL 준비
+	,{0x28,BIN_TO_BYTE(0,0,1,0,0,0,0,0)}	//DCLK PLL 준비	//2003-11-17
+	#ifdef	Board2nd
+	,{0x29,0x07}
+	#else
+	,{0x29,0x05}
+	#endif
+	
+	#if defined(WXGA_Panel)
+	,{0x2a,0x04}//MCLK
+	,{0x2b,0x57}//MCLK
+	,{0x2C,0x4A}//DCLK
+	,{0x2D,0x64}//DCLK
+	#elif defined(SXGA_Panel)
+	,{0x2a,0x04}//MCLK
+	,{0x2b,0x57}//MCLK
+	,{0x2C,0x0A}//DCLK
+	,{0x2D,0x44}//DCLK
+	#elif defined(XGA_Panel)
+	,{0x2a,0x4A}//MCLK
+	,{0x2b,0x4F}//MCLK
+	,{0x2C,0x4A}//DCLK
+	,{0x2D,0x3E}//DCLK
+	#elif defined(SVGA_Panel)
+	,{0x2a,0x4A}//MCLK
+	,{0x2b,0x4F}//MCLK
+	,{0x2C,0x4A}//DCLK
+	,{0x2D,0x3E}//DCLK
+	#else
+	,{0x2a,0x4A}//MCLK
+	,{0x2b,0x4F}//MCLK
+	,{0x2C,0x4A}//DCLK
+	,{0x2D,0x3E}//DCLK
+	#endif
+	
+	#if defined(WXGA_Panel)
+	//,{0x28,BIN_TO_BYTE(0,1,0,0,0,0,0,1)}	//DCLK PLL 시작.
+	,{0x28,BIN_TO_BYTE(0,1,1,0,0,0,0,1)}	//DCLK PLL 시작.
+	#else
+	//,{0x28,BIN_TO_BYTE(0,0,0,0,0,0,0,1)}	//DCLK PLL 시작.
+	,{0x28,BIN_TO_BYTE(0,0,1,0,0,0,0,1)}	//DCLK PLL 시작.
+	#endif
+	
+	//,{0x27,BIN_TO_BYTE(0,1,1,0,1,0,1,1)}	//MCLK PLL 시작.
+	,{0x27,BIN_TO_BYTE(0,1,0,0,1,0,1,1)}	//MCLK PLL 시작.
+	,{0x2F,BIN_TO_BYTE(0,0,0,0,0,0,0,0)}
+	,{0x31,0x00}
+	,{0x32,0x4D}
+	,{0x33,0xA6}
+	,{0x34,0x34}
+	,{0x3C,PanelMinHTotal>>8}
+	,{0x3D,PanelMinHTotal}
+	#if defined(EMH1A)
+	,{0x3E,DFLT_OHSYNCEND}
+	#endif
+	,{0x3F,DFLT_OHACTIVESTART>>8}
+	,{0x40,DFLT_OHACTIVESTART}
+	,{0x41,PanelHerizontalsize>>8}
+	,{0x42,PanelHerizontalsize}
+	,{0x43,PanelMinHTotal>>8}
+	,{0x44,PanelMinHTotal}
+	,{0x45,PanelMinVTotal+1>>8}
+	,{0x46,PanelMinVTotal}
+	#if defined(EMH1A)
+	,{0x47,DFLT_OVSWIDTH>>8}
+	,{0x48,DFLT_OVSWIDTH}
+	#endif
+	,{0x49,DFLT_OVACTIVESTART>>8}
+	,{0x4A,DFLT_OVACTIVESTART}
+	,{0x4B,PanelVerticalsize>>8}
+	,{0x4C,PanelVerticalsize}
+	,{0x4D,PanelMinVTotal>>8}
+	,{0x4E,PanelMinVTotal}
+	,{0x4F,PanelVSHSDisplace}
+	,{0x50,BIN_TO_BYTE(PanelDataSwap,PanelDualData,0,0,0,0,1,1)}
+	#if defined(InternalOSD)||defined(INT_EXTOSD)//Internal&External동시.
+	,{0x51,BIN_TO_BYTE(1,1,0,Panel_8bit_OR_6bit,0,OutputDE_Neg_OR_Pos,OutputHsync_Neg_OR_Pos,OutputVsync_Neg_OR_Pos)}
+	#else
+	//,{0x51,BIN_TO_BYTE(0,1,0,0,0,0,1,1)}
+	,{0x51,BIN_TO_BYTE(0,1,0,Panel_8bit_OR_6bit,0,OutputDE_Neg_OR_Pos,OutputHsync_Neg_OR_Pos,OutputVsync_Neg_OR_Pos)}
+	#endif
+	#if defined(INT_EXTOSD)//for BTC
+	,{0x52,235}	//0xff}	//2003-08-14
+	,{0x53,225}	//0xf0}
+	,{0x54,210}	//0xff}
+	#else
+	,{0x52,0xf0}
+	,{0x53,0xf0}
+	,{0x54,0xf0}
+	#endif
+	#if defined(EMH2)	
+	,{0x59,0x00}
+	,{0x5a,0x10}
+	,{0x5b,0x00}
+	,{0x5c,0x04}
+	#endif
+	,{0x5E,BIN_TO_BYTE(0,0,0,0,0,0,Panel_8bit_OR_6bit,0)}
+	#if defined(EMH1A)	
+	,{0x5F,0x80}
+	,{0x60,0x00}
+	,{0x61,0x00}
+	,{0x62,0x80}
+	,{0x63,0x00}
+	,{0x64,0x00}
+	,{0x65,0x00}
+	,{0x66,0x00}
+	,{0x67,0x00}
+	#elif defined(EMH2)
+	,{0x5F,0x00}
+	,{0x60,0x00}
+	,{0x61,0x00}
+	,{0x62,0x00}
+	,{0x63,0x00}
+	,{0x64,0x00}
+	,{0x65,0x00}
+	,{0x66,0x00}
+	,{0x67,0x00}	
+	#endif
+	,{0x6B,BIN_TO_BYTE(1,0,0,0,0,1,0,0)}
+	#if defined(EMH2)
+	,{0x6C,BIN_TO_BYTE(0,0,0,1,1,1,0,0)}	//BRIGHT ENABLE  YOUNGDO	2003.8.12
+	#endif
+	,{0x71,BIN_TO_BYTE(0,0,0,0,0,0,1,0)}
+	
+	#if defined(EMH1A)	
+	,{0x73,0x00|0x02}
+	//#endif
+	#elif defined(EMH2)
+	#if defined(EdtechTotalDemoBoard_Option)
+	,{0x73,0x10}
+	#elif defined(INT_EXTOSD)
+	,{0x73,0x00}	//IntOsd_Blend (high nibble: 0x0x(100%) 1x(75%) 2x(50%) 3x(25%) )
+	#else
+	,{0x73,0x00}
+	#endif
+	#endif
+		
+	,{0x74,0x01}
+	,{0x75,BIN_TO_BYTE(1,0,0,0,0,0,0,0)}
+	,{0x76,BIN_TO_BYTE(0,0,0,1,1,0,0,0)}
+	,{0x79,BIN_TO_BYTE(0,0,0,0,0,0,1,0)}
+	#if defined(EMH2)
+		#ifdef Memory_1eaUse
+		//,{0x7D,BIN_TO_BYTE(0,0,1,0,0,1,1,0)}	//use 1 field
+		,{0x7D,BIN_TO_BYTE(1,1,0,1,0,1,1,0)}	//use 2 field
+		#else
+		//,{0x7D,BIN_TO_BYTE(0,0,1,0,0,1,1,0)}	//use 1 field
+		,{0x7D,BIN_TO_BYTE(0,0,0,1,0,1,1,0)}	//use 2 field
+		#endif
+	#endif
+	,{0x7E,0x08}
+	,{0xB9,0x01}
+	,{0xBD,0x01}
+	
+	#ifdef Memory_1eaUse
+	,{0x8E,BIN_TO_BYTE(0,0,0,0,1,0,0,0)}
+	#else
+	,{0x8E,BIN_TO_BYTE(0,0,0,0,0,0,0,0)}
+	#endif
+	
+	#if defined(EMH2)
+	,{0x8F,0x05}
+	,{0x90,0x78}
+	,{0x93,BIN_TO_BYTE(1,1,1,0,0,0,0,0)}
+	//,{0x95,0x01}//video<->PC 기능전환후 화면이 크게 떨리는 현상발생.
+	//,{0x96,0xCC}
+	,{0x95,0x00}
+	,{0x96,0x00}
+//	,{0x96,BIN_TO_BYTE(1,1,1,0,0,0,0,0)}
+	#endif	
+	//,{0x9A,BIN_TO_BYTE(1,0,0,0,0,0,0,0)}	
+	,{0x9A,BIN_TO_BYTE(0,0,0,0,0,0,0,0)}	//2003-08-28 8:42오후
+	,{0x9B,0x00}
+	,{0x9C,0x00}
+	,{0x9D,0x00}
+	,{0xA8,BIN_TO_BYTE(0,0,0,1,1,1,0,0)}
+
+	#ifdef	USE_4BitInterface
+	#ifdef	EMH2
+	,{0xA9,BIN_TO_BYTE(1,1,1,1,1,1,0,0)}
+	#else
+	,{0xA9,BIN_TO_BYTE(1,1,0,1,1,1,0,0)}
+	#endif
+	#else
+	#ifdef	EMH2
+//YOUNGDO	,{0xA9,BIN_TO_BYTE(0,1,1,1,1,1,0,0)}
+	,{0xA9,BIN_TO_BYTE(0,0,0,1,1,1,0,0)}
+	#else
+	,{0xA9,BIN_TO_BYTE(0,1,0,1,1,1,0,0)}
+	#endif
+	#endif
+
+	,{0xAA,0x00}
+	,{0xAB,0x80}
+	#if	defined(EMH2)
+	,{0xAC,0x00}
+	#endif
+	//-------------- //2003-08-04 by thkim,	Background default value
+	,{0xb0, DFLT_OHACTIVESTART+20>>8}	//H start
+	,{0xb1,	DFLT_OHACTIVESTART+20}
+	,{0xb2,	PanelHerizontalsize>>8}		//H width
+	,{0xb3, PanelHerizontalsize}
+	,{0xb4,	DFLT_OVACTIVESTART-1>>8}		//V start
+	,{0xb5, DFLT_OVACTIVESTART-1}
+	,{0xb6, PanelVerticalsize>>8}		//V height
+	,{0xb7, PanelVerticalsize}
+	//---------------------------------------------------------------	
+	//,{0xB5,0x04}
+	//,{0xB8,0x00}
+	//,{0xB9,0x01}
+	//,{0xBA,0x07}
+	//,{0xBB,0xFF}
+	//,{0xBC,0x00}
+	//,{0xBD,0x01}
+	//,{0xBE,0x07}
+	//,{0xBF,0xFF}
+	#if defined(EMH2)	
+	,{0xD0,0x00}
+	,{0xD1,0x01}
+	,{0xD2,DFLT_OVSWIDTH>>8}
+	,{0xD3,DFLT_OVSWIDTH}
+	,{0xD4,0x00}
+	,{0xD5,0x01}
+	,{0xD6,DFLT_OHSYNCEND>>8}
+	,{0xD7,DFLT_OHSYNCEND}
+	,{0xD9,0x00}	//FeildToggleLine[10:8]
+	//,{0xDA,0x00}
+	,{0xDA,0x70}	//FeildToggleLine[7:0] : 0x70
+	,{0xEB,0x01}
+	//,{0xEC,0x40}	//
+	,{0xEC,0x42}	//
+	#endif
+};
+
+#ifdef	USE_Coef
+#define	SHARPCOEF
+code DWORD CoefTable[256]=
+{
+#ifdef SHARPCOEF
+//sharpness filter coef data,(must set cubic 1,sign 1,coefsign 9)
+ 0x00800000
+,0x007f0000
+,0x007f0100
+,0xff7f0100
+,0xff7f0200
+,0xfe7f0200
+,0xfe7f0300
+,0xfd7f0300
+,0xfd7f0400
+,0xfc7f0400
+,0xfc7f0500
+,0xfb7f0500
+,0xfb7f0600
+,0xfb7f0600
+,0xfa7f0700
+,0xfa7f0700
+
+,0xf97f0800
+,0xf97e0900
+,0xf97e0900
+,0xf87e0a00
+,0xf87e0a00
+,0xf87e0b00
+,0xf77e0b00
+,0xf77e0c00
+,0xf77d0dff
+,0xf67d0dff
+,0xf67d0eff
+,0xf67d0eff
+,0xf57d0fff
+,0xf57c0fff
+,0xf57c10ff
+,0xf57c11ff
+
+,0xf47c11ff
+,0xf47c12ff
+,0xf47b12ff
+,0xf37b13fe
+,0xf37b14fe
+,0xf37b14fe
+,0xf37a15fe
+,0xf27a16fe
+,0xf27a16fe
+,0xf27917fe
+,0xf27917fe
+,0xf27918fd
+,0xf17919fd
+,0xf17819fd
+,0xf1781afd
+,0xf1781bfd
+
+,0xf1771bfd
+,0xf0771cfd
+,0xf0771cfd
+,0xf0761dfc
+,0xf0761efc
+,0xf0761efc
+,0xf0751ffc
+,0xf07520fc
+,0xef7520fc
+,0xef7421fc
+,0xef7422fb
+,0xef7322fb
+,0xef7323fb
+,0xef7324fb
+,0xef7224fb
+,0xef7225fb
+
+,0xee7226fa
+,0xee7126fa
+,0xee7127fa
+,0xee7027fa
+,0xee7028fa
+,0xee6f29fa
+,0xee6f29fa
+,0xee6f2af9
+,0xee6e2bf9
+,0xee6e2bf9
+,0xee6d2cf9
+,0xee6d2df9
+,0xee6c2df9
+,0xee6c2ef8
+,0xee6b2ff8
+,0xee6b2ff8
+
+,0xee6a30f8
+,0xee6a31f8
+,0xee6931f8
+,0xee6932f7
+,0xee6833f7
+,0xee6833f7
+,0xee6734f7
+,0xee6735f7
+,0xee6635f7
+,0xee6636f6
+,0xee6537f6
+,0xee6537f6
+,0xee6438f6
+,0xee6439f6
+,0xee6339f6
+,0xee633af5
+
+,0xee623bf5
+,0xee623bf5
+,0xee613cf5
+,0xee613df5
+,0xee603df5
+,0xee603ef4
+,0xee5f3ff4
+,0xee5e3ff4
+,0xee5e40f4
+,0xee5d41f4
+,0xee5d41f4
+,0xee5c42f3
+,0xee5c43f3
+,0xef5b43f3
+,0xef5a44f3
+,0xef5a45f3
+
+,0xef5945f3
+,0xef5946f3
+,0xef5847f2
+,0xef5747f2
+,0xef5748f2
+,0xef5649f2
+,0xef5649f2
+,0xef554af2
+,0xf0544af2
+,0xf0544bf1
+,0xf0534cf1
+,0xf0534cf1
+,0xf0524df1
+,0xf0514ef1
+,0xf0514ef1
+,0xf0504ff1
+
+,0xf05050f0
+,0xf14f50f0
+,0xf14e51f0
+,0xf14e51f0
+,0xf14d52f0
+,0xf14c53f0
+,0xf14c53f0
+,0xf14b54f0
+,0xf24a54f0
+,0xf24a55ef
+,0xf24956ef
+,0xf24956ef
+,0xf24857ef
+,0xf24757ef
+,0xf24758ef
+,0xf34659ef
+
+,0xf34559ef
+,0xf3455aef
+,0xf3445aef
+,0xf3435bef
+,0xf3435cee
+,0xf3425cee
+,0xf4415dee
+,0xf4415dee
+,0xf4405eee
+,0xf43f5eee
+,0xf43f5fee
+,0xf43e60ee
+,0xf53d60ee
+,0xf53d61ee
+,0xf53c61ee
+,0xf53b62ee
+
+,0xf53b62ee
+,0xf53a63ee
+,0xf63963ee
+,0xf63964ee
+,0xf63864ee
+,0xf63765ee
+,0xf63765ee
+,0xf63666ee
+,0xf73566ee
+,0xf73567ee
+,0xf73467ee
+,0xf73368ee
+,0xf73368ee
+,0xf73269ee
+,0xf83169ee
+,0xf8316aee
+
+,0xf8306aee
+,0xf82f6bee
+,0xf82f6bee
+,0xf82e6cee
+,0xf92d6cee
+,0xf92d6dee
+,0xf92c6dee
+,0xf92b6eee
+,0xf92b6eee
+,0xf92a6fee
+,0xfa296fee
+,0xfa296fee
+,0xfa2870ee
+,0xfa2770ee
+,0xfa2771ee
+,0xfa2671ee
+
+,0xfa2672ee
+,0xfb2572ef
+,0xfb2472ef
+,0xfb2473ef
+,0xfb2373ef
+,0xfb2273ef
+,0xfb2274ef
+,0xfc2174ef
+,0xfc2075ef
+,0xfc2075f0
+,0xfc1f75f0
+,0xfc1e76f0
+,0xfc1e76f0
+,0xfc1d76f0
+,0xfd1c77f0
+,0xfd1c77f0
+
+,0xfd1b77f1
+,0xfd1b78f1
+,0xfd1a78f1
+,0xfd1978f1
+,0xfd1979f1
+,0xfd1879f2
+,0xfe1779f2
+,0xfe1779f2
+,0xfe167af2
+,0xfe167af2
+,0xfe157af3
+,0xfe147bf3
+,0xfe147bf3
+,0xfe137bf3
+,0xff127bf4
+,0xff127cf4
+
+,0xff117cf4
+,0xff117cf5
+,0xff107cf5
+,0xff0f7cf5
+,0xff0f7df5
+,0xff0e7df6
+,0xff0e7df6
+,0xff0d7df6
+,0xff0d7df7
+,0x000c7ef7
+,0x000b7ef7
+,0x000b7ef8
+,0x000a7ef8
+,0x000a7ef8
+,0x00097ef9
+,0x00097ef9
+
+,0x00087ff9
+,0x00077ffa
+,0x00077ffa
+,0x00067ffb
+,0x00067ffb
+,0x00057ffb
+,0x00057ffc
+,0x00047ffc
+,0x00047ffd
+,0x00037ffd
+,0x00037ffe
+,0x00027ffe
+,0x00027fff
+,0x00017fff
+,0x00017f00
+,0x00007f00
+#endif
+
+};
+#endif
+
+
+void InitialScaler(void)
+{
+BYTE DefCount;
+
+	for(DefCount=0;DefCount<sizeof(DftScalerVal)/2;DefCount++)					//sizeof(DftScalerVal)/2 = 62개 일때 14424us(14.4ms)걸림.
+	{
+		WriteScaler(DftScalerVal[DefCount][0],DftScalerVal[DefCount][1]);		//Adr, Dat
+	}
+#ifdef	USE_Coef
+	NOP;
+#endif
+}

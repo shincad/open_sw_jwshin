@@ -1,0 +1,1497 @@
+#include "MATH.H"
+#include "F63XDEF.H"
+#include "UserAdj.H"
+#include "RAM.H"
+#include "IIC.H"
+#include "MyDef.H"
+#include "stdio.h"
+#include "Scaler.H"
+#include "F63XREG.H"
+#include "IIC.H"
+#include "Rom_map.H"
+#include "OSD_TAB.H"
+#include "OSD_TAB2.H"
+#include "sRGB.H"
+#include "AUTOADJ.H"
+#include "MODEHANDLE.H"
+#include "PANEL.H"
+#include "MCU.H"
+#include "TW990x.h"
+#include "tuner.h"
+//#include "SAA7114.H"
+
+//code unsigned char TDA7440D_Tab[]={
+//	0,1,2,3,4,5,6,7,0x0e,0x0d,0x0c,0x0b,0x0a,0x09,0x08
+//};
+
+void AdjustProcess(void)
+{
+	Bit SaveFlag;
+	Byte Temp,Temp1,i;
+	if(MenuPtr.Op == 0)
+		return;
+//Main Menu ----------------------------------------------------------------
+	SaveFlag = 0;
+	if(MenuPtr.Menu == 1|| MenuPtr.Menu == 3|| MenuPtr.Menu == 5 || MenuPtr.Menu == 6)	// +jwshin 050802
+		{
+		if(MenuPtr.Level == 1|| MenuPtr.Level == 2)
+			{
+			switch(MenuPtr.Page)
+				{
+				case 0:
+					if(FuncBuf[pVIDEOSOURCE]==cANALOG){
+						FuncPtr = Page0Item[MenuPtr.Ptr];
+						BackItem = Page0Item[BackPtr];
+					}
+					else if(FuncBuf[pVIDEOSOURCE]==cDVI){
+						FuncPtr = Page0ItemD[MenuPtr.Ptr];
+						BackItem = Page0ItemD[BackPtr];
+					}
+					else if(FuncBuf[pVIDEOSOURCE]==cYPbPr){
+						FuncPtr = Page0ItemY[MenuPtr.Ptr];
+						BackItem = Page0ItemY[BackPtr];
+					}
+					else if(FuncBuf[pVIDEOSOURCE] > cYPbPr){
+						FuncPtr = Page0ItemV[MenuPtr.Ptr];
+						BackItem = Page0ItemV[BackPtr];
+					}
+					break;		
+				case 1:
+					FuncPtr = Page1Item[MenuPtr.Ptr];
+					BackItem = Page1Item[BackPtr];
+					break;		
+				case 2:
+					if(FuncBuf[pVIDEOSOURCE] != cTV){
+						FuncPtr = Page2Item[MenuPtr.Ptr];
+						BackItem = Page2Item[BackPtr];
+					}
+					else{ // TV case
+						FuncPtr = Page7Item[MenuPtr.Ptr];
+						BackItem = Page7Item[BackPtr];
+					}
+					break;		
+				case 3:
+					FuncPtr = Page3Item[MenuPtr.Ptr];
+					BackItem = Page3Item[BackPtr];
+					break;		
+				case 4:
+					FuncPtr = Page4Item[MenuPtr.Ptr];
+					BackItem = Page4Item[BackPtr];
+					break;		
+				case 5:
+					FuncPtr = Page5Item[MenuPtr.Ptr];
+					BackItem = Page5Item[BackPtr];
+					break;		
+				case 6:
+					FuncPtr = Page6Item[MenuPtr.Ptr];
+					BackItem = Page6Item[BackPtr];
+					break;		
+				};
+//			printf("FuncPtr=%d\r\n",(Word)FuncPtr);
+			}
+
+		if(BackItem == pCOLORTEMP && FuncBuf[pCOLORTEMP] == 3)	//enter RGB adjust menu
+			if(MenuPtr.Level == 2)
+				{
+//				BackPtr = MenuPtr.Ptr;
+				switch(MenuPtr.Page)
+					{
+					case 2:
+						//FuncPtr = RGBmenuItem[MenuPtr.Ptr];
+						FuncPtr = Page2Item[MenuPtr.Ptr];
+						break;		
+					};
+				}
+
+//Digital Control
+		if(FuncPtr >= pFACTMENU)		//digital control
+			{
+			if(MenuPtr.Op == oINCVAL || MenuPtr.Op == oDECVAL)
+				{
+				switch(FuncPtr)
+					{
+					case pRECALL:
+						ShowYesNo(1);
+						Osd_Off();
+						Recall(1);
+						//MenuPtr.Menu = 0;
+						//MenuPtr.Level = 0;
+						//MenuPtr.Ptr = 0;
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG){
+							ShowMessage(MSG_AUTOTUNE);
+							AutoTune();
+						}
+							//TunePositionOnly();
+						break;
+					case pMUTE:
+							AudioMute= ~AudioMute;
+							SetAudioMute();
+							Write24C16(ep_Status,StatusFlag);
+						break;
+					case pAUTOSETTING:
+							AutoSetting= ~AutoSetting; 
+							Write24C16(ep_Status,StatusFlag);
+						break;
+					case pLIGHTEN:
+							LightEn = ~LightEn; 
+							WriteIIC563(0x130, LightEn);
+						break;
+					case pSCALERMODE:
+						ScalerMode= ~ScalerMode; 
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO){
+							Temp1 = ReadIIC563(0x080);
+							WriteIIC563(0x080,Temp&(~BIT_0));
+							
+							Temp = ReadIIC563(0x16e);
+							WriteIIC563(0x16e,Temp&(~BIT_0));
+							SetScalerMode();
+							WaitSetup(20);
+							WriteIIC563(0x16e,Temp);
+							WriteIIC563(0x080,Temp1);
+						}
+						break;
+					case pCHSEARCH:
+//							printf("case pCHSEARCH:\r\n");
+							ScanChannel();
+							ClearLine(4);
+							Sleep(50);
+							ShowSubMenu(MenuPtr.Page,MenuPtr.Ptr);
+						break;
+						
+					case pCHEDIT:
+						if(ChAdd_Del) ChAdd_Del = 0;
+						else ChAdd_Del = 1;
+					
+						ChannelMask(ChAdd_Del);
+						ShowAddDel(ChAdd_Del);
+
+						break;
+			
+					case pINPUT:
+							i = Read24C16(ep_Input_CH_Sys);
+							i ^= 0x80;
+							Write24C16(ep_Input_CH_Sys,i);
+							Osd_Off();
+							ForceToBackground(0,0,0);
+							Sleep(100);
+							ChannelSel(ChBuffer);
+						 	SetDisplayNormal_Video();
+//							printf("case pINPUT:i=%x\r\n",(Word)i);
+						break;
+					case pCAPTION:
+//							printf("case pCAPTION:\r\n");
+								CaptionFlag= Read24C16(0x7f0);
+								ShowOnOff(CaptionFlag);
+						//		ShowYesNo(CaptionFlag);
+						//		DisplayCaption(CaptionFlag);
+						break;	
+					};
+				}
+			}
+//Analog Control
+		else
+			{
+			GetFuncRange(FuncPtr);
+//			printf("MenuPtr.Op=%d",(Word)MenuPtr.Op);
+			if(MenuPtr.Op == oDECVAL || MenuPtr.Op == oINCVAL || MenuPtr.Op == oUPDATE)
+				{
+				//if(FuncPtr != pVIDEOSOURCE)
+					SetFuncMaxMin();
+				switch(FuncPtr)
+					{
+					case pBRIGHTNESS:
+//						printf("pBRIGHTNESS\r\n");
+
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+							SetBrightness();
+						else
+							SetDecoder_Brightness();
+//						SaveFlag = 1;
+						break;
+					case pCONTRAST:
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+							SetContrast();
+						else
+	
+						SetDecoder_Contrast();
+						//SaveFlag = 1;
+						break;
+					case pPHASE:
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							SetADC_Phase();
+							//SaveFlag = 1;
+							}
+						break;
+					case pCLOCK:
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							SetADC_PLL();
+							//SaveFlag = 1;
+							}
+						break;
+					case pBACKLIGHT:
+						SetInverter();
+						//SaveFlag = 1;
+						break;
+					case pHPOSITION:
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							SetHP();
+							//SaveFlag = 1;
+							}
+						break;
+					case pVPOSITION:
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							SetVP();
+							//SaveFlag = 1;
+							}
+						break;
+					case pOSDHPOSITION:
+						OsdPosition();
+						//SaveFlag = 1;
+						break;
+					case pOSDTIMER:
+						//SaveFlag = 1;
+						break;
+					case pSATURATION:
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+							#if ContrastBlock == BackEndGain
+							sRGB((Byte)FuncBuf[pCONTRAST],(Byte)FuncBuf[pRCOLOR],(Byte)FuncBuf[pGCOLOR],(Byte)FuncBuf[pBCOLOR]);
+							#else
+							SetContrast();
+							#endif
+						else
+							SetDecoder_Saturation();
+						//SaveFlag = 1;
+//							printf("pSATURATION\r\n");
+
+						break;
+					case pTINT:
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+							#if ContrastBlock == BackEndGain
+							sRGB((Byte)FuncBuf[pCONTRAST],(Byte)FuncBuf[pRCOLOR],(Byte)FuncBuf[pGCOLOR],(Byte)FuncBuf[pBCOLOR]);
+							#else
+							SetContrast();
+							#endif
+						else
+							SetDecoder_Tint();
+//							printf("pTINT\r\n");
+						//SaveFlag = 1;
+						break;
+					case pRCOLOR:
+					case pGCOLOR:
+					case pBCOLOR:
+						if(FuncBuf[pCOLORTEMP] == 3)
+							SetContrast();
+						//SaveFlag = 1;
+						break;
+					case pCOLORTEMP:
+						LoadColor(FuncBuf[pCOLORTEMP]);
+						SetContrast();
+						SetInverter();
+						//SaveFlag = 1;
+						break;
+					case pLANGUAGE:
+						if(FuncBuf[pLANGUAGE]== 5){
+							WriteSeqIndexPort(0xd0,tySRAM_1BIT,OneBitFontJP,45*27);
+							WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontJP2,7*27);
+						}
+						else if((FuncBuf[pLANGUAGE] == 7)||(FuncBuf[pLANGUAGE] == 8)){
+							WriteSeqIndexPort(0xd0,tySRAM_1BIT,OneBitFontCH2,48*27);
+							WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontCH3,6*27);
+						}
+						else
+							WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontPY,7*27);
+						//SaveFlag = 1;
+						break;
+					case pSHARPNESS:
+						if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+							SetSharpness();
+						else
+							SetDecoder_Sharpness();
+						//SaveFlag = 1;
+						break;
+					case pTRANSOSD:
+						SetOsdTrans();
+						//SaveFlag = 1;
+						break;
+					case pVIDEOSOURCE:
+						if(MenuPtr.Level == 1)// && MenuPtr.Ptr != FuncBuf[pVIDEOSOURCE])
+							{
+							FuncBuf[pVIDEOSOURCE] = MenuPtr.Ptr;
+//							printf("Video source %d\n",FuncBuf[pVIDEOSOURCE]);
+							Write24C16(ep_Sync_Source,FuncBuf[pVIDEOSOURCE]);
+							AUDIO_MUTE();
+							Osd_Off();
+							FastMuteEnable = 0;
+							ForceToBack = 0;
+							ForceToBackground(0,0,0);
+							BackLightOff();
+//							Sleep(200);
+//							printf("pVIDEOSOURCE\r\n");
+							//FastMuteOn();
+							SetSource();
+							MessageShow = 0;	//show msg if Video sync off
+							}
+						else
+							Osd_Off();
+						//MenuPtr.Level = 1;
+						break;
+					case pVOLUME:
+						AudioMute = 0;
+						SetAudioMute();
+						Write24C16(ep_Status,StatusFlag);
+						SetAudioVolume();
+						//SaveFlag = 1;
+						break;
+					case pLIGHTBRIGHT:
+						SetLightBrightness();
+						break;
+					case pLIGHTCONTRAST:
+						SetLightContrast();
+						break;
+					case pLIGHTHSTART:
+						SetLightHS();
+						break;
+					case pLIGHTHWIDTH:
+						SetLightHW();
+						break;
+					case pLIGHTVSTART:
+						SetLightVS();
+						break;
+					case pLIGHTVHIGHT:
+						SetLightVH();
+						break;
+
+					case pCHFINETUNE:
+//							printf("case pCHFINETUNE:\r\n");
+//							SetFuncMaxMin();
+//	printf("FuncBuf[pCHFINETUNE]3=0x%x\r\n",FuncBuf[pCHFINETUNE]);
+							SetFineTune();
+						break;
+					case pBass:
+							SetBass();
+						break;
+					case pTreble:
+							SetTreble();
+//						AudioMute = 0;
+//						SetAudioMute();
+//						Write24C16(ep_Status,StatusFlag);
+//						SetAudioVolume();
+						break;
+	
+
+					};
+				SaveFlag = 1;
+				}
+			else
+				if(MenuPtr.Op == oINCFUNC || MenuPtr.Op == oDECFUNC)
+					{
+					switch(FuncPtr)
+						{
+						case pVIDEOSOURCE:
+							GetFuncRange(FuncPtr);
+							SetFuncMaxMin();
+							break;
+						};
+					}
+			}
+		if(SaveFlag)
+			{
+			SavePointer = FuncPtr;
+			SaveTimer = SAVE_FUNC_TIME;
+			}
+		}
+//Factory Menu -----------------------------------------------------------
+	if(MenuPtr.Menu == 2)	//fact menu
+		{
+		//if(MenuPtr.Level == 1)
+			//FuncPtr = FactmenuItem[MenuPtr.Ptr];
+			FuncPtr = FactItem[MenuPtr.Ptr].Index;
+		if(FuncPtr >= pFACTMENU)		//digital control
+			{
+			if(/*MenuPtr.Op == oINCVAL || MenuPtr.Op == oDECVAL || */MenuPtr.Op == oENTER)
+				{
+				switch(FuncPtr)
+					{
+					case pAUTOCOLOR:
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							Osd_Off();
+							ShowMessage(MSG_AUTOCOLOR);
+							AutoColor();
+							Osd_Off();
+							MenuPtr.Menu = 2;
+							MenuPtr.Ptr = 0;
+							MenuPtr.Page = 0;
+							MenuPtr.Level = 0;
+							MenuPtr.Op = oUPDATEALL;
+							}
+						break;
+					case pEEPROMINIT:
+						Osd_Off();
+						ShowMessage(MSG_EEPROMINIT);
+						InitEEPROM();
+						Recall(1);
+						LoadADC_Gain();
+						Osd_Off();
+						MenuPtr.Menu = 2;
+						MenuPtr.Ptr = 1;
+						MenuPtr.Page = 0;
+						MenuPtr.Level = 0;
+						MenuPtr.Op = oUPDATEALL;
+						break;
+					case pAUTOADJUST:	//lo_cs
+						if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+							{
+							Osd_Off();
+							ShowMessage(MSG_AUTOTUNE);
+							AutoTune();	
+							Osd_Off();
+							MenuPtr.Menu = 2;
+							MenuPtr.Ptr = 0;
+							MenuPtr.Page = 0;
+							MenuPtr.Level = 0;
+							MenuPtr.Op = oUPDATEALL;
+							}
+						break;
+					};
+				}
+			}
+		else
+			{
+			GetFuncRange(FuncPtr);
+			if(MenuPtr.Op == oDECVAL || MenuPtr.Op == oINCVAL)
+				{
+				SetFuncMaxMin();
+				switch(FuncPtr)
+					{
+					case pBRIGHTNESS:
+						SetBrightness();
+						//SaveFlag = 1;
+						break;
+					case pRCOLOR:
+					case pGCOLOR:
+					case pBCOLOR:
+						//FuncBuf[pCOLORTEMP] = (MenuPtr.Ptr - 9)/3;
+						//LoadColor(FuncBuf[pCOLORTEMP]);
+						//GetFuncRange(FuncPtr);
+						SetContrast();
+						//SaveFlag = 1;
+						break;
+					case pBACKLIGHT:
+						SetInverter();
+						//SaveFlag = 1;
+						break;
+					case pRADC:
+						SetADCGain(pRADC);
+						//SaveFlag = 1;
+						break;
+					case pGADC:
+						SetADCGain(pGADC);
+						//SaveFlag = 1;
+						break;
+					case pBADC:
+						SetADCGain(pBADC);
+						//SaveFlag = 1;
+						break;
+					case pROFFSET:
+						SetADCOffset(pROFFSET);
+						//SaveFlag = 1;
+						break;
+					case pGOFFSET:
+						SetADCOffset(pGOFFSET);
+						//SaveFlag = 1;
+						break;
+					case pBOFFSET:
+						SetADCOffset(pBOFFSET);
+						//SaveFlag = 1;
+						break;
+					case pVCMVOL:
+						SetVCM_Vol();
+						//SaveFlag = 1;
+						break;
+					case pCONTRAST:
+						SetContrast();
+						//SaveFlag = 1;
+						break;
+					case pContMax:
+					case pContMin:
+					case pBrigMax:
+					case pBrigMin:
+						//SaveFlag = 1;
+						break;
+					};
+				SaveFlag = 1;
+				SavePointer = FuncPtr;
+				SaveTimer = SAVE_FUNC_TIME;
+				}
+			else
+				if(MenuPtr.Op == oINCFUNC || MenuPtr.Op == oDECFUNC)
+				{
+					switch(FuncPtr)
+					{
+						case pRCOLOR:
+						case pGCOLOR:
+						case pBCOLOR:
+							FuncBuf[pCOLORTEMP] = (MenuPtr.Ptr - 11)/3;
+							LoadColor(FuncBuf[pCOLORTEMP]);
+							SetContrast();
+							break;
+						default:
+							FuncBuf[pCOLORTEMP] = 3;
+							LoadColor(FuncBuf[pCOLORTEMP]);
+							SetContrast();
+							break;
+					};
+				}
+			}
+		}
+	//Trubo Menu -----------------------------------------------------------
+		if(MenuPtr.Menu == 4 && MenuPtr.Level == 1)	//fact menu
+			{
+			if(EconomyMode){
+				TextMode = 0; 
+				EconomyMode =~EconomyMode;
+				FuncBuf[pBACKLIGHT] = 0x7f;
+			}
+			else
+			{
+				if(TextMode)
+				{
+					EconomyMode = 1;
+					FuncBuf[pBACKLIGHT] = 0x2e;
+				}
+				else{
+					EconomyMode = 0;
+					TextMode = ~TextMode; 
+					FuncBuf[pBACKLIGHT] = 0x49;
+				}
+			}
+			SetInverter();
+			Write24C16(ep_Status,StatusFlag);
+			Write24C16(ep_BackLight,(Byte)FuncBuf[pBACKLIGHT]);
+			}
+	
+}
+
+void SetFuncMaxMin()
+{
+	Byte code PolTab[7]={oINCVAL,oDECVAL,oDECVAL,oINCVAL,oINCFUNC,oDECFUNC,oUPDATE};
+	Byte Polary,Units;
+	bit Type;
+	Word Min,Max;
+	if((FuncPtr >= pFACTMENU)&&(FuncPtr != pCHSEARCH)&&(FuncPtr != pCHEDIT)&&
+		   (FuncPtr != pCHFINETUNE)&&(FuncPtr != pINPUT))
+		return;
+	Type = 0;
+	switch(FuncPtr)
+		{
+		case pHPOSITION:
+// Jacky 0201 removed
+//		case pOSDVPOSITION:
+			Max = FuncMax;	//limited
+			Min = FuncMin;
+			Polary = 2;
+			Units = 1;
+			break;
+		case pVIDEOSOURCE:	//cycle
+			Type = 1;
+			Max = FuncMax;
+			Min = FuncMin;
+			Polary = 6;
+			Units = 1;
+			break;
+		case pCOLORTEMP:
+		case pOSDHPOSITION:
+		case pLANGUAGE:
+		//case pSHARPNESS:
+		//case pVCMVOL:
+			Max = FuncMin;
+			Min = FuncMax;
+			Polary = 0;
+			Units = 1;
+			break;
+//		case pVOLUME:
+//		case pBass:
+//		case pTreble:	
+		case pOSDTIMER:
+			Max = FuncMax;
+			Min = FuncMin;
+			Polary = 0;
+			Units = 5;
+			break;
+		case pCHFINETUNE:
+			Type = 0;
+			Max = 100;
+			Min = 0;
+			Polary = 0;
+			Units = 1;
+			break;
+		default:
+			Max = FuncMax;
+			Min = FuncMin;
+			Polary = 0;
+			Units = 1;
+			break;
+		};
+	if(!Type)
+		{
+//		printf("Adjust1!!!!\r\n");
+		if(MenuPtr.Op == PolTab[Polary])
+			{
+//		printf("Adjust3!FuncMax=0x%x,FuncBuf[FuncPtr]=0x%x\r\n",FuncMax,FuncBuf[FuncPtr]);
+			if(FuncBuf[FuncPtr] < FuncMax && (FuncBuf[FuncPtr] + Units) <= FuncMax)
+				FuncBuf[FuncPtr] = FuncBuf[FuncPtr] + Units;
+				//FuncBuf[FuncPtr]++;
+			else
+				FuncBuf[FuncPtr] = Max;
+			}
+		if(MenuPtr.Op == PolTab[Polary+1])
+			{
+//		printf("Adjust4!!!!\r\n");
+			if(FuncBuf[FuncPtr] > FuncMin && FuncBuf[FuncPtr] >= Units)
+				FuncBuf[FuncPtr] = FuncBuf[FuncPtr] - Units;
+				//FuncBuf[FuncPtr]--;
+			else
+				FuncBuf[FuncPtr] = Min;
+			}
+//			printf("FuncBuf[FuncPtr]=0x%x\r\n",FuncBuf[FuncPtr]);
+		
+		}
+	else
+	{
+//		printf("Adjust2!!!\r\n");
+		if(MenuPtr.Op == PolTab[Polary])
+			{
+			if(VideoSourcePtr< FuncMax)
+				VideoSourcePtr++;
+			else
+				VideoSourcePtr = Max;
+			}
+		if(MenuPtr.Op == PolTab[Polary+1])
+			{
+			if(VideoSourcePtr > FuncMin)
+				VideoSourcePtr--;
+			else
+				VideoSourcePtr = Min;
+			}
+
+		if((MenuPtr.Op == PolTab[Polary]))
+		{
+			if(FuncBuf[FuncPtr] > FuncMax)
+				FuncBuf[FuncPtr] = Max;
+		}
+	}
+}
+
+void GetFuncRange(Byte Ptr)
+{
+	FuncMin = 0;
+	switch(Ptr)
+		{
+		case pBRIGHTNESS:
+			FuncMax = 100;
+			//FuncMax = 255;
+			break;
+		case pCONTRAST:
+			FuncMax = FuncBuf[pContMax];
+			FuncMin= FuncBuf[pContMin];
+			//FuncMin = 20;
+			//FuncMax = 80;
+			break;
+		case pPHASE:
+			FuncMax = 0x3f;
+			break;
+		case pCLOCK:
+			FuncMax = ClockBase + 50;
+			FuncMin = ClockBase - 50;
+			//FuncMax = ClockBase / 10 * 11;		///10%
+			//FuncMin = ClockBase / 10 * 9;
+			break;
+		case pBACKLIGHT:
+		case pBACKLIGHT2:
+			FuncMax = FuncBuf[pBrigMax];
+			FuncMin= FuncBuf[pBrigMin];
+			//FuncMax = 0x7f;
+			break;
+		case pHPOSITION:
+			if(ModePoint >= UserModeSt){
+			// Set Minimum and Maximum
+				FuncMin = 1;
+				FuncMax = ClockBase - Hresolution - 2;
+			}
+			else{
+			// Set Minimum and Maximum
+				FuncMin = HPositionBase - (ClockBase - Hresolution)/2;
+				FuncMax = HPositionBase + (ClockBase - Hresolution)/2;
+			}
+			//if(FuncBuf[pHPOSITION] > (ClockBase - Hresolution)){
+			//	FuncMax = ClockBase - Hresolution - 2;
+			//}
+			
+			//FuncMin = 1;
+			//FuncMax = ClockBase - Hresolution - 2;
+			//FuncMax = FuncBuf[pCLOCK] - H_Act - 2;
+			break;
+		case pVPOSITION:
+			if(FuncBuf[pVPOSITION] < 2)
+				FuncMin = FuncBuf[pVPOSITION]-1;
+			else
+				FuncMin = 2;
+			FuncMax = VTotal - Vresolution + 20;
+			break;
+		case pOSDHPOSITION:
+			FuncMax = 4;
+			//FuncMax = (PanelWidth-OSD_WIDTH*12)/5;
+			break;
+// Jacky 0201 removed
+//		case pOSDVPOSITION:
+//			FuncMax = (PanelHeight-OSD_HIGH*18)/5;
+//			break;
+		case pOSDTIMER:
+			FuncMin = 5;
+			FuncMax = 60;
+			break;
+		case pSATURATION:
+			FuncMax = 100;
+			break;
+		case pTINT:
+			FuncMax = 100;
+			break;
+		case pRCOLOR:
+		case pGCOLOR:
+		case pBCOLOR:
+			FuncMax = 255;
+			break;
+		case pCOLORTEMP:
+			FuncMax = MAX_COLOR_TEMP-1;
+			break;
+		case pLANGUAGE:
+			FuncMax = MAX_LANGUAGE-1;
+			break;
+		case pSHARPNESS:
+			if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+			//	FuncMax = 7; //Jason Choi ?
+				FuncMax = 4;
+			else
+				FuncMax = 7;
+			break;
+		case pTRANSOSD:
+			FuncMax = 0x05;
+			break;
+		case pVIDEOSOURCE:
+			if(DecoderICEn)
+				FuncMax = 6;	//+jwshin 060905
+			else
+				FuncMax = 1;  //?
+			break;
+		case pVOLUME:
+			FuncMax = 100;
+			break;
+		case pVCMVOL:
+			FuncMax = 0x28;
+			FuncMin = 0x0;
+			break;
+		case pRADC:
+		case pGADC:
+		case pBADC:
+			FuncMax = 255;
+			break;
+		case pROFFSET:
+		case pGOFFSET:
+		case pBOFFSET:
+			FuncMax = 255;
+			break;
+		case pContMax:
+			FuncMax = 100;
+			FuncMin = 0;
+			break;
+		case pContMin:
+			FuncMax = 50;
+			FuncMin = 0;
+			break;
+		case pBrigMax:
+			FuncMax = 127;
+			FuncMin = 0;
+			break;
+		case pBrigMin:
+			FuncMax = 50;
+			FuncMin = 0;
+			break;
+		case pLIGHTBRIGHT:
+			FuncMax = 100;
+			//FuncMax = 255;
+			break;
+		case pLIGHTCONTRAST:
+			//FuncMin = 20;
+			FuncMax = 100;
+			break;
+		case pLIGHTHSTART:
+		case pLIGHTHWIDTH:
+			FuncMin = 0;
+			FuncMax = 100;
+			break;
+		case pLIGHTVSTART:
+		case pLIGHTVHIGHT:
+			FuncMin = 0;
+			FuncMax = 100;
+			break;
+		case pCHFINETUNE:
+			FuncMin = 0;
+			FuncMax = 100;
+			break;
+		case pTreble:
+		case pBass:
+			FuncMin = 0;
+			FuncMax =14;
+			break;
+			
+		};
+}
+
+void Recall(bit All)
+{
+	Word addr;
+	Byte i;
+	if(FuncBuf[pVIDEOSOURCE] == cANALOG||FuncBuf[pVIDEOSOURCE] == cYPbPr)
+		{
+		if(ModePoint < UserModeSt)
+			{
+			addr = ModePoint * 8;
+			for(i=0; i<6; i++)
+				{
+				Write24C16(addr+ep_Sync_Data,EEP_SyncMap[addr]);
+				addr++;
+				}
+			addr++;
+			Write24C16(addr+ep_Sync_Data,EEP_SyncMap[addr]);
+			}
+		if(All)
+			{
+			Write24C16(ep_Brightness,EEP_GeoMap[ep_Brightness-0x200]);	
+			Write24C16(ep_Contrast,EEP_GeoMap[ep_Contrast-0x200]);	
+			}
+		LoadModeIndependentSettings();
+		LoadModeDependentSettings();
+		//Write24C16(ep_Color_Ptr,EEP_GeoMap[ep_Color_Ptr-0x200]);	
+		//FuncBuf[pCOLORTEMP] = Read24C16(ep_Color_Ptr);
+		//LoadColor(FuncBuf[pCOLORTEMP]);
+		SetADC_PLL();
+		SetADC_Phase();
+		
+		if(SyncMode != 3)
+			{
+			SetHP();
+			SetVP();
+			}
+		if(Interlance){
+			WriteWordIIC563(0x032,Vresolution);		// Capture V_Active
+		}
+		else{
+			WriteWordIIC563(0x032,Vresolution); 	// Capture V_Active
+		}
+		WriteWordIIC563(0x036,Hresolution); 	// Capture H_Active
+		//WriteWordIIC563(0x036,Hresolution + H_ActErrTab[ResolutionPtr]); 	// Capture H_Active
+		//SetScaler();
+		SetSharpness();
+		//SetBrightness();
+		//SetContrast();
+		//sRGB();
+		}
+	if(FuncBuf[pVIDEOSOURCE] == cDVI)
+		{
+		//Write24C16(ep_DVI_Contrast,EEP_GeoMap[ep_DVI_Contrast-0x200]);	
+		Write24C16(ep_Contrast,EEP_GeoMap[ep_Contrast-0x200]);	
+		Write24C16(ep_Brightness,EEP_GeoMap[ep_Brightness-0x200]);	
+		Write24C16(ep_Color_Ptr,EEP_GeoMap[ep_Color_Ptr-0x200]);	
+		//FuncBuf[pCONTRAST] = Read24C16(ep_DVI_Contrast);
+		FuncBuf[pCONTRAST] = Read24C16(ep_Contrast);
+		FuncBuf[pBRIGHTNESS] = Read24C16(ep_Brightness);
+		FuncBuf[pCOLORTEMP] = Read24C16(ep_Color_Ptr);
+		SetBrightness();
+		LoadColor(FuncBuf[pCOLORTEMP]);
+		SetContrast();
+		addr = ModePoint * 8;
+			Write24C16(addr+ep_Sync_Data,EEP_SyncMap[addr]);
+		FuncBuf[pSHARPNESS] = EEP_SyncMap[addr];
+		//addr = ep_Shape_Offset + (ModePoint * 8);
+		//FuncBuf[pSHARPNESS] = Read24C16(addr);
+		SetSharpness();
+		}
+	if(FuncBuf[pVIDEOSOURCE] > cYPbPr)
+		{
+		Write24C16(ep_Video_Contrast,EEP_GeoMap[ep_Video_Contrast-0x200]);	
+		Write24C16(ep_Video_Brightness,EEP_GeoMap[ep_Video_Brightness-0x200]);	
+		Write24C16(ep_Video_Tint,EEP_GeoMap[ep_Video_Tint-0x200]);	
+		Write24C16(ep_Video_Saturation,EEP_GeoMap[ep_Video_Saturation-0x200]);	
+		Write24C16(ep_Video_Shapness,EEP_GeoMap[ep_Video_Shapness-0x200]);	
+		FuncBuf[pBRIGHTNESS] = Read24C16(ep_Video_Brightness);
+		FuncBuf[pCONTRAST] = Read24C16(ep_Video_Contrast);
+		FuncBuf[pSATURATION] = Read24C16(ep_Video_Saturation);
+		FuncBuf[pSHARPNESS] = Read24C16(ep_Video_Shapness);
+		FuncBuf[pTINT] = Read24C16(ep_Video_Tint);
+//		SetVideoBrightness();
+//		SetVideoContrast();
+//		SetVideoSaturation();
+//		SetVideoSharpness();
+//		SetVideoTint();
+		SetDecoder_Brightness();
+		SetDecoder_Contrast();
+		SetDecoder_Saturation();
+		SetDecoder_Sharpness();
+		SetDecoder_Tint();
+
+		sRGB(50,(Byte)FuncBuf[pRCOLOR],(Byte)FuncBuf[pGCOLOR],(Byte)FuncBuf[pBCOLOR]);
+		}
+	//common area
+	//---user color
+	Write24C16(ep_Color4_R,Read24C16(ep_Color6_R));	//R Gain
+	Write24C16(ep_Color4_G,Read24C16(ep_Color6_G));	//G Gain
+	Write24C16(ep_Color4_B,Read24C16(ep_Color6_B));	//B Gain
+	//---Color tempeture
+	Write24C16(ep_Color_Ptr,EEP_GeoMap[ep_Color_Ptr-0x200]); //Reset Color	
+	//---Osd Timer
+	Write24C16(ep_Osd_Timer,EEP_GeoMap[ep_Osd_Timer-0x200]);
+	//---Osd Position
+	Write24C16(ep_OsdH_Pos,EEP_GeoMap[ep_OsdH_Pos-0x200]);	
+	//Write24C16(ep_OsdV_Pos,EEP_GeoMap[ep_OsdV_Pos-0x200]);	
+	//---Osd Effect
+	Write24C16(ep_Osd_Effect,EEP_GeoMap[ep_Osd_Effect-0x200]);	
+	//---Back light
+	Write24C16(ep_BackLight,EEP_GeoMap[ep_BackLight-0x200]);	
+	//---Audio Volume
+	Write24C16(ep_Volume,EEP_GeoMap[ep_Volume-0x200]);	
+	//---Color tempeture
+	FuncBuf[pCOLORTEMP] = Read24C16(ep_Color_Ptr);
+	//---Osd Timer
+	FuncBuf[pOSDTIMER] = Read24C16(ep_Osd_Timer);
+	//---Osd Position
+	FuncBuf[pOSDHPOSITION] = Read24C16(ep_OsdH_Pos);
+	//FuncBuf[pOSDVPOSITION] = Read24C16(ep_OsdV_Pos);
+	//---Osd Effect
+	FuncBuf[pTRANSOSD] = Read24C16(ep_Osd_Effect);
+	//---Back light
+	FuncBuf[pBACKLIGHT] = Read24C16(ep_BackLight);
+	//---Audio Volume
+	FuncBuf[pVOLUME] = Read24C16(ep_Volume);
+	//---Audio Treble/Bass
+	FuncBuf[pTreble]=Read24C16(ep_Treble);
+	FuncBuf[pBass]=Read24C16(ep_Bass);
+	
+	LoadColor(FuncBuf[pCOLORTEMP]);
+	SetBrightness();
+	SetContrast();
+	SetOsdTrans();
+	OsdPosition();
+	SetInverter();
+	SetAudioVolume();
+	AudioMute = 0;
+	SetAudioMute();
+	AutoSetting = 1;
+	Write24C16(ep_Status,StatusFlag);
+//	Write24C16(ep_Language,EEP_GeoMap[ep_Language-0x200]);
+}
+
+void LoadModeIndependentSettings(void)
+{
+	Word Addr;
+	FuncBuf[pBRIGHTNESS] = Read24C16(ep_Brightness);	//0xd0 = FuncBuf[pBRIGHTNESS]
+//	if(FuncBuf[pVIDEOSOURCE] == 0)
+		FuncBuf[pCONTRAST] = Read24C16(ep_Contrast);		//0xd1 = FuncBuf[pCONTRAST]
+//	else
+//		FuncBuf[pCONTRAST] = Read24C16(ep_DVI_Contrast);		//0xd1 = FuncBuf[pCONTRAST]
+	FuncBuf[pSATURATION] = Read24C16(ep_sRGB_Saturation);	//0xc8 = FuncBuf[pSATURATION]
+	FuncBuf[pTINT] = Read24C16(ep_sRGB_Tint);			//0xc9 = FuncBuf[pTINT]
+	FuncBuf[pOSDHPOSITION] = Read24C16(ep_OsdH_Pos);		//0xdd = osd position x
+// Jacky 0201 removed
+//	FuncBuf[pOSDVPOSITION] = Read24C16(ep_OsdV_Pos);		//0xdd = osd position y
+	FuncBuf[pOSDTIMER] = Read24C16(ep_Osd_Timer);	//0xcf = osd timer
+	FuncBuf[pLANGUAGE] = Read24C16(ep_Language);		//0xe0 = Language
+	FuncBuf[pBACKLIGHT2] = Read24C16(ep_sRGB_Backlight);
+	FuncBuf[pTRANSOSD] = Read24C16(ep_Osd_Effect);
+	if(FuncBuf[pTRANSOSD] > 5)
+		FuncBuf[pTRANSOSD] = 0;
+	FuncBuf[pCOLORTEMP] = Read24C16(ep_Color_Ptr);
+	if(FuncBuf[pCOLORTEMP] >= MAX_COLOR_TEMP)
+		FuncBuf[pCOLORTEMP] = 0;
+	Addr = FuncBuf[pCOLORTEMP] * 3 + ep_Color1_R;			//Select color temperature
+	FuncBuf[pRCOLOR] = Read24C16(Addr++);
+	FuncBuf[pGCOLOR] = Read24C16(Addr++);
+	FuncBuf[pBCOLOR] = Read24C16(Addr);
+	FuncBuf[pBACKLIGHT] = Read24C16(ep_BackLight);		//0xd5 = FuncBuf[pBACKLIGHT]
+	FuncBuf[pVCMVOL] = Read24C16(ep_VCMVol);	//0x0f = vcom vol
+	FuncBuf[pVOLUME] = Read24C16(ep_Volume);	//0xcf = volume
+	FuncBuf[pTreble]=Read24C16(ep_Treble); //Treble
+	FuncBuf[pBass]=Read24C16(ep_Bass); //Bass
+	FuncBuf[pContMax] = Read24C16(ep_ContMax);
+	FuncBuf[pContMin] = Read24C16(ep_ContMin);
+	FuncBuf[pBrigMax] = Read24C16(ep_BrigMax);
+	FuncBuf[pBrigMin] = Read24C16(ep_BrigMin);
+
+	FuncBuf[pLIGHTCONTRAST] = Read24C16(ep_Light_Contrast);
+	FuncBuf[pLIGHTBRIGHT] = Read24C16(ep_Light_Bright);
+
+	FuncBuf[pLIGHTHSTART] = Read24C16(ep_Light_HSMSB);
+	FuncBuf[pLIGHTHSTART] <<= 8;
+	FuncBuf[pLIGHTHSTART] |= Read24C16(ep_Light_HSLSB);
+	FuncBuf[pLIGHTHWIDTH] = Read24C16(ep_Light_HWMSB);
+	FuncBuf[pLIGHTHWIDTH] <<= 8;
+	FuncBuf[pLIGHTHWIDTH] |= Read24C16(ep_Light_HWLSB);
+	FuncBuf[pLIGHTVSTART] = Read24C16(ep_Light_VSMSB);
+	FuncBuf[pLIGHTVSTART] <<= 8;
+	FuncBuf[pLIGHTVSTART] |= Read24C16(ep_Light_VSLSB);
+	FuncBuf[pLIGHTVHIGHT] = Read24C16(ep_Light_VHMSB);
+	FuncBuf[pLIGHTVHIGHT] <<= 8;
+	FuncBuf[pLIGHTVHIGHT] |= Read24C16(ep_Light_VHLSB);
+
+	BackLightTimer = Read24C16(ep_BkLightTime_Offset+3);
+	BackLightTimer <<= 8;
+	BackLightTimer |= Read24C16(ep_BkLightTime_Offset+2);
+	BackLightTimer <<= 8;
+	BackLightTimer |= Read24C16(ep_BkLightTime_Offset+1);
+	BackLightTimer <<= 8;
+	BackLightTimer |= Read24C16(ep_BkLightTime_Offset);
+
+}
+
+void LoadColor(Word Ptr)
+{
+	Word Addr;
+	Addr = Ptr * 3 + ep_Color1_R;			//Select color temperature
+	FuncBuf[pRCOLOR] = Read24C16(Addr++);
+	FuncBuf[pGCOLOR] = Read24C16(Addr++);
+	FuncBuf[pBCOLOR] = Read24C16(Addr);
+}
+
+void LoadModeDependentSettings(void)
+{
+//	Sharp,V_BP,H_BP,H_Tatol,Phase
+unsigned short addr;
+	addr = ep_Sync_Data + (ModePoint * 8);
+	FuncBuf[pSHARPNESS] = Read24C16(addr++);
+	FuncBuf[pVPOSITION] = Read24C16(addr++);
+	FuncBuf[pHPOSITION] = Read24C16(addr++);
+	FuncBuf[pHPOSITION] <<= 8;
+	FuncBuf[pHPOSITION] |= Read24C16(addr++);
+	FuncBuf[pCLOCK] = Read24C16(addr++);
+	FuncBuf[pCLOCK] <<= 8;
+	FuncBuf[pCLOCK] |= Read24C16(addr++);
+	addr++;
+	FuncBuf[pPHASE] = Read24C16(addr);	
+}
+
+void SaveModeDependentSettings(void)
+{
+unsigned short addr;
+	addr = ep_Shape_Offset + (ModePoint * 8);
+	Write24C16(addr++,(Byte)FuncBuf[pSHARPNESS]);
+	Write24C16(addr++,(Byte)FuncBuf[pVPOSITION]);
+	Write24C16(addr++,(Byte)(FuncBuf[pHPOSITION] >> 8));
+	Write24C16(addr++,(Byte)FuncBuf[pHPOSITION]);
+	Write24C16(addr++,(Byte)(FuncBuf[pCLOCK] >> 8));
+	Write24C16(addr++,(Byte)FuncBuf[pCLOCK]);
+	addr++;
+	Write24C16(addr,(Byte)FuncBuf[pPHASE]);	
+}
+
+void SaveData(void)
+{
+unsigned short addr;
+	switch(SavePointer)
+		{
+		case pBRIGHTNESS:
+			if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+				//Write24C16(ep_BackLight,FuncBuf[pBACKLIGHT]);
+				Write24C16(ep_Brightness,FuncBuf[pBRIGHTNESS]);
+			else
+				Write24C16(ep_Video_Brightness,FuncBuf[pBRIGHTNESS]);
+			break;
+		case pCONTRAST:
+			switch(FuncBuf[pVIDEOSOURCE])
+				{
+				case cANALOG:
+				case cDVI:
+				case cYPbPr:
+					Write24C16(ep_Contrast,(Byte)FuncBuf[pCONTRAST]);
+					break;				
+				case cSVIDEO:
+				case cCOMPOSIT:
+				case cTV:
+//				case 5:
+					Write24C16(ep_Video_Contrast,(Byte)FuncBuf[pCONTRAST]);
+					break;				
+				};
+			break;
+		case pCLOCK:
+			addr = ep_Clock_Offset + (ModePoint * 8);
+			Write24C16(addr++,(Byte)(FuncBuf[pCLOCK] >> 8));
+			Write24C16(addr,(Byte)FuncBuf[pCLOCK]);
+			break;
+		case pPHASE:
+			addr = ep_Phase_Offset + (ModePoint * 8);
+			Write24C16(addr,(Byte)FuncBuf[pPHASE]);
+			break;
+		case pHPOSITION:
+			addr = ep_Hpos_Offset + (ModePoint * 8);
+			Write24C16(addr++,(Byte)(FuncBuf[pHPOSITION] >> 8));
+			Write24C16(addr,(Byte)FuncBuf[pHPOSITION]);
+			break;
+		case pVPOSITION:
+			addr = ep_Vpos_Offset + (ModePoint * 8);
+			Write24C16(addr,(Byte)FuncBuf[pVPOSITION]);
+			break;
+		case pRCOLOR:
+			addr = FuncBuf[pCOLORTEMP] * 3 + ep_Color1_R;
+			Write24C16(addr,(Byte)FuncBuf[pRCOLOR]);
+			break;
+		case pGCOLOR:
+			addr = FuncBuf[pCOLORTEMP] * 3 + ep_Color1_G;
+			Write24C16(addr,(Byte)FuncBuf[pGCOLOR]);
+			break;
+		case pBCOLOR:
+			addr = FuncBuf[pCOLORTEMP] * 3 + ep_Color1_B;
+			Write24C16(addr,(Byte)FuncBuf[pBCOLOR]);
+			break;
+		case pOSDHPOSITION:
+			Write24C16(ep_OsdH_Pos,(Byte)FuncBuf[pOSDHPOSITION]);
+			break;
+// Jacky 0201 removed
+//		case pOSDVPOSITION:
+//			Write24C16(ep_OsdV_Pos,(Byte)FuncBuf[pOSDVPOSITION]);
+//			break;
+		case pOSDTIMER:
+			Write24C16(ep_Osd_Timer,(Byte)FuncBuf[pOSDTIMER]);
+			break;
+		case pSATURATION:
+			if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+				Write24C16(ep_sRGB_Saturation,(Byte)FuncBuf[pSATURATION]);
+			else
+				Write24C16(ep_Video_Saturation,(Byte)FuncBuf[pSATURATION]);
+			break;
+		case pTINT:
+			if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+				Write24C16(ep_sRGB_Tint,(Byte)FuncBuf[pTINT]);
+			else
+				Write24C16(ep_Video_Tint,(Byte)FuncBuf[pTINT]);
+			break;
+		case pSHARPNESS:
+			if(FuncBuf[pVIDEOSOURCE] < cSVIDEO)
+				{
+				addr = ep_Shape_Offset + (ModePoint * 8);
+				Write24C16(addr,(Byte)FuncBuf[pSHARPNESS]);
+				}
+			else
+				Write24C16(ep_Video_Shapness,(Byte)FuncBuf[pSHARPNESS]);
+			break;
+		case pBACKLIGHT:
+			Write24C16(ep_BackLight,(Byte)FuncBuf[pBACKLIGHT]);
+			break;
+		case pLANGUAGE:
+			Write24C16(ep_Language,FuncBuf[pLANGUAGE]);
+//			if(FuncBuf[pLANGUAGE]== 5){
+//				WriteSeqIndexPort(0xd0,tySRAM_1BIT,OneBitFontJP,45*27);
+//				WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontJP2,7*27);
+//			}
+//			else if((FuncBuf[pLANGUAGE] == 7)||(FuncBuf[pLANGUAGE] == 8)){
+//				WriteSeqIndexPort(0xd0,tySRAM_1BIT,OneBitFontCH2,48*27);
+//				WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontCH3,6*27);
+//			}
+//			else
+//				WriteSeqIndexPort(0x90,tySRAM_1BIT,OneBitFontPY,7*27);
+			break;
+		case pCOLORTEMP:
+			Write24C16(ep_Color_Ptr,FuncBuf[pCOLORTEMP]);
+			break;
+		case pTRANSOSD:
+			Write24C16(ep_Osd_Effect,FuncBuf[pTRANSOSD]);
+			break;
+		case pBACKLIGHT2:
+			Write24C16(ep_sRGB_Backlight,FuncBuf[pBACKLIGHT2]);
+			break;			
+		case pVCMVOL:
+			Write24C16(ep_VCMVol,(Byte)FuncBuf[pVCMVOL]);
+			break;
+		case pVOLUME:
+			Write24C16(ep_Volume,(Byte)FuncBuf[pVOLUME]);
+			break;
+		case pTreble:
+//			printf("pTreble save=%d\r\n",(unsigned short)FuncBuf[pTreble]);
+			Write24C16(ep_Treble,(Byte)FuncBuf[pTreble]);
+			break;
+		case pBass:
+//			printf("pBass save=%d\r\n",(unsigned short)FuncBuf[pBass]);
+			Write24C16(ep_Bass,(Byte)FuncBuf[pBass]);
+			break;
+		case pRADC:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_R_Gain,FuncBuf[pRADC]);
+			break;
+		case pGADC:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_G_Gain,FuncBuf[pGADC]);
+			break;
+		case pBADC:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_B_Gain,FuncBuf[pBADC]);
+			break;
+		case pROFFSET:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_R_Offset,FuncBuf[pROFFSET]);
+			else if(FuncBuf[pVIDEOSOURCE] == cYPbPr)
+				Write24C16(ep_YPbPr_R_Offset,FuncBuf[pROFFSET]);
+			break;
+		case pGOFFSET:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_G_Offset,FuncBuf[pGOFFSET]);
+			else if(FuncBuf[pVIDEOSOURCE] == cYPbPr)
+				Write24C16(ep_YPbPr_G_Offset,FuncBuf[pGOFFSET]);
+			break;
+		case pBOFFSET:
+			if(FuncBuf[pVIDEOSOURCE] == cANALOG)
+				Write24C16(ep_ADC_B_Offset,FuncBuf[pBOFFSET]);
+			else if(FuncBuf[pVIDEOSOURCE] == cYPbPr)
+				Write24C16(ep_YPbPr_B_Offset,FuncBuf[pBOFFSET]);
+			break;
+		case pContMax:
+			Write24C16(ep_ContMax,FuncBuf[pContMax]);
+			break;
+		case pContMin:
+			Write24C16(ep_ContMin,FuncBuf[pContMin]);
+			break;
+		case pBrigMax:
+			Write24C16(ep_BrigMax,FuncBuf[pBrigMax]);
+			break;
+		case pBrigMin:
+			Write24C16(ep_BrigMin,FuncBuf[pBrigMin]);
+			break;
+		case pLIGHTCONTRAST:
+			Write24C16(ep_Light_Contrast,FuncBuf[pLIGHTCONTRAST]);
+			break;
+		case pLIGHTBRIGHT:
+			Write24C16(ep_Light_Bright,FuncBuf[pLIGHTBRIGHT]);
+			break;
+		case pLIGHTHSTART:
+			Write24C16(ep_Light_HSMSB,(Byte)(FuncBuf[pLIGHTHSTART] >> 8));
+			Write24C16(ep_Light_HSLSB,(Byte)FuncBuf[pLIGHTHSTART]);
+			break;
+		case pLIGHTHWIDTH:
+			Write24C16(ep_Light_HWMSB,(Byte)(FuncBuf[pLIGHTHWIDTH] >> 8));
+			Write24C16(ep_Light_HWLSB,(Byte)FuncBuf[pLIGHTHWIDTH]);
+			break;
+		case pLIGHTVSTART:
+			Write24C16(ep_Light_VSMSB,(Byte)(FuncBuf[pLIGHTVSTART] >> 8));
+			Write24C16(ep_Light_VSLSB,(Byte)FuncBuf[pLIGHTVSTART]);
+			break;
+		case pLIGHTVHIGHT:
+			Write24C16(ep_Light_VHMSB,(Byte)(FuncBuf[pLIGHTVHIGHT] >> 8));
+			Write24C16(ep_Light_VHLSB,(Byte)FuncBuf[pLIGHTVHIGHT]);
+			break;
+		}
+	#if PRINT_MESSAGE	
+		printf("SavePointer = %x\r\n",(unsigned short)SavePointer);
+	#endif
+	SavePointer = 0xff;
+}
+
+void SetSource()
+{
+	if(FuncBuf[pVIDEOSOURCE] > cYPbPr&& !DecoderICEn)
+		FuncBuf[pVIDEOSOURCE] = cANALOG;
+	
+	switch(FuncBuf[pVIDEOSOURCE])
+		{
+		case cANALOG:
+			SyncMode = 0;
+			SourceSelect();
+			AVDecoderSleep();
+			break;
+
+		case cDVI:
+			SyncMode = 3;
+			SourceSelect();
+			AVDecoderSleep();
+			break;
+
+		case cYPbPr:
+			SyncMode = 4;			// +jwshin 060926
+			SourceSelect();
+			AVDecoderSleep();
+			break;
+
+		case cSVIDEO:
+//			SyncMode = 4;
+//			SourceSelect();
+//			AVDecoderSleep();
+//			break;
+		case cCOMPOSIT:
+		case cTV:
+//		case 5:	
+			SourceSelect();
+			break;
+		}
+	
+		}
+
+
+void MiscProcess(Bit DoAll)
+{
+	if((DDC_CTL0 & UPD_DDC) && !SaveDDC0)
+		{
+		SaveDDC0 = 1;
+		DDCTimer = SAVE_DDC_TIME;
+		}
+	if((DDC_CTL1 & UPD_DDC) && !SaveDDC1)
+		{
+		SaveDDC1 = 1;
+		DDCTimer = SAVE_DDC_TIME;
+		}
+	if(SaveDDC0 && DDCTimer == 0)
+		SaveDDCData(0);
+	if(SaveDDC1 && DDCTimer == 0)
+		SaveDDCData(1);
+//	printf("OsdTimer=%d\r\n",(unsigned short)OsdTimer);
+	if(DoAll)
+	{
+		if(FuncBuf[pVIDEOSOURCE]<cSVIDEO){
+			if(OsdTimer == 0 && OsdEnable && OutOfRange == 0 && FactMode == 0){
+				Osd_Off();
+//				printf("Osd_Off()\r\n");
+			}
+		}
+		else{
+			if((OsdTimer == 0) && OsdEnable){
+				Osd_Off();
+			}
+//			else if((IR_WaitTimer == 0)&&(MenuPtr.Menu ==5)&& OsdEnable){	// -jwshin 060905
+//				Osd_Off();
+//			}
+		}
+		
+		if(BurnInTimer == 0 && BurnInMode && NoSyncFlag){
+			ShowBurnInPattern(0);
+			//printf("Burn Test C.\n");
+		}
+		if(SavePointer != 0xff && SaveTimer == 0)	
+			SaveData();
+		if((BackLightTimer == 0) ||( ((BackLightTimer / 1800) >= 1)&&((BackLightTimer % 1800) < 60))){
+			SaveBackLightTime();
+		}
+	}
+}
+
+void SaveBackLightTime(void)
+{
+	Write24C16(ep_BkLightTime_Offset+3,(Byte)(BackLightTimer >> 24));
+	Write24C16(ep_BkLightTime_Offset+2,(Byte)(BackLightTimer >> 16));
+	Write24C16(ep_BkLightTime_Offset+1,(Byte)(BackLightTimer >> 8));
+	Write24C16(ep_BkLightTime_Offset,(Byte)(BackLightTimer));
+}
+
+void LoadPresetModeSettings(Byte type)
+{
+	Word addr;
+	if(ModePoint < UserModeSt)
+		addr = ModePoint * 8;
+	else
+		addr = UserModeRefReso * 8;
+
+	switch(type)
+	{
+		case 0:
+			FuncBuf[pPHASE] = EEP_SyncMap[addr+7];	
+			FuncBuf[pCLOCK] = EEP_SyncMap[addr+4];
+			FuncBuf[pCLOCK] <<= 8;
+			FuncBuf[pCLOCK] |= EEP_SyncMap[addr+5];
+		case 1:
+			FuncBuf[pVPOSITION] = EEP_SyncMap[addr+1];
+			FuncBuf[pHPOSITION] = EEP_SyncMap[addr+2];
+			FuncBuf[pHPOSITION] <<= 8;
+			FuncBuf[pHPOSITION] |= EEP_SyncMap[addr+3];
+			break;
+		case 2:
+			FuncBuf[pCLOCK] = EEP_SyncMap[addr+4];
+			FuncBuf[pCLOCK] <<= 8;
+			FuncBuf[pCLOCK] |= EEP_SyncMap[addr+5];
+			break;
+		}
+
+}
+
+void SetFineTune(void)
+{
+	unsigned char i;
+//	printf("FuncBuf[pCHFINETUNE]1=0x%x\r\n",FuncBuf[pCHFINETUNE]);
+	if((ChSystem==CH_USA)||(ChSystem==CH_JPN))
+		i = Read24C16(0x209); // ch No
+	else	{
+		i = Read24C16(0x207);//PR Channel No
+		if((Read24C16(ep_Input_CH_Sys) &0x80) == 0)
+			i = Read24C16(0x100+(i - 1));//PR TV CH NO.
+		else		i = Read24C16(0x180+(i - 1));//PR CATV CH NO.
+	}
+//		printf("Read24C16(ep_Input_CH_Sys)1=0x%x\r\n",(Word)Read24C16(ep_Input_CH_Sys));
+
+	if((Read24C16(ep_Input_CH_Sys) &0x80) == 0){
+		i = i - TV_Min;
+		Write24C16(0x100+i,FuncBuf[pCHFINETUNE]);
+//		printf("Write24C16(0x100+i,FuncBuf[pCHFINETUNE])=0x%x\r\n",(Word)(0x100+i));
+		ChannelSel(i+TV_Min);
+//	printf("SetFineTune1\r\n");
+	}
+	else{
+		i = i - CATV_Min;
+		Write24C16(0x180+i,FuncBuf[pCHFINETUNE]);
+		ChannelSel(i+CATV_Min);
+//	printf("SetFineTune2\r\n");
+	}	
+//	printf("FuncBuf[pCHFINETUNE]2=0x%x\r\n",FuncBuf[pCHFINETUNE]);
+
+
+	ShowBar(MAINMENU_BAR_ADDR+(OSD_WIDTH*2),BAR_COLOR,0,100,FuncBuf[pCHFINETUNE]);
+	ShowValue(MAINMENU_VALUE_ADDR+(OSD_WIDTH*2),BAR_COLOR,FuncBuf[pCHFINETUNE]);
+}
+/*	
+void FineTuneUp(void)
+{
+	unsigned char i;
+
+	i = Read24C16(0xdf);
+	if(Read24C16(0xe3) == 0){
+		i = i - TV_Min;
+		FineTune = Read24C16(0x400+i);//happyks
+		if(++FineTune > 100)
+			FineTune = 100;
+		else{
+			if(RepeatTimer == 0){
+				if(++FineTune > 100)
+					FineTune = 100;
+				else
+					;
+					}
+			Write24C16(0x400+i,FineTune);
+			ChannelSel(i+TV_Min);
+			ShowFineTune();
+		}
+	}
+	else{
+		i = i - CATV_Min;
+		FineTune = Read24C16(0x480+i);//happyks
+		if(++FineTune > 100)
+			FineTune = 100;
+		else{
+			if(RepeatTimer == 0){
+				if(++FineTune > 100)
+					FineTune = 100;
+				else
+					;
+					}
+			Write24C16(0x480+i,FineTune);
+			ChannelSel(i+CATV_Min);
+			ShowFineTune();
+		}
+	}	
+}
+*/

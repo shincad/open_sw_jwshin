@@ -1,0 +1,1235 @@
+#ifndef __PANEL_H__
+    #define __PANEL_H__
+
+//#include "Board.H"	// Mydef.H
+
+#define LPL_LM190E08_TLLX		0
+#define HSD_HSD190MEN3_A		1
+#define AUO_M190EG02V4			2
+
+#define LPL_LM170ME03_TLLX		3
+#define CPT_CLAA170EA07P		4
+#define AUO_M170EG01VD			5
+
+#define AUO_M220EW01_V0			6
+#define CMO_M220Z1_L01			7
+#define SAM_LTM220M1_L01		8
+#define LPL_LM220WE1			9
+#define CMO_M220Z1_L03			10
+
+#define CMO_M190E5_L0E			40
+#define SAM_LTM190M2_L31		41
+#define MTD_M190MWW1_401		42
+#define INL_190AW01				43
+#define SAM_LTM_240CT03			44
+
+#if PanelID == AUO_M220EW01_V0
+	#define PanelRGB_Offset	2
+	#define PanelMin_Gain	176
+/*
+#elif PanelID == CMO_M220Z1_L03
+	#define PanelRGB_Offset	4
+	#define PanelMin_Gain	176
+*/
+#else
+	#define PanelRGB_Offset	0
+	#define PanelMin_Gain	180
+#endif
+
+/*************************************************
+	1 2 8 0 x 1 0 2 4
+**************************************************/
+#if PanelID==LPL_LM190E08_TLLX
+	#define	PANEL_STRING			"LPL-LM190E08-TLL1/4 "	//LEN=20
+	#define	PANEL_SIZE				19
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	6	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           56      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000     // KHz
+	#define PanelMaxPClk    	    140000   // KHz
+	#define PanelLowHTotal			1480//1472	//1470
+	#define PanelMinHTotal			1480//1520	//1520
+	#define PanelTypHTotal			1688
+	
+	#define PanelMaxHTotal          1774//2048 //2040
+	#define PanelMinHSyncWidth      60 //20 //80
+	#define PanelMinHSyncBackPorch 	60 //20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2047//2048 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1040//1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0xff
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0333
+	#define DT16A					0x00
+	#define	DT158					0x23//0xAE//0x37//0x3f//0x77
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==HSD_HSD190MEN3_A
+	#define	PANEL_STRING			"HSD-HSD190MEN3-A    "	//LEN=20
+	#define	PANEL_SIZE				19
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            100000//90000     // KHz
+	#define PanelMaxPClk    	    134000   // KHz
+	#define PanelLowHTotal			1560//1480//1472	//1470
+	#define PanelMinHTotal			1584//1520	//1520
+	#define PanelTypHTotal			1688
+	
+	#define PanelMaxHTotal          2048 //2040
+	#define PanelMinHSyncWidth      96//20 //80
+	#define PanelMinHSyncBackPorch 	96//20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2048 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x77
+	#define	DT1D8					0xd0
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+#if PanelID==AUO_M190EG02V4
+	#define	PANEL_STRING			"AUO-M190EG02V4      "
+	#define	PANEL_SIZE				19
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000     // KHz
+	#define PanelMaxPClk    	    134000   // KHz
+	#define PanelLowHTotal			1480//1472	//1470
+	#define PanelMinHTotal			1520	//1520
+	#define PanelTypHTotal			1688
+	
+	#define PanelMaxHTotal          2048 //2040
+	#define PanelMinHSyncWidth      20 //80
+	#define PanelMinHSyncBackPorch 	20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2048 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x77
+	#define	DT1D8					0x00
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+#if PanelID==LPL_LM170ME03_TLLX
+	#define	PANEL_STRING			"LPL-LM170ME03-TLL1/4"
+	#define	PANEL_SIZE				17
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000     // KHz
+	#define PanelMaxPClk    	    134000   // KHz
+	#define PanelLowHTotal			1480//1472	//1470
+	#define PanelMinHTotal			1520	//1520
+	#define PanelTypHTotal			1688
+	
+	#define PanelMaxHTotal          2048 //2040
+	#define PanelMinHSyncWidth      20 //80
+	#define PanelMinHSyncBackPorch 	20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2048 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0xae//0x7f
+	#define	DT1D8					0x00//0xe0
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27           //jackyen 0430			
+	#define PowerUpInvTiming		150		// 400 ms  10 --> 150   (568 ms) jackyen
+	#define PowerDownPanelTiming	15		// 1 ms  15 --> 50    jackyen 0503
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+#if PanelID==CPT_CLAA170EA07P
+	#define	PANEL_STRING			"CPT-CLAA170EA07P    "
+	#define	PANEL_SIZE				17
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000//100000   // KHz
+	#define PanelMaxPClk    	    135000   // KHz
+	#define PanelLowHTotal			1480
+	#define PanelMinHTotal			1520//1600
+	#define PanelTypHTotal			1688
+
+	#define PanelMaxHTotal          2048
+	#define PanelMinHSyncWidth      20
+	#define PanelMinHSyncBackPorch 	20
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+
+	#define PanelMaxVTotal			2048
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1050
+	#define PanelMinVSyncWidth     	3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0xae//0x77
+	#define	DT1D8					0x00
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x05
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27		//  27 (28ms) -> 10 (12 ms)   jackyen 0430	
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+#if PanelID==AUO_M170EG01VD
+	#define	PANEL_STRING			"AUO-M170EG01VD      "
+	#define	PANEL_SIZE				17
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000     // KHz
+	#define PanelMaxPClk    	    134000   // KHz
+	#define PanelLowHTotal			1480//1472	//1470
+	#define PanelMinHTotal			1520	//1520
+	#define PanelTypHTotal			1688
+	
+	#define PanelMaxHTotal          2048 //2040
+	#define PanelMinHSyncWidth      20 //80
+	#define PanelMinHSyncBackPorch 	20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2048 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x77
+	#define	DT1D8					0x00
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		3	   	//  27 (28ms) -> 3 ( 5 ms)   jackyen 0430		
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+/*************************************************
+	1 4 4 0 x 9 0 0
+**************************************************/
+#if PanelID==CMO_M190E5_L0E
+
+		#define	PANEL_STRING			"CMO-M190E5-L0E"
+		#define	PANEL_SIZE				19
+		#define	DEF_BLACKLEVEL			128
+		#define	DEF_PANELIDX			235
+		#define PanelXga                0
+		#define PanelSxga               0
+		#define PanelWsxga             1
+		#define PanelUxga               0
+		#define PanelTwoPixelPerClk     1       // Double pixels output 
+		#define PanelDepth              8//6
+		#define PanelSync_DE            0		//0=H/V 1=DE
+
+		#define PanelWidth				1440
+		#define PanelHeight				900
+
+		#define PanelMaxVFreq          	76      // Hz
+		#define PanelMinVFreq          	55      // Hz
+		#define PanelMaxHFreq          	77000   // Hz
+
+		#define PanelMinPClk           	90000   // KHz
+		#define PanelMaxPClk           	128000//113000 //135000   // KHz
+
+		#define PanelLowHTotal			1520	//1512//1520//1504
+		#define PanelMinHTotal			1728	//1520//1552 //1600
+		#define PanelTypHTotal			1820	//1600 //1920
+
+		#define PanelMaxHTotal         	 2048
+		#define PanelMinHSyncWidth      	24//32//20
+		#define PanelMinHSyncBackPorch	32//20
+		#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+		#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+		#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+
+		#define PanelMaxVTotal			1050
+		#define PanelTypVTotal			916	//926	//926
+		#define PanelMinVTotal			910	//906	//910
+		#define PanelMinVSyncWidth     	3
+		#define PanelMinVSyncBackPorch	7
+		#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+		#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+		#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+
+		#define FreeRunH_Freq    		55625	//55625		//55.625KHz
+		#define Use_TCON 				0
+		#define PanelShortHsync			0
+		#define Panel_Invert_DVS 		0xff
+		#define Panel_Invert_DHS 		0xff
+		#define Panel_Invert_DCLK 		0x00
+		#define Panel_Invert_DEN 		0x00
+		#define PanelPadDrive 			0x0000
+		#define DT16A					0x00
+		#define	DT158					0xAE//0x37//0x3f//0x77
+		#define	DT1D8					0x00//0xe0//0x40
+		#define	DT1DA					0x00
+		#define	DT1DB					0x00//0x80
+
+		#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+												// 0x00 : disable spectrum
+		//#define RefClk 0x20
+		//#define PanelSpreadSpectrumCtrl (RefClk | 0x04)
+		#define PanelSpreadSpectrumCtrl		0x03
+		// Value for Spread_Spectrum_Control register
+		// 0x00: 0.097% ... 0x07: 12.5%
+
+		// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+		#define PowerUpPanelTiming		20 //19		// 40=28ms; 20=6.6ms; 19=5.8ms; 15=1.8ms (※ 50 msec)
+		#define PowerUpInvTiming		460 //10 //200		// (☆ 450 msec)
+		#define PowerDownPanelTiming	2 //250 //100		// (☆ 90 msec)
+		#define PowerDownInvTiming		150 //250 //50		// (※ 50 msec)
+#endif
+#if PanelID==SAM_LTM190M2_L31
+
+		#define	PANEL_STRING			"SAM_LTM190M2_L31"
+		#define	PANEL_SIZE				19
+		#define	DEF_BLACKLEVEL			128
+		#define	DEF_PANELIDX			235
+		#define PanelXga                0
+		#define PanelSxga               0
+		#define PanelWsxga             1
+		#define PanelUxga               0
+		#define PanelTwoPixelPerClk     1       // Double pixels output 
+		#define PanelDepth              8//6
+		#define PanelSync_DE            0		//0=H/V 1=DE
+
+		#define PanelWidth				1440
+		#define PanelHeight				900
+
+		#define PanelMaxVFreq          	76      // Hz
+		#define PanelMinVFreq          	55      // Hz
+		#define PanelMaxHFreq          	71400   // Hz
+
+		#define PanelMinPClk           	96800   // KHz
+		#define PanelMaxPClk           	131400//113000 //135000   // KHz
+
+		#define PanelLowHTotal			1760	//1512//1520//1504
+		#define PanelMinHTotal			1800	//1520//1552 //1600
+		#define PanelTypHTotal			1800//1544	//1600 //1920
+
+		#define PanelMaxHTotal         	 	1920
+		#define PanelMinHSyncWidth      	24//32//20
+		#define PanelMinHSyncBackPorch	24//20
+		#define PanelHActiveStart			PanelMinHSyncWidth + PanelMinHSyncBackPorch
+		#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+		#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+
+		#define PanelMaxVTotal			1920
+		#define PanelTypVTotal			940	//926	//926
+		#define PanelMinVTotal			908	//906	//910
+		#define PanelMinVSyncWidth     	1
+		#define PanelMinVSyncBackPorch	2
+		#define PanelVActiveStart			PanelMinVSyncWidth + PanelMinVSyncBackPorch
+		#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+		#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+
+		#define FreeRunH_Freq    			55625	//55625		//55.625KHz
+		#define Use_TCON 				0
+		#define PanelShortHsync			0
+		#define Panel_Invert_DVS 		0xff
+		#define Panel_Invert_DHS 		0xff
+		#define Panel_Invert_DCLK 		0x00
+		#define Panel_Invert_DEN 		0x00
+		#define PanelPadDrive 			0x0000
+		#define DT16A					0x00
+		#define	DT158					0xAE//0x37//0x3f//0x77
+		#define	DT1D8					0x00//0xe0//0x40
+		#define	DT1DA					0x00
+		#define	DT1DB					0x00//0x80
+
+		#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+												// 0x00 : disable spectrum
+		//#define RefClk 0x20
+		//#define PanelSpreadSpectrumCtrl (RefClk | 0x04)
+		#define PanelSpreadSpectrumCtrl		0x03
+		// Value for Spread_Spectrum_Control register
+		// 0x00: 0.097% ... 0x07: 12.5%
+
+		// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+		#define PowerUpPanelTiming		20 //19		// 40=28ms; 20=6.6ms; 19=5.8ms; 15=1.8ms (※ 50 msec)
+		#define PowerUpInvTiming		460 //10 //200		// (☆ 450 msec)
+		#define PowerDownPanelTiming	2 //250 //100		// (☆ 90 msec)
+		#define PowerDownInvTiming		150 //250 //50		// (※ 50 msec)
+#endif
+#if PanelID==MTD_M190MWW1_401
+
+		#define	PANEL_STRING			"MTD_M190MWW1_401"
+		#define	PANEL_SIZE				19
+		#define	DEF_BLACKLEVEL			128
+		#define	DEF_PANELIDX			235
+		#define PanelXga                0
+		#define PanelSxga               0
+		#define PanelWsxga             1
+		#define PanelUxga               0
+		#define PanelTwoPixelPerClk     1       // Double pixels output 
+		#define PanelDepth              8//6
+		#define PanelSync_DE            0		//0=H/V 1=DE
+
+		#define PanelWidth				1440
+		#define PanelHeight				900
+
+		#define PanelMaxVFreq          	75      // Hz
+		#define PanelMinVFreq          	56      // Hz
+		#define PanelMaxHFreq          	77000   // Hz
+
+		#define PanelMinPClk           	88750   // KHz
+		#define PanelMaxPClk           	136750//113000 //135000   // KHz
+
+		#define PanelLowHTotal			1600	//1512//1520//1504
+		#define PanelMinHTotal			1650	//1520//1552 //1600
+		#define PanelTypHTotal			1904//1544	//1600 //1920
+
+		#define PanelMaxHTotal         	 	1936
+		#define PanelMinHSyncWidth      	24//32//20
+		#define PanelMinHSyncBackPorch	24//20
+		#define PanelHActiveStart			PanelMinHSyncWidth + PanelMinHSyncBackPorch
+		#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+		#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+
+		#define PanelMaxVTotal			1050
+		#define PanelTypVTotal			934	//926	//926
+		#define PanelMinVTotal			910	//906	//910
+		#define PanelMinVSyncWidth     	1
+		#define PanelMinVSyncBackPorch	2
+		#define PanelVActiveStart			PanelMinVSyncWidth + PanelMinVSyncBackPorch
+		#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+		#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+
+		#define FreeRunH_Freq    			55625	//55625		//55.625KHz
+		#define Use_TCON 				0
+		#define PanelShortHsync			0
+		#define Panel_Invert_DVS 		0xff
+		#define Panel_Invert_DHS 		0xff
+		#define Panel_Invert_DCLK 		0x00
+		#define Panel_Invert_DEN 		0x00
+		#define PanelPadDrive 			0x0000
+		#define DT16A					0x00
+		#define	DT158					0xAE//0x37//0x3f//0x77
+		#define	DT1D8					0x00//0xe0//0x40
+		#define	DT1DA					0x00
+		#define	DT1DB					0x00//0x80
+
+		#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+												// 0x00 : disable spectrum
+		//#define RefClk 0x20
+		//#define PanelSpreadSpectrumCtrl (RefClk | 0x04)
+		#define PanelSpreadSpectrumCtrl		0x03
+		// Value for Spread_Spectrum_Control register
+		// 0x00: 0.097% ... 0x07: 12.5%
+
+		// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+		#define PowerUpPanelTiming		20 //19		// 40=28ms; 20=6.6ms; 19=5.8ms; 15=1.8ms (※ 50 msec)
+		#define PowerUpInvTiming		460 //10 //200		// (☆ 450 msec)
+		#define PowerDownPanelTiming	2 //250 //100		// (☆ 90 msec)
+		#define PowerDownInvTiming		150 //250 //50		// (※ 50 msec)
+#endif
+		
+#if PanelID==INL_190AW01			
+//------------ +jwshin 110414   17인치 Panel Value로 교체함...
+
+	#define	PANEL_STRING			"LPL-LM170ME03-TLL1/4"
+	#define	PANEL_SIZE				17
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				1
+	#define PanelUxga           	0
+	#define PanelWsxga				0
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1280
+	#define PanelHeight				1024
+	
+	#define PanelMaxVFreq           77 //86      // Hz
+	#define PanelMinVFreq           47      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            90000     // KHz
+	#define PanelMaxPClk    	    140000//134000   // KHz
+	#define PanelLowHTotal			1470//1472	//1470
+	#define PanelMinHTotal			1480	//1520
+	#define PanelTypHTotal			1688//1688
+	
+	#define PanelMaxHTotal          1688//2048 //2040
+	#define PanelMinHSyncWidth      60//20 //80
+	#define PanelMinHSyncBackPorch 	60//20 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1066 //1436
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1040//1028 //1038
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	7
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				    0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0333
+	#define DT16A					0x00
+	#define	DT158					0x00//0xae//0x7f
+	#define	DT1D8					0x00//0xe0
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		1//27           //jackyen 0430			
+	#define PowerUpInvTiming		  250//150		// 400 ms  10 --> 150   (568 ms) jackyen
+	#define PowerDownPanelTiming	1//15		// 1 ms  15 --> 50    jackyen 0503
+	#define PowerDownInvTiming		250//350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+		
+/*************************************************
+	1 6 8 0 x 1 0 5 0
+**************************************************
+		#define PanelName			"ASUS_V1\r\n"
+		#define PanelStr			"AUO M220EW01 "
+		#define PanelXga                0
+		#define PanelSxga               0
+		#define PanelWsxga             1
+		#define PanelUxga               0
+		#define PanelTwoPixelPerClk     1       // Double pixels output 
+		#define PanelDepth              8
+		#define PanelSync_DE            0		//0=H/V 1=DE
+
+		#define PanelWidth				1680
+		#define PanelHeight				1050
+
+		#define PanelMaxVFreq           86      // Hz
+		#define PanelMinVFreq           56      // Hz
+		#define PanelMaxHFreq           82000   // Hz
+
+		#define PanelMinPClk            140000//109000   // KHz
+		#define PanelMaxPClk            162000//164500   // KHz
+
+		#define PanelLowHTotal          1760	//1824//1848
+		#define PanelMinHTotal          2256	//1840//1952//1880
+		#define PanelTypHTotal			2260	//2240
+//		#define AllPanelTypHTotal		2240
+		#define PanelMaxHTotal          2800
+		#define PanelMinHSyncWidth      56//48
+		#define PanelMinHSyncBackPorch  56//48
+		#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+//		#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+//		#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+
+		#define PanelMaxVTotal			2000
+		#define PanelTypVTotal			1066
+		#define PanelMinVTotal			1058
+		#define PanelMinVSyncWidth      3
+		#define PanelMinVSyncBackPorch  6
+		#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+//		#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+//		#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+
+		#define FreeRunH_Freq    		64000		//64KHz
+		#define Use_TCON 				0
+		#define PanelShortHsync			0
+		#define Panel_Invert_DVS 		0xff
+		#define Panel_Invert_DHS 		0xff
+		#define Panel_Invert_DCLK 		0x00
+		#define Panel_Invert_DEN 		0x00
+		#define PanelPadDrive 			0x0000
+		#define DT16A					0x00
+
+		#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+												// 0x00 : disable spectrum
+		#define PanelSpreadSpectrumCtrl 0x03
+		#define AUO_Spread_Spect		0x07
+		#define QDI_Spread_Spect		0x09
+		// Value for Spread_Spectrum_Control register
+		// 0x00: 0.097% ... 0x07: 12.5%
+
+		// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+		#define PowerUpPanelTiming		10		// 10 ms
+		#define PowerUpInvTiming		250		// 250 ms
+		#define PowerDownPanelTiming	25		// 10 ms
+		#define PowerDownInvTiming		250		// 250 ms
+*/
+#if PanelID==CMO_M220Z1_L01
+	#define	PANEL_STRING			"CMO-M220Z1-L01      "	//LEN=20
+	#define	PANEL_SIZE				22
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1680
+	#define PanelHeight				1050
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+
+	#define PanelMinPClk            80000     // KHz
+	#define PanelMaxPClk    	    149000   // KHz
+
+	#define PanelLowHTotal			1784
+	#define PanelMinHTotal			1800
+	#define PanelTypHTotal			1840
+	
+	#define PanelMaxHTotal          2000
+	#define PanelMinHSyncWidth      48
+	#define PanelMinHSyncBackPorch 	48
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1195
+	#define PanelTypVTotal			1080
+	#define PanelMinVTotal			1060
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	6
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x3b//0x37//0x3f//0x77
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x00
+	#define	DT1DB					0x83//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==AUO_M220EW01_V0
+	#define	PANEL_STRING			"AUO-M220EW01-V0     "	//LEN=20
+	#define	PANEL_SIZE				22
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	6	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1680
+	#define PanelHeight				1050
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+
+	#define PanelMinPClk            120000     // KHz
+	#define PanelMaxPClk    	    170000   // KHz
+
+	#define PanelLowHTotal			1768//1880
+	#define PanelMinHTotal			1920
+	#define PanelTypHTotal			2048
+	
+	#define PanelMaxHTotal          4096
+	#define PanelMinHSyncWidth      32//72
+	#define PanelMinHSyncBackPorch 	32//72
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			2048
+	#define PanelTypVTotal			1066
+	#define PanelMinVTotal			1058
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	6
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x3b//0xb3//0xcb//0x37//0x3f//0xAE
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x00
+	#define	DT1DB					0x83//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==SAM_LTM220M1_L01
+	#define	PANEL_STRING			"SAM-LTM220M1-L01    "	//LEN=20
+	#define	PANEL_SIZE				22
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1680
+	#define PanelHeight				1050
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+
+	#define PanelMinPClk            100000     // KHz
+	#define PanelMaxPClk    	    155000   // KHz
+
+	#define PanelLowHTotal			1832
+	#define PanelMinHTotal			1840
+	#define PanelTypHTotal			1880
+	
+	#define PanelMaxHTotal          2008
+	#define PanelMinHSyncWidth      56
+	#define PanelMinHSyncBackPorch 	56
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1200
+	#define PanelTypVTotal			1080
+	#define PanelMinVTotal			1059
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	6
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x3b//0x37//0x3f//0x77
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x00
+	#define	DT1DB					0x83//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==LPL_LM220WE1
+	#define	PANEL_STRING			"LPL-LM220WE1        "	//LEN=20
+	#define	PANEL_SIZE				22
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1680
+	#define PanelHeight				1050
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+
+	#define PanelMinPClk            95000     // KHz
+	#define PanelMaxPClk    	    168000   // KHz
+
+	#define PanelLowHTotal			1776
+	#define PanelMinHTotal			1800
+	#define PanelTypHTotal			1840
+	
+	#define PanelMaxHTotal          2400
+	#define PanelMinHSyncWidth      32
+	#define PanelMinHSyncBackPorch 	32
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1300
+	#define PanelTypVTotal			1080
+	#define PanelMinVTotal			1060
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	6
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x3f//0x3b//0x37//0x3f//0x77
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x10
+	#define	DT1DB					0x80//0x83
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x05//3
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==CMO_M220Z1_L03
+	#define	PANEL_STRING			"CMO-M220Z1-L03      "	//LEN=20
+	#define	PANEL_SIZE				22
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1680
+	#define PanelHeight				1050
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+
+	#define PanelMinPClk            100000     // KHz
+	#define PanelMaxPClk    	    164000   // KHz
+
+	#define PanelLowHTotal			1784
+	#define PanelMinHTotal			1800
+	#define PanelTypHTotal			1840
+	
+	#define PanelMaxHTotal          2000
+	#define PanelMinHSyncWidth      48
+	#define PanelMinHSyncBackPorch 	48
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1195
+	#define PanelTypVTotal			1080
+	#define PanelMinVTotal			1060
+	#define PanelMinVSyncWidth      3
+	#define PanelMinVSyncBackPorch 	6
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		64000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0x7f//0x37//0x3f//0x3b
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x10
+	#define	DT1DB					0x80//0x83
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x05
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#if PanelID==SAM_LTM_240CT03
+	#define	PANEL_STRING			"SAM_LTM_240CT03     "	//LEN=20
+	#define	PANEL_SIZE				24
+	#define	DEF_BLACKLEVEL			128//123
+	#define	DEF_PANELIDX			235
+	#define PanelXga           		0
+	#define PanelSxga				0
+	#define PanelUxga           	0
+	#define PanelWsxga				1
+	#define PanelTwoPixelPerClk 	1       // Double pixels output 
+	#define PanelDepth          	8	//PANEL_DITH_BIT
+	#define PanelSync_DE        	0		//0=H/V 1=DE
+	
+	#define PanelWidth				1920
+	#define PanelHeight				1200
+	
+	#define PanelMaxVFreq           75 //86      // Hz
+	#define PanelMinVFreq           50      // Hz
+	#define PanelMaxHFreq           82000   // Hz
+	#define PanelMinPClk            134000     // KHz
+	#define PanelMaxPClk    	    162000   // KHz
+	#define PanelLowHTotal			1992//1472	//1470
+	#define PanelMinHTotal			2008	//1520
+	#define PanelTypHTotal			2080
+	
+	#define PanelMaxHTotal          2150 //2040
+	#define PanelMinHSyncWidth      24 //80
+	#define PanelMinHSyncBackPorch 	24 //80
+	#define PanelHActiveStart		PanelMinHSyncWidth + PanelMinHSyncBackPorch
+	#define PanelHSyncStart			PanelTypHTotal - PanelMinHSyncWidth - PanelMinHSyncBackPorch
+	#define PanelHSyncEnd			PanelHSyncStart + PanelMinHSyncWidth
+	
+	#define PanelMaxVTotal			1245 //1436
+	#define PanelTypVTotal			1235
+	#define PanelMinVTotal			1209
+	#define PanelMinVSyncWidth      2
+	#define PanelMinVSyncBackPorch 	3
+	#define PanelVActiveStart		PanelMinVSyncWidth + PanelMinVSyncBackPorch
+	#define PanelVSyncStart			PanelMinVTotal - PanelMinVSyncWidth - PanelMinVSyncBackPorch
+	#define PanelVSyncEnd			PanelVSyncStart + PanelMinVSyncWidth
+	
+	#define FreeRunH_Freq    		74000		//64KHz
+	#define Use_TCON 				0
+	#define PanelShortHsync			0
+	#define Panel_Invert_DVS 		0xff
+	#define Panel_Invert_DHS 		0xff
+	#define Panel_Invert_DCLK 		0x00
+	#define Panel_Invert_DEN 		0x00
+	#define PanelPadDrive 			0x0000
+	#define DT16A					0x00
+	#define	DT158					0xAE//0x37//0x3f//0x77
+	#define	DT1D8					0x00//0xe0//0x40
+	#define	DT1DA					0x00
+	#define	DT1DB					0x00//0x80
+	
+	#define Panel_Spread_Spect_En	0xff	// 0xff : enable spectrum
+	                                        // 0x00 : disable spectrum
+	#define PanelSpreadSpectrumCtrl 0x03
+	                                        // Value for Spread_Spectrum_Control register
+	                                        // 0x00: 0.097% ... 0x07: 12.5%
+	
+	// define panel timing. word constant used to program registers 0xd8 and 0xd9 during power up and power down
+	#define PowerUpPanelTiming		27			
+	#define PowerUpInvTiming		10		// 400 ms
+	#define PowerDownPanelTiming	15		// 1 ms
+	#define PowerDownInvTiming		350		// 300 ms
+	#define PowerDownWhitePtn 		100		
+#endif
+
+#endif // __PANEL_H__
