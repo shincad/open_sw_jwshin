@@ -1,32 +1,32 @@
-# °ü¸®ÀÚ ·Î±×ÀÎ
+# ê´€ë¦¬ì ë¡œê·¸ì¸
 $Username = "administrator"
-$Password = ConvertTo-SecureString "eminwon2022" -AsPlainText -Force
+$Password = ConvertTo-SecureString "" -AsPlainText -Force
 $Credential = New-Object System.Management.Automation.PSCredential($Username, $Password)
 
-# °á°ú¸¦ ÀúÀåÇÒ ÆÄÀÏ »ı¼º
+# ê²°ê³¼ë¥¼ ì €ì¥í•  íŒŒì¼ ìƒì„±
 $OutputFile = "230803_bugcheck.txt"
 if (Test-Path $OutputFile) {
     Remove-Item $OutputFile
 }
 
-# ÆÄÀÏ¿¡¼­ IP ÁÖ¼Ò ÃßÃâ ¹× bugcheck È®ÀÎ
+# íŒŒì¼ì—ì„œ IP ì£¼ì†Œ ì¶”ì¶œ ë° bugcheck í™•ì¸
 $IPFile = "ip.txt"
 $Lines = Get-Content $IPFile
 foreach ($Line in $Lines) {
-    # ÆÄÀÏ ÇÑ ÁÙ¿¡¼­ IP ÁÖ¼Ò ÃßÃâ
+    # íŒŒì¼ í•œ ì¤„ì—ì„œ IP ì£¼ì†Œ ì¶”ì¶œ
     $IP = ($Line -split '\|')[2].Trim()
     
-    # IP ÁÖ¼Ò¸¦ »ç¿ëÇÏ¿© ÇØ´ç ÀåºñÀÇ ½Ã½ºÅÛ ·Î±×¿¡¼­ bugcheck È®ÀÎ
+    # IP ì£¼ì†Œë¥¼ ì‚¬ìš©í•˜ì—¬ í•´ë‹¹ ì¥ë¹„ì˜ ì‹œìŠ¤í…œ ë¡œê·¸ì—ì„œ bugcheck í™•ì¸
     $BugCheck = Invoke-Command -ComputerName $IP -Credential $Credential -ScriptBlock {
         Get-EventLog -LogName System -InstanceId 1001 -Newest 1 | Select-Object TimeGenerated, EntryType, Message
     }
     
-    # °á°ú¸¦ ÆÄÀÏ¿¡ ÀúÀå
+    # ê²°ê³¼ë¥¼ íŒŒì¼ì— ì €ì¥
     Add-Content -Path $OutputFile -Value ("IP: {0}" -f $IP)
     if ($BugCheck) {
-        Add-Content -Path $OutputFile -Value ("Bugcheck Á¤º¸: {0}" -f $BugCheck.Message)
+        Add-Content -Path $OutputFile -Value ("Bugcheck ì •ë³´: {0}" -f $BugCheck.Message)
     } else {
-        Add-Content -Path $OutputFile -Value "Bugcheck Á¤º¸¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù."
+        Add-Content -Path $OutputFile -Value "Bugcheck ì •ë³´ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤."
     }
     Add-Content -Path $OutputFile -Value "-----------------------------"
 }
